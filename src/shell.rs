@@ -1610,7 +1610,7 @@ impl Shell {
             .is_some_and(|fresh| Freshness::current(fresh.sound, self.live_now));
         let output = if sound_current {
             sound
-                .map(|s| crate::model::display_value(s))
+                .map(crate::model::display_value)
                 .unwrap_or("Unavailable")
         } else {
             "Unavailable"
