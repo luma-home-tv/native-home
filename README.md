@@ -6,6 +6,11 @@ An experimental native home dashboard for LG webOS TVs. This standalone project
 owns the dashboard's app catalogue, favourites, navigation composition, TV
 adapters, controls, persistence, branding and tests.
 
+This is the independent [Luma Home repository](https://github.com/luma-home-tv/native-home).
+The earlier combined prototype is preserved in
+[native-home-prototype-history](https://github.com/luma-home-tv/native-home-prototype-history)
+as an attributed PlxNative fork. It is historical reference; development continues here.
+
 ## PlxNative framework dependency
 
 Luma Home builds on the research and engineering of
