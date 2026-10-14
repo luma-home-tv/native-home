@@ -55,7 +55,10 @@ network configuration and OLED protections. Sources/Settings execution remain
 gated and settings read-only. Private TV details and native household captures
 stay outside tracked source. A black OLED canvas with graphite tiles is the
 design direction; performance, idle behaviour, physical input and complete
-controls still require device verification.
+controls still require device verification. The [drawer milestone](docs/drawer-milestone.json)
+adds native All/Favourites filtering and on-screen search, tested through
+scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits;
+app ordering, full text entry and the clock/status header remain ongoing.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier
 combined prototype. The [standalone device milestone](docs/standalone-device-milestone.json) now

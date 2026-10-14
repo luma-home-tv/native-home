@@ -32,7 +32,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Area | Intended behaviour | Current evidence |
 | --- | --- | --- |
 | Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Combined favourites and HDMI shelves implemented with shared native components; host and G2 native captures inspected with live readings; OLED black canvas captured; clock remains to build |
-| Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; search/order remain |
+| Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; order remains |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards with distinct plug, signal and active states; select through LG's normal source path | Native cards refreshed through normal-app reads; disconnected HDMI 4 launch reached its foreground but EIM activation readback did not confirm it; switching stays disabled |
 | Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Native category/value pages rendered; four picture values/context refreshed live; write capability remains unavailable; Settings adapter observed its overlay after a longer load window, but independent observation remains incomplete |
@@ -46,6 +46,11 @@ the complete rail on all six pages. All six complete PPM files also match the
 prior captured states byte-for-byte. No renderer
 change is supported by that claim. Physical input and broader UI work remain.
 
+
+The [drawer milestone](drawer-milestone.json) records native All/Favourites
+filtering and a shared-focus alphanumeric keyboard. The scripted G2 path typed
+a query, filtered results, closed the keyboard and restored All without a TV
+request. Physical input and full text/IME coverage remain to verify.
 
 ## Next implementation stages
 
@@ -70,7 +75,7 @@ change is supported by that claim. Physical input and broader UI work remain.
    local helper only for operations that actually need privilege, with caller,
    executable and session validation and a fixed operation allowlist.
 4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source
-   status on every tile. Complete the clock/status header, app search/filter/order
+   status on every tile. Complete the clock/status header, app ordering
    and native control widgets. Verify physical remote, pointer, wheel and Back behaviour on the G2.
    Measure the actual dashboard's frame pacing, input response, memory and idle
    behaviour; the earlier C renderer's results do not transfer to this client.
