@@ -178,12 +178,26 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         .into_iter()
         .enumerate()
         {
-            let value = values
+            let mut value = values
                 .get(id)
                 .and_then(scalar)
                 .ok_or_else(|| format!("Missing {id}"))?;
-            if id != "pictureMode" && values[id].as_i64().is_none() {
-                return Err(format!("Invalid numeric {id}"));
+            if id != "pictureMode" {
+                let number = values[id]
+                    .as_u64()
+                    .or_else(|| {
+                        values[id]
+                            .as_str()
+                            .filter(|v| {
+                                !v.is_empty()
+                                    && v.len() <= 3
+                                    && v.bytes().all(|c| c.is_ascii_digit())
+                            })
+                            .and_then(|v| v.parse::<u64>().ok())
+                    })
+                    .filter(|v| *v <= 100)
+                    .ok_or_else(|| format!("Invalid numeric {id}"))?;
+                value = number.to_string();
             }
             settings.push(Setting {
                 id: id.into(),
@@ -654,5 +668,30 @@ mod tests {
             parse(&data, "self", 100, false).network,
             Reading::Failed(_)
         ));
+    }
+    #[test]
+    fn picture_integer_strings_are_normalized_but_invalid_or_out_of_range_values_fail() {
+        let mut data = raw();
+        for key in ["backlight", "contrast", "brightness"] {
+            data["replies"]["picture"]["settings"][key] = "90".into();
+        }
+        let Reading::Value(picture) = parse(&data, "self", 100, false).picture else {
+            panic!()
+        };
+        assert_eq!(picture.settings[1].value, "90");
+        for bad in [
+            json!("90.0"),
+            json!("1e2"),
+            json!("-1"),
+            json!("101"),
+            json!(101),
+            json!(true),
+        ] {
+            data["replies"]["picture"]["settings"]["backlight"] = bad;
+            assert!(matches!(
+                parse(&data, "self", 100, false).picture,
+                Reading::Failed(_)
+            ));
+        }
     }
 }
