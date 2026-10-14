@@ -434,7 +434,7 @@ impl Focusable<HomeHost> for Surface {
                     Dir::Up => i.checked_sub(8),
                     Dir::Down => Some(i + 8).filter(|n| *n < 40),
                     Dir::Left => i.checked_sub(1).filter(|_| i % 8 > 0),
-                    Dir::Right => Some(i + 1).filter(|_| i % 8 < 7),
+                    Dir::Right => (i % 8 < 7).then_some(i + 1),
                 };
                 return next.map_or(Step::Edge, |n| {
                     Step::Move(FocusKey {
