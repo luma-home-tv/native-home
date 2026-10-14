@@ -1680,10 +1680,15 @@ impl Shell {
             self.input.engine.current(owner),
         );
         if let Some(key) = resolution.focus {
-            let group = self
+            let Some(group) = self
                 .surface
-                .group_of(&key.elem, &self.context(&LegacyMeasure));
-            let outcome = self.input.engine.set(owner, key, group, By::Pointer);
+                .group_of(&key.elem, &self.context(&LegacyMeasure))
+            else {
+                // Hit stops belong to the previous painted frame. A live refresh, category
+                // change or menu can remove that target before another event is polled.
+                return;
+            };
+            let outcome = self.input.engine.set(owner, key, Some(group), By::Pointer);
             self.moved(outcome);
         }
         if click {

@@ -933,3 +933,50 @@ fn picture_breadcrumb_expires_even_if_no_setting_row_can_trigger_a_rebuild() {
         "Picture context unavailable"
     );
 }
+
+#[test]
+fn stale_pointer_frame_cannot_leave_focus_on_a_removed_detail_row_or_escape_a_new_menu() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Controls);
+    s.focus_control_category(2);
+    let stale = FocusKey {
+        entry: entry(s.page()),
+        elem: TABLE_BASE + 61,
+    };
+    let rect = Rect::new(1000.0, 650.0, 300.0, 60.0);
+    s.input.hit.fill(vec![Stop {
+        key: stale,
+        rect,
+        rest_rect: rect,
+        clip: DETAIL_ROWS,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    }]);
+    s.input.hit.swap();
+    s.focus_control_category(0);
+    s.pointer(1100.0, 660.0, true);
+    assert_eq!(focus(&s), CATEGORY_BASE);
+    s.direction(Dir::Right);
+    assert_eq!(focus(&s), TABLE_BASE + 1);
+    assert!(s.take_requests().is_empty());
+    s.open(Page::Applications);
+    let app = FocusKey {
+        entry: entry(s.page()),
+        elem: focus(&s),
+    };
+    s.input.hit.fill(vec![Stop {
+        key: app,
+        rect,
+        rest_rect: rect,
+        clip: CONTENT,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    }]);
+    s.input.hit.swap();
+    s.activate(app, true);
+    s.pointer(1100.0, 660.0, true);
+    assert_eq!(focus(&s), MENU_BASE + 1);
+    assert!(s.menu_application().is_some());
+    assert!(s.take_requests().is_empty());
+}

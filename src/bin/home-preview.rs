@@ -343,6 +343,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 categories.push(shell.presentation_probe());
             }
             shell.focus_control_category(2);
+            shell.draw();
+            shell.focus_control_category(0);
+            shell.pointer(1500.0, 550.0, true);
+            let stale_pointer_ignored = shell.focused_item().as_deref() == Some("category-Picture");
+            shell.focus_control_category(2);
             shell.direction(Dir::Right);
             let enters_detail = shell
                 .focused_item()
@@ -390,9 +395,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let back_home = shell.page() == Page::Home;
             let preferences_unchanged = shell.preferences() == &preferences;
             controls_proof = Some(
-                serde_json::json!({"categories":&categories,"right_enters_detail":enters_detail,"network_scroll":&scrolling,"back_restores_category":back_restores_category,"pointer_selects_sound":pointer_selects_sound,"armed_picture_route_cancelled_on_category_change":route_cancelled,"back_returns_home":back_home,"preferences_unchanged":preferences_unchanged,"input":"scripted shared arrows/Back and hit-map pointer"}),
+                serde_json::json!({"categories":&categories,"right_enters_detail":enters_detail,"stale_pointer_ignored":stale_pointer_ignored,"network_scroll":&scrolling,"back_restores_category":back_restores_category,"pointer_selects_sound":pointer_selects_sound,"armed_picture_route_cancelled_on_category_change":route_cancelled,"back_returns_home":back_home,"preferences_unchanged":preferences_unchanged,"input":"scripted shared arrows/Back and hit-map pointer"}),
             );
-            if !(enters_detail
+            if !(stale_pointer_ignored
+                && enters_detail
                 && back_restores_category
                 && pointer_selects_sound
                 && route_cancelled
