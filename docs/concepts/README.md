@@ -4,7 +4,7 @@ These are **design mockups, not TV captures or implemented capability**. App
 names, icons, clock, source states, audio status and setting values are synthetic.
 They describe the intended finished interface; the running preview remains more
 limited. See the [implementation plan](../implementation-plan.md) and
-[current evidence](../../README.md#evidence-boundaries) for that distinction.
+[current evidence](../../README.md#development) for that distinction.
 
 ![Four-screen concept overview](overview.png)
 

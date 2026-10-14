@@ -61,6 +61,11 @@ Historical [milestone records](docs/implementation-plan.md) describe the earlier
 combined prototype. Moving files and build wiring is not new device proof: the
 standalone tree must pass its own checks and native verification.
 
+The [standalone boundary record](docs/standalone-boundary.json) records 35 passed
+client tests, Clippy, host/ARM builds, the resolved dependency graph and the
+absence of Plex application/media crates. The Git-tracked tree contains no
+framework source or Plex application tree.
+
 ## Licensing
 
 Luma Home's derivative application is GPL-3.0-or-later. PlxNative remains

@@ -1,0 +1,55 @@
+{
+  "standalone_code_revision": "86a89c9",
+  "setup_guard_revision": "aa3433fc5a7c96a27b672f7aae366f6b484c90b0",
+  "client_tests": {
+    "passed": 35,
+    "failed": 0
+  },
+  "clippy": "passed with warnings denied",
+  "host_build": "passed",
+  "arm_release_build": "passed, ARMv7 softfp",
+  "resolved_plx_crates": [
+    "plx_base",
+    "plx_gfx",
+    "plx_machine",
+    "plx_platform",
+    "plx_ui"
+  ],
+  "excluded_plex_application_crates": [
+    "plxnative-modules",
+    "plx_plex",
+    "plx_media",
+    "plx_session",
+    "plx_data",
+    "plx_appkit",
+    "plx_net",
+    "plx_telemetry"
+  ],
+  "tracked_framework_source_files": 0,
+  "tracked_plex_application_source_tree": false,
+  "tracked_project_files_before_this_record": 75,
+  "upstream_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+  "integration_patch_sha256": "3e61cc346de202f10770b8e81170a9ac5550c0499a0bbdaa60e20ac2c6072a29",
+  "modified_framework_file_hashes": {
+    "rust-modules/ui/src/widgets.rs": "01289a47824cd962bfbf16e12f4ebeec317d3e46ac6f8aaeab93679530e91214",
+    "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26",
+    "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e"
+  },
+  "framework_ui_bytes_match_prior_verified_framework": true,
+  "arm_needed_libraries": [
+    "luna-service2",
+    "glib-2.0",
+    "gcc_s",
+    "rt",
+    "pthread",
+    "dl",
+    "c",
+    "SDL2",
+    "SDL2_ttf",
+    "GLESv2",
+    "m"
+  ],
+  "arm_ffmpeg_or_libass_link": false,
+  "new_device_verification": false,
+  "limit": "Build/dependency separation proof. Earlier native captures remain historical; the standalone tree has not yet been deployed or device-performance verified."
+}
