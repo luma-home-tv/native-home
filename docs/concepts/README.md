@@ -35,7 +35,8 @@ LG keeps Home, volume, power and the underlying TV services.
 
 The Apps image shows a menu state. The normal drawer can use the space occupied
 by that panel for more grid columns. Search opens a native text-entry surface;
-filter, search, ordering and menu detail remain planned work. A hold must never
+filter/search and the pin/order menu are implemented in 0.11.0. Physical holds,
+full text input and detailed visual polish still need verification. A hold must never
 also launch the application when released. Ordering and pinning affect only
 dashboard preferences.
 
@@ -58,11 +59,12 @@ with clearly identified LG-managed routes where direct control is inappropriate.
 ## Relationship to current proof
 
 The native preview renders cards and forms on both TVs and has tested catalogue
-identity, favourite save/readback and clean removal. Version 0.10.0 adds the Luma
+identity, favourite save/readback and clean removal. Version 0.10.0 added the Luma
 header/rail branding and live sound/network readings to the existing native
 clock, drawer filters and search. The [fidelity map](../design-fidelity.md)
-compares implementation with these concepts and identifies the remaining menu,
-ordering and Controls-layout gaps. Source switching, native setting writes,
+compares implementation with these concepts. Version 0.11.0 adds a native
+management menu and persisted favourite ordering; Controls composition and
+further visual polish remain. Source switching, native setting writes,
 physical remote/pointer coverage and dashboard performance remain unverified.
 The render watermark stays visible in every exported concept so these images
 cannot be mistaken for that device evidence.

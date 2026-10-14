@@ -1,15 +1,23 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.10.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.11.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
 Open it from LG Home. Directions move between the rail, favourites and app
-drawer. OK opens a validated app; holding OK adds/removes a favourite. Apps has
+drawer. OK opens a validated app. Holding OK on Home adds/removes a favourite;
+in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
+or Open app. Back closes the panel and restores the app; an app removed from
+the filtered view lands on a valid neighbour. The panel traps focus and pointer
+hit targets until closed. Apps has
 All/Favourites filters and a native on-screen search keyboard. Back closes the
 keyboard, returns toward Home, then exits from Home. Favourites persist across
-Luma launches. Opening another app hides/exits this preview; relaunch Luma from
+Luma launches. Explicit ordering affects Home and the Favourites filter; All
+Apps retains its alphabetical order. Existing records load without a preference
+rewrite; order is saved after an explicit change. Older clients cannot read the
+new order field, so preserve a pre-ordering backup before considering a downgrade.
+Opening another app hides/exits this preview; relaunch Luma from
 LG's list. LG Home, power and volume keep their existing ownership.
 
 After two minutes without app input, Luma presents opaque black and stops
@@ -36,7 +44,9 @@ monotonic time, caches the displayed text and expires unavailable/invalid/stale
 readings after 65 seconds. It never changes the TV's time, timezone or panel
 settings. The [clock milestone](clock-milestone.json) records the earlier G2
 proof; the [branding/status milestone](branding-status-milestone.json) records
-the latest successful native and retained-update checks on both devices.
+the branding checks on both devices. The [app-menu milestone](app-menu-milestone.json)
+records two native management runs per TV, exact order reload and the 0.11.0
+retained updates. These are scripted shared-focus tests, not physical remote proof.
 Sound and Network now show read-only ordinary-app readings. LG Settings handoff
 remains firmware-gated to the separately tested G2 Picture route; the C2 route
 has not yet received that proof. The [fidelity map](design-fidelity.md) tracks the

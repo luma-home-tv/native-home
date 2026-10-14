@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.10.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.11.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding, live sound/network reads, isolated removal and retained
 updates with favourites preserved. Earlier native idle/wake and owned-app launch
@@ -80,13 +80,14 @@ stay outside tracked source. A black OLED canvas with graphite tiles is the
 design direction; sustained performance, physical input and complete controls
 still require device verification. The [drawer milestone](docs/drawer-milestone.json)
 adds native All/Favourites filtering and on-screen search, tested through
-scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits;
-app ordering and full text entry remain ongoing. The
+scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits.
+The [app-menu milestone](docs/app-menu-milestone.json) adds native app options,
+pinning and durable favourite ordering on both devices; full text entry remains ongoing. The
 [clock milestone](docs/clock-milestone.json) adds a cached native TV-time header,
 validated and installed as version 0.8.0 on the G2 with saved favourites preserved.
 The [concept fidelity map](docs/design-fidelity.md) records the implemented Luma
 logo/rail, larger Home shelves and status readings alongside the remaining
-app-management, ordering and Controls-layout work. The original concepts remain
+Controls layout, input details and long text. The original concepts remain
 the target for the finished interface.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier

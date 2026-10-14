@@ -1,0 +1,183 @@
+{
+  "code_revision": "47ab091b22a969e534eb29992902b823d97d8779",
+  "package_version": "0.11.0",
+  "binary_sha256": "088f3acd758a1b1103ef9edbcf773b90b0838e7911ecc7a5604b48783e38f79e",
+  "client_tests": {
+    "passed": 66,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "host_and_arm_builds": "passed; ARM retains existing unstable neon target-feature warning",
+  "implementation": [
+    "Apps hold opens a modal shared native FormTable with Open, Pin/Unpin, Move earlier, Move later and Close",
+    "Shared input/focus and hit map admit only menu controls while open; Back restores app identity or a valid filtered neighbour",
+    "Three-column underlying drawer with quiet app outline; unclipped title placement inside the shared collapsed row band",
+    "Explicit favourite ranks affect Home and Favourites; All Apps stays alphabetical",
+    "Existing schema-1 records load with empty default order; no new field is serialized until order exists; duplicate/non-member/oversized ranks are refused",
+    "Open app uses the existing registered-target/capability/foreground executor and rechecks freshness; passive proof identities cannot launch household apps"
+  ],
+  "host_component_proof": {
+    "render_inspected": true,
+    "management_checks_passed": true,
+    "storage_readback": true,
+    "simulated_host_environment": true
+  },
+  "meaningful_unit_coverage": [
+    "Hold release without launch/pin; a menu action commits once",
+    "Modal focus and Back while a press is armed",
+    "Pin removal from filtered drawer restores a valid neighbour",
+    "Order roundtrip through actual atomic Store and reconstructed Home/Favourites views",
+    "Disabled operations and rank bounds produce no request/write",
+    "Target rename keeps identity; target removal cancels an armed action",
+    "Registered menu Open creates exact typed request; stale catalogue rejects it",
+    "Legacy records retain serialized shape; invalid ordering is refused"
+  ],
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "runs": 2,
+      "native_refresh_cycles": [
+        5,
+        5
+      ],
+      "shared_hold_menu_and_tap_checks": [
+        {
+          "back_restores_identity": true,
+          "hold_opens_menu": true,
+          "hold_release_does_not_write": true,
+          "input": "scripted shared focus/hold/OK",
+          "modal_focus": true,
+          "no_tv_requests": true,
+          "order_changed": true,
+          "unpin_repinned": true
+        },
+        {
+          "back_restores_identity": true,
+          "hold_opens_menu": true,
+          "hold_release_does_not_write": true,
+          "input": "scripted shared focus/hold/OK",
+          "modal_focus": true,
+          "no_tv_requests": true,
+          "order_changed": true,
+          "unpin_repinned": true
+        }
+      ],
+      "exact_first_order_loaded_on_second_boot": true,
+      "preferences_readback_confirmed": true,
+      "native_menu_frame_inspected": true,
+      "injected_back_exits": [
+        true,
+        true
+      ],
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_app_and_saved_favourites_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.11.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "no_household_captures": true,
+        "no_setting_writes": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "runs": 2,
+      "native_refresh_cycles": [
+        5,
+        5
+      ],
+      "shared_hold_menu_and_tap_checks": [
+        {
+          "back_restores_identity": true,
+          "hold_opens_menu": true,
+          "hold_release_does_not_write": true,
+          "input": "scripted shared focus/hold/OK",
+          "modal_focus": true,
+          "no_tv_requests": true,
+          "order_changed": true,
+          "unpin_repinned": true
+        },
+        {
+          "back_restores_identity": true,
+          "hold_opens_menu": true,
+          "hold_release_does_not_write": true,
+          "input": "scripted shared focus/hold/OK",
+          "modal_focus": true,
+          "no_tv_requests": true,
+          "order_changed": true,
+          "unpin_repinned": true
+        }
+      ],
+      "exact_first_order_loaded_on_second_boot": true,
+      "preferences_readback_confirmed": true,
+      "native_menu_frame_inspected": true,
+      "injected_back_exits": [
+        true,
+        true
+      ],
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_app_and_saved_favourites_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.11.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "no_household_captures": true,
+        "no_setting_writes": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    }
+  },
+  "scope": "Menu scripts exercised Move later and unpin/repin, then Back. Earlier movement and admitted Open are component tested; no household application was opened by device tests. Native scripts are not physical remote/pointer proof.",
+  "remaining": [
+    "Controls master/detail composition and broader verified LG-managed routes",
+    "C2 LG Picture Settings handoff proof",
+    "Authoritative source-format/active-source detail and verified HDMI switching",
+    "Long text, partial grid-row polish and full text input",
+    "Physical remote/pointer/wheel verification, sustained performance/resources and reboot persistence"
+  ],
+  "privacy": "Detailed native frames, service replies, household inventories, saved favourites and per-device packages/backups remain private."
+}
