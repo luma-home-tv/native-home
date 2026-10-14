@@ -37,11 +37,12 @@ if status:
     # A prepared checkout is accepted only when it has this exact patch applied.
     prepared = git('rev-parse', 'HEAD').stdout.strip() == REV
     expected = subprocess.check_output(['git', 'apply', '--numstat', str(PATCH)], text=True, cwd=ROOT)
-    observed_paths = {line.split('\t')[-1] for line in git('diff', '--numstat').stdout.splitlines()}
+    observed_paths = {line.split('\t')[-1] for line in git('diff', 'HEAD', '--numstat').stdout.splitlines()}
     expected_paths = {line.split('\t')[-1] for line in expected.splitlines()}
     reverse = git('apply', '--reverse', '--check', str(PATCH), check=False)
     exact_files = all(hashlib.sha256((DEST / path).read_bytes()).hexdigest() == expected for path, expected in LOCK['patched_file_sha256'].items())
-    if not prepared or observed_paths != expected_paths or reverse.returncode or not exact_files:
+    unexpected_files = git('ls-files', '--others', '--exclude-standard').stdout.strip()
+    if not prepared or observed_paths != expected_paths or reverse.returncode or not exact_files or unexpected_files:
         raise SystemExit('Dependency has unrelated changes; preserve and inspect it')
 else:
     if git('cat-file', '-e', REV + '^{commit}', check=False).returncode:
