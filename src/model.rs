@@ -125,6 +125,11 @@ pub(crate) fn display_value(setting: &Setting) -> &str {
 }
 
 pub fn controls_form(settings: &[Setting], current: &Context) -> Form<String, Action, Page> {
+    controls_form_for(settings, current, true)
+}
+
+/// Only the verified Picture route may emit the current Picture-only handoff request.
+pub fn controls_form_for(settings: &[Setting], current: &Context, picture_route: bool) -> Form<String, Action, Page> {
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
         let unavailable = !setting.available || !setting.still_current(current);
@@ -137,8 +142,11 @@ pub fn controls_form(settings: &[Setting], current: &Context) -> Form<String, Ac
             Action::Inspect(setting.id.clone()), Row::new(&setting.label).detail(detail).value(value).server_value())
             .disabled(unavailable || setting.protected);
     }
-    let lg = FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(1000),
-        RowKind::Button, Action::OpenLgSettings, Row::new(Message::OpenLgSettings.text()));
+    let lg = if picture_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(1000),
+        RowKind::Button, Action::OpenLgSettings, Row::new(Message::OpenLgSettings.text())) }
+        else { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-managed".to_owned(), RowKey(1001),
+            RowKind::Button, Action::Inspect("lg-managed".into()),
+            Row::new("More controls").detail("Open LG Settings from LG Home").value("LG-managed")).disabled(true) };
     Form::new().section(section).section(lg)
 }
 

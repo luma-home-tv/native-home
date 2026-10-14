@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         && [
             "drawer-proof.json",
             "management-proof.json",
+            "controls-proof.json",
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
@@ -163,6 +164,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut capture_diagnostics = Vec::new();
     let mut drawer_proof = None;
     let mut management_proof = None;
+    let mut controls_proof = None;
     let mut navigation = Vec::new();
     let mut navigation_page = None;
     let mut scripted_requests = Vec::new();
@@ -309,6 +311,95 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 && no_requests)
             {
                 return Err("Management proof failed".into());
+            }
+        }
+        if args.iter().any(|arg| arg == "--controls-proof")
+            || assets.join("controls-proof.json").exists()
+        {
+            let preferences = shell.preferences().clone();
+            shell.open(Page::Controls);
+            let mut categories = Vec::new();
+            for (index, name) in [
+                "picture",
+                "sound",
+                "network",
+                "accessibility",
+                "general",
+                "panel-care",
+            ]
+            .iter()
+            .enumerate()
+            {
+                if !shell.focus_control_category(index) {
+                    return Err("Missing Controls category".into());
+                }
+                drawer_capture(
+                    &mut shell,
+                    &window,
+                    &output,
+                    &format!("category-{name}"),
+                    &mut now,
+                )?;
+                categories.push(shell.presentation_probe());
+            }
+            shell.focus_control_category(2);
+            shell.direction(Dir::Right);
+            let enters_detail = shell
+                .focused_item()
+                .is_some_and(|id| id.starts_with("control-row-"));
+            for _ in 0..12 {
+                shell.direction(Dir::Down);
+                now += 17;
+                shell.tick(now, 1.0 / 60.0);
+            }
+            drawer_capture(
+                &mut shell,
+                &window,
+                &output,
+                "controls-network-scrolled",
+                &mut now,
+            )?;
+            let scrolling = shell.presentation_probe();
+            shell.back();
+            let back_restores_category =
+                shell.focused_item().as_deref() == Some("category-Network");
+            shell.draw();
+            shell.pointer(621.0, 439.0, true);
+            let pointer_selects_sound = shell.control_category() == Some(Page::Sound);
+            drawer_capture(
+                &mut shell,
+                &window,
+                &output,
+                "controls-pointer-sound",
+                &mut now,
+            )?;
+            shell.open(Page::Picture);
+            if !shell.focus_lg_settings() {
+                return Err("Missing existing Picture route".into());
+            }
+            shell.press(true, PressFrom::Key);
+            shell.direction(Dir::Left);
+            shell.direction(Dir::Down);
+            shell.press(false, PressFrom::Key);
+            for _ in 0..30 {
+                now += 17;
+                shell.tick(now, 1.0 / 60.0);
+            }
+            let route_cancelled = shell.take_requests().is_empty() && !shell.focus_lg_settings();
+            shell.back();
+            let back_home = shell.page() == Page::Home;
+            let preferences_unchanged = shell.preferences() == &preferences;
+            controls_proof = Some(
+                serde_json::json!({"categories":&categories,"right_enters_detail":enters_detail,"network_scroll":&scrolling,"back_restores_category":back_restores_category,"pointer_selects_sound":pointer_selects_sound,"armed_picture_route_cancelled_on_category_change":route_cancelled,"back_returns_home":back_home,"preferences_unchanged":preferences_unchanged,"input":"scripted shared arrows/Back and hit-map pointer"}),
+            );
+            if !(enters_detail
+                && back_restores_category
+                && pointer_selects_sound
+                && route_cancelled
+                && back_home
+                && preferences_unchanged)
+            {
+                return Err("Controls proof failed".into());
             }
         }
         shell.open(Page::Applications);
@@ -688,7 +779,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
         "clock":clock.view(live_origin.elapsed()),
         "settings_returns":settings_returns,
-        "drawer_proof":drawer_proof,"management_proof":management_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
+        "drawer_proof":drawer_proof,"management_proof":management_proof,"controls_proof":controls_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
@@ -826,6 +917,9 @@ fn drawer_capture(
         window.swap();
     }
     shell.draw();
+    if window.graphics_state().error != 0 {
+        return Err("Diagnostic capture found a GL error".into());
+    }
     window.capture(&output.join(format!("{name}.ppm")))?;
     Ok(())
 }

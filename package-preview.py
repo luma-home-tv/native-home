@@ -22,10 +22,10 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.11.0' if main == 'home-preview' else '0.1.0'
+version = '0.12.0' if main == 'home-preview' else '0.1.0'
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
-    'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
+    'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
     'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE'))):
     raise ValueError('Interactive package must not include scripted proof actions')
 shutil.copy2(binary, stage / main)
@@ -48,6 +48,9 @@ if main == 'home-preview':
         (stage / 'interactive-session.json').write_text('{}\n')
         if os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF') == '1':
             (stage / 'session-proof.json').write_text('{}\n')
+    if os.environ.get('NATIVE_HOME_CONTROLS_PROBE') == '1':
+        if not test_identity: raise ValueError('Controls proof requires separate test identity')
+        (stage / 'controls-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1':
         if not test_identity: raise ValueError('Management proof requires separate test identity')
         (stage / 'management-proof.json').write_text('{}\n')
@@ -101,6 +104,7 @@ members = subprocess.check_output([str(ar), 't', str(ipk)], text=True).splitline
 if members != ['debian-binary', 'control.tar.gz', 'data.tar.gz']: raise RuntimeError('Invalid IPK members')
 receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_bytes()).hexdigest(),
            'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(), 'bytes': ipk.stat().st_size,
+           'controls_probe': os.environ.get('NATIVE_HOME_CONTROLS_PROBE') == '1',
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',

@@ -785,3 +785,151 @@ fn menu_open_uses_registered_identity_and_rejects_stale_catalogue() {
     assert!(s.take_requests().is_empty());
     assert!(s.menu_application().is_some());
 }
+
+fn controls_fixture() -> Snapshot {
+    let mut data = fixture();
+    for (domain, keys) in [
+        ("picture", vec![("pictureMode", 1), ("backlight", 2)]),
+        ("sound", vec![("soundOutput", 20), ("volume", 21)]),
+        (
+            "network",
+            vec![("internet", 60), ("wiredState", 61), ("wifiState", 62)],
+        ),
+    ] {
+        let context = data.context.clone();
+        data.settings.insert(
+            domain.into(),
+            keys.into_iter()
+                .map(|(id, key)| Setting {
+                    id: id.into(),
+                    focus_key: key,
+                    label: id.into(),
+                    value: "fixture".into(),
+                    context: context.clone(),
+                    available: true,
+                    protected: false,
+                })
+                .collect(),
+        );
+    }
+    data
+}
+#[test]
+fn controls_master_detail_uses_category_identity_and_back_hierarchy() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Controls);
+    assert_eq!(focus(&s), CATEGORY_BASE);
+    assert_eq!(s.control_category(), Some(Page::Picture));
+    s.direction(Dir::Down);
+    assert_eq!(focus(&s), CATEGORY_BASE + 1);
+    assert_eq!(s.control_category(), Some(Page::Sound));
+    assert_eq!(s.surface.table.key_at(0), Some(RowKey(20)));
+    s.direction(Dir::Right);
+    assert_eq!(focus(&s), TABLE_BASE + 20);
+    s.back();
+    assert_eq!(focus(&s), CATEGORY_BASE + 1);
+    assert_eq!(s.control_category(), Some(Page::Sound));
+    s.direction(Dir::Left);
+    assert_eq!(focus(&s), RAIL_BASE + 3);
+    s.direction(Dir::Right);
+    assert_eq!(focus(&s), CATEGORY_BASE + 1);
+    s.back();
+    assert_eq!(s.page(), Page::Home);
+    assert!(s.take_requests().is_empty());
+}
+#[test]
+fn category_movement_cancels_an_armed_settings_route_and_other_domains_cannot_emit_it() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Picture);
+    s.focus_lg_settings();
+    s.press(true, PressFrom::Key);
+    s.direction(Dir::Left);
+    s.direction(Dir::Down);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 600);
+    assert_eq!(s.control_category(), Some(Page::Sound));
+    assert!(s.take_requests().is_empty());
+    for index in 1..6 {
+        s.focus_control_category(index);
+        assert!(!s.focus_lg_settings());
+        assert!(s.surface.table.index_of_key(RowKey(1000)).is_none());
+        tap(&mut s);
+        assert!(s.take_requests().is_empty());
+    }
+}
+#[test]
+fn unsupported_empty_categories_keep_navigation_and_cannot_invent_controls() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Controls);
+    s.focus_control_category(5);
+    let before = s.preferences().clone();
+    s.direction(Dir::Down);
+    assert_eq!(focus(&s), CATEGORY_BASE + 5);
+    s.direction(Dir::Right);
+    assert_eq!(focus(&s), TABLE_BASE + 1001);
+    tap(&mut s);
+    assert_eq!(focus(&s), TABLE_BASE + 1001);
+    assert_eq!(s.control_category(), Some(Page::PanelCare));
+    assert!(s.take_requests().is_empty());
+    assert_eq!(s.preferences(), &before);
+    s.back();
+    assert_eq!(focus(&s), CATEGORY_BASE + 5);
+    s.back();
+    assert_eq!(s.page(), Page::Home);
+}
+#[test]
+fn controls_root_rebuilds_live_selected_detail_without_reusing_stale_values() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Controls);
+    s.focus_control_category(2);
+    let mut update = crate::live::Update {
+        observed_ms: 100,
+        network: crate::live::Reading::Value(vec![
+            ("internet".into(), "Available".into()),
+            ("wiredState".into(), "Connected".into()),
+            ("wifiState".into(), "Disconnected".into()),
+        ]),
+        ..live_update(100)
+    };
+    s.apply_live(&update, 100);
+    s.direction(Dir::Right);
+    s.direction(Dir::Down);
+    let selected = focus(&s);
+    assert_eq!(s.control_category(), Some(Page::Network));
+    assert_eq!(s.page(), Page::Controls);
+    s.age_live(15_101);
+    assert_eq!(focus(&s), selected);
+    assert_eq!(
+        s.surface.table.table.sections[0].rows[1].value.as_deref(),
+        Some("Unavailable")
+    );
+    assert_eq!(s.surface.table.activate(1), None);
+    update.observed_ms = 15_200;
+    update.network = crate::live::Reading::Failed("Denied".into());
+    s.apply_live(&update, 15_200);
+    assert_eq!(s.control_category(), Some(Page::Network));
+    assert_eq!(focus(&s), selected);
+}
+
+#[test]
+fn picture_breadcrumb_expires_even_if_no_setting_row_can_trigger_a_rebuild() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Controls);
+    let mut update = live_update(100);
+    update.picture = live::Reading::Value(live::PictureReading {
+        context: s.snapshot.context.clone(),
+        settings: vec![],
+    });
+    s.apply_live(&update, 100);
+    assert!(s.control_breadcrumb.to_str().unwrap().contains("HDMI_1"));
+    s.age_live(15101);
+    assert_eq!(
+        s.control_breadcrumb.to_str().unwrap(),
+        "Picture context unavailable"
+    );
+}

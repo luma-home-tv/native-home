@@ -24,7 +24,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
-use crate::model::{controls_form, Action, Application, Catalogue, Context, Page, Setting};
+use crate::model::{controls_form_for, Action, Application, Catalogue, Context, Page, Setting};
 
 const MENU_BASE: u32 = 32_000;
 const MENU_PANEL: Rect = Rect::new(1360.0, 330.0, 464.0, 598.0);
@@ -81,6 +81,26 @@ fn keyboard_key(key: u32) -> Option<usize> {
     (KEYBOARD_BASE..KEYBOARD_BASE + 40)
         .contains(&key)
         .then(|| (key - KEYBOARD_BASE) as usize)
+}
+const CATEGORY_BASE: u32 = 33_000;
+const CATEGORIES: [(Page, &str); 6] = [
+    (Page::Picture, "Picture"),
+    (Page::Sound, "Sound"),
+    (Page::Network, "Network"),
+    (Page::Accessibility, "Accessibility"),
+    (Page::General, "General"),
+    (Page::PanelCare, "Panel care"),
+];
+const CATEGORY_AREA: Rect = Rect::new(480.0, 326.0, 282.0, 500.0);
+const DETAIL_PANEL: Rect = Rect::new(798.0, 326.0, 1026.0, 620.0);
+const DETAIL_ROWS: Rect = Rect::new(818.0, 466.0, 986.0, 456.0);
+fn category_rect(index: usize) -> Rect {
+    Rect::new(480.0, 334.0 + 74.0 * index as f32, 282.0, 62.0)
+}
+fn category_key(key: u32) -> Option<usize> {
+    (CATEGORY_BASE..CATEGORY_BASE + 6)
+        .contains(&key)
+        .then(|| (key - CATEGORY_BASE) as usize)
 }
 const RAIL_BASE: u32 = 10_000;
 const TABLE_BASE: u32 = 20_000;
@@ -406,6 +426,7 @@ struct Surface {
     rail: FormTable<String, Action, Page>,
     table: FormTable<String, Action, Page>,
     table_mode: bool,
+    control_page: Option<Page>,
     editing: bool,
     menu: Option<FormTable<MenuAction, MenuAction, Page>>,
 }
@@ -436,6 +457,19 @@ fn cstr(s: &str) -> CString {
     CString::new(s.replace('\0', "")).unwrap()
 }
 impl Surface {
+    fn table_area(&self) -> Rect {
+        if self.control_page.is_some() {
+            DETAIL_ROWS
+        } else {
+            CONTENT
+        }
+    }
+    fn selected_category(&self) -> usize {
+        CATEGORIES
+            .iter()
+            .position(|(page, _)| Some(*page) == self.control_page)
+            .unwrap_or(0)
+    }
     fn keys(&self) -> Vec<u32> {
         if let Some(menu) = &self.menu {
             return (0..menu.table.n_rows().max(0) as usize)
@@ -525,6 +559,18 @@ impl Focusable<HomeHost> for Surface {
             ));
             return;
         }
+        if self.control_page.is_some() {
+            out.push(GroupSpec {
+                id: GroupId(6),
+                kind: GroupKind::Column,
+                seat: Seat::Remembered,
+                reachable: AxisMask::HORIZONTAL,
+                edge: [EdgeRule::Stop; 4],
+                extent: CATEGORY_AREA,
+                len: 6,
+                elem: ElemKind::Control,
+            });
+        }
         out.push(GroupSpec {
             id: GroupId(1),
             kind: if self.table_mode {
@@ -538,7 +584,7 @@ impl Focusable<HomeHost> for Surface {
             seat: Seat::Remembered,
             reachable: AxisMask::BOTH,
             edge: [EdgeRule::Geometric; 4],
-            extent: CONTENT,
+            extent: self.table_area(),
             len: self.keys().len(),
             elem: if self.table_mode {
                 ElemKind::Control
@@ -550,6 +596,9 @@ impl Focusable<HomeHost> for Surface {
     fn group_of(&self, key: &u32, _cx: &Cx<'_, HomeHost>) -> Option<GroupId> {
         if self.menu.is_some() {
             return self.key_index(*key).map(|_| GroupId(5));
+        }
+        if self.control_page.is_some() && category_key(*key).is_some() {
+            return Some(GroupId(6));
         }
         if self.page == Page::Applications && self.editing {
             return keyboard_key(*key).map(|_| GroupId(4));
@@ -579,6 +628,19 @@ impl Focusable<HomeHost> for Surface {
                 Step::Move(FocusKey {
                     entry: key.entry,
                     elem: *k,
+                })
+            });
+        }
+        if let Some(i) = category_key(key.elem).filter(|_| self.control_page.is_some()) {
+            let next = match dir {
+                Dir::Up => i.checked_sub(1),
+                Dir::Down => Some(i + 1).filter(|n| *n < 6),
+                _ => None,
+            };
+            return next.map_or(Step::Edge, |n| {
+                Step::Move(FocusKey {
+                    entry: key.entry,
+                    elem: CATEGORY_BASE + n as u32,
                 })
             });
         }
@@ -658,6 +720,15 @@ impl Focusable<HomeHost> for Surface {
                 index: Some(i as u32),
             });
         }
+        if let Some(i) = category_key(*key).filter(|_| self.control_page.is_some()) {
+            let rect = category_rect(i);
+            return Some(Placed {
+                rect,
+                rest_rect: rect,
+                clip: CATEGORY_AREA,
+                index: Some(i as u32),
+            });
+        }
         if self.page == Page::Applications {
             let special = if self.editing {
                 keyboard_key(*key).map(|i| (keyboard_rect(i), i, KEYBOARD))
@@ -686,11 +757,11 @@ impl Focusable<HomeHost> for Surface {
             let i = self
                 .table
                 .index_of_key(RowKey(key.checked_sub(TABLE_BASE)?))?;
-            let rect = self.table.table.row_frame(CONTENT, i as i32)?;
+            let rect = self.table.table.row_frame(self.table_area(), i as i32)?;
             Some(Placed {
                 rect,
                 rest_rect: rect,
-                clip: CONTENT,
+                clip: self.table_area(),
                 index: Some(i as u32),
             })
         } else if self.page == Page::Home {
@@ -720,7 +791,9 @@ impl Focusable<HomeHost> for Surface {
                     .keys()
                     .first()
                     .copied()
-                    .unwrap_or(if self.page == Page::Applications {
+                    .unwrap_or(if self.control_page.is_some() {
+                        CATEGORY_BASE + self.selected_category() as u32
+                    } else if self.page == Page::Applications {
                         TOOLBAR_BASE
                     } else {
                         RAIL_BASE
@@ -729,7 +802,9 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn seat(&self, group: GroupId, from: Placed, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
-        let key = if group == GroupId(5) {
+        let key = if group == GroupId(6) {
+            CATEGORY_BASE + self.selected_category() as u32
+        } else if group == GroupId(5) {
             MENU_BASE + MenuAction::ToggleFavourite.key()
         } else if group == GroupId(4) {
             KEYBOARD_BASE
@@ -796,6 +871,12 @@ pub struct Shell {
     live_updates: u32,
     app_launches_enabled: bool,
     drawer: Drawer,
+    control_category: Page,
+    category_labels: [CString; 6],
+    control_caption_page: Option<Page>,
+    control_caption_context: Option<Context>,
+    control_context_current: bool,
+    control_breadcrumb: CString,
     menu: Option<AppMenu>,
     clock: crate::clock::View,
     clock_time: CString,
@@ -850,6 +931,12 @@ impl Shell {
             live_updates: 0,
             app_launches_enabled: false,
             drawer: Drawer::default(),
+            control_category: Page::Picture,
+            category_labels: CATEGORIES.map(|(_, label)| cstr(label)),
+            control_caption_page: None,
+            control_caption_context: None,
+            control_context_current: false,
+            control_breadcrumb: cstr(""),
             menu: None,
             clock: crate::clock::View::default(),
             clock_time: cstr("--:--"),
@@ -886,6 +973,7 @@ impl Shell {
             rail: rt,
             table: FormTable::new(2000),
             table_mode: false,
+            control_page: None,
             editing: false,
             menu: None,
         }
@@ -924,6 +1012,12 @@ impl Shell {
         }
         self.input.cancel_press();
         self.surface = Self::blank(page);
+        if root_tab(page) == Page::Controls {
+            if page != Page::Controls {
+                self.control_category = page;
+            }
+            self.surface.control_page = Some(self.control_category);
+        }
         self.surface.editing = page == Page::Applications && self.drawer.editing;
         if page == Page::Applications {
             self.surface.grid = Grid::new(
@@ -990,33 +1084,10 @@ impl Shell {
                 self.surface.cards = self.input_cards();
             }
 
-            Page::Controls => {
-                self.surface.table_mode = true;
-                let mut section = FormSection::new("Controls");
-                for (i, (p, title)) in [
-                    (Page::Picture, "Picture"),
-                    (Page::Sound, "Sound"),
-                    (Page::Network, "Network"),
-                    (Page::Accessibility, "Accessibility"),
-                    (Page::General, "General"),
-                    (Page::PanelCare, "Panel care"),
-                ]
-                .into_iter()
-                .enumerate()
-                {
-                    section = section.item_keyed(
-                        title.to_owned(),
-                        RowKey(i as u32 + 1),
-                        RowKind::Nav(p),
-                        Action::Inspect(title.to_owned()),
-                        Row::new(title),
-                    );
-                }
-                self.surface.table.set(Form::new().section(section), None);
-            }
             _ => {
                 self.surface.table_mode = true;
-                let name = page
+                let detail = self.surface.control_page.unwrap_or(page);
+                let name = detail
                     .title()
                     .unwrap_or("General")
                     .to_lowercase()
@@ -1027,9 +1098,10 @@ impl Shell {
                     .get(&name)
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
-                self.surface
-                    .table
-                    .set(controls_form(settings, &self.snapshot.context), None);
+                self.surface.table.set(
+                    controls_form_for(settings, &self.snapshot.context, detail == Page::Picture),
+                    None,
+                );
             }
         }
         if page == Page::Home || (page == Page::Applications && self.drawer.favourites_only) {
@@ -1089,6 +1161,7 @@ impl Shell {
             table.set(Form::new().section(section), None);
             self.surface.menu = Some(table);
         }
+        self.refresh_control_breadcrumb();
         let owner = InputOwner::Entry(entry(page));
         let old = self.input.engine.current(owner);
         let cx = Cx::<HomeHost> {
@@ -1102,23 +1175,29 @@ impl Shell {
         let outcome = self.input.engine.enter(
             owner,
             &self.surface,
-            FocusTarget::ContainerGroup(GroupId(if self.surface.menu.is_some() {
-                5
-            } else if self.surface.keys().is_empty() {
-                if page == Page::Applications {
-                    3
+            FocusTarget::ContainerGroup(GroupId(
+                if self.surface.control_page.is_some()
+                    && (page == Page::Controls || self.surface.keys().is_empty())
+                {
+                    6
+                } else if self.surface.menu.is_some() {
+                    5
+                } else if self.surface.keys().is_empty() {
+                    if page == Page::Applications {
+                        3
+                    } else {
+                        0
+                    }
+                } else if self.surface.editing {
+                    4
                 } else {
-                    0
-                }
-            } else if self.surface.editing {
-                4
-            } else {
-                if page == Page::Home && self.surface.cards.items.is_empty() {
-                    2
-                } else {
-                    1
-                }
-            })),
+                    if page == Page::Home && self.surface.cards.items.is_empty() {
+                        2
+                    } else {
+                        1
+                    }
+                },
+            )),
             old,
             &cx,
         );
@@ -1170,6 +1249,7 @@ impl Shell {
         self.catalogue
             .refresh(&self.snapshot.applications, &self.snapshot.launch_ids);
         self.refresh_shown_data(&before);
+        self.refresh_control_breadcrumb();
     }
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
@@ -1194,6 +1274,37 @@ impl Shell {
                 self.refresh_shown_data(&before);
             }
         }
+        self.refresh_control_breadcrumb();
+    }
+    fn refresh_control_breadcrumb(&mut self) {
+        let page = self.surface.control_page;
+        let current = self
+            .live_state
+            .as_ref()
+            .is_some_and(|f| Freshness::current(f.picture, self.live_now));
+        if self.control_caption_page == page
+            && self.control_context_current == current
+            && self.control_caption_context.as_ref() == Some(&self.snapshot.context)
+        {
+            return;
+        }
+        self.control_breadcrumb = match page {
+            Some(Page::Picture) if current => cstr(&format!(
+                "{} / {} / {}",
+                self.snapshot.context.input,
+                self.snapshot.context.dynamic_range.to_uppercase(),
+                self.snapshot.context.picture_mode
+            )),
+            Some(Page::Picture) => cstr("Picture context unavailable"),
+            Some(Page::Sound) => cstr("Sound readings • view only"),
+            Some(Page::Network) => cstr("Connection status • view only"),
+            Some(Page::PanelCare) => cstr("OLED protections stay managed by LG"),
+            Some(_) => cstr("Managed by LG • use the TV Settings app"),
+            None => cstr(""),
+        };
+        self.control_caption_page = page;
+        self.control_context_current = current;
+        self.control_caption_context = Some(self.snapshot.context.clone());
     }
     fn refresh_shown_data(&mut self, before: &Snapshot) {
         let page = self.surface.page;
@@ -1208,7 +1319,9 @@ impl Shell {
                     || before.launch_ids != self.snapshot.launch_ids
             }
             Page::Inputs => before.inputs != self.snapshot.inputs,
-            Page::Controls => false,
+            Page::Controls => {
+                before.context != self.snapshot.context || before.settings != self.snapshot.settings
+            }
             _ => {
                 before.context != self.snapshot.context || before.settings != self.snapshot.settings
             }
@@ -1276,23 +1389,14 @@ impl Shell {
         }
     }
     fn reading_label(&self) -> String {
+        let shown = self.surface.control_page.unwrap_or(self.surface.page);
+        if matches!(shown, Page::Accessibility | Page::General | Page::PanelCare) {
+            return "Managed by LG".into();
+        }
         let Some(fresh) = &self.live_state else {
             return "Updating TV state…".into();
         };
-        if matches!(
-            self.surface.page,
-            Page::Accessibility | Page::General | Page::PanelCare
-        ) {
-            return "Managed by LG".into();
-        }
-        if self.surface.page == Page::Controls {
-            return if Freshness::current(fresh.picture, self.live_now) {
-                "Picture readings live • some readings unavailable".into()
-            } else {
-                "Readings unavailable • LG Settings available".into()
-            };
-        }
-        let stamp = match self.surface.page {
+        let stamp = match shown {
             Page::Home | Page::Applications => fresh.catalogue,
             Page::Inputs => fresh.inputs,
             Page::Sound => fresh.sound,
@@ -1308,16 +1412,7 @@ impl Shell {
         } else {
             "Live TV state"
         };
-        if self.surface.page == Page::Picture {
-            format!(
-                "{} / {} / {} • {label}",
-                self.snapshot.context.input,
-                self.snapshot.context.dynamic_range.to_uppercase(),
-                self.snapshot.context.picture_mode
-            )
-        } else {
-            label.into()
-        }
+        label.into()
     }
     pub fn load_icons(&mut self, assets: &std::path::Path) {
         for (i, svg) in [
@@ -1377,6 +1472,16 @@ impl Shell {
     }
     fn moved(&mut self, outcome: plx_ui::focus::Outcome<u32>) {
         if let plx_ui::focus::Outcome::Moved { from, to, by } = outcome {
+            if let Some(index) =
+                category_key(to.elem).filter(|_| self.surface.control_page.is_some())
+            {
+                if self.control_category != CATEGORIES[index].0
+                    || (self.surface.page != Page::Controls && by != By::Restore)
+                {
+                    self.select_control_category(index);
+                    return;
+                }
+            }
             self.input.abandon_if_off(entry(self.surface.page), to);
             let cx = self.context(&LegacyMeasure);
             let mut buf = Vec::new();
@@ -1428,7 +1533,30 @@ impl Shell {
             focus: self.input.engine.read(owner),
             owner,
         };
-        let links = if self.surface.page == Page::Home {
+        let links = if self.surface.control_page.is_some() {
+            vec![
+                Link {
+                    from: GroupId(0),
+                    dir: Dir::Right,
+                    to: GroupId(6),
+                },
+                Link {
+                    from: GroupId(6),
+                    dir: Dir::Left,
+                    to: GroupId(0),
+                },
+                Link {
+                    from: GroupId(6),
+                    dir: Dir::Right,
+                    to: GroupId(1),
+                },
+                Link {
+                    from: GroupId(1),
+                    dir: Dir::Left,
+                    to: GroupId(6),
+                },
+            ]
+        } else if self.surface.page == Page::Home {
             vec![
                 Link {
                     from: GroupId(1),
@@ -1496,6 +1624,21 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        if self.surface.control_page.is_some() {
+            let current = self
+                .input
+                .engine
+                .current(InputOwner::Entry(entry(self.surface.page)))
+                .map(|key| key.elem);
+            if current.is_some_and(|key| {
+                category_key(key).is_some() || (RAIL_BASE..RAIL_BASE + 4).contains(&key)
+            }) {
+                self.rebuild(Page::Home);
+            } else {
+                self.select_control_category(self.surface.selected_category());
+            }
+            return;
+        }
         if self.menu.is_some() {
             self.close_app_menu();
             return;
@@ -1592,6 +1735,14 @@ impl Shell {
             self.rebuild(TABS[(key.elem - RAIL_BASE) as usize].0);
             return;
         }
+        if let Some(index) = category_key(key.elem).filter(|_| self.surface.control_page.is_some())
+        {
+            self.rebuild(CATEGORIES[index].0);
+            if let Some(key) = self.surface.keys().first().copied() {
+                self.focus_special(key, GroupId(1));
+            }
+            return;
+        }
         if self.surface.table_mode {
             if let Some(i) = key
                 .elem
@@ -1658,6 +1809,34 @@ impl Shell {
                 Action::RequestApplication(id)
             });
         }
+    }
+    fn select_control_category(&mut self, index: usize) {
+        let Some((page, _)) = CATEGORIES.get(index) else {
+            return;
+        };
+        self.control_category = *page;
+        // Seed the shared engine's root entry before rebuilding, so a remembered old category
+        // cannot overwrite this deliberate selection during reconciliation.
+        self.input.engine.set(
+            InputOwner::Entry(entry(Page::Controls)),
+            FocusKey {
+                entry: entry(Page::Controls),
+                elem: CATEGORY_BASE + index as u32,
+            },
+            Some(GroupId(6)),
+            By::Restore,
+        );
+        self.rebuild(Page::Controls);
+    }
+    pub fn focus_control_category(&mut self, index: usize) -> bool {
+        if self.surface.control_page.is_none() || index >= 6 {
+            return false;
+        }
+        self.select_control_category(index);
+        true
+    }
+    pub fn control_category(&self) -> Option<Page> {
+        self.surface.control_page
     }
     fn close_app_menu(&mut self) {
         let Some(menu) = self.menu.take() else {
@@ -1790,7 +1969,8 @@ impl Shell {
                     .position(|(p, _)| *p == root_tab(self.surface.page))
                     .unwrap_or(0) as i32,
             );
-        self.surface.table.table.list_focused = current.is_some_and(|k| k >= TABLE_BASE);
+        self.surface.table.table.list_focused =
+            current.is_some_and(|k| (TABLE_BASE..TOOLBAR_BASE).contains(&k));
         if let Some(i) = current
             .and_then(|k| k.checked_sub(TABLE_BASE))
             .and_then(|k| self.surface.table.index_of_key(RowKey(k)))
@@ -1808,7 +1988,10 @@ impl Shell {
             menu.table.update(dt, MENU_ROWS.h);
         }
         self.surface.rail.table.update(dt, RAIL.h);
-        self.surface.table.table.update(dt, CONTENT.h);
+        self.surface
+            .table
+            .table
+            .update(dt, self.surface.table_area().h);
     }
     /// Presentation metadata only; no app inventory or TV values are recorded here.
     pub fn presentation_probe(&self) -> serde_json::Value {
@@ -1819,6 +2002,9 @@ impl Shell {
             "rail_focused":self.surface.rail.table.list_focused,
             "rail_selection":self.surface.rail.table.sel,
             "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none(),
+            "control_category":self.surface.control_page.map(|page| format!("{page:?}")),
+            "category_rows":if self.surface.control_page.is_some(){6}else{0},
+            "detail_scroll":self.surface.table.table.scroll_pos(),
             "clock":self.clock
             ,"branding_loaded":self.brand_texture!=0,"navigation_icons_loaded":self.navigation_textures.iter().all(|id|*id!=0)
         })
@@ -1858,7 +2044,7 @@ impl Shell {
         .draw(p, Rect::new(1334.0, 154.0, 490.0, 44.0));
         let subtitle = cstr(&format!(
             "{} • {}",
-            self.surface.page.title().unwrap_or("Home"),
+            root_tab(self.surface.page).title().unwrap_or("Home"),
             self.reading_label()
         ));
         Label::new(
@@ -1968,10 +2154,84 @@ impl Shell {
         let cx = self.context(&LegacyMeasure);
         let mut f = DrawFrame::<HomeHost>::new(&cx, p);
         if self.surface.table_mode {
+            if let Some(category) = self.surface.control_page {
+                Label::new(
+                    c"Control centre".as_ptr(),
+                    theme::size::TITLE,
+                    theme::TEXT_PRIMARY,
+                )
+                .bold()
+                .draw(p, Rect::new(480.0, 244.0, 1344.0, 60.0));
+                for i in 0..CATEGORIES.len() {
+                    let rect = category_rect(i);
+                    let active = focused == Some(CATEGORY_BASE + i as u32);
+                    let selected = i == self.surface.selected_category();
+                    if active || selected {
+                        p.rrect(
+                            rect,
+                            18.0,
+                            18.0,
+                            if active {
+                                theme::TEXT_PRIMARY
+                            } else {
+                                theme::SURFACE_PANEL
+                            },
+                        );
+                    }
+                    let label = Label::new(
+                        self.category_labels[i].as_ptr(),
+                        theme::size::LABEL,
+                        if active {
+                            theme::INK_ON_ACCENT
+                        } else if selected {
+                            theme::TEXT_PRIMARY
+                        } else {
+                            theme::TEXT_SECONDARY
+                        },
+                    );
+                    let label = if active || selected {
+                        label.bold()
+                    } else {
+                        label
+                    };
+                    label.draw(p, Rect::new(rect.x + 24.0, rect.y, rect.w - 48.0, rect.h));
+                    f.stop(
+                        p,
+                        Stop {
+                            key: FocusKey {
+                                entry: entry(self.surface.page),
+                                elem: CATEGORY_BASE + i as u32,
+                            },
+                            rect,
+                            rest_rect: rect,
+                            clip: CATEGORY_AREA,
+                            hover: Hover::Focus,
+                            activate: Activate::Press,
+                        },
+                    );
+                }
+                p.rrect(DETAIL_PANEL, 28.0, 28.0, theme::SURFACE_PANEL);
+                Label::new(
+                    cstr(category.title().unwrap_or("Settings")).as_ptr(),
+                    theme::size::HEADLINE,
+                    theme::TEXT_PRIMARY,
+                )
+                .bold()
+                .draw(p, Rect::new(838.0, 352.0, 946.0, 58.0));
+                let at = Rect::new(838.0, 410.0, 946.0, 44.0);
+                Label::new(
+                    self.control_breadcrumb.as_ptr(),
+                    theme::size::CAPTION,
+                    theme::TEXT_SECONDARY,
+                )
+                .draw(p.clipped(at), at);
+            }
+            let area = self.surface.table_area();
+            let _clip = f.clip(p, area);
             self.surface
                 .table
                 .table
-                .draw_page(p, CONTENT, &LegacyMeasure);
+                .draw_page(p.clipped(area), area, &LegacyMeasure);
         } else if self.surface.page == Page::Home {
             Label::new(
                 c"Your favourites".as_ptr(),
@@ -2057,7 +2317,12 @@ impl Shell {
         if self.surface.table_mode {
             for i in 0..self.surface.table.table.n_rows() {
                 if let Some(key) = self.surface.table.key_at(i as usize) {
-                    if let Some(r) = self.surface.table.table.row_frame(CONTENT, i) {
+                    if let Some(r) = self
+                        .surface
+                        .table
+                        .table
+                        .row_frame(self.surface.table_area(), i)
+                    {
                         f.stop(
                             p,
                             Stop {
@@ -2067,7 +2332,7 @@ impl Shell {
                                 },
                                 rect: r,
                                 rest_rect: r,
-                                clip: CONTENT,
+                                clip: self.surface.table_area(),
                                 hover: Hover::Focus,
                                 activate: Activate::Press,
                             },
@@ -2304,7 +2569,9 @@ impl Shell {
         true
     }
     pub fn focus_lg_settings(&mut self) -> bool {
-        if !self.surface.table_mode || self.surface.table.index_of_key(RowKey(1000)).is_none() {
+        if self.surface.control_page != Some(Page::Picture)
+            || self.surface.table.index_of_key(RowKey(1000)).is_none()
+        {
             return false;
         }
         let owner = InputOwner::Entry(entry(self.surface.page));
@@ -2324,6 +2591,10 @@ impl Shell {
             .input
             .engine
             .current(InputOwner::Entry(entry(self.surface.page)))?;
+        if let Some(index) = category_key(key.elem).filter(|_| self.surface.control_page.is_some())
+        {
+            return Some(format!("category-{}", CATEGORIES[index].1));
+        }
         if self.menu.is_some() {
             return key
                 .elem
