@@ -21,5 +21,8 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
+The user has now placed the C2 on hold for device work. Do not read, test, deploy
+or update that TV until the user reopens it. Continue device work on the G2 only.
+
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.

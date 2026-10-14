@@ -78,7 +78,10 @@ design direction; performance, idle behaviour, physical input and complete
 controls still require device verification. The [drawer milestone](docs/drawer-milestone.json)
 adds native All/Favourites filtering and on-screen search, tested through
 scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits;
-app ordering, full text entry and the clock/status header remain ongoing.
+app ordering and full text entry remain ongoing. The
+[clock milestone](docs/clock-milestone.json) adds a cached native TV-time header,
+validated and installed as version 0.8.0 on the G2 with saved favourites preserved.
+The C2 remains on 0.7.0 and is on hold for further device work at the user's request.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier
 combined prototype. The [standalone device milestone](docs/standalone-device-milestone.json) now

@@ -1,0 +1,96 @@
+{
+  "code_revision": "eb1069f",
+  "package_version": "0.8.0",
+  "binary_sha256": "d1be6e207244f9dc7c58e8da687d20f8440ec0ef4f6f02b5d7cfa79b67e58466",
+  "client_tests": {
+    "passed": 48,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, warnings denied, all targets / hostsim",
+  "host_and_arm_builds": "passed; host header capture on a9af5f9; ARM eb1069f release passed with existing neon target-feature warning",
+  "clock": {
+    "uri": "luna://com.webos.service.systemservice/time/getSystemTime",
+    "payload": {},
+    "read_only": true,
+    "ordinary_app": true,
+    "refresh_seconds": 30,
+    "expiry_seconds": 65,
+    "timezone": "Uses TV service localtime and TZ, never assumes host timezone",
+    "cached_text": true,
+    "unavailable_state": "--:-- / TV time unavailable"
+  },
+  "g2": {
+    "model": "OLED55G26LA",
+    "webos": "9.2.2-61",
+    "firmware": "23.25.55",
+    "native_clock_current": true,
+    "independent_tv_time_agrees": true,
+    "native_header_crop_inspected": true,
+    "renderer": "Mali-G52",
+    "idle_rgb_all_zero": true,
+    "idle_frame_sha256": "a8aaf2a0a91b2ff218775a0d2b6a229c9c4488dce4f835689a24559f9f414490",
+    "idle_wake_passed": true,
+    "passive_test_app_launched_no_apps": true,
+    "test_cleanup": {
+      "paths_and_mounts_absent": true,
+      "preferences_absent": true,
+      "catalogue_absent": true,
+      "launchpoint_absent": true,
+      "core_hashes_unchanged": true,
+      "picture_values_unchanged": true,
+      "audio_values_unchanged": true,
+      "home_verified": true,
+      "previous_foreground_restored": true,
+      "retained_app_and_favourites_unchanged": true
+    },
+    "retained_update": {
+      "version": "0.8.0",
+      "ordinary_app_identity": true,
+      "favourites_reloaded": true,
+      "no_household_captures": true,
+      "checked_state": {
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      }
+    }
+  },
+  "c2": {
+    "model": "OLED65C26LD",
+    "component_code_revision": "a9af5f9",
+    "clock_current_in_ordinary_test_app": true,
+    "observed_timezone_label": "BST",
+    "test_duration_seconds": 9.55,
+    "test_interrupted_by_external_direction_and_ok_input": true,
+    "idle_validation_completed": false,
+    "normal_preview_updated": false,
+    "retained_version": "0.7.0",
+    "cleanup_without_foreground_change": {
+      "test_paths_mounts_absent": true,
+      "test_state_absent": true,
+      "test_catalogue_absent": true,
+      "test_launcher_absent": true,
+      "foreground_unchanged": true,
+      "core_hashes_unchanged": true
+    },
+    "user_instruction": "Leave the C2 alone for now; no further device work until reopened by the user"
+  },
+  "diagnostic_isolation": {
+    "app_id": "com.ash.nativehome.proof",
+    "separate_preferences": true,
+    "passive_tests_block_app_launches": true,
+    "explicit_owned_target_proof_only": true,
+    "production_identity": "com.ash.nativehome.preview"
+  },
+  "remaining": [
+    "App ordering and full text input",
+    "Physical remote/pointer/wheel validation; external C2 keys are not controlled physical-input proof",
+    "Broader controls/audio and independent Settings/HDMI verification",
+    "Frame pacing, latency, sustained idle resources, stress memory and reboot persistence"
+  ],
+  "privacy": "Detailed receipts, backup favourites, per-TV packages/inventories/icons, addresses and captures stay outside Git."
+}
