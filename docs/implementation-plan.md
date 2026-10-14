@@ -40,10 +40,11 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering proved; this client has no validated FPS, latency, memory or idle result yet |
 
 The latest [OLED/branding milestone](oled-branding-milestone.json) records
-true-black framebuffer evidence and clean removal on `2a53bfd`. Native captures
-also expose a rendering issue: the rail is absent on some child pages and some
-glyph edges clip. Its cause is not established; resolve and verify the device
-paint path before calling navigation/presentation finished.
+true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects
+the earlier missing-rail interpretation: original cropped framebuffer bytes show
+the complete rail on all six pages, identical to the prior build. No renderer
+change is supported by that claim. Physical input and broader UI work remain.
+
 
 ## Next implementation stages
 

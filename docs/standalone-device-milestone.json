@@ -1,0 +1,326 @@
+{
+  "code_revision": "88a037e",
+  "client_tests": {
+    "passed": 35,
+    "failed": 0
+  },
+  "clippy": "passed, warnings denied",
+  "host_build": "passed",
+  "arm_release_build": "passed",
+  "framework_boundary": "Five explicitly attributed external PlxNative framework crates; no Plex/media/session/application crates in resolved dependency graph",
+  "native": {
+    "platform": "OLED55G26LA / webOS24 9.2.2-61 / firmware 23.25.55",
+    "renderer": "Mali-G52",
+    "uid": 5724,
+    "drawable": [
+      1920,
+      1080
+    ],
+    "live_read_cycles": 4,
+    "preferences_readback": true,
+    "exit": "injected Back through SDL; back_from_home"
+  },
+  "capture_diagnostics": [
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          120,
+          1298,
+          282
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          120,
+          1298,
+          282
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Home",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 0
+      },
+      "page": "home"
+    },
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          152,
+          1298,
+          690
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          152,
+          1298,
+          690
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Applications",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 1
+      },
+      "page": "applications"
+    },
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          152,
+          1298,
+          690
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          152,
+          1298,
+          690
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Inputs",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 2
+      },
+      "page": "inputs"
+    },
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Controls",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 3
+      },
+      "page": "controls"
+    },
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Picture",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 3
+      },
+      "page": "picture"
+    },
+    {
+      "after_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "before_draw": {
+        "error": 0,
+        "framebuffer": 0,
+        "scissor_box": [
+          526,
+          0,
+          1298,
+          842
+        ],
+        "scissor_enabled": false,
+        "viewport": [
+          0,
+          0,
+          1920,
+          1080
+        ]
+      },
+      "layout": {
+        "logical_clip_clear": true,
+        "page": "Sound",
+        "rail_focused": false,
+        "rail_rows": 4,
+        "rail_scroll": 0.0,
+        "rail_selection": 3
+      },
+      "page": "sound"
+    }
+  ],
+  "rail_pixel_evidence": {
+    "region": [
+      96,
+      260,
+      334,
+      440
+    ],
+    "nonblack_threshold": 70,
+    "nonblack_pixels_per_page": 5606,
+    "all_six_pages_same_sha256": "2114f2a494ffbfe1803d7248617cb9bd8a949e0947bf2845072e32509ed5a23e",
+    "prior_2a53bfd_capture_same_rail_sha256": true
+  },
+  "correction": "Earlier missing-rail/clipped-glyph statements were based on misreading image previews, not a demonstrated framebuffer defect. Original ROI bytes include the full rail in every captured page. No renderer fix is supported by that claim.",
+  "cleanup": {
+    "paths_and_mounts_absent": true,
+    "persistent_state_absent": true,
+    "catalogue_absent": true,
+    "launchpoint_absent": true,
+    "core_hashes_unchanged": true,
+    "picture_values_unchanged": true,
+    "audio_values_unchanged": true,
+    "home_foreground": true,
+    "original_foreground_verified": true,
+    "reboot_required": false
+  },
+  "limits": [
+    "scripted/injected navigation, not physical remote/pointer/wheel proof",
+    "no complete control/Settings/source proof",
+    "no FPS/latency/memory/idle or reboot-persistence proof"
+  ],
+  "privacy": "Raw device captures, inventory and detailed receipts remain outside tracked source."
+}

@@ -58,8 +58,9 @@ design direction; performance, idle behaviour, physical input and complete
 controls still require device verification.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier
-combined prototype. Moving files and build wiring is not new device proof: the
-standalone tree must pass its own checks and native verification.
+combined prototype. The [standalone device milestone](docs/standalone-device-milestone.json) now
+records native G2 capture, live reads, injected Back and clean removal on
+`88a037e`. Physical input, complete controls and performance remain unverified.
 
 The [standalone boundary record](docs/standalone-boundary.json) records 35 passed
 client tests, Clippy, host/ARM builds, the resolved dependency graph and the
