@@ -64,6 +64,11 @@ minutes without app input; the first input wakes it without activating a hidden
 card. This is app-local idle behaviour, not a replacement for LG's OLED protections.
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
+The [interactive preview guide](docs/interactive-preview.md) describes navigation,
+package modes and removal. Version 0.7.0 has been installed and relaunched on both
+the OLED65C26LD C2 and OLED55G26LA G2; their native idle/wake, owned-app launch,
+removal and retained-install checks are recorded in the
+[deployment milestone](docs/deployment-milestone.json).
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. Sources/Settings execution remain

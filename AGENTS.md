@@ -16,5 +16,10 @@ firmware, system libraries, jail policy, media services, networking and OLED
 protections must remain untouched. Protected/unverified controls remain read-only
 or LG-managed. Never exercise personal viewing-account writes in tests.
 
+The interactive preview is now intentionally retained on both authorised TVs.
+Preserve its saved favourites and installed state. Do not apply the former
+diagnostic driver's unconditional uninstall/cleanup to a retained installation;
+use a separate test identity or a backed-up, verified update procedure.
+
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.

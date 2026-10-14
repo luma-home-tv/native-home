@@ -1,0 +1,106 @@
+{
+  "code_revision": "60fc0644c97f12af00e2e20b87a876acf2b22b71",
+  "package_version": "0.7.0",
+  "binary_sha256": "4345cb34273f97dec1322cea4fd23c50d6ff658d214fe120130737727c43ec61",
+  "host_tests": {
+    "passed": 43,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, warnings denied, all targets / hostsim",
+  "arm_release_build": "passed; existing unstable neon target-feature warning",
+  "devices": {
+    "OLED65C26LD": {
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "drawable": [
+        1920,
+        1080
+      ],
+      "idle_after_seconds": 120,
+      "idle_rgb_all_zero": true,
+      "wake_only_then_back_exit": true,
+      "session_duration_seconds": 123.87,
+      "live_read_cycles": 61,
+      "owned_normal_app_launch_verified": true,
+      "owned_target_independent_foreground_and_frame_verified": true,
+      "component_test_removal": {
+        "paths_and_mounts_absent": true,
+        "preferences_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_install": true,
+      "final_launches_verified": 2,
+      "survived_former_30_second_timeout": true,
+      "favourites_reloaded": true,
+      "normal_package_has_no_captures": true,
+      "checked_state": {
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "idle_frame_sha256": "a8aaf2a0a91b2ff218775a0d2b6a229c9c4488dce4f835689a24559f9f414490"
+    },
+    "OLED55G26LA": {
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "drawable": [
+        1920,
+        1080
+      ],
+      "idle_after_seconds": 120,
+      "idle_rgb_all_zero": true,
+      "wake_only_then_back_exit": true,
+      "session_duration_seconds": 124.42,
+      "live_read_cycles": 61,
+      "owned_normal_app_launch_verified": true,
+      "owned_target_independent_foreground_and_frame_verified": true,
+      "component_test_removal": {
+        "paths_and_mounts_absent": true,
+        "preferences_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_install": true,
+      "final_launches_verified": 2,
+      "survived_former_30_second_timeout": true,
+      "favourites_reloaded": true,
+      "normal_package_has_no_captures": true,
+      "checked_state": {
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "idle_frame_sha256": "a8aaf2a0a91b2ff218775a0d2b6a229c9c4488dce4f835689a24559f9f414490"
+    }
+  },
+  "scope": "Isolated native application deployment, not LG Home replacement or complete settings/performance validation",
+  "privacy": "Per-device packages, installed inventories/icons, addresses, detailed receipts and household captures remain outside Git.",
+  "remaining": [
+    "Physical remote/pointer/wheel proof (current native keys are injected via the LG network-input test service)",
+    "Clock/status header, app ordering and full text input",
+    "Independent LG Settings overlay and HDMI switching verification; execution stays gated",
+    "Broader settings/audio capability and per-operation validation; no setting-write action or root broker yet",
+    "Frame pacing, latency, stress memory and sustained idle resource measurements",
+    "Reboot persistence and broader lifecycle/return behaviour"
+  ]
+}
