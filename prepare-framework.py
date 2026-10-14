@@ -14,6 +14,8 @@ LOCK = json.loads((ROOT / 'dependency-lock.json').read_text())
 DEST = ROOT / '.dependencies/plx-native'
 PATCH = ROOT / LOCK['integration_patch']
 REV = LOCK['upstream']['revision']
+if hashlib.sha256(PATCH.read_bytes()).hexdigest() != LOCK['integration_patch_sha256']:
+    raise SystemExit('Integration patch does not match the dependency lock')
 
 
 def git(*args, check=True):
@@ -38,7 +40,8 @@ if status:
     observed_paths = {line.split('\t')[-1] for line in git('diff', '--numstat').stdout.splitlines()}
     expected_paths = {line.split('\t')[-1] for line in expected.splitlines()}
     reverse = git('apply', '--reverse', '--check', str(PATCH), check=False)
-    if not prepared or observed_paths != expected_paths or reverse.returncode:
+    exact_files = all(hashlib.sha256((DEST / path).read_bytes()).hexdigest() == expected for path, expected in LOCK['patched_file_sha256'].items())
+    if not prepared or observed_paths != expected_paths or reverse.returncode or not exact_files:
         raise SystemExit('Dependency has unrelated changes; preserve and inspect it')
 else:
     if git('cat-file', '-e', REV + '^{commit}', check=False).returncode:
@@ -46,6 +49,9 @@ else:
     git('checkout', '--detach', REV)
     git('apply', '--check', str(PATCH))
     git('apply', str(PATCH))
+for path, expected in LOCK['patched_file_sha256'].items():
+    if hashlib.sha256((DEST / path).read_bytes()).hexdigest() != expected:
+        raise SystemExit('Patched framework file differs from the locked result: ' + path)
 git('remote', 'set-url', 'origin', LOCK['upstream']['repository'])
 print(json.dumps({'upstream': LOCK['upstream']['repository'], 'revision': REV,
                   'integration_patch_sha256': hashlib.sha256(PATCH.read_bytes()).hexdigest(),

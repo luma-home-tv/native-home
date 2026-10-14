@@ -28,5 +28,11 @@
     "plx_net",
     "plx_telemetry"
   ],
-  "boundary": "External upstream checkout is ignored, explicitly attributed and only used as a framework dependency. No Plex application source is tracked in this repository."
+  "boundary": "External upstream checkout is ignored, explicitly attributed and only used as a framework dependency. No Plex application source is tracked in this repository.",
+  "patched_file_sha256": {
+    "rust-modules/ui/src/widgets.rs": "01289a47824cd962bfbf16e12f4ebeec317d3e46ac6f8aaeab93679530e91214",
+    "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26",
+    "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e"
+  },
+  "integration_patch_sha256": "3e61cc346de202f10770b8e81170a9ac5550c0499a0bbdaa60e20ac2c6072a29"
 }
