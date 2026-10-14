@@ -18,7 +18,12 @@ app_id = 'com.ash.nativehome.targetproof' if main == 'launch-target' else 'com.a
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.6.0' if main == 'home-preview' else '0.1.0'
+version = '0.7.0' if main == 'home-preview' else '0.1.0'
+interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
+if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
+    'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
+    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE'))):
+    raise ValueError('Interactive package must not include scripted proof actions')
 shutil.copy2(binary, stage / main)
 (stage / main).chmod(0o755)
 for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
@@ -28,13 +33,17 @@ icon = Path(os.environ.get('NATIVE_HOME_PREVIEW_ICON', repo / 'assets/luma-home/
 shutil.copy2(icon, stage / 'icon.png')
 info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
         'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Preview',
-        'appDescription': 'Isolated native interface preview; no TV actions or settings writes',
+        'appDescription': 'Isolated native dashboard preview; app launching, read-only controls',
         'icon': 'icon.png', 'largeIcon': 'icon.png', 'transparent': False,
         'nativeLifeCycleInterfaceVersion': 2, 'handlesRelaunch': False,
         'requiredMemory': 96, 'requiredPermissions': []}
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    if interactive:
+        (stage / 'interactive-session.json').write_text('{}\n')
+        if os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF') == '1':
+            (stage / 'session-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_DRAWER_PROBE') == '1':
         (stage / 'drawer-proof.json').write_text('{}\n')
     snapshot = json.loads((assets / 'snapshot.json').read_text())
@@ -89,6 +98,8 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
            'launch_proof': os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1',
            'route_proof': os.environ.get('NATIVE_HOME_ROUTE_PROOF'),
+           'interactive_session': interactive,
+           'session_capture_proof': interactive and os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF') == '1',
            'permissions': [], 'services': [], 'boot_hooks': [], 'system_files': []}
 (output / 'preview-package-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
 print(json.dumps(receipt))

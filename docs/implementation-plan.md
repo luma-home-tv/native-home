@@ -92,6 +92,11 @@ part of this plan.
 ## Verification and delivery
 
 Every TV build uses its own isolated package and the repository's device lock.
+The user has now authorised deployment and testing on both the OLED55G26LA G2
+and OLED65C26LD C2. Keep LG Home and all core services untouched on both. Use
+each device's own private inventory, firmware check, captures and cleanup receipts;
+G2 results do not establish C2 behaviour. After removal proof, explicitly requested
+interactive deployments may remain installed as a normal app with no boot hooks.
 Build before taking the lock; release it before reviewing frames or changing
 source. Inspect native frames, record exact source/build revisions and keep
 private device data outside Git. After each test, verify removal of the package,

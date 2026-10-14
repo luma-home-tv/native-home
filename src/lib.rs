@@ -1,5 +1,5 @@
 //! A separate Home application, using the shared native UI without Plex/player dependencies.
-//! This first slice models navigation and read-only controls; it executes no TV operations.
+//! Navigation, read-only controls and capability-gated normal application launching.
 
 pub mod model;
 pub mod preview;
@@ -17,3 +17,5 @@ pub mod live;
 pub mod actions;
 
 pub mod drawer;
+
+pub mod session;

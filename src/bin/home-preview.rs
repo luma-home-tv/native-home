@@ -1,4 +1,4 @@
-//! Bounded native shell with ordinary-app live reads and capability-gated launch requests.
+//! Native interactive shell or bounded proof, with ordinary-app reads and gated launches.
 use native_home::{
     model::Page,
     preferences::Persistence,
@@ -21,12 +21,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         PathBuf::from(args.get(1).ok_or("Specify snapshot asset directory")?)
     };
+    let interactive = args.iter().any(|arg| arg == "--session")
+        || assets.join("interactive-session.json").exists();
+    let session_capture = interactive && assets.join("session-proof.json").exists();
+    if interactive
+        && [
+            "drawer-proof.json",
+            "launch-proof.json",
+            "preferences-hold-probe.json",
+            "native-read-probe.json",
+        ]
+        .iter()
+        .any(|name| assets.join(name).exists())
+    {
+        return Err("Interactive session cannot run scripted proof actions".into());
+    }
     let output = if device {
         plx_base::paths::in_runtime_dir(&format!("shell-{}", std::process::id()))
     } else {
         PathBuf::from(args.get(2).ok_or("Specify new capture directory")?)
     };
-    let capture_only = !device && !args.iter().any(|a| a == "--interactive");
+    let capture_only = !device && !interactive && !args.iter().any(|a| a == "--interactive");
     let window = Window::new(!capture_only)?;
     let live_origin = Instant::now();
     {
@@ -125,150 +140,156 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     shell.load_icons(&assets);
     let mut now = 0;
     let mut capture_diagnostics = Vec::new();
-    for (page, name) in [
-        (Page::Home, "home"),
-        (Page::Applications, "applications"),
-        (Page::Inputs, "inputs"),
-        (Page::Controls, "controls"),
-        (Page::Picture, "picture"),
-        (Page::Sound, "sound"),
-    ] {
-        shell.open(page);
-        for _ in 0..45 {
-            now += 17;
-            poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
-            shell.tick(now, 1.0 / 60.0);
-            shell.draw();
-            window.swap();
-        }
-        let before = window.graphics_state();
-        shell.draw();
-        let after = window.graphics_state();
-        let layout = shell.presentation_probe();
-        capture_diagnostics.push(serde_json::json!({"page":name,"before_draw":before,"after_draw":after,"layout":layout}));
-        if before.error != 0 || after.error != 0 {
-            return Err("GL state probe found an error".into());
-        }
-        window.capture(&output.join(format!("{name}.ppm")))?;
-    }
     let mut drawer_proof = None;
-    if args.iter().any(|arg| arg == "--drawer-proof") || assets.join("drawer-proof.json").exists() {
-        shell.open(Page::Applications);
-        let all = shell.application_count();
-        if !shell.focus_drawer_control(1) {
-            return Err("No favourites control".into());
-        }
-        drawer_tap(&mut shell, &mut now);
-        let favourites = shell.application_count();
-        drawer_capture(&mut shell, &window, &output, "drawer-favourites", &mut now)?;
-        shell.focus_drawer_control(0);
-        drawer_tap(&mut shell, &mut now);
-        shell.focus_drawer_control(2);
-        drawer_tap(&mut shell, &mut now);
-        for label in ["T", "V"] {
-            let index = native_home::drawer::KEYS
-                .iter()
-                .position(|key| *key == label)
-                .unwrap();
-            if !shell.focus_search_key(index) {
-                return Err("No keyboard key".into());
-            }
-            drawer_tap(&mut shell, &mut now);
-        }
-        let query = shell.drawer_state().query.clone();
-        let results = shell.application_count();
-        drawer_capture(&mut shell, &window, &output, "drawer-keyboard", &mut now)?;
-        shell.focus_search_key(39);
-        drawer_tap(&mut shell, &mut now);
-        drawer_capture(&mut shell, &window, &output, "drawer-results", &mut now)?;
-        let keyboard_closed = !shell.drawer_state().editing;
-        let no_requests = shell.take_requests().is_empty();
-        // Restore the full drawer before the independent navigation/application proofs.
-        shell.focus_drawer_control(2);
-        drawer_tap(&mut shell, &mut now);
-        shell.focus_search_key(38);
-        drawer_tap(&mut shell, &mut now);
-        shell.focus_search_key(39);
-        drawer_tap(&mut shell, &mut now);
-        shell.focus_drawer_control(0);
-        drawer_tap(&mut shell, &mut now);
-        if let Some(first) = shell.first_application() {
-            shell.focus_application(&first);
-        }
-        drawer_proof = Some(
-            serde_json::json!({"all":all,"favourites":favourites,"query":query,"results":results,"keyboard_closed":keyboard_closed,"no_tv_requests":no_requests,"restored_all":shell.application_count()==all,"input":"scripted shared focus and OK"}),
-        );
-    }
     let mut navigation = Vec::new();
-    shell.open(Page::Applications);
-    for dir in [
-        Dir::Right,
-        Dir::Down,
-        Dir::Up,
-        Dir::Left,
-        Dir::Left,
-        Dir::Down,
-    ] {
-        shell.direction(dir);
-        now += 17;
-        shell.tick(now, 1.0 / 60.0);
-        navigation.push(shell.focused_item());
-    }
-    shell.press(true, PressFrom::Key);
-    now += 50;
-    shell.tick(now, 0.05);
-    shell.press(false, PressFrom::Key);
-    for _ in 0..30 {
-        now += 17;
-        shell.tick(now, 1.0 / 60.0);
-    }
-    let navigation_page = format!("{:?}", shell.page());
-    // This is a deterministic component probe, explicitly separate from physical SDL input.
-    let scripted_requests = shell
-        .take_requests()
-        .into_iter()
-        .map(|a| format!("{a:?}"))
-        .collect::<Vec<_>>();
-    let probe_path = assets.join("preferences-hold-probe.json");
+    let mut navigation_page = None;
+    let mut scripted_requests = Vec::new();
     let mut probe_identity = None;
     let mut probe_changed = false;
-    if probe_path.exists() {
-        #[derive(serde::Deserialize)]
-        #[serde(deny_unknown_fields)]
-        struct Probe {
-            application_id: String,
+    if !interactive {
+        for (page, name) in [
+            (Page::Home, "home"),
+            (Page::Applications, "applications"),
+            (Page::Inputs, "inputs"),
+            (Page::Controls, "controls"),
+            (Page::Picture, "picture"),
+            (Page::Sound, "sound"),
+        ] {
+            shell.open(page);
+            for _ in 0..45 {
+                now += 17;
+                poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+                shell.tick(now, 1.0 / 60.0);
+                shell.draw();
+                window.swap();
+            }
+            let before = window.graphics_state();
+            shell.draw();
+            let after = window.graphics_state();
+            let layout = shell.presentation_probe();
+            capture_diagnostics.push(serde_json::json!({"page":name,"before_draw":before,"after_draw":after,"layout":layout}));
+            if before.error != 0 || after.error != 0 {
+                return Err("GL state probe found an error".into());
+            }
+            window.capture(&output.join(format!("{name}.ppm")))?;
         }
-        let bytes = std::fs::read(probe_path)?;
-        if bytes.len() > 1024 {
-            return Err("Oversized preference probe".into());
+        if args.iter().any(|arg| arg == "--drawer-proof")
+            || assets.join("drawer-proof.json").exists()
+        {
+            shell.open(Page::Applications);
+            let all = shell.application_count();
+            if !shell.focus_drawer_control(1) {
+                return Err("No favourites control".into());
+            }
+            drawer_tap(&mut shell, &mut now);
+            let favourites = shell.application_count();
+            drawer_capture(&mut shell, &window, &output, "drawer-favourites", &mut now)?;
+            shell.focus_drawer_control(0);
+            drawer_tap(&mut shell, &mut now);
+            shell.focus_drawer_control(2);
+            drawer_tap(&mut shell, &mut now);
+            for label in ["T", "V"] {
+                let index = native_home::drawer::KEYS
+                    .iter()
+                    .position(|key| *key == label)
+                    .unwrap();
+                if !shell.focus_search_key(index) {
+                    return Err("No keyboard key".into());
+                }
+                drawer_tap(&mut shell, &mut now);
+            }
+            let query = shell.drawer_state().query.clone();
+            let results = shell.application_count();
+            drawer_capture(&mut shell, &window, &output, "drawer-keyboard", &mut now)?;
+            shell.focus_search_key(39);
+            drawer_tap(&mut shell, &mut now);
+            drawer_capture(&mut shell, &window, &output, "drawer-results", &mut now)?;
+            let keyboard_closed = !shell.drawer_state().editing;
+            let no_requests = shell.take_requests().is_empty();
+            // Restore the full drawer before the independent navigation/application proofs.
+            shell.focus_drawer_control(2);
+            drawer_tap(&mut shell, &mut now);
+            shell.focus_search_key(38);
+            drawer_tap(&mut shell, &mut now);
+            shell.focus_search_key(39);
+            drawer_tap(&mut shell, &mut now);
+            shell.focus_drawer_control(0);
+            drawer_tap(&mut shell, &mut now);
+            if let Some(first) = shell.first_application() {
+                shell.focus_application(&first);
+            }
+            drawer_proof = Some(
+                serde_json::json!({"all":all,"favourites":favourites,"query":query,"results":results,"keyboard_closed":keyboard_closed,"no_tv_requests":no_requests,"restored_all":shell.application_count()==all,"input":"scripted shared focus and OK"}),
+            );
         }
-        let probe: Probe = serde_json::from_slice(&bytes)?;
         shell.open(Page::Applications);
-        if !shell.focus_application(&probe.application_id) {
-            return Err("Probe app is not in the drawer".into());
-        }
-        probe_identity = shell.focused_item();
-        let before = shell
-            .preferences()
-            .favourites
-            .contains(&probe.application_id);
-        shell.press(true, PressFrom::Key);
-        for _ in 0..45 {
+        for dir in [
+            Dir::Right,
+            Dir::Down,
+            Dir::Up,
+            Dir::Left,
+            Dir::Left,
+            Dir::Down,
+        ] {
+            shell.direction(dir);
             now += 17;
-            shell.repeat();
             shell.tick(now, 1.0 / 60.0);
+            navigation.push(shell.focused_item());
         }
+        shell.press(true, PressFrom::Key);
+        now += 50;
+        shell.tick(now, 0.05);
         shell.press(false, PressFrom::Key);
         for _ in 0..30 {
             now += 17;
             shell.tick(now, 1.0 / 60.0);
         }
-        probe_changed = before
-            != shell
+        navigation_page = Some(format!("{:?}", shell.page()));
+        // This is a deterministic component probe, explicitly separate from physical SDL input.
+        scripted_requests = shell
+            .take_requests()
+            .into_iter()
+            .map(|a| format!("{a:?}"))
+            .collect::<Vec<_>>();
+        let probe_path = assets.join("preferences-hold-probe.json");
+        if probe_path.exists() {
+            #[derive(serde::Deserialize)]
+            #[serde(deny_unknown_fields)]
+            struct Probe {
+                application_id: String,
+            }
+            let bytes = std::fs::read(probe_path)?;
+            if bytes.len() > 1024 {
+                return Err("Oversized preference probe".into());
+            }
+            let probe: Probe = serde_json::from_slice(&bytes)?;
+            shell.open(Page::Applications);
+            if !shell.focus_application(&probe.application_id) {
+                return Err("Probe app is not in the drawer".into());
+            }
+            probe_identity = shell.focused_item();
+            let before = shell
                 .preferences()
                 .favourites
                 .contains(&probe.application_id);
-        queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+            shell.press(true, PressFrom::Key);
+            for _ in 0..45 {
+                now += 17;
+                shell.repeat();
+                shell.tick(now, 1.0 / 60.0);
+            }
+            shell.press(false, PressFrom::Key);
+            for _ in 0..30 {
+                now += 17;
+                shell.tick(now, 1.0 / 60.0);
+            }
+            probe_changed = before
+                != shell
+                    .preferences()
+                    .favourites
+                    .contains(&probe.application_id);
+            queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+        }
     }
     shell.open(Page::Home);
     let mut requests = Vec::new();
@@ -315,22 +336,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let start = Instant::now();
     let mut last = start;
-    let mut events = 0;
+    let mut events = 0_u32;
     let mut event_log = Vec::new();
     let mut hidden_at: Option<Instant> = None;
+    let mut session = native_home::session::Session::new(interactive);
+    let mut idle_blanked = false;
+    let mut idle_presentations = 0_u32;
+    let mut ready_written = false;
 
     let mut reason = "capture_complete";
     if !capture_only {
         reason = "timeout";
-        while start.elapsed() < Duration::from_secs(30) && !shell.should_exit() {
+        while !session.expired(start.elapsed()) && !shell.should_exit() {
             let current = Instant::now();
             let dt = (current - last).as_secs_f32().clamp(0.001, 0.05);
             last = current;
-            now += (dt * 1000.0) as u32;
+            now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
             shell.tick(now, dt);
             while let Some(e) = poll() {
-                events += 1;
+                events = events.saturating_add(1_u32);
+                // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
+                // Consume the first wake input and cancel any gesture armed before blanking.
+                if hidden_at.is_none() && matches!(e.kind, 2..=6) && !session.input(start.elapsed())
+                {
+                    shell.cancel_press();
+                    continue;
+                }
                 match e.kind {
                     1 => {
                         reason = "window_closed";
@@ -395,6 +427,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if let Some(worker) = &action_worker {
                 action_receipts.extend(worker.poll());
+                if action_receipts.len() > 32 {
+                    action_receipts.drain(..action_receipts.len() - 32);
+                }
             }
             dispatch_requests(
                 &mut shell,
@@ -403,13 +438,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &mut requests,
             );
             if hidden_at.is_none() {
-                shell.draw();
-                window.swap();
+                if session.idle(start.elapsed()) {
+                    if !idle_blanked {
+                        shell.cancel_press();
+                        plx_gfx::gfx::clip_clear();
+                        plx_gfx::gfx::frame_clear(0.0, 0.0, 0.0);
+                        if session_capture && idle_presentations == 0 {
+                            window.capture(&output.join("session-idle.ppm"))?;
+                        }
+                        window.swap();
+                        idle_presentations = idle_presentations.saturating_add(1);
+                        idle_blanked = true;
+                    }
+                } else {
+                    shell.draw();
+                    if session_capture && !ready_written {
+                        window.capture(&output.join("session-home.ppm"))?;
+                    }
+                    if session_capture && idle_blanked && session.wakes == 1 {
+                        window.capture(&output.join("session-awake.ppm"))?;
+                    }
+                    window.swap();
+                    idle_blanked = false;
+                }
+                if interactive && !ready_written {
+                    let ready = serde_json::json!({"interactive":true,"uid":unsafe{libc::geteuid()},"renderer":window.renderer,"scripted_actions":false,"capture_proof":session_capture,"idle_after_seconds":native_home::session::IDLE_AFTER.as_secs()});
+                    let file = std::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .mode(0o600)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                        .open(output.join("session-ready.json"))?;
+                    serde_json::to_writer_pretty(file, &ready)?;
+                    ready_written = true;
+                }
             }
             // Bounded 60 Hz host cap also handles compositors whose swap does not block.
             let elapsed = current.elapsed();
-            if elapsed < Duration::from_micros(16_667) {
-                std::thread::sleep(Duration::from_micros(16_667) - elapsed);
+            let period = if idle_blanked {
+                Duration::from_millis(50)
+            } else {
+                Duration::from_micros(16_667)
+            };
+            if elapsed < period {
+                std::thread::sleep(period - elapsed);
             }
         }
         if shell.should_exit() {
@@ -449,11 +521,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
+        "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
         "drawer_proof":drawer_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
-        "performance_validated":false,"scripted_navigation":{"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page=="Inputs","requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+        "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     let mut file = std::fs::OpenOptions::new()
         .create_new(true)
         .write(true)

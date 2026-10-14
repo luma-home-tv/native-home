@@ -55,6 +55,16 @@ The ARM path uses the LG SDK through `NATIVE_HOME_WEBOS_SDK` and a separate
 the Luma client, fonts, its own icon and explicitly supplied development assets.
 No Plex application package, server sign-in or playback feature is built.
 
+`NATIVE_HOME_INTERACTIVE_SESSION=1` selects the installable interactive preview
+when packaging `home-preview`. It opens directly on Home, runs while foreground,
+and exits on Back from Home or after losing foreground. The ordinary proof build
+keeps its scripted capture sequence and 30-second bound. Interactive packages
+reject scripted action probes. Their canvas blanks to opaque black after two
+minutes without app input; the first input wakes it without activating a hidden
+card. This is app-local idle behaviour, not a replacement for LG's OLED protections.
+Normal packages make no household screenshots; session capture requires a
+separate, explicit development proof flag. Host interactive mode uses `--session`.
+
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. Sources/Settings execution remain
 gated and settings read-only. Private TV details and native household captures
