@@ -34,6 +34,8 @@ extern "C" {
     );
     fn glGetString(name: u32) -> *const u8;
     fn glGetError() -> u32;
+    fn glGetIntegerv(name: u32, values: *mut c_int);
+    fn glIsEnabled(cap: u32) -> u8;
     fn native_home_poll(event: *mut Event) -> c_int;
 }
 #[derive(Default, Debug, serde::Serialize)]
@@ -59,6 +61,15 @@ fn error() -> String {
             .to_string_lossy()
             .into_owned()
     }
+}
+/// Read-only diagnostic state from this application's current GL context.
+#[derive(Debug, serde::Serialize)]
+pub struct GraphicsState {
+    pub scissor_enabled: bool,
+    pub scissor_box: [i32; 4],
+    pub viewport: [i32; 4],
+    pub framebuffer: i32,
+    pub error: u32,
 }
 pub struct Window {
     window: *mut c_void,
@@ -146,6 +157,25 @@ impl Window {
         unsafe {
             SDL_GL_SwapWindow(self.window);
         }
+    }
+    pub fn graphics_state(&self) -> GraphicsState {
+        let mut state = GraphicsState {
+            scissor_enabled: false,
+            scissor_box: [0; 4],
+            viewport: [0; 4],
+            framebuffer: 0,
+            error: 0,
+        };
+        // GLenum/GLint/GLboolean signatures and constants match the actual GLES2 SDK header.
+        // This is diagnostic-only, on the window/GL thread; it changes no rendering policy.
+        unsafe {
+            state.scissor_enabled = glIsEnabled(0x0C11) != 0;
+            glGetIntegerv(0x0C10, state.scissor_box.as_mut_ptr());
+            glGetIntegerv(0x0BA2, state.viewport.as_mut_ptr());
+            glGetIntegerv(0x8CA6, &mut state.framebuffer);
+            state.error = glGetError();
+        }
+        state
     }
     pub fn capture(&self, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         let mut rgba = vec![0_u8; 1920 * 1080 * 4];

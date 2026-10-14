@@ -1195,6 +1195,17 @@ impl Shell {
         self.surface.rail.table.update(dt, RAIL.h);
         self.surface.table.table.update(dt, CONTENT.h);
     }
+    /// Presentation metadata only; no app inventory or TV values are recorded here.
+    pub fn presentation_probe(&self) -> serde_json::Value {
+        serde_json::json!({
+            "page":format!("{:?}",self.surface.page),
+            "rail_rows":self.surface.rail.table.n_rows(),
+            "rail_scroll":self.surface.rail.table.scroll_pos(),
+            "rail_focused":self.surface.rail.table.list_focused,
+            "rail_selection":self.surface.rail.table.sel,
+            "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none()
+        })
+    }
     pub fn draw(&mut self) {
         let p = Painter::root();
         let ground = theme::SURFACE_OLED;
