@@ -352,11 +352,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         proof_request = Some(request);
     }
+    let mut settings_handoff = native_home::session::SettingsHandoff::default();
     dispatch_requests(
         &mut shell,
         &action_worker,
         proof_request.as_ref(),
         &mut requests,
+        &mut settings_handoff,
+        live_origin.elapsed(),
     );
     let start = Instant::now();
     let mut last = start;
@@ -367,6 +370,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut idle_blanked = false;
     let mut idle_presentations = 0_u32;
     let mut ready_written = false;
+    let mut last_settings_observation = Duration::ZERO;
+    let mut settings_returns = 0_u32;
+    let mut capture_settings_return = false;
 
     let mut reason = "capture_complete";
     if !capture_only {
@@ -402,23 +408,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         hidden_at.get_or_insert(current);
                     }
                     9 => {
+                        if hidden_at.is_some() && settings_handoff.pending() {
+                            settings_returns = settings_returns.saturating_add(1);
+                            capture_settings_return = true;
+                            settings_handoff.focus_returned();
+                        }
                         hidden_at = None;
                     }
-                    2 if hidden_at.is_none() || e.key == 6 => match e.key {
-                        1 => shell.direction(Dir::Up),
-                        2 => shell.direction(Dir::Down),
-                        3 => shell.direction(Dir::Left),
-                        4 => shell.direction(Dir::Right),
-                        5 => {
-                            if e.repeat != 0 {
-                                shell.repeat();
-                            } else {
-                                shell.press(true, PressFrom::Key);
+                    2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
+                        match e.key {
+                            1 => shell.direction(Dir::Up),
+                            2 => shell.direction(Dir::Down),
+                            3 => shell.direction(Dir::Left),
+                            4 => shell.direction(Dir::Right),
+                            5 => {
+                                if e.repeat != 0 {
+                                    shell.repeat();
+                                } else {
+                                    shell.press(true, PressFrom::Key);
+                                }
                             }
+                            6 if e.repeat == 0 => shell.back(),
+                            _ => {}
                         }
-                        6 if e.repeat == 0 => shell.back(),
-                        _ => {}
-                    },
+                    }
                     3 if e.key == 5 => shell.press(false, PressFrom::Key),
                     4 | 5 if hidden_at.is_none() => {
                         shell.pointer(e.x as f32, e.y as f32, e.kind == 5)
@@ -437,12 +450,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if reason == "window_closed" {
                 break;
             }
-            // LG may queue focus loss before Back. Stop drawing while hidden, but drain the
-            // window's own queue briefly so the actual key can be observed before teardown.
-            if hidden_at.is_some_and(|t| t.elapsed() >= Duration::from_millis(500)) {
-                reason = "window_hidden";
-                break;
-            }
+            // Hidden windows never draw. A fresh, verified Settings overlay can retain only
+            // our own underlying card; other departures retain the normal brief Back drain.
             queue_preferences(&mut shell, &mut persistence, &mut storage_error);
             if let Some(writer) = &mut persistence {
                 accept_replies(
@@ -455,7 +464,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 shell.storage_notice("Favourites could not be saved • previous data kept");
             }
             if let Some(worker) = &action_worker {
-                action_receipts.extend(worker.poll());
+                for reply in worker.poll() {
+                    if matches!(reply.request, native_home::actions::Request::LgSettings {}) {
+                        settings_handoff.reply(live_origin.elapsed(), reply.verified);
+                    }
+                    action_receipts.push(reply);
+                }
+                for observation in worker.poll_windows() {
+                    settings_handoff.window(
+                        observation.generation,
+                        live_origin.elapsed(),
+                        observation.covering_own_card.unwrap_or(false),
+                    );
+                }
+                if let Some(generation) = settings_handoff.observation_generation() {
+                    if live_origin
+                        .elapsed()
+                        .saturating_sub(last_settings_observation)
+                        >= Duration::from_millis(500)
+                    {
+                        worker.observe_settings(generation);
+                        last_settings_observation = live_origin.elapsed();
+                    }
+                }
                 if action_receipts.len() > 32 {
                     action_receipts.drain(..action_receipts.len() - 32);
                 }
@@ -465,7 +496,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &action_worker,
                 proof_request.as_ref(),
                 &mut requests,
+                &mut settings_handoff,
+                live_origin.elapsed(),
             );
+            if hidden_at.is_some_and(|t| t.elapsed() >= Duration::from_millis(500))
+                && !settings_handoff.keep_hidden(live_origin.elapsed())
+            {
+                reason = "window_hidden";
+                break;
+            }
             if hidden_at.is_none() {
                 if session.idle(start.elapsed()) {
                     if !idle_blanked {
@@ -481,6 +520,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 } else {
                     shell.draw();
+                    if capture_settings_return
+                        && matches!(
+                            proof_request,
+                            Some(native_home::actions::Request::LgSettings {})
+                        )
+                    {
+                        window.capture(&output.join("settings-return.ppm"))?;
+                        capture_settings_return = false;
+                    }
                     if session_capture && !ready_written {
                         window.capture(&output.join("session-home.ppm"))?;
                     }
@@ -504,7 +552,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             // Bounded 60 Hz host cap also handles compositors whose swap does not block.
             let elapsed = current.elapsed();
-            let period = if idle_blanked {
+            let period = if idle_blanked || hidden_at.is_some() {
                 Duration::from_millis(50)
             } else {
                 Duration::from_micros(16_667)
@@ -554,6 +602,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
         "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
         "clock":clock.view(live_origin.elapsed()),
+        "settings_returns":settings_returns,
         "drawer_proof":drawer_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
@@ -625,6 +674,8 @@ fn dispatch_requests(
     worker: &Option<native_home::actions::Worker>,
     proof_request: Option<&native_home::actions::Request>,
     unexecuted: &mut Vec<String>,
+    handoff: &mut native_home::session::SettingsHandoff,
+    now: Duration,
 ) {
     for action in shell.take_requests() {
         let Some(request) = native_home::actions::Request::from_action(action.clone()) else {
@@ -637,9 +688,21 @@ fn dispatch_requests(
         };
         if allowed {
             if let Some(worker) = worker {
+                let settings = matches!(request, native_home::actions::Request::LgSettings {});
+                if settings && handoff.pending() {
+                    shell.storage_notice("LG Settings is already opening");
+                    continue;
+                }
                 match worker.queue(request) {
                     Ok(()) => {
-                        shell.storage_notice("Opening application…");
+                        if settings {
+                            handoff.queued(now);
+                        }
+                        shell.storage_notice(if settings {
+                            "Opening LG Settings…"
+                        } else {
+                            "Opening application…"
+                        });
                         continue;
                     }
                     Err(error) => shell.storage_notice(&error),

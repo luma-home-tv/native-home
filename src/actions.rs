@@ -58,6 +58,29 @@ fn get<P: Platform>(p: &mut P, op: Op) -> Result<Value, String> {
     }
     Ok(data)
 }
+fn windows(value: &Value) -> Result<&Vec<Value>, String> {
+    let rows = value
+        .get("windows")
+        .and_then(Value::as_array)
+        .ok_or("Missing window metadata")?;
+    if rows.len() > 256 {
+        return Err("Window metadata exceeds limit".into());
+    }
+    Ok(rows)
+}
+fn settings_overlay(value: &Value) -> Result<bool, String> {
+    Ok(windows(value)?.iter().any(|r| {
+        r["appId"].as_str() == Some("com.palm.app.settings")
+            && r["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_OVERLAY")
+    }))
+}
+fn settings_covering_own_card(value: &Value, own_id: &str) -> Result<bool, String> {
+    Ok(settings_overlay(value)?
+        && windows(value)?.iter().any(|r| {
+            r["appId"].as_str() == Some(own_id)
+                && r["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_CARD")
+        }))
+}
 fn target(
     request: &Request,
     own_id: &str,
@@ -171,6 +194,11 @@ pub fn execute<P: Platform>(
         };
         let id = target(&request, own_id, &apps, points.as_ref(), inputs.as_ref())?;
         receipt.target = Some(id.clone());
+        if matches!(request, Request::LgSettings {})
+            && settings_overlay(&get(platform, Op::Windows)?)?
+        {
+            return Err("LG Settings is already open".into());
+        }
         // Recheck ownership after the reads; an old queued gesture cannot switch another app.
         let current = get(platform, Op::Foreground)?;
         if current.get("appId").and_then(Value::as_str) != Some(own_id) {
@@ -204,16 +232,7 @@ pub fn execute<P: Platform>(
             let current = get(platform, Op::Foreground)?;
             let overlay = if matches!(request, Request::LgSettings {}) {
                 let windows = get(platform, Op::Windows)?;
-                windows
-                    .get("windows")
-                    .and_then(Value::as_array)
-                    .is_some_and(|rows| {
-                        rows.iter().any(|r| {
-                            r.get("appId").and_then(Value::as_str) == receipt.target.as_deref()
-                                && r.get("windowType").and_then(Value::as_str)
-                                    == Some("_WEBOS_WINDOW_TYPE_OVERLAY")
-                        })
-                    })
+                settings_covering_own_card(&windows, own_id)?
             } else {
                 false
             };
@@ -287,23 +306,54 @@ impl Platform for NativePlatform {
         thread::sleep(std::time::Duration::from_millis(120));
     }
 }
+#[cfg_attr(not(target_arch = "arm"), allow(dead_code))]
+enum Work {
+    Launch(Request),
+    SettingsWindow(u64),
+}
+pub struct WindowObservation {
+    pub generation: u64,
+    pub covering_own_card: Result<bool, String>,
+}
 pub struct Worker {
-    requests: mpsc::SyncSender<Request>,
+    requests: mpsc::SyncSender<Work>,
     replies: mpsc::Receiver<Receipt>,
+    windows: mpsc::Receiver<WindowObservation>,
     thread: thread::JoinHandle<()>,
 }
 impl Worker {
     #[cfg(target_arch = "arm")]
     pub fn native(own_id: String, caps: Capabilities) -> std::io::Result<Self> {
-        let (requests, receive) = mpsc::sync_channel::<Request>(1);
+        let (requests, receive) = mpsc::sync_channel::<Work>(1);
         let (send, replies) = mpsc::channel();
+        let (window_send, windows) = mpsc::channel();
         let thread = thread::Builder::new()
             .name("home-launch".into())
             .spawn(move || {
                 let mut platform = plx_platform::webos::ls2::register()
                     .ok()
                     .map(|bus| NativePlatform { bus });
-                while let Ok(request) = receive.recv() {
+                while let Ok(work) = receive.recv() {
+                    let request = match work {
+                        Work::Launch(request) => request,
+                        Work::SettingsWindow(generation) => {
+                            let value = match &mut platform {
+                                Some(p) => get(p, Op::Windows)
+                                    .and_then(|v| settings_covering_own_card(&v, &own_id)),
+                                None => Err("Window registration unavailable".into()),
+                            };
+                            if window_send
+                                .send(WindowObservation {
+                                    generation,
+                                    covering_own_card: value,
+                                })
+                                .is_err()
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                    };
                     let receipt = match &mut platform {
                         Some(p) => execute(p, &own_id, request, caps),
                         None => Receipt {
@@ -322,21 +372,29 @@ impl Worker {
         Ok(Self {
             requests,
             replies,
+            windows,
             thread,
         })
     }
     pub fn queue(&self, request: Request) -> Result<(), String> {
         self.requests
-            .try_send(request)
+            .try_send(Work::Launch(request))
             .map_err(|_| "Another launch is pending".into())
     }
     pub fn poll(&self) -> Vec<Receipt> {
         self.replies.try_iter().collect()
     }
+    pub fn observe_settings(&self, generation: u64) {
+        let _ = self.requests.try_send(Work::SettingsWindow(generation));
+    }
+    pub fn poll_windows(&self) -> Vec<WindowObservation> {
+        self.windows.try_iter().collect()
+    }
     pub fn finish(self) -> Vec<Receipt> {
         let Self {
             requests,
             replies,
+            windows: _,
             thread,
         } = self;
         drop(requests);
@@ -356,6 +414,7 @@ mod tests {
         launches: Vec<Value>,
         accepted: bool,
         window_after: Option<String>,
+        initial_windows: Value,
     }
     impl Fake {
         fn new() -> Self {
@@ -368,6 +427,7 @@ mod tests {
                 launches: Vec::new(),
                 accepted: true,
                 window_after: None,
+                initial_windows: json!({"returnValue":true,"windows":[]}),
             }
         }
     }
@@ -378,7 +438,11 @@ mod tests {
                 Op::LaunchPoints => self.points.clone(),
                 Op::Inputs => self.inputs.clone(),
                 Op::Windows => {
-                    json!({"returnValue":true,"windows":if self.launches.is_empty(){json!([])}else{json!([{"appId":self.window_after.as_ref().unwrap_or(&self.after),"windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}])}})
+                    if self.launches.is_empty() {
+                        self.initial_windows.clone()
+                    } else {
+                        json!({"returnValue":true,"windows":[{"appId":"com.example.home","windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":self.window_after.as_ref().unwrap_or(&self.after),"windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}]})
+                    }
                 }
                 Op::Foreground => {
                     json!({"returnValue":true,"appId":if self.launches.is_empty(){&self.foreground}else{&self.after}})
@@ -568,6 +632,35 @@ mod tests {
             },
         );
         assert!(r.admitted && !r.verified);
+    }
+    #[test]
+    fn preexisting_settings_and_unreadable_window_state_never_relaunch_settings() {
+        for value in [
+            json!({"returnValue":true,"windows":[{"appId":"com.palm.app.settings","windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}]}),
+            json!({"returnValue":true}),
+            json!({"returnValue":false}),
+        ] {
+            let mut p = Fake::new();
+            p.initial_windows = value;
+            let r = execute(
+                &mut p,
+                "com.example.home",
+                Request::LgSettings {},
+                Capabilities {
+                    settings: true,
+                    ..Default::default()
+                },
+            );
+            assert!(!r.admitted && p.launches.is_empty());
+        }
+    }
+    #[test]
+    fn settings_cover_observation_requires_both_overlay_and_own_underlying_card() {
+        let mut value = json!({"windows":[{"appId":"com.example.home","windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":"com.palm.app.settings","windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}]});
+        assert!(settings_covering_own_card(&value, "com.example.home").unwrap());
+        value["windows"][0]["appId"] = "com.webos.app.home".into();
+        assert!(!settings_covering_own_card(&value, "com.example.home").unwrap());
+        assert!(settings_covering_own_card(&json!({}), "com.example.home").is_err());
     }
     #[test]
     fn wire_requests_cannot_add_uri_command_or_launch_parameters() {
