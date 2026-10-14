@@ -312,6 +312,9 @@ impl CardSource<HomeHost> for Cards {
                     ),
                 );
         }
+        if tile.focused {
+            p.rring(tile.rect, tile.radius, 3.0, theme::TEXT_PRIMARY);
+        }
     }
 }
 
