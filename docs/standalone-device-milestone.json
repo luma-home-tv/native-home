@@ -322,5 +322,17 @@
     "no complete control/Settings/source proof",
     "no FPS/latency/memory/idle or reboot-persistence proof"
   ],
-  "privacy": "Raw device captures, inventory and detailed receipts remain outside tracked source."
+  "privacy": "Raw device captures, inventory and detailed receipts remain outside tracked source.",
+  "full_frame_comparison_to_2a53bfd": {
+    "all_six_ppm_files_byte_identical": true,
+    "comparison_scope": [
+      "Home",
+      "Applications",
+      "Inputs",
+      "Controls",
+      "Picture",
+      "Sound"
+    ],
+    "limit": "These captured states only; not broad UI interaction or performance proof. Raw images and their full hashes remain private."
+  }
 }

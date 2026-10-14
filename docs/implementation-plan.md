@@ -42,7 +42,8 @@ and palette; a black background is not treated as proof of burn-in prevention.
 The latest [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects
 the earlier missing-rail interpretation: original cropped framebuffer bytes show
-the complete rail on all six pages, identical to the prior build. No renderer
+the complete rail on all six pages. All six complete PPM files also match the
+prior captured states byte-for-byte. No renderer
 change is supported by that claim. Physical input and broader UI work remain.
 
 
