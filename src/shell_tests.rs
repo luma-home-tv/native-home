@@ -166,6 +166,8 @@ fn empty_or_unregistered_catalogue_keeps_navigation_available() {
         false,
     );
     assert_eq!(s.page(), Page::Applications);
+    assert_eq!(focus(&s), TOOLBAR_BASE);
+    s.direction(Dir::Left);
     assert_eq!(focus(&s), RAIL_BASE + 1);
 }
 
@@ -460,4 +462,90 @@ fn home_focus_springs_report_motion_then_go_quiet_at_rest() {
     let (_, moving) = plx_machine::idle::scoped_motion(|| s.tick(6016, 0.016));
     assert!(!moving, "settled shelves must stop reporting spring motion");
     plx_machine::idle::set_enabled(previous);
+}
+
+fn tap(s: &mut Shell) {
+    let start = s.now;
+    s.press(true, PressFrom::Key);
+    s.tick(start + 50, 0.05);
+    s.press(false, PressFrom::Key);
+    for ms in (start + 66..start + 500).step_by(16) {
+        s.tick(ms, 0.016);
+    }
+}
+#[test]
+fn drawer_favourites_filter_is_local_and_unpin_keeps_valid_focus() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    assert!(s.focus_drawer_control(1));
+    tap(&mut s);
+    assert!(s.drawer.favourites_only);
+    assert_eq!(s.surface.cards.len(), 8);
+    assert!(s.focus_application("com.example.app00"));
+    s.activate(
+        FocusKey {
+            entry: entry(Page::Applications),
+            elem: focus(&s),
+        },
+        true,
+    );
+    assert_eq!(s.surface.cards.len(), 7);
+    assert_ne!(s.focused_item().as_deref(), Some("com.example.app00"));
+    assert!(s.take_requests().is_empty());
+    assert!(s.focus_drawer_control(0));
+    tap(&mut s);
+    assert_eq!(s.surface.cards.len(), 12);
+}
+#[test]
+fn native_search_keyboard_commits_once_and_back_restores_search_control() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    assert!(s.focus_drawer_control(2));
+    tap(&mut s);
+    assert!(s.drawer.editing);
+    assert!(!s.focus_application("com.example.app00"));
+    for label in ["A", "P", "P", "0", "1"] {
+        assert!(s.focus_search_key(KEYS.iter().position(|k| *k == label).unwrap()));
+        tap(&mut s);
+    }
+    assert_eq!(s.drawer.query, "APP01");
+    assert_eq!(s.surface.cards.len(), 0); // word matching, not arbitrary application ID matching
+    assert!(s.take_requests().is_empty());
+    s.back();
+    assert!(!s.drawer.editing);
+    assert_eq!(s.focused_item().as_deref(), Some("Search apps"));
+    assert_eq!(s.page(), Page::Applications);
+    assert!(s.focus_drawer_control(2));
+    tap(&mut s);
+    assert!(s.focus_search_key(38));
+    tap(&mut s);
+    assert!(s.drawer.query.is_empty());
+    assert_eq!(s.surface.cards.len(), 12);
+    s.back();
+    s.back();
+    assert_eq!(s.page(), Page::Home);
+}
+#[test]
+fn search_key_movement_cancels_an_armed_character_and_live_refresh_keeps_keyboard_identity() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    s.focus_search_key(0);
+    s.press(true, PressFrom::Key);
+    s.direction(Dir::Right);
+    s.press(false, PressFrom::Key);
+    let now = s.now;
+    for ms in (now + 16..now + 500).step_by(16) {
+        s.tick(ms, 0.016);
+    }
+    assert!(s.drawer.query.is_empty());
+    let before = s.focused_item();
+    s.apply_live(&live_update(100), 100);
+    assert!(s.drawer.editing);
+    assert_eq!(s.focused_item(), before);
+    assert!(s.take_requests().is_empty());
 }

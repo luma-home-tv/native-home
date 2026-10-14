@@ -151,6 +151,54 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         window.capture(&output.join(format!("{name}.ppm")))?;
     }
+    let mut drawer_proof = None;
+    if args.iter().any(|arg| arg == "--drawer-proof") || assets.join("drawer-proof.json").exists() {
+        shell.open(Page::Applications);
+        let all = shell.application_count();
+        if !shell.focus_drawer_control(1) {
+            return Err("No favourites control".into());
+        }
+        drawer_tap(&mut shell, &mut now);
+        let favourites = shell.application_count();
+        drawer_capture(&mut shell, &window, &output, "drawer-favourites", &mut now)?;
+        shell.focus_drawer_control(0);
+        drawer_tap(&mut shell, &mut now);
+        shell.focus_drawer_control(2);
+        drawer_tap(&mut shell, &mut now);
+        for label in ["T", "V"] {
+            let index = native_home::drawer::KEYS
+                .iter()
+                .position(|key| *key == label)
+                .unwrap();
+            if !shell.focus_search_key(index) {
+                return Err("No keyboard key".into());
+            }
+            drawer_tap(&mut shell, &mut now);
+        }
+        let query = shell.drawer_state().query.clone();
+        let results = shell.application_count();
+        drawer_capture(&mut shell, &window, &output, "drawer-keyboard", &mut now)?;
+        shell.focus_search_key(39);
+        drawer_tap(&mut shell, &mut now);
+        drawer_capture(&mut shell, &window, &output, "drawer-results", &mut now)?;
+        let keyboard_closed = !shell.drawer_state().editing;
+        let no_requests = shell.take_requests().is_empty();
+        // Restore the full drawer before the independent navigation/application proofs.
+        shell.focus_drawer_control(2);
+        drawer_tap(&mut shell, &mut now);
+        shell.focus_search_key(38);
+        drawer_tap(&mut shell, &mut now);
+        shell.focus_search_key(39);
+        drawer_tap(&mut shell, &mut now);
+        shell.focus_drawer_control(0);
+        drawer_tap(&mut shell, &mut now);
+        if let Some(first) = shell.first_application() {
+            shell.focus_application(&first);
+        }
+        drawer_proof = Some(
+            serde_json::json!({"all":all,"favourites":favourites,"query":query,"results":results,"keyboard_closed":keyboard_closed,"no_tv_requests":no_requests,"restored_all":shell.application_count()==all,"input":"scripted shared focus and OK"}),
+        );
+    }
     let mut navigation = Vec::new();
     shell.open(Page::Applications);
     for dir in [
@@ -401,7 +449,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
-        "capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
+        "drawer_proof":drawer_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
@@ -495,4 +543,32 @@ fn dispatch_requests(
         }
         unexecuted.push(format!("{action:?}"));
     }
+}
+
+fn drawer_tap(shell: &mut Shell, now: &mut u32) {
+    shell.press(true, PressFrom::Key);
+    *now += 50;
+    shell.tick(*now, 0.05);
+    shell.press(false, PressFrom::Key);
+    for _ in 0..30 {
+        *now += 17;
+        shell.tick(*now, 1.0 / 60.0);
+    }
+}
+fn drawer_capture(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    name: &str,
+    now: &mut u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    for _ in 0..45 {
+        *now += 17;
+        shell.tick(*now, 1.0 / 60.0);
+        shell.draw();
+        window.swap();
+    }
+    shell.draw();
+    window.capture(&output.join(format!("{name}.ppm")))?;
+    Ok(())
 }

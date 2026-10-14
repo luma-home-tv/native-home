@@ -35,6 +35,8 @@ info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    if os.environ.get('NATIVE_HOME_DRAWER_PROBE') == '1':
+        (stage / 'drawer-proof.json').write_text('{}\n')
     snapshot = json.loads((assets / 'snapshot.json').read_text())
     shutil.copy2(assets / 'snapshot.json', stage / 'snapshot.json')
     if os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1':

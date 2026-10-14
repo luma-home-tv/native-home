@@ -18,13 +18,43 @@ use plx_ui::screen::{
     GroupKind, GroupSpec, Hover, Link, Placed, ScreenEvent, Seat, Step, Stop,
 };
 use plx_ui::table::Row;
-use plx_ui::widgets::{Art, LegacyMeasure};
-use plx_ui::{theme, Painter, Rect};
+use plx_ui::widgets::{Art, LegacyMeasure, TabPill};
+use plx_ui::{theme, Env, Painter, Rect, View};
 use serde::{Deserialize, Serialize};
 
+use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
 use crate::model::{controls_form, Action, Application, Catalogue, Context, Page, Setting};
 
+const TOOLBAR_BASE: u32 = 30_000;
+const KEYBOARD_BASE: u32 = 31_000;
+const TOOLBAR: Rect = Rect::new(566.0, 248.0, 1218.0, 58.0);
+const KEYBOARD: Rect = Rect::new(566.0, 668.0, 1218.0, 290.0);
+fn toolbar_rect(index: usize) -> Rect {
+    match index {
+        0 => Rect::new(566.0, 248.0, 144.0, 58.0),
+        1 => Rect::new(734.0, 248.0, 226.0, 58.0),
+        _ => Rect::new(984.0, 248.0, 800.0, 58.0),
+    }
+}
+fn keyboard_rect(index: usize) -> Rect {
+    Rect::new(
+        566.0 + (index % 8) as f32 * 154.0,
+        668.0 + (index / 8) as f32 * 58.0,
+        140.0,
+        48.0,
+    )
+}
+fn toolbar_key(key: u32) -> Option<usize> {
+    (TOOLBAR_BASE..TOOLBAR_BASE + 3)
+        .contains(&key)
+        .then(|| (key - TOOLBAR_BASE) as usize)
+}
+fn keyboard_key(key: u32) -> Option<usize> {
+    (KEYBOARD_BASE..KEYBOARD_BASE + 40)
+        .contains(&key)
+        .then(|| (key - KEYBOARD_BASE) as usize)
+}
 const RAIL_BASE: u32 = 10_000;
 const TABLE_BASE: u32 = 20_000;
 const RAIL: Rect = Rect::new(96.0, 260.0, 330.0, 650.0);
@@ -261,6 +291,7 @@ struct Surface {
     rail: FormTable<String, Action, Page>,
     table: FormTable<String, Action, Page>,
     table_mode: bool,
+    editing: bool,
 }
 fn input_key(id: &str) -> Option<u32> {
     match id {
@@ -309,6 +340,34 @@ impl Surface {
 }
 impl Focusable<HomeHost> for Surface {
     fn groups(&self, _cx: &Cx<'_, HomeHost>, out: &mut Vec<GroupSpec>) {
+        if self.page == Page::Applications && self.editing {
+            out.push(GroupSpec {
+                id: GroupId(4),
+                kind: GroupKind::Grid {
+                    cols: 8,
+                    holes: &[],
+                },
+                seat: Seat::Remembered,
+                reachable: AxisMask::BOTH,
+                edge: [EdgeRule::Stop; 4],
+                extent: KEYBOARD,
+                len: 40,
+                elem: ElemKind::Control,
+            });
+            return;
+        }
+        if self.page == Page::Applications {
+            out.push(GroupSpec {
+                id: GroupId(3),
+                kind: GroupKind::Row { wrap: false },
+                seat: Seat::Nearest,
+                reachable: AxisMask::BOTH,
+                edge: [EdgeRule::Geometric; 4],
+                extent: TOOLBAR,
+                len: 3,
+                elem: ElemKind::Control,
+            });
+        }
         out.push(GroupSpec {
             id: GroupId(0),
             kind: GroupKind::Column,
@@ -355,7 +414,12 @@ impl Focusable<HomeHost> for Surface {
         });
     }
     fn group_of(&self, key: &u32, _cx: &Cx<'_, HomeHost>) -> Option<GroupId> {
-        if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
+        if self.page == Page::Applications && self.editing {
+            return keyboard_key(*key).map(|_| GroupId(4));
+        }
+        if self.page == Page::Applications && toolbar_key(*key).is_some() {
+            Some(GroupId(3))
+        } else if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
             Some(GroupId(0))
         } else if self.input_cards.index_of(key).is_some() {
             Some(GroupId(2))
@@ -364,6 +428,35 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn neighbour(&self, key: FocusKey<u32>, dir: Dir, _cx: &Cx<'_, HomeHost>) -> Step<u32> {
+        if self.page == Page::Applications {
+            if let Some(i) = keyboard_key(key.elem).filter(|_| self.editing) {
+                let next = match dir {
+                    Dir::Up => i.checked_sub(8),
+                    Dir::Down => Some(i + 8).filter(|n| *n < 40),
+                    Dir::Left => i.checked_sub(1).filter(|_| i % 8 > 0),
+                    Dir::Right => Some(i + 1).filter(|_| i % 8 < 7),
+                };
+                return next.map_or(Step::Edge, |n| {
+                    Step::Move(FocusKey {
+                        entry: key.entry,
+                        elem: KEYBOARD_BASE + n as u32,
+                    })
+                });
+            }
+            if let Some(i) = toolbar_key(key.elem) {
+                let next = match dir {
+                    Dir::Left => i.checked_sub(1),
+                    Dir::Right => Some(i + 1).filter(|n| *n < 3),
+                    _ => None,
+                };
+                return next.map_or(Step::Edge, |n| {
+                    Step::Move(FocusKey {
+                        entry: key.entry,
+                        elem: TOOLBAR_BASE + n as u32,
+                    })
+                });
+            }
+        }
         if self.page == Page::Home {
             if self.cards.index_of(&key.elem).is_some() {
                 return self
@@ -401,6 +494,21 @@ impl Focusable<HomeHost> for Surface {
         })
     }
     fn place(&self, key: &u32, cx: &Cx<'_, HomeHost>, at: At) -> Option<Placed> {
+        if self.page == Page::Applications {
+            let special = if self.editing {
+                keyboard_key(*key).map(|i| (keyboard_rect(i), i, KEYBOARD))
+            } else {
+                toolbar_key(*key).map(|i| (toolbar_rect(i), i, TOOLBAR))
+            };
+            if let Some((rect, index, clip)) = special {
+                return Some(Placed {
+                    rect,
+                    rest_rect: rect,
+                    clip,
+                    index: Some(index as u32),
+                });
+            }
+        }
         if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
             let i = (*key - RAIL_BASE) as usize;
             let rect = self.rail.table.row_frame(RAIL, i as i32)?;
@@ -433,17 +541,42 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn reconcile(&self, want: FocusKey<u32>, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
+        if self.page == Page::Applications && self.editing && keyboard_key(want.elem).is_none() {
+            return FocusKey {
+                entry: entry(self.page),
+                elem: KEYBOARD_BASE,
+            };
+        }
         if self.group_of(&want.elem, _cx).is_some() {
             want
         } else {
             FocusKey {
                 entry: entry(self.page),
-                elem: self.keys().first().copied().unwrap_or(RAIL_BASE),
+                elem: self
+                    .keys()
+                    .first()
+                    .copied()
+                    .unwrap_or(if self.page == Page::Applications {
+                        TOOLBAR_BASE
+                    } else {
+                        RAIL_BASE
+                    }),
             }
         }
     }
     fn seat(&self, group: GroupId, from: Placed, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
-        let key = if group == GroupId(0) {
+        let key = if group == GroupId(4) {
+            KEYBOARD_BASE
+        } else if group == GroupId(3) {
+            (0..3)
+                .min_by(|a, b| {
+                    (toolbar_rect(*a).cx() - from.rect.cx())
+                        .abs()
+                        .total_cmp(&(toolbar_rect(*b).cx() - from.rect.cx()).abs())
+                })
+                .map(|i| TOOLBAR_BASE + i as u32)
+                .unwrap_or(TOOLBAR_BASE)
+        } else if group == GroupId(0) {
             RAIL_BASE
                 + TABS
                     .iter()
@@ -496,6 +629,7 @@ pub struct Shell {
     live_now: u32,
     live_updates: u32,
     app_launches_enabled: bool,
+    drawer: Drawer,
 }
 impl Shell {
     pub fn new(snapshot: Snapshot, mut prefs: Preferences) -> Self {
@@ -543,6 +677,7 @@ impl Shell {
             live_now: 0,
             live_updates: 0,
             app_launches_enabled: false,
+            drawer: Drawer::default(),
         };
         shell.rebuild(Page::Home);
         shell
@@ -573,6 +708,7 @@ impl Shell {
             rail: rt,
             table: FormTable::new(2000),
             table_mode: false,
+            editing: false,
         }
     }
     fn context<'a>(&'a self, measure: &'a dyn plx_machine::machine::Measure) -> Cx<'a, HomeHost> {
@@ -597,6 +733,13 @@ impl Shell {
     fn rebuild(&mut self, page: Page) {
         self.input.cancel_press();
         self.surface = Self::blank(page);
+        self.surface.editing = page == Page::Applications && self.drawer.editing;
+        if page == Page::Applications {
+            self.surface.grid = Grid::new(
+                entry(page),
+                GridSpec::new(374.0, 152.0).columns(4, CARD_STYLE, 566.0),
+            );
+        }
         self.status = cstr(match page {
             Page::Home | Page::Applications => {
                 if self.app_launches_enabled {
@@ -611,6 +754,13 @@ impl Shell {
         match page {
             Page::Home | Page::Applications => {
                 for app in &self.catalogue.applications {
+                    if page == Page::Applications
+                        && !self
+                            .drawer
+                            .matches(&app.title, self.prefs.favourites.contains(&app.id))
+                    {
+                        continue;
+                    }
                     if page == Page::Home && !self.prefs.favourites.contains(&app.id) {
                         continue;
                     }
@@ -694,7 +844,13 @@ impl Shell {
             owner,
             &self.surface,
             FocusTarget::ContainerGroup(GroupId(if self.surface.keys().is_empty() {
-                0
+                if page == Page::Applications {
+                    3
+                } else {
+                    0
+                }
+            } else if self.surface.editing {
+                4
             } else {
                 if page == Page::Home && self.surface.cards.items.is_empty() {
                     2
@@ -979,6 +1135,19 @@ impl Shell {
                     to: GroupId(1),
                 },
             ]
+        } else if self.surface.page == Page::Applications && !self.drawer.editing {
+            vec![
+                Link {
+                    from: GroupId(1),
+                    dir: Dir::Up,
+                    to: GroupId(3),
+                },
+                Link {
+                    from: GroupId(3),
+                    dir: Dir::Down,
+                    to: GroupId(1),
+                },
+            ]
         } else {
             Vec::new()
         };
@@ -1021,6 +1190,12 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        if self.surface.page == Page::Applications && self.drawer.editing {
+            self.drawer.editing = false;
+            self.rebuild(Page::Applications);
+            self.focus_drawer_control(2);
+            return;
+        }
         if matches!(
             self.surface.page,
             Page::Picture
@@ -1067,6 +1242,29 @@ impl Shell {
     fn activate(&mut self, key: FocusKey<u32>, hold: bool) {
         if key.entry != entry(self.surface.page) {
             return;
+        }
+        if self.surface.page == Page::Applications {
+            if let Some(index) = keyboard_key(key.elem).filter(|_| self.drawer.editing) {
+                if self.drawer.key(index) {
+                    self.rebuild(Page::Applications);
+                    if !self.drawer.editing {
+                        self.focus_drawer_control(2);
+                    }
+                }
+                return;
+            }
+            if let Some(index) = toolbar_key(key.elem) {
+                match index {
+                    0 => self.drawer.favourites_only = false,
+                    1 => self.drawer.favourites_only = true,
+                    _ => self.drawer.editing = true,
+                }
+                self.rebuild(Page::Applications);
+                if self.drawer.editing {
+                    self.focus_search_key(0);
+                }
+                return;
+            }
         }
         if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
             self.rebuild(TABS[(key.elem - RAIL_BASE) as usize].0);
@@ -1290,10 +1488,15 @@ impl Shell {
                 );
             }
         } else {
-            let _clip = f.clip(p, CONTENT);
+            let content = if self.surface.editing {
+                Rect::new(CONTENT.x, 330.0, CONTENT.w, 320.0)
+            } else {
+                CONTENT
+            };
+            let _clip = f.clip(p, content);
             self.surface
                 .grid
-                .draw(&mut f, p.clipped(CONTENT), &self.surface.cards);
+                .draw(&mut f, p.clipped(content), &self.surface.cards);
         }
         for i in 0..4 {
             if let Some(r) = self.surface.rail.table.row_frame(RAIL, i) {
@@ -1335,19 +1538,131 @@ impl Shell {
                 }
             }
         }
-        let stops = f.into_stops();
+        if self.surface.page == Page::Applications {
+            let focused = cx.focus.current.map(|k| k.elem);
+            for (i, title) in [
+                "All apps".to_owned(),
+                "Favourites".to_owned(),
+                if self.drawer.query.is_empty() {
+                    "Search apps…".into()
+                } else {
+                    format!("Search: {}", self.drawer.query)
+                },
+            ]
+            .iter()
+            .enumerate()
+            {
+                let label = cstr(&plx_gfx::text::elide(
+                    title,
+                    toolbar_rect(i).w - 44.0,
+                    theme::size::LABEL,
+                    1,
+                    false,
+                ));
+                TabPill::new(label.as_ptr(), theme::size::LABEL, toolbar_rect(i))
+                    .selected(i < 2 && (i == 1) == self.drawer.favourites_only)
+                    .focused(focused == Some(TOOLBAR_BASE + i as u32))
+                    .draw(&Env::inert(), p);
+                if !self.drawer.editing {
+                    f.stop(
+                        p,
+                        Stop {
+                            key: FocusKey {
+                                entry: entry(self.surface.page),
+                                elem: TOOLBAR_BASE + i as u32,
+                            },
+                            rect: toolbar_rect(i),
+                            rest_rect: toolbar_rect(i),
+                            clip: TOOLBAR,
+                            hover: Hover::Focus,
+                            activate: Activate::Press,
+                        },
+                    );
+                }
+            }
+            if self.surface.cards.items.is_empty() {
+                Label::new(
+                    c"No matching apps".as_ptr(),
+                    theme::size::BODY,
+                    theme::TEXT_SECONDARY,
+                )
+                .draw(p, Rect::new(566.0, 390.0, 1180.0, 120.0));
+            }
+            if self.drawer.editing {
+                for (i, label) in KEYS.iter().enumerate() {
+                    TabPill::new(cstr(label).as_ptr(), theme::size::CAPTION, keyboard_rect(i))
+                        .focused(focused == Some(KEYBOARD_BASE + i as u32))
+                        .draw(&Env::inert(), p);
+                    f.stop(
+                        p,
+                        Stop {
+                            key: FocusKey {
+                                entry: entry(self.surface.page),
+                                elem: KEYBOARD_BASE + i as u32,
+                            },
+                            rect: keyboard_rect(i),
+                            rest_rect: keyboard_rect(i),
+                            clip: KEYBOARD,
+                            hover: Hover::Focus,
+                            activate: Activate::Press,
+                        },
+                    );
+                }
+            }
+        }
+        let mut stops = f.into_stops();
+        if self.surface.editing {
+            stops.retain(|stop| keyboard_key(stop.key.elem).is_some());
+        }
         self.input.hit.fill(stops);
         self.input.hit.swap();
-        Label::new(
-            self.status.as_ptr(),
-            theme::size::CAPTION,
-            theme::TEXT_TERTIARY,
-        )
-        .draw(p, Rect::new(96.0, 985.0, 1728.0, 44.0));
+        let status = if self.drawer.editing && self.surface.page == Page::Applications {
+            c"OK to type • Back to finish search"
+        } else {
+            self.status.as_c_str()
+        };
+        Label::new(status.as_ptr(), theme::size::CAPTION, theme::TEXT_TERTIARY)
+            .draw(p, Rect::new(96.0, 985.0, 1728.0, 44.0));
+    }
+    pub fn focus_drawer_control(&mut self, index: usize) -> bool {
+        if self.surface.page != Page::Applications || self.drawer.editing || index >= 3 {
+            return false;
+        }
+        self.focus_special(TOOLBAR_BASE + index as u32, GroupId(3));
+        true
+    }
+    pub fn focus_search_key(&mut self, index: usize) -> bool {
+        if self.surface.page != Page::Applications || !self.drawer.editing || index >= KEYS.len() {
+            return false;
+        }
+        self.focus_special(KEYBOARD_BASE + index as u32, GroupId(4));
+        true
+    }
+    fn focus_special(&mut self, key: u32, group: GroupId) {
+        let owner = InputOwner::Entry(entry(self.surface.page));
+        let outcome = self.input.engine.set(
+            owner,
+            FocusKey {
+                entry: entry(self.surface.page),
+                elem: key,
+            },
+            Some(group),
+            By::Restore,
+        );
+        self.moved(outcome);
+    }
+    pub fn first_application(&self) -> Option<String> {
+        self.surface.cards.items.first().map(|c| c.id.clone())
+    }
+    pub fn application_count(&self) -> usize {
+        self.surface.cards.len()
+    }
+    pub fn drawer_state(&self) -> &Drawer {
+        &self.drawer
     }
     /// Used by the app picker/search and by identity-based verification, never a private cursor.
     pub fn focus_application(&mut self, id: &str) -> bool {
-        if !matches!(self.surface.page, Page::Home | Page::Applications) {
+        if self.surface.editing || !matches!(self.surface.page, Page::Home | Page::Applications) {
             return false;
         }
         let Some(card) = self.surface.cards.items.iter().find(|c| c.id == id) else {
@@ -1418,6 +1733,14 @@ impl Shell {
             .input
             .engine
             .current(InputOwner::Entry(entry(self.surface.page)))?;
+        if self.surface.page == Page::Applications {
+            if let Some(i) = keyboard_key(key.elem) {
+                return Some(format!("search-key-{}", KEYS[i]));
+            }
+            if let Some(i) = toolbar_key(key.elem) {
+                return Some(["All apps", "Favourites", "Search apps"][i].into());
+            }
+        }
         if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
             Some(TABS[(key.elem - RAIL_BASE) as usize].1.to_owned())
         } else if self.surface.table_mode {

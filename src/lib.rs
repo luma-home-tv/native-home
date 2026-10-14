@@ -15,3 +15,5 @@ pub mod native_probe;
 pub mod live;
 
 pub mod actions;
+
+pub mod drawer;
