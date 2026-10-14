@@ -1,0 +1,154 @@
+{
+  "code_revision": "5cc6665790ddbd9ea33e54966e6b4ff12ab6d693",
+  "package_version": "0.10.0",
+  "binary_sha256": "0dfd80daede236827de102196d4e123d02cc7dea0a704e038ad1faee2b9099b2",
+  "client_tests": {
+    "passed": 60,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "host_visual_scope": "Earlier 847fbb2 layout/status render; final native proof uses the revision above",
+  "framework": "Explicitly attributed pinned PlxNative rendering/UI/input crates; no Plex client or playback features",
+  "design_target": "Original synthetic Apple TV-style concepts remain the finished-interface target; see design-fidelity.md",
+  "native": {
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "drawable": [
+        1920,
+        1080
+      ],
+      "seven_pages_brand_and_navigation_textures_loaded": true,
+      "pages": [
+        "home",
+        "applications",
+        "inputs",
+        "controls",
+        "picture",
+        "sound",
+        "network"
+      ],
+      "gl_errors": false,
+      "native_read_cycles": 4,
+      "all_read_domains_success": true,
+      "injected_back_exit": true,
+      "setting_writes": false,
+      "household_app_launches": false,
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_update": {
+        "version": "0.10.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "clock_matches_independent_tv_read": true,
+        "survived_previous_30_second_bound": true,
+        "normal_package_no_captures": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    },
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "drawable": [
+        1920,
+        1080
+      ],
+      "seven_pages_brand_and_navigation_textures_loaded": true,
+      "pages": [
+        "home",
+        "applications",
+        "inputs",
+        "controls",
+        "picture",
+        "sound",
+        "network"
+      ],
+      "gl_errors": false,
+      "native_read_cycles": 4,
+      "all_read_domains_success": true,
+      "injected_back_exit": true,
+      "setting_writes": false,
+      "household_app_launches": false,
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_update": {
+        "version": "0.10.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "clock_matches_independent_tv_read": true,
+        "survived_previous_30_second_bound": true,
+        "normal_package_no_captures": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    }
+  },
+  "read_only_operations": [
+    "com.webos.audio/getVolume",
+    "com.webos.service.audio/getSoundOutput",
+    "com.webos.service.settings/getSystemSettings",
+    "com.webos.service.connectionmanager/getStatus",
+    "com.webos.service.systemservice/time/getSystemTime"
+  ],
+  "compatibility": {
+    "picture_integer_strings": "C2 returned numeric picture settings as decimal strings. Accept only canonical bounded integers in confirmed 0..100 ranges; reject decimal, exponent, negative, boolean and out-of-range values.",
+    "audio_aliases": "Legacy audio getVolume and modern getSoundOutput succeeded under ordinary app identities. Modern audio getVolume returned unknown method; legacy getSoundOut returned volume fields, not output.",
+    "sound_context": "Effective output read before and after volume; inconsistent outputs reject the reading. Optional mode/profile require configured output match.",
+    "network": "Separate connected/disconnected wired and Wi-Fi status; no active-route inference. Missing or stale values unavailable."
+  },
+  "intermediate_c2_proof": {
+    "revision": "815bef7",
+    "issue": "Read assertion failed because picture integers were strings; sound/network and renderer succeeded.",
+    "cleanup_completed": true,
+    "retained_app_unchanged": true,
+    "final_corrected_proof_passed": true
+  },
+  "settings_handoff": "Only previously validated G2 Picture route enabled; C2 and broader category handoffs remain gated.",
+  "remaining": [
+    "App management menu and favourite ordering",
+    "Concept Controls category/detail composition and long-text/partial-grid-row polish",
+    "HDMI switching and authoritative active-source/video-format detail",
+    "C2 LG Settings handoff verification and broader per-operation control validation",
+    "Physical remote/pointer/wheel input, sustained performance/resources and reboot persistence"
+  ],
+  "privacy": "Per-device packages, inventories/icons, saved-favourite backups, service payloads and native captures stay outside Git."
+}

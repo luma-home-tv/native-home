@@ -65,25 +65,29 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.7.0 has been installed and relaunched on both
-the OLED65C26LD C2 and OLED55G26LA G2; their native idle/wake, owned-app launch,
-removal and retained-install checks are recorded in the
-[deployment milestone](docs/deployment-milestone.json).
+package modes and removal. Version 0.10.0 is installed on both the OLED65C26LD C2
+and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
+records native branding, live sound/network reads, isolated removal and retained
+updates with favourites preserved. Earlier native idle/wake and owned-app launch
+checks are recorded in the [deployment milestone](docs/deployment-milestone.json).
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching remains gated and
 native settings remain read-only. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
-closing its overlay, installed as 0.9.0 on the G2. Private TV details and native household captures
+closing its overlay on the G2; the C2 handoff is still gated pending separate proof. Private TV details and native household captures
 stay outside tracked source. A black OLED canvas with graphite tiles is the
-design direction; performance, idle behaviour, physical input and complete
-controls still require device verification. The [drawer milestone](docs/drawer-milestone.json)
+design direction; sustained performance, physical input and complete controls
+still require device verification. The [drawer milestone](docs/drawer-milestone.json)
 adds native All/Favourites filtering and on-screen search, tested through
 scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits;
 app ordering and full text entry remain ongoing. The
 [clock milestone](docs/clock-milestone.json) adds a cached native TV-time header,
 validated and installed as version 0.8.0 on the G2 with saved favourites preserved.
-The C2 remains on 0.7.0 and is on hold for further device work at the user's request.
+The [concept fidelity map](docs/design-fidelity.md) records the implemented Luma
+logo/rail, larger Home shelves and status readings alongside the remaining
+app-management, ordering and Controls-layout work. The original concepts remain
+the target for the finished interface.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier
 combined prototype. The [standalone device milestone](docs/standalone-device-milestone.json) now

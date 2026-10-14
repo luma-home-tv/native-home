@@ -57,13 +57,13 @@ with clearly identified LG-managed routes where direct control is inappropriate.
 
 ## Relationship to current proof
 
-The native preview already renders cards and forms on the G2 and has tested
-catalogue identity, gesture cancellation, favourite save/readback and clean
-removal. The normal app has read some catalogue, HDMI and picture endpoints.
-Later milestones now prove bounded ordinary-app live refresh and launching an
-isolated native test target. They do not establish audio status, verified source
-switching, a clock/status rail, search, ordering,
-setting writes, physical remote/pointer coverage or dashboard performance.
+The native preview renders cards and forms on both TVs and has tested catalogue
+identity, favourite save/readback and clean removal. Version 0.10.0 adds the Luma
+header/rail branding and live sound/network readings to the existing native
+clock, drawer filters and search. The [fidelity map](../design-fidelity.md)
+compares implementation with these concepts and identifies the remaining menu,
+ordering and Controls-layout gaps. Source switching, native setting writes,
+physical remote/pointer coverage and dashboard performance remain unverified.
 The render watermark stays visible in every exported concept so these images
 cannot be mistaken for that device evidence.
 
@@ -73,7 +73,7 @@ The four `.svg` files and `overview.svg` are editable vector artwork. The
 `render.py` source generates them and renders local PNGs through `rsvg-convert`:
 
 ```sh
-python3 examples/native-home/docs/concepts/render.py
+python3 docs/concepts/render.py
 ```
 
 It uses the repository's existing OFL Inter fonts through a temporary Fontconfig

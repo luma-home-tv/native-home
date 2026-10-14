@@ -1,8 +1,8 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.9.0 on the G2** and **0.7.0 on the C2**.
-The C2 is on hold for further device work at the user's request. It is a normal native app in LG's
+`com.ash.nativehome.preview`, version **0.10.0 on both the G2 and C2**.
+Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
 Open it from LG Home. Directions move between the rail, favourites and app
@@ -30,12 +30,17 @@ preview; complete controls, physical input, performance and reboot persistence
 remain unfinished. The [deployment record](deployment-milestone.json) identifies
 the precise source and native proof on the C2 and G2.
 
-The G2's 0.8.0 header displays the TV's own time and timezone label. It reads
+The header displays the Luma logo/name and the TV's own calendar, time and timezone label. It reads
 LG's system-time service every 30 seconds on a worker, extrapolates briefly with
 monotonic time, caches the displayed text and expires unavailable/invalid/stale
 readings after 65 seconds. It never changes the TV's time, timezone or panel
-settings. The [clock milestone](clock-milestone.json) separates G2 native/update
-proof from the interrupted C2 component test. API research used the
+settings. The [clock milestone](clock-milestone.json) records the earlier G2
+proof; the [branding/status milestone](branding-status-milestone.json) records
+the latest successful native and retained-update checks on both devices.
+Sound and Network now show read-only ordinary-app readings. LG Settings handoff
+remains firmware-gated to the separately tested G2 Picture route; the C2 route
+has not yet received that proof. The [fidelity map](design-fidelity.md) tracks the
+remaining differences from the concepts. API research used the
 [official webOS OSE LS2 reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-service-systemservice/);
 commercial-TV compatibility is based on the recorded ordinary-app device tests.
 

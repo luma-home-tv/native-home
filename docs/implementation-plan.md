@@ -1,14 +1,19 @@
 # Luma Home implementation plan
 
-The target is a responsive native Home dashboard for the OLED55G26LA on webOS24.
+The target is a responsive native Home dashboard for the OLED55G26LA G2 and
+OLED65C26LD C2 on webOS24. Both are authorised for development and independent testing.
 It remains a separate application: LG Home, Home/power/volume handling, firmware,
 system libraries, boot configuration, media services and OLED protections stay
-under LG's control. The C2 is outside the development/test scope.
+under LG's control. Retained installations and each TV's saved favourites must
+survive updates; temporary proof packages use a separate identity.
 
 The [concept renders](concepts/README.md) show the intended interface. They are
 synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
+The [fidelity map](design-fidelity.md) compares the original concepts with the
+current native interface. Version 0.10.0 is installed on both devices; the
+[branding/status record](branding-status-milestone.json) is the latest scoped proof.
 
 ## Direction
 
@@ -31,15 +36,15 @@ and palette; a black background is not treated as proof of burn-in prevention.
 
 | Area | Intended behaviour | Current evidence |
 | --- | --- | --- |
-| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Combined favourites and HDMI shelves implemented with shared native components; host and G2 native captures inspected with live readings; OLED black canvas captured; clock remains to build |
+| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves verified on both TVs; explicit LG Home route remains |
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; order remains |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards with distinct plug, signal and active states; select through LG's normal source path | Native cards refreshed through normal-app reads; disconnected HDMI 4 launch reached its foreground but EIM activation readback did not confirm it; switching stays disabled |
-| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Native category/value pages rendered; four picture values/context refreshed live; write capability remains unavailable; Settings adapter observed its overlay after a longer load window, but independent observation remains incomplete |
+| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Read-only picture, sound and network refresh verified on both; G2 Picture Settings overlay/return independently proved; C2 handoff and broader Controls composition remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
-| Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering proved; this client has no validated FPS, latency, memory or idle result yet |
+| Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; FPS, latency, sustained idle resources and stress memory remain unverified |
 
-The latest [OLED/branding milestone](oled-branding-milestone.json) records
+The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects
 the earlier missing-rail interpretation: original cropped framebuffer bytes show
 the complete rail on all six pages. All six complete PPM files also match the
@@ -57,21 +62,21 @@ request. Physical input and full text/IME coverage remain to verify.
 1. **Expand live data.** The typed normal-app provider now refreshes catalogue,
    launch points, HDMI and picture state in the native interface. Focus/favourites,
    unchanged gestures and stale/context failure handling have checks; four real
-   cycles were applied on the G2. Complete broader coverage, audio and newly
-   installed icon loading. Do not treat subscription acknowledgement as delivery
+   cycles were applied on both TVs, including sound/network in 0.10.0. Complete
+   broader coverage and newly installed icon loading. Do not treat subscription acknowledgement as delivery
    proof. Keep loading and queues bounded.
 2. **Complete normal actions.** The restricted application adapter and live
    drawer/shared-OK path now launch an isolated native test target with both
    adapter and independent foreground readback. Normal application launching is
    enabled; personal viewing accounts were not exercised. Finish device proof
-   for the explicit HDMI and LG Settings adapters before enabling them. Keep
+   for HDMI and C2 LG Settings before enabling them; G2 Picture handoff is proved. Keep
    unknown/hidden/self targets, unvalidated operations and extra parameters
    rejected; an acknowledged request is not execution proof.
 3. **Expand controls safely.** Audit webOS24 descriptors and semantics for each
    operation. A descriptor alone does not grant write authority. Require valid
    range/enum, matching input/HDR/mode context, bounded effect, readback and an
-   original-state restoration test. Audio's current ordinary-app getter failure
-   is unresolved; it does not establish that root is required. Use a restricted
+   original-state restoration test. Ordinary-app audio getter aliases and network
+   readings are now independently verified; native setters remain absent. Use a restricted
    local helper only for operations that actually need privilege, with caller,
    executable and session validation and a fixed operation allowlist.
 4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source
