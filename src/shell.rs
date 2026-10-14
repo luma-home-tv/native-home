@@ -630,6 +630,9 @@ pub struct Shell {
     live_updates: u32,
     app_launches_enabled: bool,
     drawer: Drawer,
+    clock: crate::clock::View,
+    clock_time: CString,
+    clock_source: CString,
 }
 impl Shell {
     pub fn new(snapshot: Snapshot, mut prefs: Preferences) -> Self {
@@ -678,6 +681,9 @@ impl Shell {
             live_updates: 0,
             app_launches_enabled: false,
             drawer: Drawer::default(),
+            clock: crate::clock::View::default(),
+            clock_time: cstr("--:--"),
+            clock_source: cstr("TV time unavailable"),
         };
         shell.rebuild(Page::Home);
         shell
@@ -994,9 +1000,16 @@ impl Shell {
     pub fn live_updates(&self) -> u32 {
         self.live_updates
     }
+    pub fn set_clock(&mut self, view: &crate::clock::View) {
+        if self.clock != *view {
+            self.clock_time = cstr(&view.time);
+            self.clock_source = cstr(&view.source);
+            self.clock = view.clone();
+        }
+    }
     fn reading_label(&self) -> String {
         let Some(fresh) = &self.live_state else {
-            return format!("TV state captured {}", self.snapshot.captured_at);
+            return "Updating TV state…".into();
         };
         if matches!(
             self.surface.page,
@@ -1401,7 +1414,8 @@ impl Shell {
             "rail_scroll":self.surface.rail.table.scroll_pos(),
             "rail_focused":self.surface.rail.table.list_focused,
             "rail_selection":self.surface.rail.table.sel,
-            "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none()
+            "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none(),
+            "clock":self.clock
         })
     }
     pub fn draw(&mut self) {
@@ -1415,13 +1429,27 @@ impl Shell {
         )
         .bold()
         .draw(p, Rect::new(96.0, 60.0, 1320.0, 76.0));
+        Label::new(
+            self.clock_time.as_ptr(),
+            theme::size::HEADLINE,
+            theme::TEXT_PRIMARY,
+        )
+        .h(HAlign::Right)
+        .draw(p, Rect::new(1450.0, 60.0, 374.0, 76.0));
+        Label::new(
+            self.clock_source.as_ptr(),
+            theme::size::CAPTION,
+            theme::TEXT_SECONDARY,
+        )
+        .h(HAlign::Right)
+        .draw(p, Rect::new(1450.0, 154.0, 374.0, 44.0));
         let subtitle = cstr(&self.reading_label());
         Label::new(
             subtitle.as_ptr(),
             theme::size::CAPTION,
             theme::TEXT_SECONDARY,
         )
-        .draw(p, Rect::new(96.0, 154.0, 1728.0, 44.0));
+        .draw(p, Rect::new(96.0, 154.0, 1300.0, 44.0));
         p.rect(
             Rect::new(96.0, 214.0, 1728.0, 1.0),
             0.0,

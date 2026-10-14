@@ -44,6 +44,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let capture_only = !device && !interactive && !args.iter().any(|a| a == "--interactive");
     let window = Window::new(!capture_only)?;
     let live_origin = Instant::now();
+    let mut clock = native_home::clock::Clock::default();
+    #[cfg(target_arch = "arm")]
+    let clock_worker = native_home::clock::Worker::native(live_origin)?;
+    let clock_fixture = assets.join("clock-fixture.json");
+    if !device && clock_fixture.exists() {
+        let bytes = std::fs::read(clock_fixture)?;
+        if bytes.len() > 4096 {
+            return Err("Oversized clock fixture".into());
+        }
+        let raw: serde_json::Value = serde_json::from_slice(&bytes)?;
+        clock.accept(native_home::clock::parse(&raw, live_origin.elapsed(), true));
+    }
     {
         use std::os::unix::fs::DirBuilderExt;
         let mut builder = std::fs::DirBuilder::new();
@@ -119,7 +131,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut action_receipts = Vec::new();
     let state_path = if device {
-        PathBuf::from("/media/developer/.com.ash.nativehome.preview-state")
+        native_home::identity::preferences_dir(plx_base::paths::app_id())
+            .ok_or("Unexpected preference identity")?
     } else {
         PathBuf::from(
             std::env::var_os("PLXNATIVE_RUNTIME_DIR")
@@ -159,6 +172,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for _ in 0..45 {
                 now += 17;
                 poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+                #[cfg(target_arch = "arm")]
+                if let Some(reply) = clock_worker.poll() {
+                    clock.accept(reply);
+                }
+                shell.set_clock(clock.view(live_origin.elapsed()));
                 shell.tick(now, 1.0 / 60.0);
                 shell.draw();
                 window.swap();
@@ -353,6 +371,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last = current;
             now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+            #[cfg(target_arch = "arm")]
+            if let Some(reply) = clock_worker.poll() {
+                clock.accept(reply);
+            }
+            shell.set_clock(clock.view(live_origin.elapsed()));
             shell.tick(now, dt);
             while let Some(e) = poll() {
                 events = events.saturating_add(1_u32);
@@ -494,6 +517,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(worker) = live_worker {
         worker.finish();
     }
+    #[cfg(target_arch = "arm")]
+    clock_worker.finish();
     if let Some(writer) = persistence {
         accept_replies(
             writer.finish(),
@@ -522,6 +547,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
         "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
+        "clock":clock.view(live_origin.elapsed()),
         "drawer_proof":drawer_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,

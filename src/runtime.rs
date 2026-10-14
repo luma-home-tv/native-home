@@ -78,10 +78,16 @@ pub struct Window {
 }
 impl Window {
     pub fn new(visible: bool) -> Result<Self, Box<dyn std::error::Error>> {
-        Self::create(visible, "com.ash.nativehome.preview")
+        let identity = if cfg!(target_arch = "arm") {
+            crate::identity::dashboard(plx_base::paths::app_id())
+                .ok_or("Unexpected dashboard identity")?
+        } else {
+            crate::identity::PREVIEW
+        };
+        Self::create(visible, identity)
     }
     pub fn launch_target() -> Result<Self, Box<dyn std::error::Error>> {
-        Self::create(true, "com.ash.nativehome.targetproof")
+        Self::create(true, crate::identity::TARGET)
     }
     fn create(visible: bool, expected_id: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let device = cfg!(target_arch = "arm");

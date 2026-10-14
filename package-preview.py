@@ -15,10 +15,14 @@ sdk = Path(os.environ['NATIVE_HOME_WEBOS_SDK']).resolve()
 binary = Path(os.environ['NATIVE_HOME_ARM_BINARY']).resolve()
 main = binary.name
 app_id = 'com.ash.nativehome.targetproof' if main == 'launch-target' else 'com.ash.nativehome.preview'
+test_identity = os.environ.get('NATIVE_HOME_TEST_IDENTITY') == '1'
+if test_identity:
+    if main != 'home-preview': raise ValueError('Test identity is for the dashboard only')
+    app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.7.0' if main == 'home-preview' else '0.1.0'
+version = '0.8.0' if main == 'home-preview' else '0.1.0'
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
@@ -32,7 +36,7 @@ for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
 icon = Path(os.environ.get('NATIVE_HOME_PREVIEW_ICON', repo / 'assets/luma-home/icon-160.png')).resolve()
 shutil.copy2(icon, stage / 'icon.png')
 info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
-        'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Preview',
+        'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Test' if test_identity else 'Luma Home Preview',
         'appDescription': 'Isolated native dashboard preview; app launching, read-only controls',
         'icon': 'icon.png', 'largeIcon': 'icon.png', 'transparent': False,
         'nativeLifeCycleInterfaceVersion': 2, 'handlesRelaunch': False,
@@ -99,6 +103,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'launch_proof': os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1',
            'route_proof': os.environ.get('NATIVE_HOME_ROUTE_PROOF'),
            'interactive_session': interactive,
+           'test_identity': test_identity,
            'session_capture_proof': interactive and os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF') == '1',
            'permissions': [], 'services': [], 'boot_hooks': [], 'system_files': []}
 (output / 'preview-package-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
