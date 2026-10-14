@@ -11,6 +11,83 @@ pub struct Reading {
     pub second_of_day: u32,
     pub zone: String,
     pub simulated: bool,
+    date: Option<Date>,
+}
+#[derive(Clone, Debug, Serialize)]
+struct Date {
+    year: i32,
+    month: u32,
+    day: u32,
+}
+impl Date {
+    fn days(year: i32, month: u32) -> u32 {
+        match month {
+            4 | 6 | 9 | 11 => 30,
+            2 => {
+                if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) {
+                    29
+                } else {
+                    28
+                }
+            }
+            _ => 31,
+        }
+    }
+    fn from_value(value: &Value) -> Option<Self> {
+        let year = value["year"]
+            .as_i64()
+            .filter(|v| (1970..=2100).contains(v))? as i32;
+        let month = value["month"].as_u64().filter(|v| (1..=12).contains(v))? as u32;
+        let day = value["day"]
+            .as_u64()
+            .filter(|v| *v >= 1 && *v <= u64::from(Self::days(year, month)))?
+            as u32;
+        Some(Self { year, month, day })
+    }
+    fn next(&mut self) {
+        self.day += 1;
+        if self.day > Self::days(self.year, self.month) {
+            self.day = 1;
+            self.month += 1;
+            if self.month > 12 {
+                self.month = 1;
+                self.year += 1;
+            }
+        }
+    }
+    fn label(&self) -> String {
+        let offsets = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+        let year = self.year - i32::from(self.month < 3);
+        let weekday = (year + year / 4 - year / 100
+            + year / 400
+            + offsets[self.month as usize - 1]
+            + self.day as i32)
+            % 7;
+        let day = [
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+        ][weekday as usize];
+        let month = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ][self.month as usize - 1];
+        format!("{day}, {} {month}", self.day)
+    }
 }
 pub fn parse(raw: &Value, observed: Duration, simulated: bool) -> Result<Reading, String> {
     if raw["returnValue"].as_bool() != Some(true) || raw["timeValid"].as_bool() != Some(true) {
@@ -40,6 +117,7 @@ pub fn parse(raw: &Value, observed: Duration, simulated: bool) -> Result<Reading
         second_of_day: (hour * 3600 + minute * 60 + second) as u32,
         zone: zone.into(),
         simulated,
+        date: Date::from_value(&raw["localtime"]),
     })
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -77,17 +155,22 @@ impl Clock {
         if let Some((reading, age)) = current {
             let minute = ((u64::from(reading.second_of_day) + age.as_secs()) % 86400 / 60) as u32;
             if self.minute != Some(minute) || !self.view.current {
+                let mut date = reading.date.clone();
+                if u64::from(reading.second_of_day) + age.as_secs() >= 86400 {
+                    if let Some(date) = date.as_mut() {
+                        date.next();
+                    }
+                }
+                let source = if reading.simulated {
+                    format!("Simulated time • {}", reading.zone)
+                } else if let Some(date) = date {
+                    format!("{} • {}", date.label(), reading.zone)
+                } else {
+                    format!("TV time • {}", reading.zone)
+                };
                 self.view = View {
                     time: format!("{:02}:{:02}", minute / 60, minute % 60),
-                    source: format!(
-                        "{} • {}",
-                        if reading.simulated {
-                            "Simulated time"
-                        } else {
-                            "TV time"
-                        },
-                        reading.zone
-                    ),
+                    source,
                     current: true,
                 };
                 self.minute = Some(minute);
@@ -207,5 +290,26 @@ mod tests {
         data["TZ"] = "BST".into();
         clock.accept(parse(&data, Duration::ZERO, true));
         assert_eq!(clock.view(Duration::ZERO).source, "Simulated time • BST");
+    }
+    #[test]
+    fn date_uses_tv_calendar_and_rolls_over_midnight_without_host_timezone() {
+        let mut data = sample();
+        data["localtime"]["year"] = 2026.into();
+        data["localtime"]["month"] = 10.into();
+        data["localtime"]["day"] = 14.into();
+        let mut clock = Clock::default();
+        clock.accept(parse(&data, Duration::ZERO, false));
+        assert_eq!(
+            clock.view(Duration::ZERO).source,
+            "Wednesday, 14 October • GMT"
+        );
+        assert_eq!(
+            clock.view(Duration::from_secs(2)).source,
+            "Thursday, 15 October • GMT"
+        );
+        data["localtime"]["month"] = 2.into();
+        data["localtime"]["day"] = 30.into();
+        clock.accept(parse(&data, Duration::ZERO, false));
+        assert_eq!(clock.view(Duration::ZERO).source, "TV time • GMT");
     }
 }

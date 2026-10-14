@@ -28,20 +28,20 @@ use crate::model::{controls_form, Action, Application, Catalogue, Context, Page,
 
 const TOOLBAR_BASE: u32 = 30_000;
 const KEYBOARD_BASE: u32 = 31_000;
-const TOOLBAR: Rect = Rect::new(566.0, 248.0, 1218.0, 58.0);
-const KEYBOARD: Rect = Rect::new(566.0, 668.0, 1218.0, 290.0);
+const TOOLBAR: Rect = Rect::new(480.0, 248.0, 1344.0, 58.0);
+const KEYBOARD: Rect = Rect::new(480.0, 668.0, 1344.0, 290.0);
 fn toolbar_rect(index: usize) -> Rect {
     match index {
-        0 => Rect::new(566.0, 248.0, 144.0, 58.0),
-        1 => Rect::new(734.0, 248.0, 226.0, 58.0),
-        _ => Rect::new(984.0, 248.0, 800.0, 58.0),
+        0 => Rect::new(480.0, 248.0, 144.0, 58.0),
+        1 => Rect::new(648.0, 248.0, 226.0, 58.0),
+        _ => Rect::new(898.0, 248.0, 886.0, 58.0),
     }
 }
 fn keyboard_rect(index: usize) -> Rect {
     Rect::new(
-        566.0 + (index % 8) as f32 * 154.0,
+        480.0 + (index % 8) as f32 * 168.0,
         668.0 + (index / 8) as f32 * 58.0,
-        140.0,
+        154.0,
         48.0,
     )
 }
@@ -57,8 +57,11 @@ fn keyboard_key(key: u32) -> Option<usize> {
 }
 const RAIL_BASE: u32 = 10_000;
 const TABLE_BASE: u32 = 20_000;
-const RAIL: Rect = Rect::new(96.0, 260.0, 330.0, 650.0);
-const CONTENT: Rect = Rect::new(526.0, 238.0, 1298.0, 690.0);
+const RAIL: Rect = Rect::new(96.0, 238.0, 286.0, 690.0);
+const CONTENT: Rect = Rect::new(438.0, 238.0, 1386.0, 690.0);
+fn rail_rect(index: usize) -> Rect {
+    Rect::new(96.0, 254.0 + 84.0 * index as f32, 286.0, 68.0)
+}
 const CARD_STYLE: RowStyle = RowStyle {
     w: 230.0,
     h: 230.0,
@@ -69,29 +72,31 @@ const CARD_STYLE: RowStyle = RowStyle {
     ..RowStyle::HOME
 };
 const INPUT_STYLE: RowStyle = RowStyle {
-    w: 280.0,
-    h: 158.0,
+    w: 310.0,
+    h: 190.0,
     gap: 32.0,
     ..CARD_STYLE
 };
 const HOME_APP_STYLE: RowStyle = RowStyle {
-    w: 270.0,
-    h: 218.0,
-    gap: 44.0,
-    margin_x: 566.0,
+    w: 310.0,
+    h: 230.0,
+    gap: 34.0,
+    margin_x: 480.0,
+    focus_scale: 1.05,
     ..CARD_STYLE
 };
 const HOME_INPUT_STYLE: RowStyle = RowStyle {
-    margin_x: 566.0,
+    margin_x: 480.0,
+    gap: 34.0,
     ..INPUT_STYLE
 };
 const HOME_FAVOURITES: SectionFrame = SectionFrame {
     y: 330.0,
-    clip: Rect::new(526.0, 292.0, 1298.0, 320.0),
+    clip: Rect::new(438.0, 292.0, 1386.0, 340.0),
 };
 const HOME_INPUTS: SectionFrame = SectionFrame {
-    y: 716.0,
-    clip: Rect::new(526.0, 678.0, 1298.0, 282.0),
+    y: 722.0,
+    clip: Rect::new(438.0, 684.0, 1386.0, 276.0),
 };
 const TABS: [(Page, &str); 4] = [
     (Page::Home, "Home"),
@@ -193,7 +198,7 @@ impl CardSource<HomeHost> for Cards {
     fn art(&self, i: usize) -> Art<'_> {
         let c = &self.items[i];
         Art::Texture {
-            id: c.texture.0,
+            id: 0, // Caller artwork is contained inside the shared card rather than cropped.
             width: c.texture.1,
             height: c.texture.2,
             identity: c.key as u64,
@@ -211,7 +216,7 @@ impl CardSource<HomeHost> for Cards {
         }
         TileLabel {
             title: Some(c.title.clone()),
-            caption: Some(c.caption.clone()),
+            caption: None,
             ..Default::default()
         }
     }
@@ -277,6 +282,35 @@ impl CardSource<HomeHost> for Cards {
             .bold()
             .h(HAlign::Center)
             .draw(p, tile.rect);
+        } else {
+            let scale = (tile.rect.w * 0.92 / c.texture.1).min(tile.rect.h * 0.92 / c.texture.2);
+            let (w, h) = (c.texture.1 * scale, c.texture.2 * scale);
+            p.tex(
+                c.texture.0,
+                Rect::new(tile.rect.cx() - w / 2.0, tile.rect.cy() - h / 2.0, w, h),
+                12.0,
+                [1.0; 4],
+            );
+        }
+        if input_key(&c.id).is_none() && !tile.focused {
+            let text = cstr(&plx_gfx::text::elide(
+                c.title.to_str().unwrap_or(""),
+                tile.rect.w,
+                28,
+                0,
+                false,
+            ));
+            Label::new(text.as_ptr(), 28, theme::TEXT_SECONDARY)
+                .h(HAlign::Center)
+                .draw(
+                    p,
+                    Rect::new(
+                        tile.rect.x,
+                        tile.rect.y + tile.rect.h + 14.0,
+                        tile.rect.w,
+                        44.0,
+                    ),
+                );
         }
     }
 }
@@ -511,7 +545,7 @@ impl Focusable<HomeHost> for Surface {
         }
         if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
             let i = (*key - RAIL_BASE) as usize;
-            let rect = self.rail.table.row_frame(RAIL, i as i32)?;
+            let rect = rail_rect(i);
             Some(Placed {
                 rect,
                 rest_rect: rect,
@@ -633,6 +667,8 @@ pub struct Shell {
     clock: crate::clock::View,
     clock_time: CString,
     clock_source: CString,
+    brand_texture: u32,
+    navigation_textures: [u32; 4],
 }
 impl Shell {
     pub fn new(snapshot: Snapshot, mut prefs: Preferences) -> Self {
@@ -684,6 +720,8 @@ impl Shell {
             clock: crate::clock::View::default(),
             clock_time: cstr("--:--"),
             clock_source: cstr("TV time unavailable"),
+            brand_texture: 0,
+            navigation_textures: [0; 4],
         };
         shell.rebuild(Page::Home);
         shell
@@ -705,7 +743,7 @@ impl Shell {
             page,
             grid: Grid::new(
                 entry(page),
-                GridSpec::new(282.0, 260.0).columns(4, CARD_STYLE, 566.0),
+                GridSpec::new(282.0, 300.0).columns(4, CARD_STYLE, 480.0),
             ),
             cards: Cards { items: Vec::new() },
             home_favourites: Shelf::new(entry(page), &HOME_APP_STYLE),
@@ -743,7 +781,7 @@ impl Shell {
         if page == Page::Applications {
             self.surface.grid = Grid::new(
                 entry(page),
-                GridSpec::new(374.0, 152.0).columns(4, CARD_STYLE, 566.0),
+                GridSpec::new(340.0, 330.0).columns(4, CARD_STYLE, 480.0),
             );
         }
         self.status = cstr(match page {
@@ -787,7 +825,7 @@ impl Shell {
                 }
             }
             Page::Inputs => {
-                self.surface.grid.set_columns(4, INPUT_STYLE, 566.0);
+                self.surface.grid.set_columns(4, INPUT_STYLE, 480.0);
                 self.surface.cards = self.input_cards();
             }
 
@@ -917,16 +955,20 @@ impl Shell {
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
         if let Some(fresh) = &self.live_state {
-            let due = [("picture", fresh.picture), ("sound", fresh.sound)]
-                .into_iter()
-                .any(|(section, stamp)| {
-                    !Freshness::current(stamp, now)
-                        && self
-                            .snapshot
-                            .settings
-                            .get(section)
-                            .is_some_and(|rows| rows.iter().any(|r| r.available))
-                });
+            let due = [
+                ("picture", fresh.picture),
+                ("sound", fresh.sound),
+                ("network", fresh.network),
+            ]
+            .into_iter()
+            .any(|(section, stamp)| {
+                !Freshness::current(stamp, now)
+                    && self
+                        .snapshot
+                        .settings
+                        .get(section)
+                        .is_some_and(|rows| rows.iter().any(|r| r.available))
+            });
             if due {
                 let before = self.snapshot.clone();
                 live::expire(&mut self.snapshot, fresh, now);
@@ -960,7 +1002,7 @@ impl Shell {
             &mut self.surface.grid,
             Grid::new(
                 entry(page),
-                GridSpec::new(282.0, 260.0).columns(4, CARD_STYLE, 566.0),
+                GridSpec::new(282.0, 300.0).columns(4, CARD_STYLE, 480.0),
             ),
         );
         let favourites = std::mem::replace(
@@ -1013,7 +1055,7 @@ impl Shell {
         };
         if matches!(
             self.surface.page,
-            Page::Network | Page::Accessibility | Page::General | Page::PanelCare
+            Page::Accessibility | Page::General | Page::PanelCare
         ) {
             return "Managed by LG".into();
         }
@@ -1028,6 +1070,7 @@ impl Shell {
             Page::Home | Page::Applications => fresh.catalogue,
             Page::Inputs => fresh.inputs,
             Page::Sound => fresh.sound,
+            Page::Network => fresh.network,
             Page::Picture => fresh.picture,
             _ => fresh.picture,
         };
@@ -1051,6 +1094,30 @@ impl Shell {
         }
     }
     pub fn load_icons(&mut self, assets: &std::path::Path) {
+        for (i, svg) in [
+            include_str!("../assets/luma-home/navigation/home.svg"),
+            include_str!("../assets/luma-home/navigation/apps.svg"),
+            include_str!("../assets/luma-home/navigation/inputs.svg"),
+            include_str!("../assets/luma-home/navigation/controls.svg"),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            if self.navigation_textures[i] == 0 {
+                if let Some(pixels) = plx_gfx::svg::rasterize(svg, 32, 32) {
+                    self.navigation_textures[i] =
+                        plx_gfx::gfx::upload_rgba(0, 32, 32, pixels.as_ptr());
+                }
+            }
+        }
+        if self.brand_texture == 0 {
+            if let Some((w, h, pixels)) =
+                plx_gfx::img::img_decode_owned(include_bytes!("../assets/luma-home/icon-160.png"))
+            {
+                self.brand_texture =
+                    plx_gfx::gfx::upload_rgba(0, w as i32, h as i32, pixels.as_ptr());
+            }
+        }
         for (id, _, _) in self.textures.values() {
             plx_gfx::gfx::delete_tex(*id);
         }
@@ -1416,6 +1483,7 @@ impl Shell {
             "rail_selection":self.surface.rail.table.sel,
             "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none(),
             "clock":self.clock
+            ,"branding_loaded":self.brand_texture!=0,"navigation_icons_loaded":self.navigation_textures.iter().all(|id|*id!=0)
         })
     }
     pub fn draw(&mut self) {
@@ -1423,15 +1491,23 @@ impl Shell {
         let ground = theme::SURFACE_OLED;
         plx_gfx::gfx::frame_clear(ground[0], ground[1], ground[2]);
         Label::new(
-            cstr(self.surface.page.title().unwrap_or("Home")).as_ptr(),
+            c"Luma Home".as_ptr(),
             theme::size::DISPLAY,
             theme::TEXT_PRIMARY,
         )
         .bold()
-        .draw(p, Rect::new(96.0, 60.0, 1320.0, 76.0));
+        .draw(p, Rect::new(184.0, 60.0, 1150.0, 76.0));
+        if self.brand_texture != 0 {
+            p.tex(
+                self.brand_texture,
+                Rect::new(96.0, 68.0, 64.0, 64.0),
+                0.0,
+                [1.0; 4],
+            );
+        }
         Label::new(
             self.clock_time.as_ptr(),
-            theme::size::HEADLINE,
+            theme::size::DISPLAY,
             theme::TEXT_PRIMARY,
         )
         .h(HAlign::Right)
@@ -1442,8 +1518,12 @@ impl Shell {
             theme::TEXT_SECONDARY,
         )
         .h(HAlign::Right)
-        .draw(p, Rect::new(1450.0, 154.0, 374.0, 44.0));
-        let subtitle = cstr(&self.reading_label());
+        .draw(p, Rect::new(1334.0, 154.0, 490.0, 44.0));
+        let subtitle = cstr(&format!(
+            "{} • {}",
+            self.surface.page.title().unwrap_or("Home"),
+            self.reading_label()
+        ));
         Label::new(
             subtitle.as_ptr(),
             theme::size::CAPTION,
@@ -1457,7 +1537,97 @@ impl Shell {
             theme::HAIRLINE,
             0.0,
         );
-        self.surface.rail.table.draw_page(p, RAIL, &LegacyMeasure);
+        let current = match self.surface.page {
+            Page::Home => 0,
+            Page::Applications => 1,
+            Page::Inputs => 2,
+            _ => 3,
+        };
+        let owner = InputOwner::Entry(entry(self.surface.page));
+        let focused = self.input.engine.current(owner).map(|key| key.elem);
+        for (i, (_, title)) in TABS.iter().enumerate() {
+            let rect = rail_rect(i);
+            let active = focused == Some(RAIL_BASE + i as u32);
+            let ink = if active {
+                theme::INK_ON_ACCENT
+            } else if i == current {
+                theme::TEXT_PRIMARY
+            } else {
+                theme::TEXT_SECONDARY
+            };
+            if active || i == current {
+                let fill = if active {
+                    theme::TEXT_PRIMARY
+                } else {
+                    theme::SURFACE_PANEL
+                };
+                p.rect(rect, 18.0, fill, fill, 0.0);
+            }
+            Label::new(cstr(title).as_ptr(), theme::size::BODY, ink)
+                .draw(p, Rect::new(rect.x + 80.0, rect.y, rect.w - 96.0, rect.h));
+            if self.navigation_textures[i] != 0 {
+                p.tex(
+                    self.navigation_textures[i],
+                    Rect::new(rect.x + 28.0, rect.cy() - 16.0, 32.0, 32.0),
+                    0.0,
+                    ink,
+                );
+            }
+        }
+        let network = self.snapshot.settings.get("network");
+        let connected = network.is_some_and(|rows| {
+            rows.iter().any(|r| {
+                matches!(r.id.as_str(), "wiredState" | "wifiState")
+                    && r.available
+                    && r.value == "Connected"
+            })
+        });
+        let network_current = self
+            .live_state
+            .as_ref()
+            .is_some_and(|fresh| Freshness::current(fresh.network, self.live_now));
+        let connection = if !network_current {
+            "TV status unavailable"
+        } else if connected {
+            "TV connected"
+        } else {
+            "TV disconnected"
+        };
+        Label::new(
+            cstr(connection).as_ptr(),
+            theme::size::CAPTION,
+            theme::TEXT_SECONDARY,
+        )
+        .draw(p, Rect::new(120.0, 800.0, 280.0, 40.0));
+        let sound = self
+            .snapshot
+            .settings
+            .get("sound")
+            .and_then(|rows| rows.iter().find(|r| r.id == "soundOutput" && r.available));
+        let sound_current = self
+            .live_state
+            .as_ref()
+            .is_some_and(|fresh| Freshness::current(fresh.sound, self.live_now));
+        let output = if sound_current {
+            sound
+                .map(|s| crate::model::display_value(s))
+                .unwrap_or("Unavailable")
+        } else {
+            "Unavailable"
+        };
+        let sound_status = cstr(&plx_gfx::text::elide(
+            &format!("Sound • {output}"),
+            280.0,
+            theme::size::CAPTION,
+            0,
+            false,
+        ));
+        Label::new(
+            sound_status.as_ptr(),
+            theme::size::CAPTION,
+            theme::TEXT_SECONDARY,
+        )
+        .draw(p, Rect::new(120.0, 840.0, 280.0, 40.0));
         let cx = self.context(&LegacyMeasure);
         let mut f = DrawFrame::<HomeHost>::new(&cx, p);
         if self.surface.table_mode {
@@ -1467,12 +1637,12 @@ impl Shell {
                 .draw_page(p, CONTENT, &LegacyMeasure);
         } else if self.surface.page == Page::Home {
             Label::new(
-                c"Favourites".as_ptr(),
+                c"Your favourites".as_ptr(),
                 theme::size::HEADLINE,
                 theme::TEXT_PRIMARY,
             )
             .bold()
-            .draw(p, Rect::new(566.0, 244.0, 1180.0, 48.0));
+            .draw(p, Rect::new(480.0, 244.0, 1344.0, 48.0));
             let source_heading = if self
                 .live_state
                 .as_ref()
@@ -1488,14 +1658,14 @@ impl Shell {
                 theme::TEXT_PRIMARY,
             )
             .bold()
-            .draw(p, Rect::new(566.0, 628.0, 1180.0, 48.0));
+            .draw(p, Rect::new(480.0, 652.0, 1344.0, 48.0));
             if self.surface.cards.items.is_empty() {
                 Label::new(
                     c"Hold OK on an app to add a favourite".as_ptr(),
                     theme::size::BODY,
                     theme::TEXT_SECONDARY,
                 )
-                .draw(p, Rect::new(566.0, 366.0, 1180.0, 100.0));
+                .draw(p, Rect::new(480.0, 366.0, 1344.0, 100.0));
             }
             {
                 let _clip = f.clip(p, HOME_FAVOURITES.clip);
@@ -1527,7 +1697,8 @@ impl Shell {
                 .draw(&mut f, p.clipped(content), &self.surface.cards);
         }
         for i in 0..4 {
-            if let Some(r) = self.surface.rail.table.row_frame(RAIL, i) {
+            {
+                let r = rail_rect(i as usize);
                 f.stop(
                     p,
                     Stop {
@@ -1614,7 +1785,7 @@ impl Shell {
                     theme::size::BODY,
                     theme::TEXT_SECONDARY,
                 )
-                .draw(p, Rect::new(566.0, 390.0, 1180.0, 120.0));
+                .draw(p, Rect::new(480.0, 390.0, 1344.0, 120.0));
             }
             if self.drawer.editing {
                 for (i, label) in KEYS.iter().enumerate() {
@@ -1810,6 +1981,14 @@ impl Shell {
 }
 impl Drop for Shell {
     fn drop(&mut self) {
+        if self.brand_texture != 0 {
+            plx_gfx::gfx::delete_tex(self.brand_texture);
+        }
+        for texture in self.navigation_textures {
+            if texture != 0 {
+                plx_gfx::gfx::delete_tex(texture);
+            }
+        }
         for (id, _, _) in self.textures.values() {
             plx_gfx::gfx::delete_tex(*id);
         }

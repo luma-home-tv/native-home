@@ -107,12 +107,19 @@ pub fn application_form(catalogue: &Catalogue) -> Form<String, Action, Page> {
     Form::new().section(section)
 }
 
-fn display_value(setting: &Setting) -> &str {
+pub(crate) fn display_value(setting: &Setting) -> &str {
     match (setting.id.as_str(), setting.value.as_str()) {
         ("soundOutput", "external_optical") => "Optical",
+        ("soundOutput", "external_arc") => "HDMI ARC",
+        ("soundOutput", "tv_speaker") => "TV speaker",
         ("muteStatus", "false" | "False") => "Off",
         ("muteStatus", "true" | "True") => "On",
         ("pictureMode", "game") => "Game",
+        ("soundMode", "standard") => "Standard",
+        ("audioInput", "hdmi1") => "HDMI 1",
+        ("audioInput", "hdmi2") => "HDMI 2",
+        ("audioInput", "hdmi3") => "HDMI 3",
+        ("audioInput", "hdmi4") => "HDMI 4",
         _ => &setting.value,
     }
 }

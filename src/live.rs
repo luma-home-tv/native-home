@@ -34,6 +34,7 @@ pub struct Update {
     pub inputs: Reading<Vec<Input>>,
     pub picture: Reading<PictureReading>,
     pub sound: Reading<Vec<(String, String)>>,
+    pub network: Reading<Vec<(String, String)>>,
 }
 fn checked<'a>(replies: &'a Value, name: &str) -> Result<&'a Value, String> {
     let value = replies
@@ -198,20 +199,74 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
     })());
     let sound = reading((|| {
         let data = checked(replies, "audio")?;
-        let values = data
-            .get("volumeStatus")
-            .and_then(Value::as_object)
-            .ok_or("Missing audio status")?;
-        ["soundOutput", "volume", "muteStatus"]
-            .into_iter()
-            .map(|id| {
-                values
-                    .get(id)
-                    .and_then(scalar)
-                    .map(|v| (id.to_owned(), v))
-                    .ok_or_else(|| format!("Missing {id}"))
-            })
-            .collect::<Result<Vec<_>, _>>()
+        let before = text(checked(replies, "audio_output_before")?, "soundOutput", 128)?;
+        let output = text(checked(replies, "audio_output")?, "soundOutput", 128)?;
+        if before != output {
+            return Err("Sound output changed during volume read".into());
+        }
+        let volume = data["volume"]
+            .as_u64()
+            .filter(|v| *v <= 100)
+            .ok_or("Invalid TV volume")?;
+        let muted = data["muteStatus"].as_bool().ok_or("Invalid mute status")?;
+        text(data, "scenario", 128)?;
+        let mut values = vec![
+            ("soundOutput".into(), output.clone()),
+            ("volume".into(), volume.to_string()),
+            ("muteStatus".into(), muted.to_string()),
+        ];
+        if let Ok(settings) = checked(replies, "sound_settings") {
+            if settings["category"].as_str() == Some("sound")
+                && settings["settings"]["soundOutput"].as_str() == Some(output.as_str())
+            {
+                if let (Ok(mode), Ok(input)) = (
+                    text(&settings["settings"], "soundMode", 128),
+                    text(&settings["dimension"], "audioInput", 64),
+                ) {
+                    values.push(("soundMode".into(), mode));
+                    values.push(("audioInput".into(), input));
+                }
+            }
+        }
+        Ok(values)
+    })());
+    let network = reading((|| {
+        let data = checked(replies, "network")?;
+        let internet = data["isInternetConnectionAvailable"]
+            .as_bool()
+            .ok_or("Invalid internet availability")?;
+        let mut values = vec![(
+            "internet".into(),
+            if internet { "Available" } else { "Unavailable" }.into(),
+        )];
+        for (kind, label) in [("wired", "Wired"), ("wifi", "Wi-Fi")] {
+            let state = text(&data[kind], "state", 32)?;
+            if !matches!(state.as_str(), "connected" | "disconnected") {
+                return Err(format!("Invalid {label} state"));
+            }
+            values.push((
+                format!("{kind}State"),
+                if state == "connected" {
+                    "Connected"
+                } else {
+                    "Disconnected"
+                }
+                .into(),
+            ));
+            if state == "connected" {
+                if let Ok(ip) = text(&data[kind], "ipAddress", 64) {
+                    if ip.parse::<std::net::IpAddr>().is_ok() {
+                        values.push((format!("{kind}Address"), ip));
+                    }
+                }
+                if kind == "wifi" {
+                    if let Ok(ssid) = text(&data[kind], "ssid", 128) {
+                        values.push(("wifiName".into(), ssid));
+                    }
+                }
+            }
+        }
+        Ok(values)
     })());
     Update {
         observed_ms,
@@ -220,6 +275,7 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         inputs,
         picture,
         sound,
+        network,
     }
 }
 #[derive(Clone, Debug, Default)]
@@ -228,6 +284,7 @@ pub struct Freshness {
     pub inputs: Option<u32>,
     pub picture: Option<u32>,
     pub sound: Option<u32>,
+    pub network: Option<u32>,
     pub simulated: bool,
 }
 impl Freshness {
@@ -303,10 +360,9 @@ impl Worker {
                     if reader.is_none() {
                         reader = ls2::register().ok();
                     }
-                    let raw = reader.as_ref().map_or_else(
-                        || json!({}),
-                        |bus| crate::native_probe::read(bus, &own_id, false),
-                    );
+                    let raw = reader
+                        .as_ref()
+                        .map_or_else(|| json!({}), crate::native_probe::read);
                     parse(&raw, &own_id, origin.elapsed().as_millis() as u32, false)
                 }
             },
@@ -366,33 +422,77 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
     }
     match &update.sound {
         Reading::Value(value) => {
-            let rows = value
-                .iter()
-                .enumerate()
-                .map(|(i, (id, value))| Setting {
-                    id: id.clone(),
+            let rows = [
+                ("soundOutput", "Sound output"),
+                ("volume", "TV volume"),
+                ("muteStatus", "Muted"),
+                ("soundMode", "Sound mode"),
+                ("audioInput", "Sound profile input"),
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(i, (id, label))| {
+                let field = value
+                    .iter()
+                    .find(|(key, _)| key == id)
+                    .map(|(_, v)| v.clone());
+                Setting {
+                    id: id.into(),
                     focus_key: 20 + i as u32,
-                    label: match id.as_str() {
-                        "soundOutput" => "Sound output",
-                        "volume" => "Volume",
-                        _ => "Muted",
-                    }
-                    .into(),
-                    value: value.clone(),
+                    label: label.into(),
+                    value: field.clone().unwrap_or_else(|| "Unavailable".into()),
                     context: snapshot.context.clone(),
                     protected: false,
-                    available: true,
-                })
-                .collect();
+                    available: field.is_some(),
+                }
+            })
+            .collect();
             snapshot.settings.insert("sound".into(), rows);
             fresh.sound = Some(update.observed_ms);
         }
         Reading::Failed(_) => fresh.sound = None,
     }
+    match &update.network {
+        Reading::Value(value) => {
+            let rows = [
+                ("internet", "Internet"),
+                ("wiredState", "Wired connection"),
+                ("wifiState", "Wi-Fi connection"),
+                ("wiredAddress", "Wired address"),
+                ("wifiAddress", "Wi-Fi address"),
+                ("wifiName", "Wi-Fi network"),
+            ]
+            .into_iter()
+            .enumerate()
+            .map(|(i, (id, label))| {
+                let field = value
+                    .iter()
+                    .find(|(key, _)| key == id)
+                    .map(|(_, v)| v.clone());
+                Setting {
+                    id: id.into(),
+                    focus_key: 60 + i as u32,
+                    label: label.into(),
+                    value: field.clone().unwrap_or_else(|| "Unavailable".into()),
+                    context: snapshot.context.clone(),
+                    protected: false,
+                    available: field.is_some(),
+                }
+            })
+            .collect();
+            snapshot.settings.insert("network".into(), rows);
+            fresh.network = Some(update.observed_ms);
+        }
+        Reading::Failed(_) => fresh.network = None,
+    }
     expire(snapshot, fresh, update.observed_ms);
 }
 pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
-    for (section, stamp) in [("picture", fresh.picture), ("sound", fresh.sound)] {
+    for (section, stamp) in [
+        ("picture", fresh.picture),
+        ("sound", fresh.sound),
+        ("network", fresh.network),
+    ] {
         if !Freshness::current(stamp, now) {
             if let Some(rows) = snapshot.settings.get_mut(section) {
                 for row in rows {
@@ -475,5 +575,84 @@ mod tests {
         assert!(!Freshness::current(Some(100), 15101));
         assert!(!Freshness::current(Some(101), 100));
         assert!(!Freshness::current(None, 100));
+    }
+    fn full_readings() -> Value {
+        let mut data = raw();
+        data["replies"]["audio"] =
+            json!({"returnValue":true,"volume":10,"muteStatus":false,"scenario":"speaker_optical"});
+        data["replies"]["audio_output_before"] =
+            json!({"returnValue":true,"soundOutput":"external_optical"});
+        data["replies"]["audio_output"] = data["replies"]["audio_output_before"].clone();
+        data["replies"]["sound_settings"] = json!({"returnValue":true,"category":"sound","dimension":{"audioInput":"hdmi4"},"settings":{"soundMode":"standard","soundOutput":"external_optical"}});
+        data["replies"]["network"] = json!({"returnValue":true,"isInternetConnectionAvailable":true,"wired":{"state":"connected","ipAddress":"203.0.113.10"},"wifi":{"state":"connected","ssid":"Example Wi-Fi","ipAddress":"2001:db8::10"}});
+        data
+    }
+    #[test]
+    fn sound_output_transition_invalid_numbers_and_denied_replies_are_not_current() {
+        let mut data = full_readings();
+        assert!(matches!(
+            parse(&data, "self", 100, false).sound,
+            Reading::Value(_)
+        ));
+        data["replies"]["audio_output"]["soundOutput"] = "tv_speaker".into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).sound,
+            Reading::Failed(_)
+        ));
+        data = full_readings();
+        data["replies"]["audio"]["volume"] = 101.into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).sound,
+            Reading::Failed(_)
+        ));
+        data = full_readings();
+        data["replies"]["audio"]["muteStatus"] = "false".into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).sound,
+            Reading::Failed(_)
+        ));
+        data = full_readings();
+        data["replies"]["audio"]["returnValue"] = false.into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).sound,
+            Reading::Failed(_)
+        ));
+    }
+    #[test]
+    fn mismatched_sound_profile_is_withheld_without_hiding_valid_global_audio() {
+        let mut data = full_readings();
+        data["replies"]["sound_settings"]["settings"]["soundOutput"] = "tv_speaker".into();
+        let Reading::Value(sound) = parse(&data, "self", 100, false).sound else {
+            panic!()
+        };
+        assert_eq!(sound.len(), 3);
+        assert!(!sound.iter().any(|(key, _)| key == "soundMode"));
+    }
+    #[test]
+    fn both_network_links_are_kept_distinct_and_disconnected_addresses_are_not_promoted() {
+        let mut data = full_readings();
+        let Reading::Value(network) = parse(&data, "self", 100, false).network else {
+            panic!()
+        };
+        assert!(network.iter().any(|(key, _)| key == "wiredAddress"));
+        assert!(network.iter().any(|(key, _)| key == "wifiAddress"));
+        data["replies"]["network"]["wifi"]["state"] = "disconnected".into();
+        let Reading::Value(network) = parse(&data, "self", 100, false).network else {
+            panic!()
+        };
+        assert!(!network
+            .iter()
+            .any(|(key, _)| key == "wifiAddress" || key == "wifiName"));
+        data["replies"]["network"]["wired"]["state"] = "unknown".into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).network,
+            Reading::Failed(_)
+        ));
+        data = full_readings();
+        data["replies"]["network"]["isInternetConnectionAvailable"] = "true".into();
+        assert!(matches!(
+            parse(&data, "self", 100, false).network,
+            Reading::Failed(_)
+        ));
     }
 }

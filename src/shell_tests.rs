@@ -207,6 +207,7 @@ fn live_update(ms: u32) -> crate::live::Update {
             settings: Vec::new(),
         }),
         sound: Reading::Failed("Unavailable".into()),
+        network: Reading::Failed("Unavailable".into()),
     }
 }
 #[test]
@@ -343,6 +344,56 @@ fn changed_picture_context_and_failed_audio_never_reuse_fresh_control_values() {
         s.surface.table.table.sections[0].rows[0].value.as_deref(),
         Some("Unavailable")
     );
+}
+#[test]
+fn sound_and_network_failures_withdraw_rows_and_staleness_rebuilds_the_visible_form() {
+    let _serial = plx_base::testlock::serial();
+    let mut shell = Shell::new(fixture(), Preferences::default());
+    let mut update = live_update(100);
+    update.sound = crate::live::Reading::Value(vec![
+        ("soundOutput".into(), "external_optical".into()),
+        ("volume".into(), "10".into()),
+        ("muteStatus".into(), "false".into()),
+    ]);
+    update.network = crate::live::Reading::Value(vec![
+        ("internet".into(), "Available".into()),
+        ("wiredState".into(), "Connected".into()),
+        ("wifiState".into(), "Disconnected".into()),
+    ]);
+    shell.apply_live(&update, 100);
+    shell.open(Page::Sound);
+    assert_eq!(
+        shell.surface.table.table.sections[0].rows[1]
+            .value
+            .as_deref(),
+        Some("10")
+    );
+    assert_eq!(
+        shell.surface.table.table.sections[0].rows[3]
+            .value
+            .as_deref(),
+        Some("Unavailable")
+    );
+    shell.open(Page::Network);
+    assert_eq!(
+        shell.surface.table.table.sections[0].rows[1]
+            .value
+            .as_deref(),
+        Some("Connected")
+    );
+    shell.age_live(15101);
+    assert_eq!(
+        shell.surface.table.table.sections[0].rows[1]
+            .value
+            .as_deref(),
+        Some("Unavailable")
+    );
+    update.observed_ms = 15200;
+    update.network = crate::live::Reading::Failed("Denied".into());
+    shell.apply_live(&update, 15200);
+    assert!(shell.snapshot.settings["network"]
+        .iter()
+        .all(|row| !row.available));
 }
 
 #[test]

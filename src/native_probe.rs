@@ -70,7 +70,7 @@ pub fn collect() -> serde_json::Value {
             return json!({"registered":false,"error":error.to_string(),"uid":unsafe{libc::geteuid()},"writes":false})
         }
     };
-    let mut value = read(&bus, plx_base::paths::app_id(), true);
+    let mut value = read(&bus);
     let mut survey = serde_json::Map::new();
     for (name, uri, payload) in survey_operations() {
         let result = match bus.call(
@@ -92,11 +92,7 @@ pub fn collect() -> serde_json::Value {
     value
 }
 #[cfg(target_arch = "arm")]
-pub(crate) fn read(
-    bus: &plx_platform::webos::ls2::Registration,
-    own_id: &str,
-    probe_audio: bool,
-) -> serde_json::Value {
+pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::Value {
     use plx_platform::webos::ls2;
     use serde_json::json;
     let operations = [
@@ -121,35 +117,34 @@ pub(crate) fn read(
             json!({"category":"picture","keys":["pictureMode","backlight","contrast","brightness"]}),
         ),
         (
-            "audio",
-            "luna://com.webos.service.audio/master/getVolume",
+            "audio_output_before",
+            "luna://com.webos.service.audio/getSoundOutput",
             json!({}),
+        ),
+        ("audio", "luna://com.webos.audio/getVolume", json!({})),
+        (
+            "audio_output",
+            "luna://com.webos.service.audio/getSoundOutput",
+            json!({}),
+        ),
+        (
+            "sound_settings",
+            "luna://com.webos.service.settings/getSystemSettings",
+            json!({"category":"sound","keys":["soundMode","soundOutput"]}),
+        ),
+        (
+            "network",
+            "luna://com.webos.service.connectionmanager/getStatus",
+            json!({"subscribe":false}),
         ),
     ];
     let mut replies = serde_json::Map::new();
     for (name, uri, payload) in operations {
-        if name == "audio" && !probe_audio {
-            replies.insert(
-                name.to_owned(),
-                json!({"returnValue":false,"known_unavailable":true}),
-            );
-            continue;
-        }
-        let response = if name == "audio" {
-            // Attach only this process's real app identity, never impersonate another caller.
-            bus.call_as_app(
-                uri,
-                &payload.to_string(),
-                own_id,
-                std::time::Duration::from_millis(1500),
-            )
-        } else {
-            bus.call(
-                uri,
-                &payload.to_string(),
-                std::time::Duration::from_millis(1500),
-            )
-        };
+        let response = bus.call(
+            uri,
+            &payload.to_string(),
+            std::time::Duration::from_millis(700),
+        );
         let result = match response {
             Ok(raw) => serde_json::from_str(&raw).unwrap_or_else(|_| json!({"parse_error":true})),
             Err(ls2::Fail::Timeout) => json!({"timeout":true}),

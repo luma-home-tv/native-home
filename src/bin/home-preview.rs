@@ -174,6 +174,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             (Page::Controls, "controls"),
             (Page::Picture, "picture"),
             (Page::Sound, "sound"),
+            (Page::Network, "network"),
         ] {
             shell.open(page);
             for _ in 0..45 {
@@ -676,7 +677,7 @@ fn poll_live(
             "catalogue":status(matches!(update.catalogue,native_home::live::Reading::Value(_))),
             "inputs":status(matches!(update.inputs,native_home::live::Reading::Value(_))),
             "picture":status(matches!(update.picture,native_home::live::Reading::Value(_))),
-            "sound":status(matches!(update.sound,native_home::live::Reading::Value(_)))}),
+            "sound":status(matches!(update.sound,native_home::live::Reading::Value(_))),"network":status(matches!(update.network,native_home::live::Reading::Value(_)))}),
             );
         }
         shell.apply_live(&update, origin.elapsed().as_millis() as u32);
