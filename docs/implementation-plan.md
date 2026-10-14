@@ -101,6 +101,10 @@ The user subsequently placed the C2 on hold: continue device work on the G2 only
 until the user reopens the C2. The [clock milestone](clock-milestone.json) records
 the G2 0.8.0 update and preserved favourites, and separates the interrupted C2
 component test from complete validation.
+The [Settings handoff milestone](settings-handoff-milestone.json) then verifies
+the LG Picture overlay, sustained underlying dashboard lifetime and return after
+injected Back on the G2. Version 0.9.0 enables that fixed route with per-launch
+model/firmware/SDK checks; native setting writes and HDMI switching remain gated.
 Build before taking the lock; release it before reviewing frames or changing
 source. Inspect native frames, record exact source/build revisions and keep
 private device data outside Git. After each test, verify removal of the package,

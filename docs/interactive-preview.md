@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.8.0 on the G2** and **0.7.0 on the C2**.
+`com.ash.nativehome.preview`, version **0.9.0 on the G2** and **0.7.0 on the C2**.
 The C2 is on hold for further device work at the user's request. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -17,8 +17,15 @@ repainting its UI. The first app input wakes it without activating a hidden tile
 This is an app-local measure: physical panel power, burn-in prevention and LG's
 own protections have not been validated by a framebuffer capture.
 
-Inputs show status. HDMI switching and LG Settings execution remain gated, and
-controls are read-only or LG-managed. The dashboard is still a development
+Inputs show status. HDMI switching remains gated, and native controls are read-only
+or LG-managed. On the tested G2 firmware, **Controls → Picture → Open LG Settings**
+opens LG's Picture interface above Luma. Back closes the LG overlay and returns
+to Luma. Luma keeps only its own underlying window alive behind a verified
+Settings overlay and stops painting while covered; LG continues to own its controls.
+Other departures retain the preview's existing teardown behaviour. The
+[handoff record](settings-handoff-milestone.json) describes native/injected-Back
+proof and runtime firmware checks. No native setting-write action is available.
+The dashboard is still a development
 preview; complete controls, physical input, performance and reboot persistence
 remain unfinished. The [deployment record](deployment-milestone.json) identifies
 the precise source and native proof on the C2 and G2.
@@ -67,3 +74,12 @@ uninstall/cleanup phase against a user's retained app. Prefer a separate test
 identity or a backed-up, verified update procedure. Complete removal must refuse
 symlinked roots, live processes, registered packages and descendant mounts
 before cleaning any residual directory. Never remove a mounted jail recursively.
+
+For a Settings handoff test, refuse to start if LG Settings is already open.
+Observe its overlay independently from before launch, and close only the new
+test surface. On this commercial TV, app-manager `close` with an `id` was refused;
+surface-manager `closeByAppId` with **`id`** was accepted, while the earlier
+`appId` parameter was not. The
+[OSE API reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-surfacemanager/)
+helped locate the operation; the commercial-TV result and native return are the
+compatibility evidence. The client itself relies on LG Back, not this root test cleanup call.

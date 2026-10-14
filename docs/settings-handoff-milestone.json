@@ -1,0 +1,89 @@
+{
+  "code_revision": "4e4cfd1",
+  "package_version": "0.9.0",
+  "binary_sha256": "d1c6fb04c897054dd421db61ec83dc553dd2fd09b8e1a7dc90a60e34642ae0bb",
+  "client_tests": {
+    "passed": 53,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, warnings denied, all targets / hostsim",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "native": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "webos": "9.2.2-61",
+    "ordinary_app_identity": true,
+    "launch_payload": {
+      "id": "com.palm.app.settings",
+      "params": {
+        "target": "picture"
+      }
+    },
+    "independent_prelaunch_window_observer": true,
+    "compositor_capture_confirmed_lg_picture_ui": true,
+    "old_build_overlay_dwell_seconds": 1.536,
+    "old_build_overlay_absent_after_dashboard_exit": true,
+    "lifecycle_fix": "Own dashboard remains alive without drawing behind fresh Settings overlay over its own card. Closing Settings restores focus and rendering. Other departures keep the prior bounded teardown.",
+    "surface_manager_close_and_return_verified_on": "e1684a6",
+    "surface_close_payload": {
+      "id": "com.palm.app.settings"
+    },
+    "injected_back_settings_return_verified_on": "4e4cfd1",
+    "settings_returns": 1,
+    "native_return_picture_frame_inspected": true,
+    "own_back_navigation_after_return": "back_from_home",
+    "setting_writes": false
+  },
+  "runtime_guards": [
+    "Current G2 model, firmware and SDK are re-read before each LG Settings launch; unknown/unreadable/different results reject the operation",
+    "Dashboard foreground ownership and current registered Settings metadata are required",
+    "Preexisting Settings overlay rejects relaunch",
+    "Hidden app never paints and ignores app Back while Settings handoff is pending",
+    "Only fresh Settings overlay with own underlying card can retain the dashboard",
+    "Old window-observation generations cannot extend a later handoff; pending/freshness bounds remain",
+    "No generic service command, native settings setter, privileged broker or global Home/power/volume interception"
+  ],
+  "commercial_tv_api_difference": {
+    "application_manager_close_with_id": "Returned no app matched by pid; not used as successful close proof",
+    "surfacemanager_closeByAppId_with_appId": "Earlier attempt returned undefined is not running",
+    "surfacemanager_closeByAppId_with_id": "Accepted and observed overlay disappearance plus native focus return on this TV"
+  },
+  "test_cleanup": {
+    "test_paths_mounts_absent": true,
+    "test_preferences_absent": true,
+    "test_catalogue_absent": true,
+    "test_launchpoint_absent": true,
+    "new_settings_surface_absent": true,
+    "core_hashes_unchanged": true,
+    "picture_values_unchanged": true,
+    "audio_values_unchanged": true,
+    "retained_app_favourites_unchanged": true,
+    "home_verified": true,
+    "previous_foreground_restored": true
+  },
+  "retained_update": {
+    "version": "0.9.0",
+    "ordinary_app_identity": true,
+    "favourites_loaded": true,
+    "no_household_captures": true,
+    "checked_state": {
+      "core_hashes_unchanged": true,
+      "picture_values_unchanged": true,
+      "audio_values_unchanged": true,
+      "lg_home_verified": true,
+      "previous_foreground_restored": true,
+      "saved_favourites_byte_identical": true
+    },
+    "scope": "Normal retained package launch/favourites/clock verified; Settings route independently exercised from isolated ordinary native identity using the same binary"
+  },
+  "c2": "On hold at user request, left on 0.7.0; no device work in this milestone",
+  "remaining": [
+    "Physical remote/pointer/wheel verification; these Back keys were injected via the LG test input service",
+    "HDMI switching still gated",
+    "Broader native controls/audio and per-operation context/range/readback/restore validation",
+    "App ordering, full text input, reboot persistence and real performance/resource workloads"
+  ],
+  "privacy": "Detailed window samples, per-TV packages/inventory/icons, native/compositor frames and saved-favourites backups stay outside Git."
+}

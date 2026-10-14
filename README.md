@@ -71,8 +71,10 @@ removal and retained-install checks are recorded in the
 [deployment milestone](docs/deployment-milestone.json).
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
-network configuration and OLED protections. Sources/Settings execution remain
-gated and settings read-only. Private TV details and native household captures
+network configuration and OLED protections. HDMI switching remains gated and
+native settings remain read-only. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
+adds a firmware-verified route to LG's Picture settings and native return after
+closing its overlay, installed as 0.9.0 on the G2. Private TV details and native household captures
 stay outside tracked source. A black OLED canvas with graphite tiles is the
 design direction; performance, idle behaviour, physical input and complete
 controls still require device verification. The [drawer milestone](docs/drawer-milestone.json)
