@@ -112,12 +112,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     #[allow(unused_mut)]
     let mut action_worker = None;
+    #[allow(unused_mut)]
+    let mut app_launches_enabled = false;
     #[cfg(target_arch = "arm")]
     if device {
+        app_launches_enabled = native_home::identity::app_launches(
+            plx_base::paths::app_id(),
+            matches!(&launch_proof, Some(native_home::actions::Request::Application { id }) if id == native_home::identity::TARGET),
+        );
         action_worker = Some(native_home::actions::Worker::native(
             plx_base::paths::app_id().into(),
             native_home::actions::Capabilities {
-                apps: true,
+                apps: app_launches_enabled,
                 inputs: matches!(
                     launch_proof,
                     Some(native_home::actions::Request::Input { .. })
@@ -149,7 +155,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut shell = Shell::new(snapshot, loaded_preferences.clone().unwrap_or_default());
     queue_preferences(&mut shell, &mut persistence, &mut storage_error);
     let preferences_at_boot = shell.preferences().clone();
-    shell.enable_app_launches(action_worker.is_some());
+    shell.enable_app_launches(app_launches_enabled);
     shell.load_icons(&assets);
     let mut now = 0;
     let mut capture_diagnostics = Vec::new();

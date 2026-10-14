@@ -13,6 +13,10 @@ pub fn dashboard(value: &str) -> Option<&'static str> {
 pub fn preferences_dir(value: &str) -> Option<std::path::PathBuf> {
     dashboard(value).map(|id| std::path::PathBuf::from(format!("/media/developer/.{id}-state")))
 }
+/// Passive test packages cannot open household apps through accidental input.
+pub fn app_launches(value: &str, owned_target_proof: bool) -> bool {
+    value == PREVIEW || (value == PROOF && owned_target_proof)
+}
 
 #[cfg(test)]
 mod tests {
@@ -33,5 +37,12 @@ mod tests {
             assert!(dashboard(id).is_none());
             assert!(preferences_dir(id).is_none());
         }
+    }
+    #[test]
+    fn passive_test_identity_blocks_launches_and_explicit_owned_proof_is_scoped() {
+        assert!(app_launches(PREVIEW, false));
+        assert!(!app_launches(PROOF, false));
+        assert!(app_launches(PROOF, true));
+        assert!(!app_launches("com.webos.app.home", true));
     }
 }
