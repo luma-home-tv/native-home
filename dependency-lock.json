@@ -1,0 +1,32 @@
+{
+  "upstream": {
+    "name": "PlxNative",
+    "repository": "https://github.com/GLinnik21/plx-native.git",
+    "revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+    "copyright": "Gleb Linnik and contributors",
+    "license": "GPL-3.0-or-later"
+  },
+  "crates": [
+    "plx_ui",
+    "plx_gfx",
+    "plx_machine",
+    "plx_base",
+    "plx_platform"
+  ],
+  "integration_patch": "patches/plxnative-framework-integration.patch",
+  "patch_purpose": [
+    "Generic local texture artwork support",
+    "Opt-in true-black surface role"
+  ],
+  "excluded_application_crates": [
+    "plxnative-modules",
+    "plx_plex",
+    "plx_media",
+    "plx_session",
+    "plx_data",
+    "plx_appkit",
+    "plx_net",
+    "plx_telemetry"
+  ],
+  "boundary": "External upstream checkout is ignored, explicitly attributed and only used as a framework dependency. No Plex application source is tracked in this repository."
+}

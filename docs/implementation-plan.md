@@ -1,0 +1,113 @@
+# Luma Home implementation plan
+
+The target is a responsive native Home dashboard for the OLED55G26LA on webOS24.
+It remains a separate application: LG Home, Home/power/volume handling, firmware,
+system libraries, boot configuration, media services and OLED protections stay
+under LG's control. The C2 is outside the development/test scope.
+
+The [concept renders](concepts/README.md) show the intended interface. They are
+synthetic design illustrations, not screenshots of implemented functionality.
+The [interface specification](../design.json) records the layout and interaction
+requirements; the milestone records below identify what has actually been proved.
+
+## Direction
+
+The agreed visual direction is the Apple TV / tvOS feel that PlxNative interprets
+well: large cards, restrained chrome, smooth spatial focus and an obvious Back
+hierarchy. Keep this native and remote-first. The concepts are a starting point;
+remove unnecessary screen furniture as the interactive screens take shape.
+
+Build the standalone Luma Home client on explicitly attributed PlxNative Rust UI, input/focus and
+SDL/OpenGL ES libraries. Reuse its components instead of maintaining a second
+widget system. Generic improvements can be proposed upstream separately after
+verification; the Home client does not change the Plex application or player.
+The shipping architecture uses native rendering, with no WebView.
+
+The canvas is true black for OLED. Graphite remains available for tiles and
+controls, with bright focus/ink limited to useful areas. Idle behaviour must
+minimise static bright elements without changing LG's panel protections. The
+[branding masters](../assets/luma-home/README.md) record the icon, wordmark
+and palette; a black background is not treated as proof of burn-in prevention.
+
+| Area | Intended behaviour | Current evidence |
+| --- | --- | --- |
+| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Combined favourites and HDMI shelves implemented with shared native components; host and G2 native captures inspected with live readings; OLED black canvas captured; clock remains to build |
+| Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; search/order remain |
+| Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
+| Inputs | Four HDMI cards with distinct plug, signal and active states; select through LG's normal source path | Native cards refreshed through normal-app reads; disconnected HDMI 4 launch reached its foreground but EIM activation readback did not confirm it; switching stays disabled |
+| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Native category/value pages rendered; four picture values/context refreshed live; write capability remains unavailable; Settings adapter observed its overlay after a longer load window, but independent observation remains incomplete |
+| Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
+| Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering proved; this client has no validated FPS, latency, memory or idle result yet |
+
+The latest [OLED/branding milestone](oled-branding-milestone.json) records
+true-black framebuffer evidence and clean removal on `2a53bfd`. Native captures
+also expose a rendering issue: the rail is absent on some child pages and some
+glyph edges clip. Its cause is not established; resolve and verify the device
+paint path before calling navigation/presentation finished.
+
+## Next implementation stages
+
+1. **Expand live data.** The typed normal-app provider now refreshes catalogue,
+   launch points, HDMI and picture state in the native interface. Focus/favourites,
+   unchanged gestures and stale/context failure handling have checks; four real
+   cycles were applied on the G2. Complete broader coverage, audio and newly
+   installed icon loading. Do not treat subscription acknowledgement as delivery
+   proof. Keep loading and queues bounded.
+2. **Complete normal actions.** The restricted application adapter and live
+   drawer/shared-OK path now launch an isolated native test target with both
+   adapter and independent foreground readback. Normal application launching is
+   enabled; personal viewing accounts were not exercised. Finish device proof
+   for the explicit HDMI and LG Settings adapters before enabling them. Keep
+   unknown/hidden/self targets, unvalidated operations and extra parameters
+   rejected; an acknowledged request is not execution proof.
+3. **Expand controls safely.** Audit webOS24 descriptors and semantics for each
+   operation. A descriptor alone does not grant write authority. Require valid
+   range/enum, matching input/HDR/mode context, bounded effect, readback and an
+   original-state restoration test. Audio's current ordinary-app getter failure
+   is unresolved; it does not establish that root is required. Use a restricted
+   local helper only for operations that actually need privilege, with caller,
+   executable and session validation and a fixed operation allowlist.
+4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source
+   status on every tile. Complete the clock/status header, app search/filter/order
+   and native control widgets. Verify physical remote, pointer, wheel and Back behaviour on the G2.
+   Measure the actual dashboard's frame pacing, input response, memory and idle
+   behaviour; the earlier C renderer's results do not transfer to this client.
+
+## Protected and unsupported operations
+
+Network reconfiguration, firmware, factory reset, service/calibration controls,
+OLED protections and compensation scheduling remain protected/delegated. An
+unsupported control routes to LG Settings or stays unavailable; the UI never
+invents a successful native action. No arbitrary shell command, service URI or
+file path is exposed through the interface. No Home interception or boot hook is
+part of this plan.
+
+## Verification and delivery
+
+Every TV build uses its own isolated package and the repository's device lock.
+Build before taking the lock; release it before reviewing frames or changing
+source. Inspect native frames, record exact source/build revisions and keep
+private device data outside Git. After each test, verify removal of the package,
+launcher entry, process, runtime, persistent test data, jail and mounts; compare
+checked core hashes and picture/audio readbacks, then verify LG Home and restore
+the original foreground.
+
+The current evidence is in the [native shell milestone](shell-milestone.json)
+and [favourites/read-capability milestone](preferences-milestone.json), and
+[live-reading milestone](live-milestone.json) and
+[application-launch milestone](launch-milestone.json), plus the
+[combined Home layout milestone](home-layout-milestone.json) and
+[OLED/branding milestone](oled-branding-milestone.json). Completion
+requires the intended functional interface and device evidence above, not only
+concept renders, a successful build or component tests.
+
+
+## Standalone dependency boundary
+
+The Luma repository tracks its application, adapters, models, assets, plans and
+tests. PlxNative is a pinned external dependency with its original authorship
+and package names. Five framework crates are selected; Plex/media/session/data
+application crates are excluded from the resolved graph. The integration patch
+is kept separately and attributed. Root build/packaging targets build only Luma
+binaries. Historical capture records remain historical until this standalone
+tree receives new device verification.
