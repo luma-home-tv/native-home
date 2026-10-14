@@ -27,6 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if interactive
         && [
             "drawer-proof.json",
+            "management-proof.json",
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
@@ -161,6 +162,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut now = 0;
     let mut capture_diagnostics = Vec::new();
     let mut drawer_proof = None;
+    let mut management_proof = None;
     let mut navigation = Vec::new();
     let mut navigation_page = None;
     let mut scripted_requests = Vec::new();
@@ -248,6 +250,67 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 serde_json::json!({"all":all,"favourites":favourites,"query":query,"results":results,"keyboard_closed":keyboard_closed,"no_tv_requests":no_requests,"restored_all":shell.application_count()==all,"input":"scripted shared focus and OK"}),
             );
         }
+        if args.iter().any(|arg| arg == "--management-proof")
+            || assets.join("management-proof.json").exists()
+        {
+            shell.open(Page::Home);
+            let target = shell
+                .first_application()
+                .ok_or("Management proof needs a favourite")?;
+            let before = shell.preferences().clone();
+            shell.open(Page::Applications);
+            if !shell.focus_application(&target) {
+                return Err("Management target disappeared".into());
+            }
+            shell.press(true, PressFrom::Key);
+            for _ in 0..50 {
+                now += 17;
+                shell.repeat();
+                shell.tick(now, 1.0 / 60.0);
+            }
+            shell.press(false, PressFrom::Key);
+            for _ in 0..30 {
+                now += 17;
+                shell.tick(now, 1.0 / 60.0);
+            }
+            let hold_opened = shell.menu_application() == Some(target.as_str());
+            let hold_no_write = shell.preferences() == &before;
+            drawer_capture(&mut shell, &window, &output, "app-menu", &mut now)?;
+            shell.direction(Dir::Left);
+            let modal = shell.menu_application().is_some()
+                && shell.focused_item().as_deref() == Some("app-option-1");
+            if !shell.focus_menu_action(native_home::shell::MenuAction::Later) {
+                return Err("No ordering menu".into());
+            }
+            drawer_tap(&mut shell, &mut now);
+            let moved = shell.preferences().favourite_order != before.favourite_order;
+            // Roundtrip pin membership using the same modal, without launching a TV app.
+            shell.focus_menu_action(native_home::shell::MenuAction::ToggleFavourite);
+            drawer_tap(&mut shell, &mut now);
+            let unpinned = !shell.preferences().favourites.contains(&target);
+            drawer_tap(&mut shell, &mut now);
+            let repinned = shell.preferences().favourites == before.favourites;
+            shell.back();
+            let restored = shell.focused_item().as_deref() == Some(target.as_str());
+            shell.open(Page::Home);
+            let no_requests = shell.take_requests().is_empty();
+            drawer_capture(&mut shell, &window, &output, "ordered-home", &mut now)?;
+            queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+            management_proof = Some(
+                serde_json::json!({"hold_opens_menu":hold_opened,"hold_release_does_not_write":hold_no_write,"modal_focus":modal,"order_changed":moved,"unpin_repinned":unpinned && repinned,"back_restores_identity":restored,"no_tv_requests":no_requests,"input":"scripted shared focus/hold/OK"}),
+            );
+            if !(hold_opened
+                && hold_no_write
+                && modal
+                && moved
+                && unpinned
+                && repinned
+                && restored
+                && no_requests)
+            {
+                return Err("Management proof failed".into());
+            }
+        }
         shell.open(Page::Applications);
         for dir in [
             Dir::Right,
@@ -309,6 +372,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 now += 17;
                 shell.tick(now, 1.0 / 60.0);
             }
+            if shell.menu_application().is_none() {
+                return Err("Hold did not open app menu".into());
+            }
+            shell.focus_menu_action(native_home::shell::MenuAction::ToggleFavourite);
+            drawer_tap(&mut shell, &mut now);
+            shell.back();
             probe_changed = before
                 != shell
                     .preferences()
@@ -619,7 +688,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
         "clock":clock.view(live_origin.elapsed()),
         "settings_returns":settings_returns,
-        "drawer_proof":drawer_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
+        "drawer_proof":drawer_proof,"management_proof":management_proof,"capture_diagnostics":capture_diagnostics,"drawable":[1920,1080],"events":events,"event_log":event_log,"exit_reason":reason,"requests_not_executed":requests,
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,

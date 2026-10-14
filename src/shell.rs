@@ -26,6 +26,33 @@ use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
 use crate::model::{controls_form, Action, Application, Catalogue, Context, Page, Setting};
 
+const MENU_BASE: u32 = 32_000;
+const MENU_PANEL: Rect = Rect::new(1360.0, 330.0, 464.0, 598.0);
+const MENU_ROWS: Rect = Rect::new(1380.0, 424.0, 424.0, 464.0);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MenuAction {
+    Open,
+    ToggleFavourite,
+    Earlier,
+    Later,
+    Close,
+}
+impl MenuAction {
+    fn key(self) -> u32 {
+        match self {
+            Self::Open => 0,
+            Self::ToggleFavourite => 1,
+            Self::Earlier => 2,
+            Self::Later => 3,
+            Self::Close => 4,
+        }
+    }
+}
+struct AppMenu {
+    id: String,
+    origin: u32,
+    index: usize,
+}
 const TOOLBAR_BASE: u32 = 30_000;
 const KEYBOARD_BASE: u32 = 31_000;
 const TOOLBAR: Rect = Rect::new(480.0, 248.0, 1344.0, 58.0);
@@ -128,6 +155,52 @@ pub struct Preferences {
     #[serde(default)]
     pub initialized: bool,
     pub favourites: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub favourite_order: Vec<String>,
+}
+impl Preferences {
+    /// Explicit ranks first; old records retain catalogue order until the user reorders.
+    fn ordered_favourites(&self, catalogue: &Catalogue) -> Vec<String> {
+        let mut ids = Vec::new();
+        for id in self
+            .favourite_order
+            .iter()
+            .chain(catalogue.applications.iter().map(|a| &a.id))
+            .chain(self.favourites.iter())
+        {
+            if self.favourites.contains(id) && !ids.contains(id) {
+                ids.push(id.clone());
+            }
+        }
+        ids
+    }
+    fn toggle_favourite(&mut self, id: &str) {
+        if self.favourites.remove(id) {
+            self.favourite_order.retain(|saved| saved != id);
+        } else {
+            self.favourites.insert(id.to_owned());
+            if !self.favourite_order.is_empty() {
+                self.favourite_order.push(id.to_owned());
+            }
+        }
+    }
+    fn move_favourite(&mut self, id: &str, earlier: bool, catalogue: &Catalogue) -> bool {
+        let mut order = self.ordered_favourites(catalogue);
+        let Some(i) = order.iter().position(|saved| saved == id) else {
+            return false;
+        };
+        let next = if earlier {
+            i.checked_sub(1)
+        } else {
+            (i + 1 < order.len()).then_some(i + 1)
+        };
+        let Some(next) = next else {
+            return false;
+        };
+        order.swap(i, next);
+        self.favourite_order = order;
+        true
+    }
 }
 
 pub struct HomeHost;
@@ -181,6 +254,8 @@ struct Card {
     caption: CString,
     initials: CString,
     texture: (u32, f32, f32),
+    context_selected: bool,
+    compact_labels: bool,
 }
 struct Cards {
     items: Vec<Card>,
@@ -306,11 +381,14 @@ impl CardSource<HomeHost> for Cards {
                     p,
                     Rect::new(
                         tile.rect.x,
-                        tile.rect.y + tile.rect.h + 14.0,
+                        tile.rect.y + tile.rect.h + if c.compact_labels { 0.0 } else { 14.0 },
                         tile.rect.w,
-                        44.0,
+                        if c.compact_labels { 32.0 } else { 44.0 },
                     ),
                 );
+        }
+        if c.context_selected && !tile.focused {
+            p.rring(tile.rect, tile.radius, 2.0, theme::TEXT_SECONDARY);
         }
         if tile.focused {
             p.rring(tile.rect, tile.radius, 3.0, theme::TEXT_PRIMARY);
@@ -329,6 +407,7 @@ struct Surface {
     table: FormTable<String, Action, Page>,
     table_mode: bool,
     editing: bool,
+    menu: Option<FormTable<MenuAction, MenuAction, Page>>,
 }
 fn input_key(id: &str) -> Option<u32> {
     match id {
@@ -358,6 +437,11 @@ fn cstr(s: &str) -> CString {
 }
 impl Surface {
     fn keys(&self) -> Vec<u32> {
+        if let Some(menu) = &self.menu {
+            return (0..menu.table.n_rows().max(0) as usize)
+                .filter_map(|i| menu.key_at(i).map(|k| MENU_BASE + k.0))
+                .collect();
+        }
         if self.table_mode {
             (0..self.table.table.n_rows().max(0) as usize)
                 .filter_map(|i| self.table.key_at(i).map(|k| TABLE_BASE + k.0))
@@ -377,6 +461,19 @@ impl Surface {
 }
 impl Focusable<HomeHost> for Surface {
     fn groups(&self, _cx: &Cx<'_, HomeHost>, out: &mut Vec<GroupSpec>) {
+        if self.menu.is_some() {
+            out.push(GroupSpec {
+                id: GroupId(5),
+                kind: GroupKind::Column,
+                seat: Seat::Remembered,
+                reachable: AxisMask::BOTH,
+                edge: [EdgeRule::Stop; 4],
+                extent: MENU_ROWS,
+                len: self.keys().len(),
+                elem: ElemKind::Control,
+            });
+            return;
+        }
         if self.page == Page::Applications && self.editing {
             out.push(GroupSpec {
                 id: GroupId(4),
@@ -451,6 +548,9 @@ impl Focusable<HomeHost> for Surface {
         });
     }
     fn group_of(&self, key: &u32, _cx: &Cx<'_, HomeHost>) -> Option<GroupId> {
+        if self.menu.is_some() {
+            return self.key_index(*key).map(|_| GroupId(5));
+        }
         if self.page == Page::Applications && self.editing {
             return keyboard_key(*key).map(|_| GroupId(4));
         }
@@ -465,6 +565,23 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn neighbour(&self, key: FocusKey<u32>, dir: Dir, _cx: &Cx<'_, HomeHost>) -> Step<u32> {
+        if self.menu.is_some() {
+            let keys = self.keys();
+            let Some(i) = keys.iter().position(|k| *k == key.elem) else {
+                return Step::Edge;
+            };
+            let next = match dir {
+                Dir::Up => i.checked_sub(1),
+                Dir::Down => Some(i + 1),
+                _ => None,
+            };
+            return next.and_then(|n| keys.get(n)).map_or(Step::Edge, |k| {
+                Step::Move(FocusKey {
+                    entry: key.entry,
+                    elem: *k,
+                })
+            });
+        }
         if self.page == Page::Applications {
             if let Some(i) = keyboard_key(key.elem).filter(|_| self.editing) {
                 let next = match dir {
@@ -531,6 +648,16 @@ impl Focusable<HomeHost> for Surface {
         })
     }
     fn place(&self, key: &u32, cx: &Cx<'_, HomeHost>, at: At) -> Option<Placed> {
+        if let Some(menu) = &self.menu {
+            let i = menu.index_of_key(RowKey(key.checked_sub(MENU_BASE)?))?;
+            let rect = menu.table.row_frame(MENU_ROWS, i as i32)?;
+            return Some(Placed {
+                rect,
+                rest_rect: rect,
+                clip: MENU_ROWS,
+                index: Some(i as u32),
+            });
+        }
         if self.page == Page::Applications {
             let special = if self.editing {
                 keyboard_key(*key).map(|i| (keyboard_rect(i), i, KEYBOARD))
@@ -602,7 +729,9 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn seat(&self, group: GroupId, from: Placed, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
-        let key = if group == GroupId(4) {
+        let key = if group == GroupId(5) {
+            MENU_BASE + MenuAction::ToggleFavourite.key()
+        } else if group == GroupId(4) {
             KEYBOARD_BASE
         } else if group == GroupId(3) {
             (0..3)
@@ -667,6 +796,7 @@ pub struct Shell {
     live_updates: u32,
     app_launches_enabled: bool,
     drawer: Drawer,
+    menu: Option<AppMenu>,
     clock: crate::clock::View,
     clock_time: CString,
     clock_source: CString,
@@ -720,6 +850,7 @@ impl Shell {
             live_updates: 0,
             app_launches_enabled: false,
             drawer: Drawer::default(),
+            menu: None,
             clock: crate::clock::View::default(),
             clock_time: cstr("--:--"),
             clock_source: cstr("TV time unavailable"),
@@ -756,6 +887,7 @@ impl Shell {
             table: FormTable::new(2000),
             table_mode: false,
             editing: false,
+            menu: None,
         }
     }
     fn context<'a>(&'a self, measure: &'a dyn plx_machine::machine::Measure) -> Cx<'a, HomeHost> {
@@ -778,21 +910,45 @@ impl Shell {
         }
     }
     fn rebuild(&mut self, page: Page) {
+        if page != Page::Applications {
+            self.menu = None;
+        }
+        if self.menu.as_ref().is_some_and(|menu| {
+            !self
+                .catalogue
+                .applications
+                .iter()
+                .any(|app| app.id == menu.id)
+        }) {
+            self.menu = None;
+        }
         self.input.cancel_press();
         self.surface = Self::blank(page);
         self.surface.editing = page == Page::Applications && self.drawer.editing;
         if page == Page::Applications {
             self.surface.grid = Grid::new(
                 entry(page),
-                GridSpec::new(340.0, 330.0).columns(4, CARD_STYLE, 480.0),
+                GridSpec::new(340.0, 330.0).columns(
+                    if self.menu.is_some() { 3 } else { 4 },
+                    CARD_STYLE,
+                    480.0,
+                ),
             );
         }
         self.status = cstr(match page {
             Page::Home | Page::Applications => {
                 if self.app_launches_enabled {
-                    "OK to open • hold OK to add or remove a favourite"
+                    if page == Page::Applications {
+                        "OK to open • hold OK for app options"
+                    } else {
+                        "OK to open • hold OK to add or remove a favourite"
+                    }
                 } else {
-                    "Hold OK to add or remove a favourite • launches disabled in this preview"
+                    if page == Page::Applications {
+                        "Hold OK for app options • launches disabled in this preview"
+                    } else {
+                        "Hold OK to add or remove a favourite • launches disabled in this preview"
+                    }
                 }
             }
             Page::Inputs => "HDMI status • source switching disabled in this preview",
@@ -824,6 +980,8 @@ impl Shell {
                         }),
                         initials: cstr(&initials),
                         texture: tex,
+                        compact_labels: page == Page::Applications,
+                        context_selected: self.menu.as_ref().is_some_and(|m| m.id == app.id),
                     });
                 }
             }
@@ -874,8 +1032,62 @@ impl Shell {
                     .set(controls_form(settings, &self.snapshot.context), None);
             }
         }
+        if page == Page::Home || (page == Page::Applications && self.drawer.favourites_only) {
+            let order = self.prefs.ordered_favourites(&self.catalogue);
+            self.surface.cards.items.sort_by_key(|card| {
+                order
+                    .iter()
+                    .position(|id| id == &card.id)
+                    .unwrap_or(usize::MAX)
+            });
+        }
         if page == Page::Home {
             self.surface.input_cards = self.input_cards();
+        }
+        if let Some(menu) = &self.menu {
+            let order = self.prefs.ordered_favourites(&self.catalogue);
+            let rank = order.iter().position(|id| id == &menu.id);
+            let mut section = FormSection::new("APP OPTIONS");
+            for (action, label, disabled) in [
+                (
+                    MenuAction::Open,
+                    "Open app",
+                    !self.app_launches_enabled || !self.request_is_current(false),
+                ),
+                (
+                    MenuAction::ToggleFavourite,
+                    if rank.is_some() {
+                        "Unpin favourite"
+                    } else {
+                        "Pin favourite"
+                    },
+                    false,
+                ),
+                (
+                    MenuAction::Earlier,
+                    "Move earlier",
+                    rank.is_none_or(|i| i == 0),
+                ),
+                (
+                    MenuAction::Later,
+                    "Move later",
+                    rank.is_none_or(|i| i + 1 >= order.len()),
+                ),
+                (MenuAction::Close, "Close menu", false),
+            ] {
+                section = section
+                    .item_keyed(
+                        action,
+                        RowKey(action.key()),
+                        RowKind::Button,
+                        action,
+                        Row::new(label),
+                    )
+                    .disabled(disabled);
+            }
+            let mut table = FormTable::new(10);
+            table.set(Form::new().section(section), None);
+            self.surface.menu = Some(table);
         }
         let owner = InputOwner::Entry(entry(page));
         let old = self.input.engine.current(owner);
@@ -890,7 +1102,9 @@ impl Shell {
         let outcome = self.input.engine.enter(
             owner,
             &self.surface,
-            FocusTarget::ContainerGroup(GroupId(if self.surface.keys().is_empty() {
+            FocusTarget::ContainerGroup(GroupId(if self.surface.menu.is_some() {
+                5
+            } else if self.surface.keys().is_empty() {
                 if page == Page::Applications {
                     3
                 } else {
@@ -939,6 +1153,8 @@ impl Shell {
                         caption: cstr(&caption),
                         initials: cstr(&input.id.replace('_', " ")),
                         texture: (0, 0.0, 0.0),
+                        context_selected: false,
+                        compact_labels: false,
                     })
                 })
                 .collect(),
@@ -1018,6 +1234,13 @@ impl Shell {
         );
         self.rebuild(page);
         self.surface.grid = grid;
+        if page == Page::Applications {
+            self.surface.grid.set_columns(
+                if self.menu.is_some() { 3 } else { 4 },
+                CARD_STYLE,
+                480.0,
+            );
+        }
         self.surface.home_favourites = favourites;
         self.surface.home_inputs = inputs;
         let owner = InputOwner::Entry(entry(page));
@@ -1273,6 +1496,10 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        if self.menu.is_some() {
+            self.close_app_menu();
+            return;
+        }
         if self.surface.page == Page::Applications && self.drawer.editing {
             self.drawer.editing = false;
             self.rebuild(Page::Applications);
@@ -1324,6 +1551,18 @@ impl Shell {
     }
     fn activate(&mut self, key: FocusKey<u32>, hold: bool) {
         if key.entry != entry(self.surface.page) {
+            return;
+        }
+        if self.surface.menu.is_some() {
+            let action = self.surface.menu.as_ref().and_then(|menu| {
+                key.elem
+                    .checked_sub(MENU_BASE)
+                    .and_then(|k| menu.index_of_key(RowKey(k)))
+                    .and_then(|i| menu.activate(i))
+            });
+            if let Some(plx_ui::form::Activation::Action(action)) = action {
+                self.menu_action(action);
+            }
             return;
         }
         if self.surface.page == Page::Applications {
@@ -1382,10 +1621,23 @@ impl Shell {
         };
         let id = card.id.clone();
         let input = input_key(&id).is_some();
-        if hold && !input && matches!(self.surface.page, Page::Home | Page::Applications) {
-            if !self.prefs.favourites.remove(&id) {
-                self.prefs.favourites.insert(id);
-            }
+        if hold && !input && self.surface.page == Page::Applications {
+            let index = self
+                .surface
+                .cards
+                .items
+                .iter()
+                .position(|c| c.key == key.elem)
+                .unwrap_or(0);
+            self.menu = Some(AppMenu {
+                id,
+                origin: key.elem,
+                index,
+            });
+            self.rebuild(Page::Applications);
+            self.focus_menu_action(MenuAction::ToggleFavourite);
+        } else if hold && !input && self.surface.page == Page::Home {
+            self.prefs.toggle_favourite(&id);
             self.preferences_changed = true;
             self.rebuild(self.surface.page);
         } else {
@@ -1406,6 +1658,78 @@ impl Shell {
                 Action::RequestApplication(id)
             });
         }
+    }
+    fn close_app_menu(&mut self) {
+        let Some(menu) = self.menu.take() else {
+            return;
+        };
+        self.rebuild(Page::Applications);
+        let key = self
+            .surface
+            .cards
+            .items
+            .iter()
+            .find(|c| c.key == menu.origin)
+            .or_else(|| {
+                self.surface.cards.items.get(
+                    menu.index
+                        .min(self.surface.cards.items.len().saturating_sub(1)),
+                )
+            })
+            .map(|c| c.key);
+        if let Some(key) = key {
+            self.focus_special(key, GroupId(1));
+        } else {
+            self.focus_drawer_control(1);
+        }
+    }
+    fn menu_action(&mut self, action: MenuAction) {
+        let Some(id) = self.menu.as_ref().map(|menu| menu.id.clone()) else {
+            return;
+        };
+        if !self.catalogue.applications.iter().any(|a| a.id == id) {
+            self.close_app_menu();
+            return;
+        }
+        match action {
+            MenuAction::Close => {
+                self.close_app_menu();
+                return;
+            }
+            MenuAction::Open => {
+                if self.app_launches_enabled && self.request_is_current(false) {
+                    self.close_app_menu();
+                    self.pending.push(Action::RequestApplication(id));
+                    self.status = cstr("Opening application…");
+                }
+                return;
+            }
+            MenuAction::ToggleFavourite => {
+                self.prefs.toggle_favourite(&id);
+                self.preferences_changed = true;
+            }
+            MenuAction::Earlier | MenuAction::Later => {
+                if !self
+                    .prefs
+                    .move_favourite(&id, action == MenuAction::Earlier, &self.catalogue)
+                {
+                    return;
+                }
+                self.preferences_changed = true;
+            }
+        }
+        self.rebuild(Page::Applications);
+        self.focus_menu_action(action);
+    }
+    pub fn focus_menu_action(&mut self, action: MenuAction) -> bool {
+        if self.surface.menu.is_none() {
+            return false;
+        }
+        self.focus_special(MENU_BASE + action.key(), GroupId(5));
+        true
+    }
+    pub fn menu_application(&self) -> Option<&str> {
+        self.menu.as_ref().map(|m| m.id.as_str())
     }
     pub fn tick(&mut self, ms: u32, dt: f32) {
         self.now = ms;
@@ -1472,6 +1796,16 @@ impl Shell {
             .and_then(|k| self.surface.table.index_of_key(RowKey(k)))
         {
             self.surface.table.table.sel = i as i32;
+        }
+        if let Some(menu) = &mut self.surface.menu {
+            menu.table.list_focused = true;
+            if let Some(i) = current
+                .and_then(|k| k.checked_sub(MENU_BASE))
+                .and_then(|k| menu.index_of_key(RowKey(k)))
+            {
+                menu.table.sel = i as i32;
+            }
+            menu.table.update(dt, MENU_ROWS.h);
         }
         self.surface.rail.table.update(dt, RAIL.h);
         self.surface.table.table.update(dt, CONTENT.h);
@@ -1691,6 +2025,8 @@ impl Shell {
         } else {
             let content = if self.surface.editing {
                 Rect::new(CONTENT.x, 330.0, CONTENT.w, 320.0)
+            } else if self.surface.menu.is_some() {
+                Rect::new(CONTENT.x, CONTENT.y, 884.0, CONTENT.h)
             } else {
                 CONTENT
             };
@@ -1812,13 +2148,59 @@ impl Shell {
                 }
             }
         }
+        if let (Some(menu), Some(state)) = (&self.surface.menu, &self.menu) {
+            p.rrect(MENU_PANEL, 28.0, 28.0, theme::SURFACE_PANEL);
+            let title = self
+                .catalogue
+                .applications
+                .iter()
+                .find(|a| a.id == state.id)
+                .map(|a| a.title.as_str())
+                .unwrap_or("App unavailable");
+            let title = cstr(&plx_gfx::text::elide(
+                title,
+                408.0,
+                theme::size::HEADLINE,
+                1,
+                false,
+            ));
+            Label::new(title.as_ptr(), theme::size::HEADLINE, theme::TEXT_PRIMARY)
+                .bold()
+                .draw(p, Rect::new(1388.0, 352.0, 408.0, 58.0));
+            menu.table.draw_page(p, MENU_ROWS, &LegacyMeasure);
+            for i in 0..menu.table.n_rows() {
+                if let (Some(key), Some(rect)) =
+                    (menu.key_at(i as usize), menu.table.row_frame(MENU_ROWS, i))
+                {
+                    f.stop(
+                        p,
+                        Stop {
+                            key: FocusKey {
+                                entry: entry(self.surface.page),
+                                elem: MENU_BASE + key.0,
+                            },
+                            rect,
+                            rest_rect: rect,
+                            clip: MENU_ROWS,
+                            hover: Hover::Focus,
+                            activate: Activate::Press,
+                        },
+                    );
+                }
+            }
+        }
         let mut stops = f.into_stops();
+        if self.surface.menu.is_some() {
+            stops.retain(|stop| (MENU_BASE..MENU_BASE + 5).contains(&stop.key.elem));
+        }
         if self.surface.editing {
             stops.retain(|stop| keyboard_key(stop.key.elem).is_some());
         }
         self.input.hit.fill(stops);
         self.input.hit.swap();
-        let status = if self.drawer.editing && self.surface.page == Page::Applications {
+        let status = if self.menu.is_some() {
+            c"App options • ordering affects Luma favourites only • Back to close"
+        } else if self.drawer.editing && self.surface.page == Page::Applications {
             c"OK to type • Back to finish search"
         } else {
             self.status.as_c_str()
@@ -1827,7 +2209,11 @@ impl Shell {
             .draw(p, Rect::new(96.0, 985.0, 1728.0, 44.0));
     }
     pub fn focus_drawer_control(&mut self, index: usize) -> bool {
-        if self.surface.page != Page::Applications || self.drawer.editing || index >= 3 {
+        if self.surface.page != Page::Applications
+            || self.drawer.editing
+            || self.menu.is_some()
+            || index >= 3
+        {
             return false;
         }
         self.focus_special(TOOLBAR_BASE + index as u32, GroupId(3));
@@ -1864,7 +2250,10 @@ impl Shell {
     }
     /// Used by the app picker/search and by identity-based verification, never a private cursor.
     pub fn focus_application(&mut self, id: &str) -> bool {
-        if self.surface.editing || !matches!(self.surface.page, Page::Home | Page::Applications) {
+        if self.surface.editing
+            || self.menu.is_some()
+            || !matches!(self.surface.page, Page::Home | Page::Applications)
+        {
             return false;
         }
         let Some(card) = self.surface.cards.items.iter().find(|c| c.id == id) else {
@@ -1935,6 +2324,12 @@ impl Shell {
             .input
             .engine
             .current(InputOwner::Entry(entry(self.surface.page)))?;
+        if self.menu.is_some() {
+            return key
+                .elem
+                .checked_sub(MENU_BASE)
+                .map(|i| format!("app-option-{i}"));
+        }
         if self.surface.page == Page::Applications {
             if let Some(i) = keyboard_key(key.elem) {
                 return Some(format!("search-key-{}", KEYS[i]));

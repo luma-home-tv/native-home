@@ -86,9 +86,10 @@ fn moving_focus_cancels_an_armed_application_launch() {
     assert!(s.take_requests().is_empty());
 }
 #[test]
-fn hold_toggles_once_and_does_not_launch_on_release() {
+fn hold_opens_menu_without_toggling_or_launching_on_release() {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
     s.open(Page::Applications);
     let id = s.surface.cards.items[0].id.clone();
     assert!(s.preferences().favourites.contains(&id));
@@ -101,6 +102,11 @@ fn hold_toggles_once_and_does_not_launch_on_release() {
     for ms in (816..1200).step_by(16) {
         s.tick(ms, 0.016);
     }
+    assert!(s.preferences().favourites.contains(&id));
+    assert_eq!(s.menu_application(), Some(id.as_str()));
+    assert!(s.take_requests().is_empty());
+    assert!(!s.take_preferences_changed());
+    tap(&mut s);
     assert!(!s.preferences().favourites.contains(&id));
     assert!(s.take_requests().is_empty());
     assert!(s.take_preferences_changed());
@@ -111,6 +117,7 @@ fn explicitly_empty_favourites_stay_empty_after_restart() {
     let prefs = Preferences {
         initialized: true,
         favourites: BTreeSet::new(),
+        favourite_order: Vec::new(),
     };
     let s = Shell::new(fixture(), prefs.clone());
     assert!(s.surface.cards.items.is_empty());
@@ -541,6 +548,9 @@ fn drawer_favourites_filter_is_local_and_unpin_keeps_valid_focus() {
         },
         true,
     );
+    assert_eq!(s.menu_application(), Some("com.example.app00"));
+    tap(&mut s);
+    s.back();
     assert_eq!(s.surface.cards.len(), 7);
     assert_ne!(s.focused_item().as_deref(), Some("com.example.app00"));
     assert!(s.take_requests().is_empty());
@@ -599,4 +609,179 @@ fn search_key_movement_cancels_an_armed_character_and_live_refresh_keeps_keyboar
     assert!(s.drawer.editing);
     assert_eq!(s.focused_item(), before);
     assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn menu_is_modal_cancels_press_on_back_and_restores_app_identity() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    s.open(Page::Applications);
+    assert!(s.focus_application("com.example.app03"));
+    let origin = focus(&s);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: origin,
+        },
+        true,
+    );
+    for _ in 0..8 {
+        s.direction(Dir::Left);
+    }
+    assert_eq!(focus(&s), MENU_BASE + 1);
+    assert!(!s.focus_application("com.example.app04"));
+    assert!(!s.focus_drawer_control(2));
+    s.press(true, PressFrom::Key);
+    s.back();
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 600);
+    assert_eq!(focus(&s), origin);
+    assert!(s.take_requests().is_empty());
+    assert!(!s.take_preferences_changed());
+}
+#[test]
+fn ordering_survives_serialization_and_changes_only_favourite_views() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    assert!(s.focus_application("com.example.app01"));
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    assert!(s.focus_menu_action(MenuAction::Earlier));
+    tap(&mut s);
+    s.back();
+    assert_eq!(s.first_application().as_deref(), Some("com.example.app00"));
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app01"));
+    assert!(s.take_requests().is_empty());
+    let saved = serde_json::from_str(&serde_json::to_string(s.preferences()).unwrap()).unwrap();
+    let mut restarted = Shell::new(fixture(), saved);
+    assert_eq!(
+        restarted.first_application().as_deref(),
+        Some("com.example.app01")
+    );
+    restarted.open(Page::Applications);
+    restarted.focus_drawer_control(1);
+    tap(&mut restarted);
+    assert_eq!(
+        restarted.first_application().as_deref(),
+        Some("com.example.app01")
+    );
+    assert_eq!(
+        restarted.preferences().favourites,
+        s.preferences().favourites
+    );
+}
+#[test]
+fn menu_refresh_renames_target_but_removal_cancels_armed_action() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    s.open(Page::Applications);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    let id = s.menu_application().unwrap().to_owned();
+    let before = s.snapshot.clone();
+    s.snapshot
+        .applications
+        .iter_mut()
+        .find(|a| a.id == id)
+        .unwrap()
+        .title = "Renamed app".into();
+    s.catalogue
+        .refresh(&s.snapshot.applications, &s.snapshot.launch_ids);
+    s.refresh_shown_data(&before);
+    assert_eq!(s.menu_application(), Some(id.as_str()));
+    assert_eq!(focus(&s), MENU_BASE + 1);
+    s.press(true, PressFrom::Key);
+    let before = s.snapshot.clone();
+    s.snapshot.applications.retain(|a| a.id != id);
+    s.snapshot.launch_ids.remove(&id);
+    s.catalogue
+        .refresh(&s.snapshot.applications, &s.snapshot.launch_ids);
+    s.refresh_shown_data(&before);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 600);
+    assert!(s.menu_application().is_none());
+    assert!(s.take_requests().is_empty());
+    assert!(!s.take_preferences_changed());
+    assert!(s.preferences().favourites.contains(&id));
+}
+#[test]
+fn disabled_menu_actions_and_order_bounds_make_no_request_or_write() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    s.open(Page::Applications);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    for action in [MenuAction::Open, MenuAction::Earlier] {
+        s.focus_menu_action(action);
+        tap(&mut s);
+    }
+    assert!(s.take_requests().is_empty());
+    assert!(!s.take_preferences_changed());
+    assert!(s.preferences().favourite_order.is_empty());
+    s.back();
+    s.focus_application("com.example.app11");
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    s.focus_menu_action(MenuAction::Later);
+    tap(&mut s);
+    assert!(!s.take_preferences_changed());
+}
+
+#[test]
+fn menu_open_uses_registered_identity_and_rejects_stale_catalogue() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.enable_app_launches(true);
+    s.open(Page::Applications);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    s.focus_menu_action(MenuAction::Open);
+    tap(&mut s);
+    assert_eq!(
+        s.take_requests(),
+        vec![Action::RequestApplication("com.example.app00".into())]
+    );
+    assert!(s.menu_application().is_none());
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    s.live_state = Some(Freshness::default());
+    s.live_now = 16_000;
+    s.focus_menu_action(MenuAction::Open);
+    tap(&mut s);
+    assert!(s.take_requests().is_empty());
+    assert!(s.menu_application().is_some());
 }

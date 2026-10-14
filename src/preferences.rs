@@ -29,6 +29,18 @@ fn validate(p: &Preferences) -> io::Result<()> {
     if p.favourites.len() > 256 || p.favourites.iter().any(|id| !valid_app_id(id)) {
         return Err(invalid("Invalid favourite identity"));
     }
+    if p.favourite_order.len() > 256
+        || p.favourite_order
+            .iter()
+            .any(|id| !p.favourites.contains(id))
+        || p.favourite_order
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len()
+            != p.favourite_order.len()
+    {
+        return Err(invalid("Invalid favourite order"));
+    }
     Ok(())
 }
 fn private_file(file: &File) -> io::Result<()> {
@@ -191,6 +203,7 @@ mod tests {
         Preferences {
             initialized: true,
             favourites: BTreeSet::from(["com.example.video".into()]),
+            favourite_order: Vec::new(),
         }
     }
     #[test]
@@ -209,12 +222,23 @@ mod tests {
         let empty = Preferences {
             initialized: true,
             favourites: BTreeSet::new(),
+            favourite_order: Vec::new(),
         };
         reopened.save(&empty).unwrap();
         drop(reopened);
         let loaded = Store::open(&path).unwrap().load().unwrap().unwrap();
         assert!(loaded.initialized && loaded.favourites.is_empty());
         assert_eq!(std::fs::read_dir(&path).unwrap().count(), 1);
+        let ordered = Preferences {
+            initialized: true,
+            favourites: BTreeSet::from(["com.example.a".into(), "com.example.b".into()]),
+            favourite_order: vec!["com.example.b".into(), "com.example.a".into()],
+        };
+        Store::open(&path).unwrap().save(&ordered).unwrap();
+        assert_eq!(
+            Store::open(&path).unwrap().load().unwrap().unwrap(),
+            ordered
+        );
     }
     #[test]
     fn symlinked_directory_or_file_cannot_redirect_a_save() {
@@ -251,6 +275,7 @@ mod tests {
         let bad = Preferences {
             initialized: true,
             favourites: BTreeSet::from(["../../other-app".into()]),
+            favourite_order: Vec::new(),
         };
         assert!(store.save(&bad).is_err());
     }
@@ -373,10 +398,12 @@ mod writer_tests {
         let first = Preferences {
             initialized: true,
             favourites: std::collections::BTreeSet::from(["com.example.first".into()]),
+            favourite_order: Vec::new(),
         };
         let last = Preferences {
             initialized: true,
             favourites: std::collections::BTreeSet::new(),
+            favourite_order: Vec::new(),
         };
         worker.queue(&first).unwrap();
         worker.queue(&last).unwrap();
@@ -384,5 +411,23 @@ mod writer_tests {
         assert_eq!(replies.last().unwrap().as_ref().unwrap(), &last);
         assert_eq!(Store::open(&root).unwrap().load().unwrap(), Some(last));
         std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[cfg(test)]
+mod ordering_tests {
+    use super::*;
+    #[test]
+    fn old_records_roundtrip_without_new_field_and_invalid_ranks_are_rejected() {
+        let old = r#"{"initialized":true,"favourites":["com.example.a","com.example.b"]}"#;
+        let mut p: Preferences = serde_json::from_str(old).unwrap();
+        assert!(p.favourite_order.is_empty());
+        assert_eq!(serde_json::to_string(&p).unwrap(), old);
+        p.favourite_order = vec!["com.example.a".into(), "com.example.a".into()];
+        assert!(validate(&p).is_err());
+        p.favourite_order = vec!["com.example.other".into()];
+        assert!(validate(&p).is_err());
+        p.favourite_order = vec!["com.example.b".into(), "com.example.a".into()];
+        assert!(validate(&p).is_ok());
     }
 }
