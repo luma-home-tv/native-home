@@ -128,10 +128,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     launch_proof,
                     Some(native_home::actions::Request::Input { .. })
                 ),
-                settings: matches!(
-                    launch_proof,
-                    Some(native_home::actions::Request::LgSettings {})
-                ),
+                settings: plx_base::paths::app_id() == native_home::identity::PREVIEW
+                    || matches!(
+                        launch_proof,
+                        Some(native_home::actions::Request::LgSettings {})
+                    ),
             },
         )?);
     }
@@ -412,6 +413,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             settings_returns = settings_returns.saturating_add(1);
                             capture_settings_return = true;
                             settings_handoff.focus_returned();
+                            shell.storage_notice("Returned from LG Settings");
                         }
                         hidden_at = None;
                     }
@@ -467,6 +469,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for reply in worker.poll() {
                     if matches!(reply.request, native_home::actions::Request::LgSettings {}) {
                         settings_handoff.reply(live_origin.elapsed(), reply.verified);
+                    }
+                    if !reply.verified {
+                        shell.storage_notice(match reply.request {
+                            native_home::actions::Request::LgSettings {} => {
+                                "LG Settings unavailable • open it from LG Home"
+                            }
+                            native_home::actions::Request::Application { .. } => {
+                                "Application launch could not be confirmed"
+                            }
+                            native_home::actions::Request::Input { .. } => {
+                                "Input switch could not be confirmed"
+                            }
+                        });
                     }
                     action_receipts.push(reply);
                 }
@@ -684,7 +699,11 @@ fn dispatch_requests(
         };
         let allowed = match proof_request {
             Some(proof) => &request == proof,
-            None => matches!(request, native_home::actions::Request::Application { .. }),
+            None => matches!(
+                request,
+                native_home::actions::Request::Application { .. }
+                    | native_home::actions::Request::LgSettings {}
+            ),
         };
         if allowed {
             if let Some(worker) = worker {

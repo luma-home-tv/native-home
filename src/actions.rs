@@ -43,6 +43,7 @@ pub enum Op {
     Foreground,
     Windows,
     Launch,
+    SystemInfo,
 }
 pub trait Platform {
     fn call(&mut self, op: Op, payload: Value) -> Result<Value, String>;
@@ -177,6 +178,15 @@ pub fn execute<P: Platform>(
         if !allowed {
             return Err("Operation has not been validated".into());
         }
+        if matches!(request, Request::LgSettings {}) {
+            let info = get(platform, Op::SystemInfo)?;
+            if info["modelName"].as_str() != Some("OLED55G26LA")
+                || info["firmwareVersion"].as_str() != Some("23.25.55")
+                || info["sdkVersion"].as_str() != Some("9.2.2")
+            {
+                return Err("LG Settings handoff is not validated for this TV firmware".into());
+            }
+        }
         let before = get(platform, Op::Foreground)?;
         if before.get("appId").and_then(Value::as_str) != Some(own_id) {
             return Err("Dashboard is not foreground".into());
@@ -283,6 +293,12 @@ impl Platform for NativePlatform {
             Op::Foreground => "luna://com.webos.applicationManager/getForegroundAppInfo",
             Op::Windows => "luna://com.webos.surfacemanager/getForegroundWindowInfo",
             Op::Launch => "luna://com.webos.applicationManager/launch",
+            Op::SystemInfo => "luna://com.webos.service.tv.systemproperty/getSystemInfo",
+        };
+        let payload = if op == Op::SystemInfo {
+            json!({"keys":["modelName","firmwareVersion","sdkVersion"]})
+        } else {
+            payload
         };
         let raw = self
             .bus
@@ -415,6 +431,7 @@ mod tests {
         accepted: bool,
         window_after: Option<String>,
         initial_windows: Value,
+        system_info: Value,
     }
     impl Fake {
         fn new() -> Self {
@@ -428,6 +445,7 @@ mod tests {
                 accepted: true,
                 window_after: None,
                 initial_windows: json!({"returnValue":true,"windows":[]}),
+                system_info: json!({"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"}),
             }
         }
     }
@@ -451,6 +469,7 @@ mod tests {
                     self.launches.push(payload);
                     json!({"returnValue":self.accepted})
                 }
+                Op::SystemInfo => self.system_info.clone(),
             })
         }
         fn wait(&mut self) {}
@@ -661,6 +680,42 @@ mod tests {
         value["windows"][0]["appId"] = "com.webos.app.home".into();
         assert!(!settings_covering_own_card(&value, "com.example.home").unwrap());
         assert!(settings_covering_own_card(&json!({}), "com.example.home").is_err());
+    }
+    #[test]
+    fn settings_handoff_requires_current_verified_model_firmware_and_sdk() {
+        for (key, value) in [
+            ("modelName", "OLED65C26LD"),
+            ("firmwareVersion", "23.25.56"),
+            ("sdkVersion", "9.3.0"),
+        ] {
+            let mut p = Fake::new();
+            p.system_info[key] = value.into();
+            let r = execute(
+                &mut p,
+                "com.example.home",
+                Request::LgSettings {},
+                Capabilities {
+                    settings: true,
+                    ..Default::default()
+                },
+            );
+            assert!(!r.admitted && p.launches.is_empty());
+        }
+        let mut p = Fake::new();
+        p.system_info = json!({"returnValue":false});
+        assert!(
+            !execute(
+                &mut p,
+                "com.example.home",
+                Request::LgSettings {},
+                Capabilities {
+                    settings: true,
+                    ..Default::default()
+                }
+            )
+            .admitted
+        );
+        assert!(p.launches.is_empty());
     }
     #[test]
     fn wire_requests_cannot_add_uri_command_or_launch_parameters() {
