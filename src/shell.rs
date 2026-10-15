@@ -20,6 +20,7 @@ use plx_ui::screen::{
 use plx_ui::table::Row;
 use plx_ui::widgets::{
     Art, LegacyMeasure, RangeControl, RangeLayout, RangeScale, RangeStep, StagedRange, TabPill,
+    TextEntry,
 };
 use plx_ui::{theme, Env, Painter, Rect, View};
 use serde::{Deserialize, Serialize};
@@ -2234,7 +2235,7 @@ impl Shell {
             return;
         }
         if self.surface.page == Page::Applications && self.drawer.editing {
-            self.drawer.editing = false;
+            self.drawer.finish_editing();
             self.rebuild(Page::Applications);
             self.focus_drawer_control(2);
             return;
@@ -3308,10 +3309,14 @@ impl Shell {
             for (i, title) in [
                 "All apps".to_owned(),
                 "Favourites".to_owned(),
-                if self.drawer.query.is_empty() {
+                if self.drawer.query().is_empty() {
                     "Search apps…".into()
                 } else {
-                    format!("Search: {}", self.drawer.query)
+                    format!(
+                        "Search: {}{}",
+                        self.drawer.query(),
+                        self.drawer.composition()
+                    )
                 },
             ]
             .iter()
@@ -3324,10 +3329,23 @@ impl Shell {
                     1,
                     false,
                 ));
-                TabPill::new(label.as_ptr(), theme::size::LABEL, toolbar_rect(i))
-                    .selected(i < 2 && (i == 1) == self.drawer.favourites_only)
-                    .focused(focused == Some(TOOLBAR_BASE + i as u32))
+                if i == 2 && self.drawer.editing {
+                    let (before, preedit, after) = self.drawer.display_parts();
+                    TextEntry {
+                        frame: toolbar_rect(i),
+                        before: &before,
+                        preedit: &preedit,
+                        after: &after,
+                        placeholder: "Search apps…",
+                        focused: true,
+                    }
                     .draw(&Env::inert(), p);
+                } else {
+                    TabPill::new(label.as_ptr(), theme::size::LABEL, toolbar_rect(i))
+                        .selected(i < 2 && (i == 1) == self.drawer.favourites_only)
+                        .focused(focused == Some(TOOLBAR_BASE + i as u32))
+                        .draw(&Env::inert(), p);
+                }
                 if !self.drawer.editing {
                     f.stop(
                         p,
@@ -3518,6 +3536,54 @@ impl Shell {
     }
     pub fn application_count(&self) -> usize {
         self.surface.cards.len()
+    }
+    pub fn text_input(&mut self, text: &str, prediction: bool) -> bool {
+        if self.surface.page != Page::Applications || !self.drawer.editing || self.menu.is_some() {
+            return false;
+        }
+        self.input.cancel_press();
+        let changed = self.drawer.commit(text, prediction);
+        if changed {
+            self.drawer_scroll.jump(0.0);
+            self.drawer_scroll_target = 0.0;
+            self.rebuild(Page::Applications);
+        }
+        changed
+    }
+    pub fn text_preedit(&mut self, text: &str) -> bool {
+        if self.surface.page != Page::Applications || !self.drawer.editing || self.menu.is_some() {
+            return false;
+        }
+        self.input.cancel_press();
+        let changed = self.drawer.preedit(text);
+        if changed {
+            plx_machine::idle::invalidate();
+        }
+        changed
+    }
+    pub fn text_delete_forward(&mut self) -> bool {
+        if self.surface.page != Page::Applications || !self.drawer.editing || self.menu.is_some() {
+            return false;
+        }
+        self.input.cancel_press();
+        let changed = self.drawer.delete_forward();
+        if changed {
+            self.rebuild(Page::Applications);
+        }
+        changed
+    }
+    pub fn text_edit(&mut self, edit: &plx_machine::machine::TextEdit) -> bool {
+        if self.surface.page != Page::Applications || !self.drawer.editing || self.menu.is_some() {
+            return false;
+        }
+        self.input.cancel_press();
+        let changed = self.drawer.edit(edit);
+        if changed {
+            self.drawer_scroll.jump(0.0);
+            self.drawer_scroll_target = 0.0;
+            self.rebuild(Page::Applications);
+        }
+        changed
     }
     pub fn drawer_state(&self) -> &Drawer {
         &self.drawer

@@ -1,3 +1,40 @@
+diff --git a/rust-modules/Cargo.lock b/rust-modules/Cargo.lock
+index 3b681c7..681f55d 100644
+--- a/rust-modules/Cargo.lock
++++ b/rust-modules/Cargo.lock
+@@ -743,6 +743,7 @@ dependencies = [
+  "qrcodegen",
+  "serde",
+  "serde_json",
++ "unicode-segmentation",
+ ]
+ 
+ [[package]]
+@@ -1093,6 +1094,12 @@ version = "1.0.24"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
+ 
++[[package]]
++name = "unicode-segmentation"
++version = "1.13.3"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "c6f5d3c3b1bf09027a88a6bc961fc00497d651009560b5463668dc81b0fa87a8"
++
+ [[package]]
+ name = "untrusted"
+ version = "0.9.0"
+diff --git a/rust-modules/ui/Cargo.toml b/rust-modules/ui/Cargo.toml
+index 787cc67..8dd86af 100644
+--- a/rust-modules/ui/Cargo.toml
++++ b/rust-modules/ui/Cargo.toml
+@@ -50,6 +50,7 @@ libc = "0.2"
+ serde_json = { version = "1", default-features = false, features = ["alloc", "std"] }
+ serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
+ qrcodegen = "=1.8.0"
++unicode-segmentation = "=1.13.3"
+ 
+ [dev-dependencies]
+ plx_base = { path = "../base", features = ["test-support"] }
 diff --git a/rust-modules/ui/src/cards/grid.rs b/rust-modules/ui/src/cards/grid.rs
 index ff9994c..2f19905 100644
 --- a/rust-modules/ui/src/cards/grid.rs
@@ -99,6 +136,116 @@ index ff9994c..2f19905 100644
 +        assert!(!tile_admitted(true,false,Rect::new(1300.0,340.0,230.0,230.0),clip));
 +    }
 +}
+diff --git a/rust-modules/ui/src/text_buffer.rs b/rust-modules/ui/src/text_buffer.rs
+index 978406e..c0edc08 100644
+--- a/rust-modules/ui/src/text_buffer.rs
++++ b/rust-modules/ui/src/text_buffer.rs
+@@ -2,7 +2,9 @@
+ //! Keep one buffer for a sequence of edits: several commits can arrive before a retained
+ //! store view acknowledges them. Reconstructing from that old view loses preceding edits.
+ 
+-#[derive(Clone, Debug, PartialEq, Eq)]
++use unicode_segmentation::UnicodeSegmentation;
++
++#[derive(Clone, Debug, Default, PartialEq, Eq)]
+ pub struct TextBuffer {
+     text: String,
+     caret: usize,
+@@ -10,8 +12,7 @@ pub struct TextBuffer {
+ 
+ impl TextBuffer {
+     pub fn new(text: String, caret: usize) -> Self {
+-        let mut caret = caret.min(text.len());
+-        while !text.is_char_boundary(caret) { caret -= 1; }
++        let caret=boundary_before_or_at(&text,caret.min(text.len()));
+         Self { text, caret }
+     }
+     pub fn text(&self) -> &str { &self.text }
+@@ -33,7 +34,7 @@ impl TextBuffer {
+     /// A literal insertion, unlike the TV's prediction-bearing commit.
+     pub fn insert(&mut self, text: &str) {
+         self.text.insert_str(self.caret, text);
+-        self.caret += text.len();
++        self.caret = boundary_after_or_at(&self.text,self.caret+text.len());
+     }
+ 
+     /// LG sends a whole prediction without a corresponding deletion event (docs/search.md).
+@@ -51,23 +52,38 @@ impl TextBuffer {
+         self.text.replace_range(previous..self.caret, "");
+         self.caret = previous;
+     }
++    /// Bounded edits are transactional: a rejected commit preserves text and insertion point.
++    pub fn insert_bounded(&mut self,text:&str,max_bytes:usize)->bool {
++        if self.text.len().saturating_add(text.len())>max_bytes {return false;}
++        let before=self.clone();self.insert(text);*self!=before
++    }
++    pub fn edit_bounded(&mut self,edit:&plx_machine::machine::TextEdit,max_bytes:usize)->bool {
++        if self.text.len()>max_bytes {return false;}
++        if let plx_machine::machine::TextEdit::Commit(s)=edit {if s.len()>max_bytes{return false;}}
++        let mut next=self.clone();next.edit(edit);
++        if next.text.len()>max_bytes || next==*self{return false;}
++        *self=next;true
++    }
++    pub fn delete_forward(&mut self) {
++        let next=next_boundary(&self.text,self.caret);self.text.replace_range(self.caret..next,"");
++    }
++    pub fn set_caret(&mut self,at:usize) {self.caret=boundary_before_or_at(&self.text,at.min(self.text.len()));}
+     pub fn clear(&mut self) { self.text.clear(); self.caret = 0; }
+     pub fn left(&mut self) { self.caret = prev_boundary(&self.text, self.caret); }
+     pub fn right(&mut self) { self.caret = next_boundary(&self.text, self.caret); }
+ }
+ 
+-fn prev_boundary(q: &str, at: usize) -> usize {
+-    let mut i = at.min(q.len());
+-    loop {
+-        if i == 0 { return 0; }
+-        i -= 1;
+-        if q.is_char_boundary(i) { return i; }
+-    }
++fn boundary_before_or_at(q:&str,at:usize)->usize {
++    q.grapheme_indices(true).map(|(i,_)|i).chain(std::iter::once(q.len())).take_while(|i|*i<=at).last().unwrap_or(0)
++}
++fn boundary_after_or_at(q:&str,at:usize)->usize {
++    q.grapheme_indices(true).map(|(i,_)|i).chain(std::iter::once(q.len())).find(|i|*i>=at).unwrap_or(q.len())
+ }
+-fn next_boundary(q: &str, at: usize) -> usize {
+-    let mut i = at.saturating_add(1).min(q.len());
+-    while i < q.len() && !q.is_char_boundary(i) { i += 1; }
+-    i
++fn prev_boundary(q:&str,at:usize)->usize {
++    q.grapheme_indices(true).map(|(i,_)|i).take_while(|i|*i<at).last().unwrap_or(0)
++}
++fn next_boundary(q:&str,at:usize)->usize {
++    q.grapheme_indices(true).map(|(i,_)|i).find(|i|*i>at).unwrap_or(q.len())
+ }
+ 
+ /// Multi-character commits at the end replace the final word, including corrections that
+@@ -161,4 +177,25 @@ mod tests {
+         text.commit("XY"); assert_eq!(text.text(), "яXYб");
+         text.right(); text.right(); assert_eq!(text.caret(), text.text().len());
+     }
++    #[test]
++    fn backspace_and_cursor_treat_combining_and_joined_sequences_as_one_grapheme() {
++        for value in ["e\u{301}","👩‍👩‍👧‍👦","🇬🇧","👍🏽"] {
++            let mut t=TextBuffer::new(value.into(),value.len());
++            t.left();assert_eq!(t.caret(),0,"left must cross the whole visible character: {value}");
++            t.right();assert_eq!(t.caret(),value.len());
++            t.backspace();assert_eq!(t.text(),"","backspace must remove the whole visible character: {value}");
++        }
++    }
++
++    #[test]
++    fn bounded_commits_are_atomic_and_literal_batches_do_not_replace_the_previous_word() {
++        use plx_machine::machine::TextEdit;
++        let mut t=TextBuffer::new("app".into(),3);assert!(t.insert_bounded("le",8));assert_eq!(t.text(),"apple");
++        let before=t.clone();assert!(!t.insert_bounded("電視",8));assert_eq!(t,before);
++        assert!(!t.edit_bounded(&TextEdit::Commit("enormous replacement".into()),8));assert_eq!(t,before);
++        assert!(t.edit_bounded(&TextEdit::Commit("Apple ".into()),8));assert_eq!(t.text(),"Apple ");
++        let mut t=TextBuffer::new("e\u{301}X".into(),1);assert_eq!(t.caret(),0);t.delete_forward();assert_eq!(t.text(),"X");
++        t.insert("👩‍👩‍👧‍👦");t.left();t.delete_forward();assert_eq!(t.text(),"X");
++    }
++
+ }
 diff --git a/rust-modules/ui/src/theme.rs b/rust-modules/ui/src/theme.rs
 index 0b445f3..604e58e 100644
 --- a/rust-modules/ui/src/theme.rs
@@ -123,7 +270,7 @@ index 0b445f3..604e58e 100644
 +pub const RANGE_FILL: [f32;4] = TEXT_PRIMARY;
 +pub const RANGE_SAVED: [f32;4] = TEXT_SECONDARY;
 diff --git a/rust-modules/ui/src/widgets.rs b/rust-modules/ui/src/widgets.rs
-index e92ccee..1688540 100644
+index e92ccee..5a5a00d 100644
 --- a/rust-modules/ui/src/widgets.rs
 +++ b/rust-modules/ui/src/widgets.rs
 @@ -297,6 +297,10 @@ pub fn warm_tex_on(
@@ -186,7 +333,7 @@ index e92ccee..1688540 100644
          Art::Poster(m) => {
              // **The ROW's server, not the current one.** A `thumb` path is a key on the server that
              // issued it — image-transcode paths embed a server-local ratingKey — so a bare
-@@ -8113,3 +8129,316 @@ mod hero_scrim_tests;
+@@ -8113,3 +8129,443 @@ mod hero_scrim_tests;
  #[cfg(test)]
  #[path = "widgets_art_crop_tests.rs"]
  mod art_crop_tests;
@@ -501,6 +648,133 @@ index e92ccee..1688540 100644
 +            StagedRange::new(scale, 0).unwrap()
 +        )
 +        .is_none());
++    }
++}
++/// Geometry for an editable single line. The insertion point, not the string end, owns scrolling.
++#[derive(Clone, Copy)]
++pub struct TextEntryLayout {
++    pub clip: Rect,
++    pub before_x: f32,
++    pub preedit_x: f32,
++    pub after_x: f32,
++    pub caret: Rect,
++    pub preedit_underline: Rect,
++}
++impl TextEntryLayout {
++    pub fn new(frame: Rect, before: f32, preedit: f32, after: f32) -> Option<Self> {
++        if ![frame.x, frame.y, frame.w, frame.h, before, preedit, after]
++            .iter()
++            .all(|v| v.is_finite())
++            || frame.w < 120.0
++            || frame.h < 48.0
++            || before < 0.0
++            || preedit < 0.0
++            || after < 0.0
++        {
++            return None;
++        }
++        let clip = Rect::new(
++            frame.x + 24.0,
++            frame.y + 8.0,
++            frame.w - 48.0,
++            frame.h - 16.0,
++        );
++        let offset = (before + preedit - (clip.w - 10.0)).max(0.0);
++        let before_x = clip.x - offset;
++        let preedit_x = before_x + before;
++        let after_x = preedit_x + preedit;
++        let caret = Rect::new(after_x, frame.cy() - 16.0, 2.0, 32.0);
++        Some(Self {
++            clip,
++            before_x,
++            preedit_x,
++            after_x,
++            caret,
++            preedit_underline: Rect::new(preedit_x, frame.cy() + 17.0, preedit, 1.0),
++        })
++    }
++}
++/// Native, horizontally clipped text entry with a static caret and separate IME preedit.
++/// The caller owns editing and focus; this leaf has no keyboard, timer or service access.
++pub struct TextEntry<'a> {
++    pub frame: Rect,
++    pub before: &'a str,
++    pub preedit: &'a str,
++    pub after: &'a str,
++    pub placeholder: &'a str,
++    pub focused: bool,
++}
++impl View for TextEntry<'_> {
++    fn draw(&self, _e: &Env, p: Painter) {
++        let strings = [self.before, self.preedit, self.after, self.placeholder]
++            .map(|s| CString::new(s.replace('\0', "")).unwrap());
++        let widths = [0, 1, 2].map(|i| {
++            LegacyMeasure
++                .bounds(&strings[i], theme::size::LABEL, false)
++                .0
++        });
++        let Some(l) = TextEntryLayout::new(self.frame, widths[0], widths[1], widths[2]) else {
++            return;
++        };
++        p.rrect(self.frame, 18.0, 18.0, theme::CONTROL_IDLE_FILL);
++        if self.focused {
++            p.rring(self.frame, 18.0, 2.0, theme::TEXT_PRIMARY);
++        }
++        let _clip = crate::screen::ClipScope::open_in(p, l.clip);
++        if self.before.is_empty() && self.preedit.is_empty() && self.after.is_empty() {
++            Label::new(
++                strings[3].as_ptr(),
++                theme::size::LABEL,
++                theme::TEXT_SECONDARY,
++            )
++            .draw(p, l.clip);
++        } else {
++            for (i, x) in [(0, l.before_x), (1, l.preedit_x), (2, l.after_x)] {
++                if widths[i] > 0.0 {
++                    Label::new(
++                        strings[i].as_ptr(),
++                        theme::size::LABEL,
++                        if i == 1 {
++                            theme::TEXT_SECONDARY
++                        } else {
++                            theme::TEXT_PRIMARY
++                        },
++                    )
++                    .draw(p, Rect::new(x, l.clip.y, widths[i], l.clip.h));
++                }
++            }
++        }
++        if self.focused {
++            p.rrect(l.caret, 0.0, 0.0, theme::TEXT_PRIMARY);
++        }
++        if widths[1] > 0.0 {
++            p.rrect(l.preedit_underline, 0.0, 0.0, theme::TEXT_SECONDARY);
++        }
++    }
++}
++#[cfg(test)]
++mod text_entry_tests {
++    use super::*;
++    #[test]
++    fn caret_stays_inside_the_clip_for_long_prefixes_and_preedit_without_tail_ellipses() {
++        for (before, preedit, after) in [
++            (0.0, 0.0, 0.0),
++            (100.0, 30.0, 0.0),
++            (4000.0, 0.0, 800.0),
++            (3500.0, 300.0, 500.0),
++            (0.0, 0.0, 4000.0),
++        ] {
++            let l =
++                TextEntryLayout::new(Rect::new(898.0, 248.0, 886.0, 58.0), before, preedit, after)
++                    .unwrap();
++            assert!(l.caret.x >= l.clip.x && l.caret.x + l.caret.w <= l.clip.x + l.clip.w);
++            assert_eq!(l.after_x, l.preedit_x + preedit);
++            assert_eq!(l.preedit_x, l.before_x + before);
++        }
++        assert!(TextEntryLayout::new(Rect::new(0.0, 0.0, 40.0, 58.0), 0.0, 0.0, 0.0).is_none());
++        assert!(
++            TextEntryLayout::new(Rect::new(0.0, 0.0, 886.0, 58.0), f32::NAN, 0.0, 0.0).is_none()
++        );
 +    }
 +}
 diff --git a/rust-modules/ui/src/widgets_art_crop_tests.rs b/rust-modules/ui/src/widgets_art_crop_tests.rs

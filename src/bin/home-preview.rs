@@ -31,6 +31,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         return Err("Navigation proof requires isolated diagnostic identity".into());
     }
+    let text_probe = assets.join("text-input-proof.json").exists();
+    if text_probe
+        && (!device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || navigation_proof
+            || [
+                "description-ui-proof.json",
+                "range-layout-proof.json",
+                "description-level-proof.json",
+                "pointer-proof.json",
+                "pointer-ui-proof.json",
+                "launch-proof.json",
+                "management-proof.json",
+                "controls-proof.json",
+                "drawer-proof.json",
+                "preferences-hold-probe.json",
+            ]
+            .iter()
+            .any(|name| assets.join(name).exists()))
+    {
+        return Err("Text input proof requires isolated non-interactive TV identity".into());
+    }
     let description_ui_proof = assets.join("description-ui-proof.json").exists();
     if description_ui_proof
         && (!device
@@ -114,6 +137,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut performance = performance_proof.then(native_home::performance::Monitor::default);
     if interactive
         && [
+            "text-input-proof.json",
             "drawer-proof.json",
             "management-proof.json",
             "controls-proof.json",
@@ -399,7 +423,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 drawer_tap(&mut shell, &mut now);
             }
-            let query = shell.drawer_state().query.clone();
+            let query = shell.drawer_state().query().to_owned();
             let results = shell.application_count();
             drawer_capture(&mut shell, &window, &output, "drawer-keyboard", &mut now)?;
             shell.focus_search_key(39);
@@ -700,6 +724,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?);
         shell.open(Page::Home);
     }
+    #[allow(unused_mut)]
+    let mut text_receipt = None::<serde_json::Value>;
+    #[cfg(target_arch = "arm")]
+    if text_probe {
+        text_receipt = Some(text_input_trial(
+            &mut shell,
+            &window,
+            &output,
+            &live_worker,
+            live_origin,
+            &mut live_history,
+            &mut now,
+        )?);
+        shell.open(Page::Home);
+    }
     let mut proof_request = None;
     if let Some(request) = launch_proof {
         match &request {
@@ -811,16 +850,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         m.input(e.key, start.elapsed());
                     }
                 }
-                if matches!(e.kind, 2..=6 | 9) {
+                if matches!(e.kind, 2..=6 | 9 | 10 | 11) {
                     plx_machine::idle::wake();
                 }
                 events = events.saturating_add(1_u32);
                 // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
                 // Consume the first wake input and cancel any gesture armed before blanking.
-                if hidden_at.is_none() && matches!(e.kind, 2..=6) && !session.input(start.elapsed())
+                if hidden_at.is_none()
+                    && matches!(e.kind, 2..=6 | 10 | 11)
+                    && !session.input(start.elapsed())
                 {
                     shell.cancel_press();
-                    continue;
+                    if !matches!(e.kind, 10 | 11) {
+                        continue;
+                    }
                 }
                 match e.kind {
                     1 => {
@@ -854,7 +897,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 }
                             }
                             6 if e.repeat == 0 => shell.back(),
+                            7 => {
+                                shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
+                            }
+                            8 => {
+                                shell.text_delete_forward();
+                            }
                             _ => {}
+                        }
+                    }
+                    10 if hidden_at.is_none() => {
+                        if let Some(text) = e.text() {
+                            shell.text_input(text, false);
+                        }
+                    }
+                    11 if hidden_at.is_none() => {
+                        if let Some(text) = e.text() {
+                            shell.text_preedit(text);
                         }
                     }
                     3 if e.key == 5 => shell.press(false, PressFrom::Key),
@@ -1106,7 +1165,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
-    report["numeric_control_available_at_last_poll"]=shell.description_value().is_some().into();
+    report["text_input_proof"] = serde_json::json!(text_receipt);
+    report["numeric_control_available_at_last_poll"] = shell.description_value().is_some().into();
     report["description_ui_proof"] = serde_json::json!(description_ui_receipt);
     report["description_actions"] = serde_json::json!(description_actions);
     report["description_action_attempts"] = description_attempts.into();
@@ -1575,7 +1635,7 @@ fn navigation_trial(
     drawer_tap(shell, now);
     if shell.page() != Page::Applications
         || shell.drawer_state().favourites_only
-        || !shell.drawer_state().query.is_empty()
+        || !shell.drawer_state().query().is_empty()
     {
         return Err("View all did not open full drawer".into());
     }
@@ -2002,5 +2062,143 @@ fn description_ui_trial(
     }
     Ok(
         serde_json::json!({"staging_no_write":true,"cancel_no_write":true,"native_entry_and_apply":true,"endpoints_verified":true,"original_restored":true,"verified_transitions":transitions,"favourites_unchanged":true,"transport":"fixed ordinary-app numeric worker"}),
+    )
+}
+
+#[cfg(target_arch = "arm")]
+#[allow(clippy::too_many_arguments)]
+fn text_input_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    live: &Option<native_home::live::Worker>,
+    origin: Instant,
+    history: &mut Vec<serde_json::Value>,
+    now: &mut u32,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    struct Stop<'a>(&'a Window);
+    impl Drop for Stop<'_> {
+        fn drop(&mut self) {
+            self.0.text_stop();
+        }
+    }
+    let _stop = Stop(window);
+    let before = shell.preferences().clone();
+    let mut statuses = Vec::new();
+    let mut kinds = Vec::new();
+    let mut commits = 0;
+    let phase = |name: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let tmp = output.join("text-input-next.json");
+        let f = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&tmp)?;
+        serde_json::to_writer(f, &serde_json::json!({"stage":name}))?;
+        std::fs::rename(tmp, output.join("text-input-current.json"))?;
+        Ok(())
+    };
+    for cycle in 1..=2 {
+        shell.open(Page::Applications);
+        shell.focus_drawer_control(2);
+        drawer_tap(shell, now);
+        shell.text_edit(&plx_machine::machine::TextEdit::Clear);
+        let deadline = Instant::now() + Duration::from_secs(8);
+        while window.keyboard_status().focused == 0 && Instant::now() < deadline {
+            while let Some(e) = poll() {
+                if kinds.len() < 64 {
+                    kinds.push(e.kind);
+                }
+            }
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        statuses.push(serde_json::json!({"cycle":cycle,"before":window.keyboard_status()}));
+        if !window.text_start() {
+            phase("unavailable")?;
+            return Err("SDL text input could not acquire the app window".into());
+        }
+        for text in ["É", "cran"] {
+            if !window.diagnostic_text(text) {
+                return Err("Native-only text injection refused".into());
+            }
+        }
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while shell.drawer_state().query() != "Écran" && Instant::now() < deadline {
+            while let Some(e) = poll() {
+                if kinds.len() < 64 {
+                    kinds.push(e.kind);
+                }
+                if e.kind == 10 {
+                    if let Some(text) = e.text() {
+                        shell.text_input(text, false);
+                        commits += 1;
+                    }
+                } else if e.kind == 11 {
+                    if let Some(text) = e.text() {
+                        shell.text_preedit(text);
+                    }
+                }
+            }
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if shell.drawer_state().query() != "Écran" {
+            return Err("Native SDL commit boundary did not reach the owned draft".into());
+        }
+        phase(&format!("open-{cycle}"))?;
+        let until = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < until {
+            poll_live(live, shell, origin, history);
+            while let Some(e) = poll() {
+                if kinds.len() < 64 {
+                    kinds.push(e.kind);
+                }
+                if e.kind == 10 {
+                    if let Some(text) = e.text() {
+                        shell.text_input(text, false);
+                    }
+                }
+            }
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        drawer_capture(shell, window, output, &format!("text-open-{cycle}"), now)?;
+        statuses.push(serde_json::json!({"cycle":cycle,"open_flag_not_visibility_proof":window.keyboard_status()}));
+        window.text_stop();
+        phase(&format!("closed-{cycle}"))?;
+        let until = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < until {
+            while let Some(e) = poll() {
+                if kinds.len() < 64 {
+                    kinds.push(e.kind);
+                }
+            }
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        statuses.push(serde_json::json!({"cycle":cycle,"closed":window.keyboard_status()}));
+        shell.back();
+    }
+    shell.open(Page::Home);
+    if shell.preferences() != &before || !shell.take_requests().is_empty() {
+        return Err("Text-only proof changed preferences or requested a TV action".into());
+    }
+    phase("complete")?;
+    Ok(
+        serde_json::json!({"native_sdl_commits":commits,"query_match_each_cycle":true,"cycles":2,"injection":"native diagnostic SDL queue, not human typing","statuses":statuses,"window_event_kinds":kinds,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
     )
 }

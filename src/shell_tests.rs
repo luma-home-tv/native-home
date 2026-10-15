@@ -583,7 +583,7 @@ fn native_search_keyboard_commits_once_and_back_restores_search_control() {
         assert!(s.focus_search_key(KEYS.iter().position(|k| *k == label).unwrap()));
         tap(&mut s);
     }
-    assert_eq!(s.drawer.query, "APP01");
+    assert_eq!(s.drawer.query(), "APP01");
     assert_eq!(s.surface.cards.len(), 0); // word matching, not arbitrary application ID matching
     assert!(s.take_requests().is_empty());
     s.back();
@@ -594,7 +594,7 @@ fn native_search_keyboard_commits_once_and_back_restores_search_control() {
     tap(&mut s);
     assert!(s.focus_search_key(38));
     tap(&mut s);
-    assert!(s.drawer.query.is_empty());
+    assert!(s.drawer.query().is_empty());
     assert_eq!(s.surface.cards.len(), 12);
     s.back();
     s.back();
@@ -615,7 +615,7 @@ fn search_key_movement_cancels_an_armed_character_and_live_refresh_keeps_keyboar
     for ms in (now + 16..now + 500).step_by(16) {
         s.tick(ms, 0.016);
     }
-    assert!(s.drawer.query.is_empty());
+    assert!(s.drawer.query().is_empty());
     let before = s.focused_item();
     s.apply_live(&live_update(100), 100);
     assert!(s.drawer.editing);
@@ -1333,7 +1333,7 @@ fn home_view_all_routes_clear_hidden_filters_and_return_to_their_own_shortcut() 
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(fixture(), Preferences::default());
     let prefs = s.preferences().clone();
-    s.drawer.query = "unmatched".into();
+    s.drawer.set_query("unmatched");
     s.drawer.favourites_only = true;
     assert!(s.focus_home_link(0));
     s.activate(
@@ -1345,7 +1345,7 @@ fn home_view_all_routes_clear_hidden_filters_and_return_to_their_own_shortcut() 
     );
     assert_eq!(s.page(), Page::Applications);
     assert_eq!(s.application_count(), 12);
-    assert!(!s.drawer.favourites_only && s.drawer.query.is_empty());
+    assert!(!s.drawer.favourites_only && s.drawer.query().is_empty());
     s.focus_drawer_control(2);
     s.activate(
         FocusKey {
@@ -1668,4 +1668,46 @@ fn numeric_worker_reply_advances_saved_and_ignores_read_cycles_started_before_co
     s.description_sample(Some(Level::new(9).unwrap()), 400, 450);
     assert_ne!(s.page(), Page::RangeEditor);
     assert_eq!(s.description_value().unwrap().value(), 9);
+}
+
+#[test]
+fn text_ingress_is_owned_by_the_editing_drawer_and_composition_never_filters_early() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let prefs = s.preferences().clone();
+    assert!(!s.text_input("hidden", false));
+    s.open(Page::Applications);
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    assert!(s.text_input("app", false));
+    assert!(s.text_input("li", false));
+    assert_eq!(s.drawer_state().query(), "appli");
+    let count = s.application_count();
+    assert!(s.text_preedit("é"));
+    assert_eq!(s.application_count(), count);
+    assert_eq!(s.drawer_state().query(), "appli");
+    s.text_edit(&plx_machine::machine::TextEdit::Clear);
+    assert!(s.text_input("e\u{301}", false));
+    s.text_edit(&plx_machine::machine::TextEdit::Backspace);
+    assert!(s.drawer_state().query().is_empty());
+    s.back();
+    assert!(!s.text_input("late", false));
+    assert!(!s.text_preedit("late"));
+    assert!(s.take_requests().is_empty());
+    assert_eq!(s.preferences(), &prefs);
+}
+#[test]
+fn typed_text_cancels_an_armed_native_key_instead_of_appending_that_key_on_release() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    s.focus_search_key(0);
+    s.press(true, PressFrom::Key);
+    assert!(s.text_input("Écran", false));
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert_eq!(s.drawer_state().query(), "Écran");
+    assert!(s.take_requests().is_empty());
 }
