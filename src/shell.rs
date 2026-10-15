@@ -2532,6 +2532,20 @@ impl Shell {
                     }
                 }
             }
+            let end = self.surface.cards.items.last().and_then(|card| {
+                self.surface
+                    .grid
+                    .place(&cx, &self.surface.cards, &card.key, At::SpringTarget)
+            });
+            let max_scroll = end.map_or(0.0, |p| {
+                let area = self.surface.grid_area();
+                (self.drawer_scroll.pos + p.rect.y + p.rect.h + plx_ui::cards::UNDER_LABEL_H
+                    - area.y
+                    - area.h
+                    + 8.0)
+                    .max(0.0)
+            });
+            self.drawer_scroll_target = self.drawer_scroll_target.clamp(0.0, max_scroll);
             self.drawer_scroll
                 .step(self.drawer_scroll_target, plx_ui::consts::K_SCROLL, dt);
             self.surface.grid.set_page(340.0, self.drawer_scroll.pos);

@@ -1454,6 +1454,10 @@ fn drawer_scroll_reveals_full_focused_caption_and_keeps_menu_anchor_in_the_same_
     settle(&mut s, 1200);
     let (r, clip) = s.drawer_focus_bounds().unwrap();
     assert!(r.y >= clip.y - 1.0 && r.y + r.h <= clip.y + clip.h + 1.0);
+    assert!(
+        r.y + r.h >= clip.y + clip.h - 24.0,
+        "menu return overscrolled past the document end"
+    );
     assert_eq!(s.focused_item().as_deref(), Some("com.example.app69"));
     assert!(s.take_requests().is_empty());
 }
