@@ -228,7 +228,7 @@ mod proof {
             .map_err(|_| invalid("Non-UTF8 process link"))
     }
     #[cfg(target_arch = "arm")]
-    fn peer(pid: u32) -> io::Result<PeerEvidence> {
+    pub(super) fn peer(pid: u32) -> io::Result<PeerEvidence> {
         if pid <= 1 {
             return Err(invalid("Invalid enrolled PID"));
         }
@@ -1001,6 +1001,13 @@ mod proof {
             }
         }
     }
+}
+
+/// Kernel-bound fixed Proof process evidence reused by the installed bootstrap.
+/// The caller supplies a PID obtained from socket credentials, never a wire PID.
+#[cfg(target_arch = "arm")]
+pub(crate) fn proof_peer(pid: u32) -> std::io::Result<crate::broker_protocol::PeerEvidence> {
+    proof::peer(pid)
 }
 
 /// Host builds refuse this proof. There is no stream or unprivileged fallback.

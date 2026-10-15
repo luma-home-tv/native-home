@@ -11,7 +11,7 @@ ROOT_FILES = ('Cargo.toml', 'Cargo.lock', 'build.rs', 'sdl-events.c', 'build-cli
               'package-preview.py', 'prepare-framework.py', 'dependency-lock.json',
               'build_provenance.py', 'tools/verify-framework.py')
 TREES = ('src', 'assets/luma-home', 'resources/fonts')
-BINARY_NAMES = {'home-preview', 'control-preview', 'launch-target', 'artwork-broker-proof'}
+BINARY_NAMES = {'home-preview', 'control-preview', 'launch-target', 'artwork-broker-proof', 'artwork-broker-startup-proof'}
 RECEIPT_LIMIT = 4 * 1024 * 1024
 
 

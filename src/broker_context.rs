@@ -97,6 +97,12 @@ pub fn catalogue(deadline: Instant, expected_sha256: &str) -> Value {
     collect_set(ReadSet::Catalogue, deadline, expected_sha256)
 }
 
+/// Shared strict object decoder. Callers impose their own byte bounds first.
+#[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+pub(crate) fn strict_object(bytes: &[u8]) -> std::io::Result<Value> {
+    core::object(bytes)
+}
+
 #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
 mod core {
     use super::*;
@@ -741,7 +747,7 @@ mod core {
             deserializer.deserialize_any(Visitor)
         }
     }
-    fn object(bytes: &[u8]) -> io::Result<Value> {
+    pub(super) fn object(bytes: &[u8]) -> io::Result<Value> {
         let Distinct(value) = serde_json::from_slice::<Distinct>(bytes).map_err(|_| invalid())?;
         if !value.is_object() {
             return Err(invalid());

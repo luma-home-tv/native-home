@@ -176,7 +176,7 @@ pub(crate) fn own_identity() -> Result<OwnIdentity, String> {
 }
 
 #[cfg(any(target_arch = "arm", test))]
-fn read_marker_file(path: &std::path::Path) -> Result<Marker, String> {
+pub(crate) fn read_marker_file(path: &std::path::Path) -> Result<Marker, String> {
     use std::fs::OpenOptions;
     use std::io::Read;
     use std::os::unix::fs::{MetadataExt, OpenOptionsExt};

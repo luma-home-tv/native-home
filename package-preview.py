@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.38.0' if main == 'home-preview' else '0.1.0'
+version = '0.39.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -41,6 +41,44 @@ broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == 
 live_artwork_proof = os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PROOF') == '1'
 icon_presentation_proof = os.environ.get('NATIVE_HOME_ICON_PRESENTATION_PROOF') == '1'
 startup_capability_proof = os.environ.get('NATIVE_HOME_STARTUP_CAPABILITY_PROOF') == '1'
+broker_startup_proof = os.environ.get('NATIVE_HOME_BROKER_STARTUP_PROOF') == '1'
+broker_startup_marker = None
+broker_startup_helper = None
+broker_startup_pins_sha256 = None
+if broker_startup_proof:
+    allowed = {'NATIVE_HOME_BROKER_STARTUP_PROOF','NATIVE_HOME_BROKER_STARTUP_PINS'}
+    others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
+              (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and k not in allowed]
+    if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
+        raise ValueError('Broker startup requires only the isolated non-interactive proof')
+    def startup_pairs(pairs):
+        value={}
+        for key,item in pairs:
+            if key in value: raise ValueError('Duplicate broker installation pin')
+            value[key]=item
+        return value
+    pins_path=Path(os.environ['NATIVE_HOME_BROKER_STARTUP_PINS']).absolute()
+    from build_provenance import _read as read_pinned_input
+    pins_raw=read_pinned_input(pins_path,private=True,limit=4096)
+    pins=json.loads(pins_raw,object_pairs_hook=startup_pairs)
+    if (type(pins) is not dict or set(pins)!={'schema','profile','rendezvous_nonce','ui_sha256','broker_sha256','context_reader_sha256'} or
+        type(pins['schema']) is not int or pins['schema']!=1 or pins['profile']!='proof' or
+        any(type(pins[k]) is not str or len(pins[k])!=length or any(c not in '0123456789abcdef' for c in pins[k])
+            for k,length in [('rendezvous_nonce',32),('ui_sha256',64),('broker_sha256',64),('context_reader_sha256',64)]) or
+        pins['ui_sha256']!=build_receipt['binary']['sha256']):
+        raise ValueError('Closed Root installation pins required; UI must match actual build')
+    helper_binary=Path(os.environ['NATIVE_HOME_STARTUP_BROKER_BINARY']).absolute()
+    if helper_binary.name!='artwork-broker-startup-proof': raise ValueError('Fixed startup helper binary required')
+    helper_receipt=helper_binary.with_name(helper_binary.name+'.build.json')
+    helper_build=validate_build_receipt(here,helper_binary,helper_receipt)
+    if (helper_build['target']!='arm' or helper_build['git_revision']!=build_receipt['git_revision'] or
+        helper_build['binary']['sha256']!=pins['broker_sha256'] or helper_build['snapshot']!=build_receipt['snapshot']):
+        raise ValueError('Root helper must share actual UI source/framework build context')
+    broker_startup_marker={'schema':1,'nonce':pins['rendezvous_nonce'],'ui_sha256':pins['ui_sha256'],'broker_sha256':pins['broker_sha256']}
+    broker_startup_helper={'binary_sha256':pins['broker_sha256'],'build_receipt_sha256':hashlib.sha256(helper_receipt.read_bytes()).hexdigest(),'build_source_revision':helper_build['git_revision']}
+    broker_startup_pins_sha256=hashlib.sha256(pins_raw).hexdigest()
+elif any(os.environ.get(k) for k in ('NATIVE_HOME_BROKER_STARTUP_PINS','NATIVE_HOME_STARTUP_BROKER_BINARY')):
+    raise ValueError('Broker startup pins/helper require explicit isolated mode')
 if startup_capability_proof:
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
               (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and
@@ -139,6 +177,10 @@ if artwork_target_fixture:
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    if broker_startup_marker is not None:
+        marker_path=stage/'broker-startup-proof.json'
+        marker_path.write_text(json.dumps(broker_startup_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
     if startup_capability_proof:
         marker_path = stage / 'startup-capability-proof.json'
         marker_path.write_text('{"schema":1}\n')
@@ -277,6 +319,9 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'live_artwork_proof': live_artwork_proof,
            'icon_presentation_proof': icon_presentation_proof,
            'startup_capability_proof': startup_capability_proof,
+           'broker_startup_proof': broker_startup_proof,
+           'broker_startup_helper': broker_startup_helper,
+           'broker_startup_root_pins_sha256': broker_startup_pins_sha256,
            'artwork_target_fixture': artwork_target_fixture or None,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
