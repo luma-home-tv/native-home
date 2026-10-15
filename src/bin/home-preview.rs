@@ -23,6 +23,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let navigation_proof = assets.join("navigation-proof.json").exists()
+        || args.iter().any(|s| s == "--navigation-proof");
+    if device
+        && navigation_proof
+        && (interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
+    {
+        return Err("Navigation proof requires isolated diagnostic identity".into());
+    }
     let pointer_ui_proof = assets.join("pointer-ui-proof.json").exists();
     if pointer_ui_proof
         && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
@@ -51,6 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "native-read-probe.json",
             "pointer-proof.json",
             "pointer-ui-proof.json",
+            "navigation-proof.json",
         ]
         .iter()
         .any(|name| assets.join(name).exists())
@@ -568,6 +577,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?);
         shell.open(Page::Home);
     }
+    let navigation_receipt = if navigation_proof {
+        Some(navigation_trial(&mut shell, &window, &output, &mut now)?)
+    } else {
+        None
+    };
     let mut proof_request = None;
     if let Some(request) = launch_proof {
         match &request {
@@ -957,6 +971,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["navigation_proof"] = serde_json::json!(navigation_receipt);
     report["source_switching_enabled"] = shell.input_launches_enabled().into();
     report["pointer_proof"] = serde_json::json!(pointer_proof_receipt);
     report["pointer_ui_proof"] = serde_json::json!(pointer_ui_receipt);
@@ -1386,4 +1401,99 @@ fn pointer_ui_trial(
     Ok(
         serde_json::json!({"focus_only_no_request":true,"round_trip_verified":true,"change_count":2}),
     )
+}
+
+fn navigation_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    now: &mut u32,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let before = shell.preferences().clone();
+    let mut layouts = Vec::new();
+    let mut capture =
+        |s: &mut Shell, name: &str, n: &mut u32| -> Result<(), Box<dyn std::error::Error>> {
+            drawer_capture(s, window, output, name, n)?;
+            if let Some((r, c)) = s.drawer_focus_bounds() {
+                if r.y < c.y - 1.0 || r.y + r.h > c.y + c.h + 1.0 {
+                    return Err("Focused app/caption is outside drawer viewport".into());
+                }
+            }
+            layouts.push(serde_json::json!({"name":name,"layout":s.presentation_probe()}));
+            Ok(())
+        };
+    shell.open(Page::Home);
+    if !shell.focus_home_link(0) {
+        return Err("No Home apps shortcut".into());
+    }
+    capture(shell, "home-view-all", now)?;
+    drawer_tap(shell, now);
+    if shell.page() != Page::Applications
+        || shell.drawer_state().favourites_only
+        || !shell.drawer_state().query.is_empty()
+    {
+        return Err("View all did not open full drawer".into());
+    }
+    capture(shell, "apps-from-home", now)?;
+    shell.back();
+    if shell.page() != Page::Home || shell.focused_item().as_deref() != Some("View all apps") {
+        return Err("Apps Back lost shortcut origin".into());
+    }
+    shell.focus_home_link(1);
+    drawer_tap(shell, now);
+    if shell.page() != Page::Inputs {
+        return Err("No Inputs detail route".into());
+    }
+    capture(shell, "inputs-local-navigation", now)?;
+    shell.back();
+    if shell.page() != Page::Home || shell.focused_item().as_deref() != Some("View all inputs") {
+        return Err("Inputs Back lost shortcut origin".into());
+    }
+    shell.focus_home_link(0);
+    drawer_tap(shell, now);
+    let id = shell
+        .last_application_id()
+        .ok_or("No apps for bounded drawer proof")?
+        .to_owned();
+    if !shell.focus_application(&id) {
+        return Err("Last app unavailable".into());
+    }
+    capture(shell, "apps-last", now)?;
+    shell.press(true, PressFrom::Key);
+    for _ in 0..55 {
+        *now += 17;
+        shell.repeat();
+        shell.tick(*now, 1.0 / 60.0);
+        shell.draw();
+        window.swap();
+    }
+    shell.press(false, PressFrom::Key);
+    *now += 17;
+    shell.tick(*now, 1.0 / 60.0);
+    if shell.menu_application() != Some(id.as_str()) {
+        return Err("Held OK did not open the intended app menu".into());
+    }
+    capture(shell, "apps-menu-last", now)?;
+    shell.back();
+    capture(shell, "apps-last-return", now)?;
+    if shell.focused_item().as_deref() != Some(id.as_str()) {
+        return Err("Menu Back lost app identity".into());
+    }
+    shell.back();
+    if shell.page() != Page::Home || shell.focused_item().as_deref() != Some("View all apps") {
+        return Err("Drawer Back lost Home shortcut".into());
+    }
+    if shell.preferences() != &before || !shell.take_requests().is_empty() {
+        return Err("Dashboard navigation emitted a TV operation or changed favourites".into());
+    }
+    shell.open(Page::Home);
+    let receipt = serde_json::json!({"view_all_apps":true,"view_all_inputs":true,"back_restores_shortcut":true,"menu_restores_app":true,"favourites_unchanged":true,"tv_requests":0,"layouts":layouts});
+    let file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .open(output.join("navigation-proof-complete.json"))?;
+    serde_json::to_writer_pretty(file, &receipt)?;
+    Ok(receipt)
 }

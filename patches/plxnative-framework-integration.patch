@@ -1,3 +1,87 @@
+diff --git a/rust-modules/ui/src/cards/grid.rs b/rust-modules/ui/src/cards/grid.rs
+index ff9994c..b720f7c 100644
+--- a/rust-modules/ui/src/cards/grid.rs
++++ b/rust-modules/ui/src/cards/grid.rs
+@@ -22,6 +22,12 @@ use crate::screen::{
+ };
+ use crate::{Painter, Rect, Spring};
+ 
++// One admission rule for drawing and pointer stops. Focused motion stays visible;
++// bounded panels can omit incomplete unfocused tiles without inventing a second grid.
++fn tile_admitted(whole_tiles:bool,focused:bool,rect:Rect,viewport:Rect)->bool {
++    !whole_tiles || focused || (rect.x>=viewport.x && rect.y>=viewport.y
++        && rect.x+rect.w<=viewport.x+viewport.w && rect.y+rect.h<=viewport.y+viewport.h)
++}
+ /// Who owns the grid's vertical scroll.
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum ScrollMode {
+@@ -58,12 +64,14 @@ pub struct GridSpec {
+     /// The x of column 0's card.
+     pub left: f32,
+     pub scroll: ScrollMode,
++    /// Omit partially clipped unfocused tile bodies and their pointer stops. Off by default.
++    pub whole_tiles: bool,
+ }
+ 
+ impl GridSpec {
+     /// A grid that scrolls home when focus leaves it.
+     pub const fn new(top: f32, edge: f32) -> Self {
+-        Self { top, edge, home_when_unfocused: true, cols: COLS, style: STYLE, left: MARGIN_X, scroll: ScrollMode::Own }
++        Self { top, edge, home_when_unfocused: true, cols: COLS, style: STYLE, left: MARGIN_X, scroll: ScrollMode::Own, whole_tiles:false }
+     }
+ 
+     /// `cols` columns of `style` cards starting at x = `left` (a page with an alphabet rail, or
+@@ -72,6 +80,10 @@ impl GridSpec {
+         Self { cols, style, left, ..self }
+     }
+ 
++    /// A bounded viewport that paints only complete unfocused tiles. Focused tiles keep
++    /// their motion/scroll admission; the owner is responsible for revealing their captions.
++    pub const fn whole_tiles(self)->Self {Self{whole_tiles:true,..self}}
++
+     /// A grid whose page scroll another owner drives ([`ScrollMode::External`]); it also stays
+     /// where it is when focus is elsewhere on the page.
+     pub const fn external(self) -> Self {
+@@ -471,7 +483,9 @@ impl Grid {
+             if focus == Some(i) || self.above_edge(i, &bands) {
+                 continue;
+             }
+-            self.draw_card(f, p, src, i, super::press_scale(self.pop(src, i, focus), i, pressed, f.cx), false, &bands);
++            let scale=super::press_scale(self.pop(src,i,focus),i,pressed,f.cx);
++            if !tile_admitted(self.spec.whole_tiles,false,p.to_screen(self.cell(i,&bands).scaled(scale)).0,p.clip_rect()) {continue;}
++            self.draw_card(f, p, src, i, scale, false, &bands);
+         }
+         if let Some(i) = focus.filter(|&i| i < src.len()) {
+             self.draw_card(f, p, src, i, super::press_scale(self.pop(src, i, focus), i, pressed, f.cx), true, &bands);
+@@ -489,6 +503,8 @@ impl Grid {
+         let bands = self.bands.geometry();
+         for i in self.window(src.len()) {
+             let s = super::press_scale(self.pop(src, i, focus), i, pressed, f.cx);
++            let screen=p.to_screen(self.cell(i,&bands).scaled(s)).0;
++            if !tile_admitted(self.spec.whole_tiles,focus==Some(i),screen,p.clip_rect()) {continue;}
+             let cell = super::to_local(p, self.cell(i, &bands));
+             f.stop(p, Stop {
+                 key: FocusKey { entry: self.entry, elem: src.elem(i) },
+@@ -627,3 +643,19 @@ impl Grid {
+         self.pop.write(c);
+     }
+ }
++
++#[cfg(test)]
++mod bounded_viewport_tests {
++    use super::*;
++    #[test]
++    fn whole_tile_mode_rejects_partial_unfocused_tiles_but_keeps_focused_motion() {
++        let clip=Rect::new(438.0,312.0,884.0,652.0);
++        let partial=Rect::new(480.0,270.0,230.0,50.0);
++        assert!(!tile_admitted(true,false,partial,clip));
++        assert!(tile_admitted(false,false,partial,clip));
++        assert!(tile_admitted(true,true,partial,clip));
++        assert!(tile_admitted(true,false,Rect::new(480.0,340.0,230.0,230.0),clip));
++        assert!(!tile_admitted(true,false,Rect::new(480.0,900.0,230.0,230.0),clip));
++        assert!(!tile_admitted(true,false,Rect::new(1300.0,340.0,230.0,230.0),clip));
++    }
++}
 diff --git a/rust-modules/ui/src/theme.rs b/rust-modules/ui/src/theme.rs
 index 0b445f3..73f0b78 100644
 --- a/rust-modules/ui/src/theme.rs

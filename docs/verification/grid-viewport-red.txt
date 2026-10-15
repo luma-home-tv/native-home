@@ -1,0 +1,4 @@
+Observed before the whole-tile policy fix: simulated legacy intersection admission in the new shared decision helper.
+Running 1 test: cards::grid::bounded_viewport_tests::whole_tile_mode_rejects_partial_unfocused_tiles_but_keeps_focused_motion
+assertion failed: !tile_admitted(true, false, partial, clip)
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1015 filtered out.

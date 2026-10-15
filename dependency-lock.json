@@ -16,7 +16,8 @@
   "integration_patch": "patches/plxnative-framework-integration.patch",
   "patch_purpose": [
     "Generic local texture artwork support",
-    "Opt-in true-black surface role"
+    "Opt-in true-black surface role",
+    "Opt-in whole-tile grid viewport admission shared by paint and pointer stops"
   ],
   "excluded_application_crates": [
     "plxnative-modules",
@@ -32,7 +33,8 @@
   "patched_file_sha256": {
     "rust-modules/ui/src/widgets.rs": "01289a47824cd962bfbf16e12f4ebeec317d3e46ac6f8aaeab93679530e91214",
     "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26",
-    "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e"
+    "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e",
+    "rust-modules/ui/src/cards/grid.rs": "3dfcf4ebc5d4162bfc6358853f68ae73b04da49a487eeab1717d8ddbbfb6f34a"
   },
-  "integration_patch_sha256": "3e61cc346de202f10770b8e81170a9ac5550c0499a0bbdaa60e20ac2c6072a29"
+  "integration_patch_sha256": "eb0a84b0ab2cc12b21ef8c0d164d8dc90770247dd05fa60cc5201176ce9a9f85"
 }

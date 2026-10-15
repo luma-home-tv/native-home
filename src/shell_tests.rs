@@ -470,7 +470,11 @@ fn home_shelves_cross_by_geometry_and_keep_input_requests_out_of_favourites() {
         vec![Action::RequestInput("HDMI_3".into())]
     );
     s.direction(Dir::Up);
-    assert_eq!(s.focused_item(), chosen);
+    assert_eq!(s.focused_item().as_deref(), Some("View all inputs"));
+    s.direction(Dir::Up);
+    // Leaving the right-aligned section action lands on the nearest favourite card.
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app03"));
+    s.direction(Dir::Left);
     s.direction(Dir::Left);
     s.direction(Dir::Left);
     assert_eq!(s.focused_item(), first);
@@ -1322,4 +1326,153 @@ fn input_capability_is_required_and_stale_input_state_cannot_be_activated() {
     s.age_live(15_101);
     s.activate(key, false);
     assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn home_view_all_routes_clear_hidden_filters_and_return_to_their_own_shortcut() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let prefs = s.preferences().clone();
+    s.drawer.query = "unmatched".into();
+    s.drawer.favourites_only = true;
+    assert!(s.focus_home_link(0));
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    assert_eq!(s.page(), Page::Applications);
+    assert_eq!(s.application_count(), 12);
+    assert!(!s.drawer.favourites_only && s.drawer.query.is_empty());
+    s.focus_drawer_control(2);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    assert!(s.drawer.editing);
+    s.back();
+    assert_eq!(s.page(), Page::Applications);
+    s.back();
+    assert_eq!(s.page(), Page::Home);
+    assert_eq!(focus(&s), HOME_APPS_LINK);
+    s.focus_home_link(1);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    assert_eq!(s.page(), Page::Inputs);
+    s.back();
+    assert_eq!(focus(&s), HOME_INPUTS_LINK);
+    assert_eq!(s.preferences(), &prefs);
+    assert!(s.take_requests().is_empty());
+}
+#[test]
+fn empty_home_and_previous_page_pointer_keys_cannot_turn_a_shortcut_into_a_tv_action() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(
+        fixture(),
+        Preferences {
+            initialized: true,
+            ..Default::default()
+        },
+    );
+    assert!(s.surface.cards.items.is_empty());
+    s.focus_input("HDMI_1");
+    s.direction(Dir::Up);
+    assert_eq!(focus(&s), HOME_INPUTS_LINK);
+    s.direction(Dir::Up);
+    assert_eq!(focus(&s), HOME_APPS_LINK);
+    let stale = FocusKey {
+        entry: entry(Page::Home),
+        elem: HOME_INPUTS_LINK,
+    };
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    s.activate(stale, false);
+    assert_eq!(s.page(), Page::Applications);
+    assert!(s.take_requests().is_empty());
+}
+#[test]
+fn drawer_scroll_reveals_full_focused_caption_and_keeps_menu_anchor_in_the_same_viewport() {
+    let _serial = plx_base::testlock::serial();
+    let mut data = fixture();
+    for i in 12..70 {
+        let id = format!("com.example.app{i:02}");
+        data.launch_ids.insert(id.clone());
+        data.applications.push(Application {
+            id,
+            title: format!("Application {i:02} with a deliberately long title"),
+            kind: "native".into(),
+            visible: true,
+            icon: None,
+        });
+    }
+    let mut s = Shell::new(data, Preferences::default());
+    s.open(Page::Applications);
+    for id in [
+        "com.example.app00",
+        "com.example.app07",
+        "com.example.app29",
+        "com.example.app69",
+    ] {
+        assert!(s.focus_application(id));
+        settle(&mut s, 1200);
+        let (r, clip) = s.drawer_focus_bounds().unwrap();
+        assert!(r.y >= clip.y - 1.0, "top {id}: {} < {}", r.y, clip.y);
+        assert!(
+            r.y + r.h <= clip.y + clip.h + 1.0,
+            "bottom {id}: {} > {}",
+            r.y + r.h,
+            clip.y + clip.h
+        );
+    }
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        true,
+    );
+    settle(&mut s, 1200);
+    let (r, clip) = s.drawer_focus_bounds().unwrap();
+    assert!(r.y >= clip.y - 1.0 && r.y + r.h <= clip.y + clip.h + 1.0);
+    assert!(s.menu_application().is_some());
+    s.back();
+    settle(&mut s, 1200);
+    let (r, clip) = s.drawer_focus_bounds().unwrap();
+    assert!(r.y >= clip.y - 1.0 && r.y + r.h <= clip.y + clip.h + 1.0);
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app69"));
+    assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn drawer_owned_scroll_reports_motion_and_becomes_quiet_after_settling() {
+    let _serial = plx_base::testlock::serial();
+    let old = plx_machine::idle::enabled();
+    plx_machine::idle::set_enabled(true);
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    settle(&mut s, 2000);
+    s.focus_application("com.example.app11");
+    let (_, moving) = plx_machine::idle::scoped_motion(|| s.tick(2016, 0.016));
+    assert!(moving);
+    for ms in (2032..6500).step_by(16) {
+        s.tick(ms, 0.016);
+    }
+    let (_, moving) = plx_machine::idle::scoped_motion(|| s.tick(6512, 0.016));
+    assert!(!moving);
+    plx_machine::idle::set_enabled(old);
 }

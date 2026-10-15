@@ -24,7 +24,8 @@ The application consumes `plx_ui`, `plx_gfx`, `plx_machine`, `plx_base` and
 `plx_platform`. It does not depend on PlxNative's Plex client, player, media,
 session, data or application-screen crates. A small, separately identified
 [integration patch](patches/plxnative-framework-integration.patch) adds local
-texture artwork and an opt-in OLED-black surface role. These generic changes are
+texture artwork, an opt-in OLED-black surface role and bounded-grid whole-tile
+admission shared by painting and pointer stops. These generic changes are
 candidates for upstream contribution; their presence does not turn the upstream
 framework into Luma Home-authored code.
 

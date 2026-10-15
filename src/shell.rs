@@ -8,7 +8,7 @@ use plx_machine::machine::{
     Canon, Chrome, Cx, Effects, EntryId, FocusKey, GroupId, Host, InputOwner, LogicalState,
     MachineId, PressArm, PressFrom, PressRead, ScreenArg, ScreenId, Tick,
 };
-use plx_machine::present::Present;
+use plx_machine::present::{Present, PresentEvent};
 use plx_ui::cards::{CardSource, Grid, GridSpec, RowStyle, SectionFrame, Shelf, Tile, TileLabel};
 use plx_ui::form::{Form, FormSection, FormTable, RowKey, RowKind};
 use plx_ui::input::{InputMachine, PressEvent};
@@ -84,6 +84,19 @@ fn keyboard_key(key: u32) -> Option<usize> {
     (KEYBOARD_BASE..KEYBOARD_BASE + 40)
         .contains(&key)
         .then(|| (key - KEYBOARD_BASE) as usize)
+}
+const HOME_APPS_LINK: u32 = 34_000;
+const HOME_INPUTS_LINK: u32 = 34_001;
+const APP_GRID: Rect = Rect::new(438.0, 312.0, 1386.0, 652.0);
+fn home_link_rect(index: usize) -> Rect {
+    Rect::new(1512.0, if index == 0 { 248.0 } else { 650.0 }, 312.0, 48.0)
+}
+fn home_link_key(key: u32) -> Option<usize> {
+    match key {
+        HOME_APPS_LINK => Some(0),
+        HOME_INPUTS_LINK => Some(1),
+        _ => None,
+    }
 }
 const CATEGORY_BASE: u32 = 33_000;
 const CATEGORIES: [(Page, &str); 6] = [
@@ -482,6 +495,22 @@ fn cstr(s: &str) -> CString {
     CString::new(s.replace('\0', "")).unwrap()
 }
 impl Surface {
+    fn grid_area(&self) -> Rect {
+        if self.page == Page::Applications {
+            Rect::new(
+                APP_GRID.x,
+                APP_GRID.y,
+                if self.menu.is_some() {
+                    884.0
+                } else {
+                    APP_GRID.w
+                },
+                if self.editing { 320.0 } else { APP_GRID.h },
+            )
+        } else {
+            CONTENT
+        }
+    }
     fn table_area(&self) -> Rect {
         if self.control_page.is_some() {
             DETAIL_ROWS
@@ -572,6 +601,18 @@ impl Focusable<HomeHost> for Surface {
             elem: ElemKind::Control,
         });
         if self.page == Page::Home {
+            for i in 0..2 {
+                out.push(GroupSpec {
+                    id: GroupId(7 + i as u32),
+                    kind: GroupKind::Row { wrap: false },
+                    seat: Seat::Remembered,
+                    reachable: AxisMask::BOTH,
+                    edge: [EdgeRule::Geometric; 4],
+                    extent: home_link_rect(i),
+                    len: 1,
+                    elem: ElemKind::Control,
+                });
+            }
             out.push(self.home_favourites.group_spec(
                 GroupId(1),
                 self.cards.len(),
@@ -609,7 +650,11 @@ impl Focusable<HomeHost> for Surface {
             seat: Seat::Remembered,
             reachable: AxisMask::BOTH,
             edge: [EdgeRule::Geometric; 4],
-            extent: self.table_area(),
+            extent: if self.page == Page::Applications {
+                self.grid_area()
+            } else {
+                self.table_area()
+            },
             len: self.keys().len(),
             elem: if self.table_mode {
                 ElemKind::Control
@@ -621,6 +666,9 @@ impl Focusable<HomeHost> for Surface {
     fn group_of(&self, key: &u32, _cx: &Cx<'_, HomeHost>) -> Option<GroupId> {
         if self.menu.is_some() {
             return self.key_index(*key).map(|_| GroupId(5));
+        }
+        if let Some(i) = home_link_key(*key).filter(|_| self.page == Page::Home) {
+            return Some(GroupId(7 + i as u32));
         }
         if self.control_page.is_some() && category_key(*key).is_some() {
             return Some(GroupId(6));
@@ -697,6 +745,9 @@ impl Focusable<HomeHost> for Surface {
                     })
                 });
             }
+        }
+        if self.page == Page::Home && home_link_key(key.elem).is_some() {
+            return Step::Edge;
         }
         if self.page == Page::Home {
             if self.cards.index_of(&key.elem).is_some() {
@@ -775,6 +826,15 @@ impl Focusable<HomeHost> for Surface {
                 });
             }
         }
+        if let Some(i) = home_link_key(*key).filter(|_| self.page == Page::Home) {
+            let r = home_link_rect(i);
+            return Some(Placed {
+                rect: r,
+                rest_rect: r,
+                clip: r,
+                index: Some(0),
+            });
+        }
         if (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(key) {
             let i = (*key - RAIL_BASE) as usize;
             let rect = rail_rect(i);
@@ -803,7 +863,12 @@ impl Focusable<HomeHost> for Surface {
                         .place(cx, &self.input_cards, key, HOME_INPUTS, at)
                 })
         } else {
-            self.grid.place(cx, &self.cards, key, at)
+            self.grid.place(cx, &self.cards, key, at).map(|mut p| {
+                if self.page == Page::Applications {
+                    p.clip = self.grid_area();
+                }
+                p
+            })
         }
     }
     fn reconcile(&self, want: FocusKey<u32>, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
@@ -833,7 +898,11 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn seat(&self, group: GroupId, from: Placed, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
-        let key = if group == GroupId(6) {
+        let key = if self.page == Page::Home && group == GroupId(7) {
+            HOME_APPS_LINK
+        } else if self.page == Page::Home && group == GroupId(8) {
+            HOME_INPUTS_LINK
+        } else if group == GroupId(6) {
             CATEGORY_BASE + self.selected_category() as u32
         } else if group == GroupId(5) {
             MENU_BASE + MenuAction::ToggleFavourite.key()
@@ -916,6 +985,9 @@ pub struct Shell {
     clock_source: CString,
     brand_texture: u32,
     navigation_textures: [u32; 4],
+    drawer_scroll: plx_ui::Spring,
+    drawer_scroll_target: f32,
+    home_return: Option<(Page, usize)>,
     pointer_enabled: bool,
     pointer_pending: bool,
     pointer_expected: Option<crate::pointer_speed::Speed>,
@@ -982,6 +1054,9 @@ impl Shell {
             clock_source: cstr("TV time unavailable"),
             brand_texture: 0,
             navigation_textures: [0; 4],
+            drawer_scroll: plx_ui::Spring::at(0.0),
+            drawer_scroll_target: 0.0,
+            home_return: None,
             pointer_enabled: false,
             pointer_pending: false,
             pointer_expected: None,
@@ -1078,12 +1153,14 @@ impl Shell {
         if page == Page::Applications {
             self.surface.grid = Grid::new(
                 entry(page),
-                GridSpec::new(340.0, 330.0).columns(
-                    if self.menu.is_some() { 3 } else { 4 },
-                    CARD_STYLE,
-                    480.0,
-                ),
+                GridSpec::new(340.0, 330.0)
+                    .columns(if self.menu.is_some() { 3 } else { 4 }, CARD_STYLE, 480.0)
+                    .external()
+                    .whole_tiles(),
             );
+        }
+        if page == Page::Applications {
+            self.surface.grid.set_page(340.0, self.drawer_scroll.pos);
         }
         self.status = cstr(match page {
             Page::Home | Page::Applications => {
@@ -1548,6 +1625,7 @@ impl Shell {
                 CARD_STYLE,
                 480.0,
             );
+            self.surface.grid.set_page(340.0, self.drawer_scroll.pos);
         }
         self.surface.home_favourites = favourites;
         self.surface.home_inputs = inputs;
@@ -1900,9 +1978,47 @@ impl Shell {
                     to: GroupId(2),
                 },
                 Link {
+                    from: GroupId(1),
+                    dir: Dir::Up,
+                    to: GroupId(7),
+                },
+                Link {
                     from: GroupId(2),
                     dir: Dir::Up,
-                    to: GroupId(1),
+                    to: GroupId(8),
+                },
+                Link {
+                    from: GroupId(7),
+                    dir: Dir::Down,
+                    to: if self.surface.cards.items.is_empty() {
+                        GroupId(8)
+                    } else {
+                        GroupId(1)
+                    },
+                },
+                Link {
+                    from: GroupId(8),
+                    dir: Dir::Up,
+                    to: if self.surface.cards.items.is_empty() {
+                        GroupId(7)
+                    } else {
+                        GroupId(1)
+                    },
+                },
+                Link {
+                    from: GroupId(8),
+                    dir: Dir::Down,
+                    to: GroupId(2),
+                },
+                Link {
+                    from: GroupId(7),
+                    dir: Dir::Left,
+                    to: GroupId(0),
+                },
+                Link {
+                    from: GroupId(8),
+                    dir: Dir::Left,
+                    to: GroupId(0),
                 },
             ]
         } else if self.surface.page == Page::Applications && !self.drawer.editing {
@@ -1995,6 +2111,15 @@ impl Shell {
             self.focus_drawer_control(2);
             return;
         }
+        if self
+            .home_return
+            .is_some_and(|(page, _)| page == self.surface.page)
+        {
+            let (_, index) = self.home_return.take().unwrap();
+            self.rebuild(Page::Home);
+            self.focus_home_link(index);
+            return;
+        }
         if matches!(
             self.surface.page,
             Page::Picture
@@ -2065,6 +2190,8 @@ impl Shell {
         if self.surface.page == Page::Applications {
             if let Some(index) = keyboard_key(key.elem).filter(|_| self.drawer.editing) {
                 if self.drawer.key(index) {
+                    self.drawer_scroll.jump(0.0);
+                    self.drawer_scroll_target = 0.0;
                     self.rebuild(Page::Applications);
                     if !self.drawer.editing {
                         self.focus_drawer_control(2);
@@ -2078,12 +2205,32 @@ impl Shell {
                     1 => self.drawer.favourites_only = true,
                     _ => self.drawer.editing = true,
                 }
+                self.drawer_scroll.jump(0.0);
+                self.drawer_scroll_target = 0.0;
                 self.rebuild(Page::Applications);
                 if self.drawer.editing {
                     self.focus_search_key(0);
                 }
                 return;
             }
+        }
+        if let Some(index) = home_link_key(key.elem).filter(|_| self.surface.page == Page::Home) {
+            if index == 0 {
+                self.drawer = Drawer::default();
+                self.drawer_scroll.jump(0.0);
+                self.drawer_scroll_target = 0.0;
+                self.home_return = Some((Page::Applications, index));
+                self.rebuild(Page::Applications);
+                if let Some(id) = self.surface.cards.items.first().map(|c| c.id.clone()) {
+                    self.focus_application(&id);
+                } else {
+                    self.focus_drawer_control(0);
+                }
+            } else {
+                self.home_return = Some((Page::Inputs, index));
+                self.rebuild(Page::Inputs);
+            }
+            return;
         }
         if key.elem == LG_HOME_KEY {
             if self
@@ -2104,6 +2251,7 @@ impl Shell {
             return;
         }
         if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
+            self.home_return = None;
             self.rebuild(TABS[(key.elem - RAIL_BASE) as usize].0);
             return;
         }
@@ -2359,6 +2507,40 @@ impl Shell {
                 &mut fx,
             );
         }
+        if self.surface.page == Page::Applications {
+            let anchor = self.menu.as_ref().map(|m| m.origin).or_else(|| {
+                cx.focus
+                    .current
+                    .filter(|k| self.surface.cards.index_of(&k.elem).is_some())
+                    .map(|k| k.elem)
+            });
+            if let Some(key) = anchor {
+                if let Some(placed) =
+                    self.surface
+                        .grid
+                        .place(&cx, &self.surface.cards, &key, At::SpringTarget)
+                {
+                    let area = self.surface.grid_area();
+                    let top = placed.rect.y;
+                    let bottom = placed.rect.y + placed.rect.h + plx_ui::cards::UNDER_LABEL_H;
+                    if top < area.y + 28.0 {
+                        self.drawer_scroll_target =
+                            (self.drawer_scroll.pos + top - area.y - 28.0).max(0.0);
+                    } else if bottom > area.y + area.h - 8.0 {
+                        self.drawer_scroll_target =
+                            (self.drawer_scroll.pos + bottom - area.y - area.h + 8.0).max(0.0);
+                    }
+                }
+            }
+            self.drawer_scroll
+                .step(self.drawer_scroll_target, plx_ui::consts::K_SCROLL, dt);
+            self.surface.grid.set_page(340.0, self.drawer_scroll.pos);
+            if (self.drawer_scroll.pos - self.drawer_scroll_target).abs() > 0.25
+                || self.drawer_scroll.vel.abs() > 0.5
+            {
+                fx.note(PresentEvent::Motion);
+            }
+        }
         let current = cx.focus.current.map(|k| k.elem);
         self.surface.rail.table.list_focused =
             current.is_some_and(|k| (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(&k));
@@ -2402,6 +2584,8 @@ impl Shell {
             "rail_scroll":self.surface.rail.table.scroll_pos(),
             "rail_focused":self.surface.rail.table.list_focused,
             "rail_selection":self.surface.rail.table.sel,
+            "drawer_scroll":self.drawer_scroll.pos,
+            "drawer_anchor":self.drawer_focus_bounds().map(|(r,c)|serde_json::json!({"rect":[r.x,r.y,r.w,r.h],"clip":[c.x,c.y,c.w,c.h]})),
             "logical_clip_clear":plx_ui::screen::ClipScope::current().is_none(),
             "control_category":self.surface.control_page.map(|page| format!("{page:?}")),
             "category_rows":if self.surface.control_page.is_some(){6}else{0},
@@ -2701,7 +2885,9 @@ impl Shell {
                 );
             }
         } else {
-            let content = if self.surface.editing {
+            let content = if self.surface.page == Page::Applications {
+                self.surface.grid_area()
+            } else if self.surface.editing {
                 Rect::new(CONTENT.x, 330.0, CONTENT.w, 320.0)
             } else if self.surface.menu.is_some() || self.surface.page == Page::Inputs {
                 Rect::new(CONTENT.x, CONTENT.y, 884.0, CONTENT.h)
@@ -2712,6 +2898,36 @@ impl Shell {
             self.surface
                 .grid
                 .draw(&mut f, p.clipped(content), &self.surface.cards);
+        }
+        if self.surface.page == Page::Home {
+            for (i, title) in ["View all apps ›", "View all inputs ›"]
+                .into_iter()
+                .enumerate()
+            {
+                let r = home_link_rect(i);
+                let key = if i == 0 {
+                    HOME_APPS_LINK
+                } else {
+                    HOME_INPUTS_LINK
+                };
+                TabPill::new(cstr(title).as_ptr(), theme::size::CAPTION, r)
+                    .focused(focused == Some(key))
+                    .draw(&Env::inert(), p);
+                f.stop(
+                    p,
+                    Stop {
+                        key: FocusKey {
+                            entry: entry(Page::Home),
+                            elem: key,
+                        },
+                        rect: r,
+                        rest_rect: r,
+                        clip: r,
+                        hover: Hover::Focus,
+                        activate: Activate::Press,
+                    },
+                );
+            }
         }
         if self.surface.page == Page::Inputs {
             Label::new(
@@ -2980,6 +3196,53 @@ impl Shell {
         Label::new(status.as_ptr(), theme::size::CAPTION, theme::TEXT_TERTIARY)
             .draw(p, Rect::new(96.0, 985.0, 1728.0, 44.0));
     }
+    pub fn last_application_id(&self) -> Option<&str> {
+        if self.surface.page == Page::Applications {
+            self.surface.cards.items.last().map(|c| c.id.as_str())
+        } else {
+            None
+        }
+    }
+    pub fn focus_home_link(&mut self, index: usize) -> bool {
+        if self.surface.page != Page::Home || index > 1 {
+            return false;
+        }
+        self.focus_special(
+            if index == 0 {
+                HOME_APPS_LINK
+            } else {
+                HOME_INPUTS_LINK
+            },
+            GroupId(if index == 0 { 7 } else { 8 }),
+        );
+        true
+    }
+    pub fn drawer_focus_bounds(&self) -> Option<(Rect, Rect)> {
+        if self.surface.page != Page::Applications {
+            return None;
+        }
+        let key = self.menu.as_ref().map(|m| m.origin).or_else(|| {
+            self.input
+                .engine
+                .current(InputOwner::Entry(entry(self.surface.page)))
+                .map(|k| k.elem)
+        })?;
+        let placed = self.surface.grid.place(
+            &self.context(&LegacyMeasure),
+            &self.surface.cards,
+            &key,
+            At::SpringTarget,
+        )?;
+        Some((
+            Rect::new(
+                placed.rect.x,
+                placed.rect.y,
+                placed.rect.w,
+                placed.rect.h + plx_ui::cards::UNDER_LABEL_H,
+            ),
+            self.surface.grid_area(),
+        ))
+    }
     pub fn focus_drawer_control(&mut self, index: usize) -> bool {
         if self.surface.page != Page::Applications
             || self.drawer.editing
@@ -3126,7 +3389,11 @@ impl Shell {
                 return Some(["All apps", "Favourites", "Search apps"][i].into());
             }
         }
-        if key.elem == LG_HOME_KEY {
+        if self.surface.page == Page::Home && key.elem == HOME_APPS_LINK {
+            Some("View all apps".into())
+        } else if self.surface.page == Page::Home && key.elem == HOME_INPUTS_LINK {
+            Some("View all inputs".into())
+        } else if key.elem == LG_HOME_KEY {
             Some("LG Home".into())
         } else if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
             Some(TABS[(key.elem - RAIL_BASE) as usize].1.to_owned())

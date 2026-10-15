@@ -22,11 +22,11 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.19.0' if main == 'home-preview' else '0.1.0'
+version = '0.20.0' if main == 'home-preview' else '0.1.0'
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
-    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF'))):
+    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF'))):
     raise ValueError('Interactive package must not include scripted proof actions')
 shutil.copy2(binary, stage / main)
 (stage / main).chmod(0o755)
@@ -74,6 +74,9 @@ if main == 'home-preview':
         (stage / 'launch-proof.json').write_text(json.dumps(proof)+'\n')
     if os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1':
         shutil.copy2(assets / 'preferences-hold-probe.json', stage / 'preferences-hold-probe.json')
+    if os.environ.get('NATIVE_HOME_NAVIGATION_PROOF') == '1':
+        if not test_identity or interactive: raise ValueError('Navigation proof requires isolated diagnostic identity')
+        (stage / 'navigation-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_POINTER_UI_PROOF') == '1':
         if not test_identity or interactive: raise ValueError('Pointer UI proof requires isolated diagnostic identity')
         (stage / 'pointer-ui-proof.json').write_text('{}\n')
@@ -124,6 +127,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
            'pointer_proof': os.environ.get('NATIVE_HOME_POINTER_PROOF') == '1',
            'pointer_ui_proof': os.environ.get('NATIVE_HOME_POINTER_UI_PROOF') == '1',
+           'navigation_proof': os.environ.get('NATIVE_HOME_NAVIGATION_PROOF') == '1',
            'launch_proof': os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1',
            'route_proof': os.environ.get('NATIVE_HOME_ROUTE_PROOF'),
            'interactive_session': interactive,
