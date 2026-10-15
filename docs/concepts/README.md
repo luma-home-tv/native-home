@@ -65,7 +65,8 @@ clock, drawer filters and search. The [fidelity map](../design-fidelity.md)
 compares implementation with these concepts. Version 0.11.0 adds a native
 management menu and persisted favourite ordering. Version 0.12.0 brings the
 native six-category Controls/detail composition closer to this render. Validated
-choice/range controls, broader LG-managed routes and further visual polish remain. Source switching, native setting writes,
+native choice/range controls and further visual polish remain. Version 0.13.0
+verifies all six LG-managed section entries and return on both TVs. Source switching, native setting writes,
 physical remote/pointer coverage and dashboard performance remain unverified.
 The render watermark stays visible in every exported concept so these images
 cannot be mistaken for that device evidence.

@@ -65,19 +65,22 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.12.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.13.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
 category/detail composition, native navigation, G2 Settings-return regression
-and 0.12.0 updates with favourites preserved. Earlier native idle/wake and owned-app launch
+and 0.12.0 updates with favourites preserved. The
+[LG-managed sections milestone](docs/settings-sections-milestone.json) adds
+verified Picture, Sound, Accessibility, General and OLED Care routes on both
+TVs, plus a focused Network entry in LG General. Earlier native idle/wake and owned-app launch
 checks are recorded in the [deployment milestone](docs/deployment-milestone.json).
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching remains gated and
 native settings remain read-only. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
-closing its overlay on the G2; the C2 handoff is still gated pending separate proof. Private TV details and native household captures
+closing its overlay. Version 0.13.0 validates both TVs and all six section entry points. Private TV details and native household captures
 stay outside tracked source. A black OLED canvas with graphite tiles is the
 design direction; sustained performance, physical input and complete controls
 still require device verification. The [drawer milestone](docs/drawer-milestone.json)

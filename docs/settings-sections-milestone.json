@@ -1,0 +1,474 @@
+{
+  "code_revision": "867f3f3ad64812ff62f847c7a70b0ecf5679fa0d",
+  "package_version": "0.13.0",
+  "binary_sha256": "24ef38c6c932e0f2b502d56bf51ef99e205217cd2de86ca900d111e300704f95",
+  "client_tests": {
+    "passed": 76,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "settings_app_audit": {
+    "version": "4.0.1",
+    "uiRevision": 2,
+    "main": "index.multi.html",
+    "identical_main_js_sha256_on_both_models": "1ef3ca568e7ebb9758ffc1e3b097365874e6de09d5b9f356b99066b22947124d",
+    "source_kept_private": true,
+    "scope": "Derived route names/entry mapping and launch-handling semantics; no proprietary LG source copied into this repo.",
+    "important_difference": "Unknown target names fall back to Picture; network is not a target in this version. The Network route opens General with its Network entry focused.",
+    "launch_parameter_boundary": "Only fixed target/item pairs are constructed. Update flags, arbitrary targets/items/paths and service commands cannot be supplied."
+  },
+  "fixed_routes": {
+    "picture": {
+      "target": "picture"
+    },
+    "sound": {
+      "target": "sound"
+    },
+    "network": {
+      "target": "general",
+      "item": "network"
+    },
+    "accessibility": {
+      "target": "accessibility"
+    },
+    "general": {
+      "target": "general"
+    },
+    "panel_care": {
+      "target": "OledCare"
+    }
+  },
+  "guards": [
+    "Model is OLED55G26LA or OLED65C26LD, firmware 23.25.55 and SDK 9.2.2, re-read for every handoff",
+    "Current registered Settings app must match version 4.0.1, uiRevision 2 and main entry index.multi.html",
+    "Dashboard foreground ownership is checked before and after metadata reads",
+    "Preexisting Settings overlay rejects relaunch",
+    "Only fresh Settings overlay over own card can keep a hidden dashboard alive; hidden dashboard never paints",
+    "Every section has a distinct stable focus key; an old Picture hit cannot activate a new Sound route",
+    "Only scoped Back keys were injected; no setting editing, calibration, compensation or reset actions were tested"
+  ],
+  "trial_code_revision": "7c5a529",
+  "trial_binary_sha256": "b1dfb6bf823734977af39b0763aaad881c530e9e4afc88081e93a45e9c4fe31a",
+  "trial_scope": "All twelve section/model cases executed under an ordinary isolated app identity. Independent window observer plus compositor-screen inspection verified requested UI and native return. Network entry is explicitly an entry in General, not a claim of opening the connection wizard.",
+  "trials": {
+    "g2": {
+      "picture": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "sound": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "network": {
+        "settings_back_keys": 2,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "accessibility": {
+        "settings_back_keys": 3,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "general": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "panel-care": {
+        "settings_back_keys": 3,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      }
+    },
+    "c2": {
+      "picture": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "sound": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "network": {
+        "settings_back_keys": 2,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "accessibility": {
+        "settings_back_keys": 3,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "general": {
+        "settings_back_keys": 1,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      },
+      "panel-care": {
+        "settings_back_keys": 3,
+        "returned_native": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_preferences_absent": true,
+          "test_catalogue_absent": true,
+          "test_launchpoint_absent": true,
+          "new_settings_surface_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "retained_app_favourites_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        },
+        "additional_readback": {
+          "network_read_accepted": true,
+          "network_state_unchanged": true,
+          "sound_profile_read_accepted": true,
+          "sound_profile_unchanged": true,
+          "care_mode_read_accepted": true,
+          "care_mode_unchanged": true
+        },
+        "screen_visually_verified": true
+      }
+    }
+  },
+  "final_native": {
+    "g2": {
+      "section": "panel_care",
+      "ordinary_app_identity": true,
+      "back_keys": 3,
+      "native_return_frame_seen": true,
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_preferences_absent": true,
+        "test_catalogue_absent": true,
+        "test_launchpoint_absent": true,
+        "new_settings_surface_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "retained_app_favourites_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "additional_state": {
+        "network_read_accepted": true,
+        "network_state_unchanged": true,
+        "sound_profile_read_accepted": true,
+        "sound_profile_unchanged": true,
+        "care_mode_read_accepted": true,
+        "care_mode_unchanged": true
+      }
+    },
+    "c2": {
+      "section": "panel_care",
+      "ordinary_app_identity": true,
+      "back_keys": 3,
+      "native_return_frame_seen": true,
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_preferences_absent": true,
+        "test_catalogue_absent": true,
+        "test_launchpoint_absent": true,
+        "new_settings_surface_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "retained_app_favourites_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "additional_state": {
+        "network_read_accepted": true,
+        "network_state_unchanged": true,
+        "sound_profile_read_accepted": true,
+        "sound_profile_unchanged": true,
+        "care_mode_read_accepted": true,
+        "care_mode_unchanged": true
+      }
+    }
+  },
+  "retained_updates": {
+    "g2": {
+      "version": "0.13.0",
+      "ordinary_app_identity": true,
+      "favourites_loaded": true,
+      "no_captures": true,
+      "no_setting_writes": true,
+      "checked_state": {
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      }
+    },
+    "c2": {
+      "version": "0.13.0",
+      "ordinary_app_identity": true,
+      "favourites_loaded": true,
+      "no_captures": true,
+      "no_setting_writes": true,
+      "checked_state": {
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      }
+    }
+  },
+  "scope_limits": [
+    "Runtime adapter readback proves the Settings window; exact section UI was independently inspected in the recorded device matrix",
+    "The final code promotes the verified model/section matrix; final Panel Care return and cleanup were repeated on both TVs using the deployed binary",
+    "Settings edits remain LG-managed; no native setting-write action or privileged broker was added",
+    "Injected Back and scripted focus are not physical remote/pointer proof"
+  ],
+  "remaining": [
+    "Explicit LG Home and Home view-all shortcuts",
+    "Authoritative input format/active-source details and verified HDMI switching",
+    "Broader native read coverage and validated choice/range controls",
+    "Physical input, performance/resource workloads, long text/full text input and reboot persistence"
+  ],
+  "privacy": "Raw LG code, service values, compositor/native frames, app inventories, per-device packages and saved-favourite backups remain private."
+}

@@ -12,8 +12,8 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.12.0 is installed on both devices; the
-[Controls layout record](controls-layout-milestone.json) is the latest scoped proof.
+current native interface. Version 0.13.0 is installed on both devices; the
+[LG-managed sections record](settings-sections-milestone.json) is the latest scoped proof.
 
 ## Direction
 
@@ -40,7 +40,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards with distinct plug, signal and active states; select through LG's normal source path | Native cards refreshed through normal-app reads; disconnected HDMI 4 launch reached its foreground but EIM activation readback did not confirm it; switching stays disabled |
-| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; G2 Picture Settings return regressed on 0.12.0; broader controls/routes and C2 handoff remain |
+| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; broader native controls/read coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; FPS, latency, sustained idle resources and stress memory remain unverified |
 
@@ -69,7 +69,7 @@ request. Physical input and full text/IME coverage remain to verify.
    drawer/shared-OK path now launch an isolated native test target with both
    adapter and independent foreground readback. Normal application launching is
    enabled; personal viewing accounts were not exercised. Finish device proof
-   for HDMI and C2 LG Settings before enabling them; G2 Picture handoff is proved. Keep
+   for HDMI before enabling switching; both TVs now have verified LG-managed section routes. Keep
    unknown/hidden/self targets, unvalidated operations and extra parameters
    rejected; an acknowledged request is not execution proof.
 3. **Expand controls safely.** Audit webOS24 descriptors and semantics for each
@@ -81,7 +81,7 @@ request. Physical input and full text/IME coverage remain to verify.
    executable and session validation and a fixed operation allowlist.
 4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source
    status on every tile. Clock/status and app ordering are now implemented. Complete
-   native choice/range widgets and broader verified LG-managed routes. Verify physical
+   native choice/range widgets and broader read coverage. Verify physical
    remote, pointer, wheel and Back behaviour on both TVs.
    Measure the actual dashboard's frame pacing, input response, memory and idle
    behaviour; the earlier C renderer's results do not transfer to this client.

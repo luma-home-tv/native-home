@@ -6,7 +6,7 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.12.0 moves the running interface closer to those concepts. This is a
+Version 0.13.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
@@ -17,7 +17,7 @@ progress map, not a claim that the complete concept is implemented.
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs. | Improve partially visible grid rows, long text and full text input; validate physical hold/pointer use. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Separate cable and signal readings, four source cards. | Reliable active-source/video-format detail pane and independently verified switching. |
-| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only values; native Back/pointer and G2 Picture Settings return proved. | Validated choice/range widgets, broader LG-managed routes and C2 handoff proof. |
+| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only values; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Validated native choice/range widgets, broader native read coverage and physical input proof. |
 
 The sound output, TV volume/mute and sound profile are distinct readings. TV
 volume is not a measurement of an external amplifier's volume. Wired and Wi-Fi
@@ -38,8 +38,8 @@ order persistence through a second native launch on each TV.
 Household frames and detailed device receipts remain private; the public concept
 renders contain synthetic content and keep their watermark.
 
-Next design work should complete Inputs details and broaden verified LG-managed
-routes and contextual controls, then review long text and physical navigation on
+Next design work should complete Inputs details and expand contextual native
+controls and read coverage, then review long text and physical navigation on
 both devices. HDMI switching,
 native setting writes, physical input coverage, reboot persistence and sustained
 performance each need separate evidence. LG Home, boot behaviour and core TV

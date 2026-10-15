@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.12.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.13.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -31,9 +31,12 @@ selected detail panel. Arrows preview categories; Right or OK enters the rows.
 Back returns through the category column to Home. The cached Picture breadcrumb
 uses the TV settings profile context and becomes unavailable when stale.
 Scrolling keeps the detail heading fixed, including when reading the final
-LG-managed row. Unverified categories direct you to LG Settings from LG Home;
-they cannot invoke the Picture-only shortcut. On the tested G2 firmware, **Controls → Picture → Open LG Settings**
-opens LG's Picture interface above Luma. Back closes the LG overlay and returns
+LG-managed row. Each category now has its own verified LG-managed route on the two tested
+firmware/model combinations. Network uses **Open LG Network entry** to focus
+Network in LG General; LG handles further navigation and configuration.
+Picture, Sound, Accessibility, General and Panel care open their corresponding
+LG screens. From **Controls → Picture → Open LG Settings**,
+LG's Picture interface opens above Luma. Back through LG's pages closes the overlay and returns
 to Luma. Luma keeps only its own underlying window alive behind a verified
 Settings overlay and stops painting while covered; LG continues to own its controls.
 Other departures retain the preview's existing teardown behaviour. The
@@ -56,9 +59,11 @@ retained updates. The [Controls layout milestone](controls-layout-milestone.json
 latest six-category, pointer, stale-click, scrolling and Back tests plus a G2
 Settings-return regression on 0.12.0. These are scripted native tests, not
 physical remote/pointer proof.
-Sound and Network now show read-only ordinary-app readings. LG Settings handoff
-remains firmware-gated to the separately tested G2 Picture route; the C2 route
-has not yet received that proof. The [fidelity map](design-fidelity.md) tracks the
+Sound and Network now show read-only ordinary-app readings. LG Settings handoff is gated by model, firmware, SDK and Settings app UI version.
+The [sections milestone](settings-sections-milestone.json) records all twelve
+section/model trials, rendered-screen checks and native return. Nested LG
+screens took up to three Back presses in the tests. No raw target, item, path or
+update flags can be supplied; the payloads come from a fixed route registry. The [fidelity map](design-fidelity.md) tracks the
 remaining differences from the concepts. API research used the
 [official webOS OSE LS2 reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-service-systemservice/);
 commercial-TV compatibility is based on the recorded ordinary-app device tests.
