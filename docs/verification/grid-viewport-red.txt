@@ -2,3 +2,8 @@ Observed before the whole-tile policy fix: simulated legacy intersection admissi
 Running 1 test: cards::grid::bounded_viewport_tests::whole_tile_mode_rejects_partial_unfocused_tiles_but_keeps_focused_motion
 assertion failed: !tile_admitted(true, false, partial, clip)
 test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1015 filtered out.
+
+The translated-painter regression then failed against the first implementation:
+assertion failed: !grid.viewport_admits(p, 0, 1.0, false, &[])
+test result: FAILED. 1 passed; 1 failed; 0 ignored; 1015 filtered out.
+The admission rule was corrected to use the exact local-to-screen conversion used by drawing and hit stops.

@@ -34,7 +34,7 @@
     "rust-modules/ui/src/widgets.rs": "01289a47824cd962bfbf16e12f4ebeec317d3e46ac6f8aaeab93679530e91214",
     "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26",
     "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e",
-    "rust-modules/ui/src/cards/grid.rs": "3dfcf4ebc5d4162bfc6358853f68ae73b04da49a487eeab1717d8ddbbfb6f34a"
+    "rust-modules/ui/src/cards/grid.rs": "470b8010186e173ce53438b96be6a7907e063fd403db67feaf66f94f0fb732f9"
   },
-  "integration_patch_sha256": "eb0a84b0ab2cc12b21ef8c0d164d8dc90770247dd05fa60cc5201176ce9a9f85"
+  "integration_patch_sha256": "b57965221228d6df410729f8831107810ddf33c07cd9cec894cc8126df8ea739"
 }
