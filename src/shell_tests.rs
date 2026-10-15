@@ -1130,6 +1130,7 @@ fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_sett
         s.open(page);
         let first = s.surface.table.table.sections[0].rows[0].value.clone();
         assert_eq!(first.as_deref(), Some("On"));
+        assert!(!s.surface.table.table.sections[0].rows[0].dim);
         assert!(s.surface.table.activate(0).is_none());
         let owner = InputOwner::Entry(entry(s.page()));
         let before = s.input.engine.current(owner);
@@ -1139,6 +1140,7 @@ fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_sett
             Some("Unavailable")
         );
         assert_eq!(s.input.engine.current(owner), before);
+        assert!(s.surface.table.table.sections[0].rows[0].dim);
         assert!(s.take_requests().is_empty());
         s.apply_live(
             &crate::live::parse(&data, "com.example.self", 15_200, false),

@@ -1148,6 +1148,28 @@ impl Shell {
                     ),
                     None,
                 );
+                // Known read-only state stays legible. The shared form binding remains
+                // disabled, so changing ink never enables an LG-managed operation.
+                if let Some(section) = self.surface.table.table.sections.first_mut() {
+                    for (row, setting) in section.rows.iter_mut().zip(settings) {
+                        if setting.protected
+                            && setting.available
+                            && setting.still_current(&self.snapshot.context)
+                            && matches!(
+                                setting.constraint,
+                                Some(
+                                    crate::model::ControlConstraint::Range { active: true, .. }
+                                        | crate::model::ControlConstraint::Choices {
+                                            active: true,
+                                            ..
+                                        }
+                                )
+                            )
+                        {
+                            row.dim = false;
+                        }
+                    }
+                }
             }
         }
         if page == Page::Home || (page == Page::Applications && self.drawer.favourites_only) {
