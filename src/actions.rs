@@ -197,11 +197,8 @@ pub fn execute<P: Platform>(
             let known_firmware = info["firmwareVersion"].as_str() == Some("23.25.55")
                 && info["sdkVersion"].as_str() == Some("9.2.2");
             let model = info["modelName"].as_str();
-            let verified = model == Some("OLED55G26LA")
-                && request.settings_section() == Some(SettingsSection::Picture);
-            let isolated_trial = own_id == crate::identity::PROOF
-                && matches!(model, Some("OLED55G26LA" | "OLED65C26LD"));
-            if !known_firmware || !(verified || isolated_trial) {
+            let verified = matches!(model, Some("OLED55G26LA" | "OLED65C26LD"));
+            if !known_firmware || !verified {
                 return Err(
                     "LG Settings handoff is not validated for this TV firmware/section".into(),
                 );
@@ -711,7 +708,7 @@ mod tests {
     #[test]
     fn settings_handoff_requires_current_verified_model_firmware_and_sdk() {
         for (key, value) in [
-            ("modelName", "OLED65C26LD"),
+            ("modelName", "OLED99UNKNOWN"),
             ("firmwareVersion", "23.25.56"),
             ("sdkVersion", "9.3.0"),
         ] {
@@ -756,7 +753,7 @@ mod tests {
         .is_err());
     }
     #[test]
-    fn section_payloads_are_fixed_and_unverified_trials_are_isolated() {
+    fn verified_section_payloads_remain_fixed_for_both_models() {
         let sections = [
             SettingsSection::Picture,
             SettingsSection::Sound,
@@ -792,6 +789,8 @@ mod tests {
                     vec![json!({"id":"com.palm.app.settings","params":params})]
                 );
                 let mut p = Fake::new();
+                p.after = p.foreground.clone();
+                p.window_after = Some("com.palm.app.settings".into());
                 p.system_info["modelName"] = model.into();
                 let result = execute(
                     &mut p,
@@ -802,14 +801,12 @@ mod tests {
                         ..Default::default()
                     },
                 );
-                if !(model == "OLED55G26LA" && section == SettingsSection::Picture) {
-                    assert!(!result.admitted && p.launches.is_empty());
-                }
+                assert!(result.admitted && result.verified);
             }
         }
     }
     #[test]
-    fn trial_capability_cannot_bypass_firmware_metadata_or_operation_admission() {
+    fn settings_admission_requires_capability_and_verified_firmware_metadata() {
         for changed in 0..4 {
             let mut p = Fake::new();
             p.foreground = crate::identity::PROOF.into();
