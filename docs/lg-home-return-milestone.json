@@ -1,0 +1,132 @@
+{
+  "code_revision": "fb438a46cccdd7967ffc58342a2b6f241ea4141a",
+  "package_version": "0.16.0",
+  "binary_sha256": "f00995614ae873d9ba62e7654607235d23e104064571498fc7b35346333789f6",
+  "client_tests": {
+    "passed": 85,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "change": "Separate LG Home shortcut below the four rail routes, matching the concept; shared focus/press and hit-map membership, own native Home icon and divider.",
+  "route": {
+    "request": {
+      "kind": "LgHome"
+    },
+    "operation": "com.webos.applicationManager/launch",
+    "payload": {
+      "id": "com.webos.app.home"
+    },
+    "readback": "Independent foreground must equal the fixed target; acknowledgement alone is insufficient.",
+    "admission": "Own foreground before and after metadata reads; tested G2/C2 model, firmware 23.25.55 and SDK 9.2.2; unique registered native LG Home version 1.0.0, main file:///usr/bin/com.webos.app.home; separate home capability. No arbitrary ID, params, service URI, boot or Home-key interception."
+  },
+  "unit_coverage": [
+    "Fixed payload and independent foreground success/failure",
+    "Unverified firmware, SDK, model, Home metadata and unrelated foreground prevent launch",
+    "Passive test identity blocks Home unless explicit owned proof",
+    "Rail Up/Down reaches the separate return; shared press emits one distinct request without changing preferences",
+    "Moving focus cancels an armed Home request; menu/search hide it and refuse stale activation",
+    "Wire payload refuses arbitrary target and parameters"
+  ],
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_app_identity": true,
+      "home_return": {
+        "ordinary_uid": 6583,
+        "adapter_verified": true,
+        "independent_home_foreground_verified": true,
+        "selected_source_unchanged": true,
+        "no_setting_writes": true
+      },
+      "branding_loaded": true,
+      "native_rail_frame_inspected": true,
+      "unexecuted_requests": [],
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_update": {
+        "version": "0.16.0",
+        "binary_sha256": "f00995614ae873d9ba62e7654607235d23e104064571498fc7b35346333789f6",
+        "ordinary_uid": 5724,
+        "favourites_loaded": true,
+        "state": {
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_app_identity": true,
+      "home_return": {
+        "ordinary_uid": 6432,
+        "adapter_verified": true,
+        "independent_home_foreground_verified": true,
+        "selected_source_unchanged": true,
+        "no_setting_writes": true
+      },
+      "branding_loaded": true,
+      "native_rail_frame_inspected": true,
+      "unexecuted_requests": [],
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_update": {
+        "version": "0.16.0",
+        "binary_sha256": "f00995614ae873d9ba62e7654607235d23e104064571498fc7b35346333789f6",
+        "ordinary_uid": 6249,
+        "favourites_loaded": true,
+        "state": {
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    }
+  },
+  "limits": [
+    "Scripted shared-focus/OK native handoff proof, not physical Home-button or remote/pointer coverage",
+    "HDMI switching remains gated; tuner-to-HDMI restoration and live video-format/playback remain separate",
+    "Broader native controls, view-all shortcuts, full text and reboot/long-run checks remain unfinished"
+  ],
+  "privacy": "Native household frames, inventories, labels, favourites, addresses, credentials and detailed receipts remain private."
+}

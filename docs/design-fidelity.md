@@ -6,14 +6,14 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.15.0 moves the running interface closer to those concepts. This is a
+Version 0.16.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
 | --- | --- | --- |
 | Identity | Luma icon and wordmark in the persistent header; own SVG rail icons cached as native textures. | Refine secondary page/status text as the information architecture settles. |
 | Canvas and focus | OLED-black canvas, graphite surfaces, white card outline, separate quiet current-route fill. | Measure contrast and focus animation with physical remote/pointer use. |
-| Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below. | View-all shortcuts, explicit LG Home route and long-title/empty-state polish. |
+| Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail. | View-all shortcuts and long-title/empty-state polish. |
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs. | Improve partially visible grid rows, long text and full text input; validate physical hold/pointer use. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs. | Live video-format detail, C2 tuner-source handling/restoration and production switching; source artwork. |
@@ -44,6 +44,11 @@ to HDMI 1 and independently confirmed the selected source, then restored the
 original source and foreground. It had no live HDMI signal. The C2 returned the
 TV tuner as its selected source; Luma leaves that unsupported selection detail
 unavailable. Switching remains disabled in the installed preview.
+
+The [LG Home return record](lg-home-return-milestone.json) adds the concept's
+separate rail shortcut. It launches only the registered LG Home binary through
+LG's application manager and verifies its foreground. No Home-button interception
+or boot behaviour changes are involved.
 
 Next design work should complete source actions/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on

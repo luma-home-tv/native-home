@@ -12,8 +12,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.15.0 is installed on both devices; the
-[Inputs detail record](inputs-detail-milestone.json) is the latest scoped proof;
+current native interface. Version 0.16.0 is installed on both devices; the
+[LG Home return record](lg-home-return-milestone.json) is the latest scoped proof;
+the [Inputs detail record](inputs-detail-milestone.json) covers source layout/readback;
 the [responsiveness record](responsiveness-milestone.json) retains the bounded
 performance evidence from 0.14.0.
 
@@ -38,7 +39,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 
 | Area | Intended behaviour | Current evidence |
 | --- | --- | --- |
-| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves verified on both TVs; explicit LG Home route remains |
+| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves and an explicit LG Home return verified on both TVs; view-all shortcuts remain |
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; C2 tuner restoration and live format/playback remain unverified, so production switching stays disabled |

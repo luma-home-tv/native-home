@@ -1,11 +1,18 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.15.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.16.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
-Open it from LG Home. Directions move between the rail, favourites and app
+Open it from LG Home. The separate **LG Home** entry below Controls returns to
+LG's normal homescreen. It uses a fixed registered target, requires the tested
+model/firmware/SDK and LG Home metadata, and confirms foreground after launch.
+It cannot be activated through a stale hit behind an app menu or search keyboard.
+The [return record](lg-home-return-milestone.json) describes the isolated native
+proof and state checks. The remote's Home button keeps its original behaviour.
+
+Directions move between the rail, favourites and app
 drawer. OK opens a validated app. Holding OK on Home adds/removes a favourite;
 in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
 or Open app. Back closes the panel and restores the app; an app removed from
@@ -95,8 +102,7 @@ mode, the existing diagnostic package keeps its captures and 30-second lifetime.
 
 Use `NATIVE_HOME_TEST_IDENTITY=1` for a separate `com.ash.nativehome.proof` package,
 shown as **Luma Home Test**. It has its own runtime and favourites directory, and
-passive tests cannot launch household apps. An explicit owned-target launch proof
-is the only exception. Keep capture/probe markers out of the retained normal app.
+passive tests cannot launch household apps. Named proof markers admit only their explicit owned target or fixed LG route. Keep capture/probe markers out of the retained normal app.
 
 ## Removal and future tests
 

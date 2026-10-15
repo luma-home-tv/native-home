@@ -21,7 +21,8 @@
     "Home",
     "Applications",
     "Inputs",
-    "Controls"
+    "Controls",
+    "LG Home return (separate fixed action)"
   ],
   "screens": {
     "Home": {
