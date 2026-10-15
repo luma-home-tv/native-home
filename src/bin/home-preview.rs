@@ -2176,6 +2176,11 @@ fn text_input_trial(
             std::thread::sleep(Duration::from_millis(20));
         }
         statuses.push(serde_json::json!({"cycle":cycle,"before":window.keyboard_status()}));
+        std::fs::write(
+            output.join("text-input-runtime.json"),
+            serde_json::to_vec(&statuses)?,
+        )?;
+        phase(&format!("focused-{cycle}"))?;
         if !window.text_start() {
             phase("unavailable")?;
             return Err("SDL text input could not acquire the app window".into());
