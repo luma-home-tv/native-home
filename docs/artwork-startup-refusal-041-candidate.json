@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "date": "2026-10-15",
+  "status": "local ARM candidate; native nonce-refusal cases not executed",
+  "version": "0.41.0",
+  "functional_source_revision": "88aa058d0a9d957f9154f64ed95dac6d15e378bd",
+  "ui": {
+    "bytes": 3599176,
+    "name": "home-preview",
+    "sha256": "a8d9247edfcc4c8cf77add41e82a8ad5be04a5c08b7f84e2aea3ad37bf6e0824"
+  },
+  "helper": {
+    "bytes": 745760,
+    "name": "artwork-broker-startup-proof",
+    "sha256": "4a9a7b1a242b8333f3a198a8ca6507b4388d325337709cb0489f6a612488f444"
+  },
+  "actual_ui_build_receipt_sha256": "2d71fd12c9e2c0ce729397c706d533ee24d07fbf15742301dae8a88a4e5e6c60",
+  "actual_helper_build_receipt_sha256": "21511e3bf18bb1fea7c11cc957927ae48e07b479454037a22e2cfe1a60ba4f03",
+  "selected_source_inputs": 92,
+  "two_actual_arm_receipts_same_snapshot": true,
+  "model": "OLED55G26LA",
+  "firmware": "23.25.55",
+  "sdk": "9.2.2",
+  "host_checks": {
+    "library_tests": 374,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "build_provenance_framework_package_tests": 35,
+    "new_synthetic_refusal_tests": 5,
+    "new_packager_tests": 8
+  },
+  "cases": {
+    "wrong_identify_nonce": {
+      "ipk_sha256": "aa1d55f3a6f0dd275c0a833ca48470945bd3d84f3b9fd7087387ba4f090acd17",
+      "bytes": 1997544,
+      "package_receipt_sha256": "84cd5fa91deefb9169313ac600854a37ba7d86587f4990df12446197a5bb5ed4",
+      "installation_config_sha256": "a835f8ad09885ad1e88fb3dcff75c7a46647681c3e9b0a5a3fb3d0b64a91c305",
+      "local_packaged": true,
+      "device_tested": false
+    },
+    "wrong_finish_nonce": {
+      "ipk_sha256": "845803dbf1832c57451226b1b9506585ee3228c4a856d0c8a70997d60fdb6923",
+      "bytes": 1997536,
+      "package_receipt_sha256": "342b3d3d62a4dc33213af9009bdc94a3bd92817b1a0dfcb480ac5967342ebb95",
+      "installation_config_sha256": "04200b8383531af894e7e9f4ba9ec8abfd9e1e8bd44de36ea1c54dd4fbabd60c",
+      "local_packaged": true,
+      "device_tested": false
+    }
+  },
+  "native_refusal_cases_qualified": false,
+  "positive_startup_qualification_version": "0.40.0",
+  "server_policy_changed": false,
+  "root_helper_exposes_resources": false,
+  "normal_retained_version": "0.37.0",
+  "normal_updated": false,
+  "resource_access_qualified": false,
+  "production_startup_qualified": false,
+  "tv_contacted_during_candidate_preparation": false,
+  "c2_contacted": false,
+  "private_raw_artifacts_published": false,
+  "next_step": "Complete independent refusal carrier admission, execute two isolated G2 cases serially with full preservation and cleanup, then advance restricted artwork resource integration."
+}

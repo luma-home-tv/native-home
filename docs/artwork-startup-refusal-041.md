@@ -63,5 +63,19 @@ package assembly with synthetic ARM/tool fixtures. Package tests verify both
 markers and reject normal/interactive/mixed modes and mismatched helper context.
 These are local source/fixture results, not observed G2 refusals.
 
-The ARM candidate and its device carrier still need separate validation. No
-0.41 package has been installed, and the Root helper/server policy is unchanged.
+Both ARM builds pass from functional source
+`88aa058d0a9d957f9154f64ed95dac6d15e378bd`. Their actual receipts share all 92
+selected inputs and the pinned framework. The UI ELF SHA-256 is
+`a8d9247edfcc4c8cf77add41e82a8ad5be04a5c08b7f84e2aea3ad37bf6e0824`;
+the helper ELF SHA-256 is
+`4a9a7b1a242b8333f3a198a8ca6507b4388d325337709cb0489f6a612488f444`.
+The existing ARM target-feature stability warning remains.
+
+Two actual local IPKs were assembled with independent rendezvous policies, one
+per declared case. The [candidate record](artwork-startup-refusal-041-candidate.json)
+binds their hashes and the actual ARM receipts. The helper remains outside both
+ordinary app archives. These builds/packages do not qualify runtime refusal.
+
+The independent device carrier still needs validation before either case can
+run. No 0.41 package has been installed, and the Root helper/server policy is
+unchanged. Full native preservation and clean removal remain required.
