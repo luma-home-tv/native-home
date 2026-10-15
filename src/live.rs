@@ -33,6 +33,7 @@ pub struct Update {
     pub observed_ms: u32,
     pub simulated: bool,
     pub catalogue: Reading<CatalogueReading>,
+    pub artwork: Reading<crate::app_artwork::SourceMap>,
     pub inputs: Reading<Vec<Input>>,
     pub picture: Reading<PictureReading>,
     pub sound: Reading<Vec<(String, String)>>,
@@ -395,6 +396,8 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         observed_ms,
         simulated,
         catalogue,
+        artwork: reading(crate::app_artwork::sources_from_raw(raw, own_id)
+            .map_err(|error| format!("Artwork metadata unavailable: {error:?}"))),
         inputs,
         picture,
         sound,

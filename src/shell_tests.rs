@@ -212,6 +212,7 @@ fn live_update(ms: u32) -> crate::live::Update {
             apps: data.applications,
             launch_ids: data.launch_ids,
         }),
+        artwork: Reading::Failed("No fixture artwork".into()),
         inputs: Reading::Value(data.inputs),
         picture: Reading::Value(PictureReading {
             context: data.context,

@@ -26,13 +26,43 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.35.0' if main == 'home-preview' else '0.1.0'
+version = '0.36.0' if main == 'home-preview' else '0.1.0'
+artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
+if artwork_target_fixture:
+    if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
+        raise ValueError('Artwork fixture is only the fixed owned native target')
+    version = '1.0.0' if artwork_target_fixture == 'a' else '2.0.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
 broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '1'
 broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == '1'
+live_artwork_proof = os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PROOF') == '1'
+live_artwork_marker = None
+if live_artwork_proof:
+    others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
+              (k.endswith('_PROOF') or k.endswith('_PROBE')) and k != 'NATIVE_HOME_LIVE_ARTWORK_PROOF']
+    if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
+        raise ValueError('Live artwork requires only the isolated non-interactive lifecycle proof')
+    def strict_pairs(pairs):
+        value={}
+        for key,item in pairs:
+            if key in value: raise ValueError('Duplicate artwork recipe key')
+            value[key]=item
+        return value
+    raw=Path(os.environ['NATIVE_HOME_LIVE_ARTWORK_PINS']).read_bytes()
+    if not 0<len(raw)<=4096: raise ValueError('Bounded fixed artwork recipe required')
+    live_artwork_marker=json.loads(raw,object_pairs_hook=strict_pairs)
+    marker=live_artwork_marker
+    if (type(marker) is not dict or set(marker)!={'schema','target_id','encoded_sha256','versions','max_seconds'} or
+        type(marker['schema']) is not int or marker['schema']!=1 or marker['target_id']!='com.ash.nativehome.targetproof' or
+        marker['versions']!=['1.0.0','1.0.0','2.0.0'] or type(marker['max_seconds']) is not int or marker['max_seconds']!=120 or
+        type(marker['encoded_sha256']) is not list or len(marker['encoded_sha256'])!=3 or
+        any(type(h) is not str or len(h)!=64 or any(c not in '0123456789abcdef' for c in h) for h in marker['encoded_sha256']) or
+        len(set(marker['encoded_sha256']))!=3): raise ValueError('Invalid fixed artwork recipe')
+elif os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PINS'):
+    raise ValueError('Artwork recipe requires explicit isolated lifecycle mode')
 if broker_artwork_read_proof and not broker_identify_proof:
     raise ValueError('Artwork transfer requires explicit isolated broker mode')
 broker_marker = None
@@ -79,12 +109,16 @@ for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
 # Independent Luma Home branding; no PlxNative mark is used as this client's identity.
 icon = Path(os.environ.get('NATIVE_HOME_PREVIEW_ICON', repo / 'assets/luma-home/icon-160.png')).resolve()
 shutil.copy2(icon, stage / 'icon.png')
+if artwork_target_fixture:
+    (stage/'icon.png').chmod(0o644)
 info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
         'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Test' if test_identity else 'Luma Home Preview',
         'appDescription': 'Native dashboard preview; verified pointer-speed control and LG-managed settings',
         'icon': 'icon.png', 'largeIcon': 'icon.png', 'transparent': False,
         'nativeLifeCycleInterfaceVersion': 2, 'handlesRelaunch': False,
         'requiredMemory': 96, 'requiredPermissions': []}
+if artwork_target_fixture:
+    info['title']='AAA Luma Artwork Fixture'
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
@@ -160,6 +194,10 @@ if main == 'home-preview':
         (stage / 'artwork-broker-proof.json').write_text(json.dumps(broker_marker, separators=(',', ':'))+'\n')
     if broker_artwork_read_proof:
         (stage / 'artwork-read-proof.json').write_text('{}\n')
+    if live_artwork_marker is not None:
+        marker_path=stage/'live-artwork-proof.json'
+        marker_path.write_text(json.dumps(live_artwork_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
     if sound_read_proof:
         (stage / 'sound-read-proof.json').write_text('{}\n')
     for app in snapshot['applications']:
@@ -209,6 +247,8 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
            'broker_identify_proof': broker_identify_proof,
            'broker_artwork_read_proof': broker_artwork_read_proof,
+           'live_artwork_proof': live_artwork_proof,
+           'artwork_target_fixture': artwork_target_fixture or None,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
            'keyboard_recipe_proof': keyboard_recipe,

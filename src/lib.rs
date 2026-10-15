@@ -49,8 +49,13 @@ pub mod locale_reads;
 pub mod app_artwork;
 
 pub mod artwork_cache;
+pub mod artwork_gl;
+pub mod artwork_live_proof;
 pub mod artwork_probe;
+pub mod artwork_runtime;
+pub mod artwork_textures;
 pub mod artwork_transfer;
+pub mod artwork_worker;
 pub mod broker_context;
 pub mod broker_probe;
 pub mod broker_protocol;

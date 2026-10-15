@@ -1040,6 +1040,15 @@ pub struct Shell {
     input: InputMachine<u32>,
     surface: Surface,
     textures: BTreeMap<String, (u32, f32, f32)>,
+    live_textures: crate::artwork_textures::ArtworkTextures<crate::artwork_gl::Backend>,
+    artwork_gl: crate::artwork_gl::Diagnostics,
+    artwork: Option<crate::artwork_runtime::Runtime>,
+    artwork_filter: Option<BTreeSet<String>>,
+    artwork_origin: std::time::Instant,
+    artwork_interest: (Vec<String>, Vec<String>),
+    artwork_retry_at: u64,
+    artwork_upload_failures: u64,
+    artwork_catalogue_live: bool,
     now: u32,
     status: CString,
     pending: Vec<Action>,
@@ -1079,6 +1088,12 @@ pub struct Shell {
 }
 impl Shell {
     pub fn new(snapshot: Snapshot, mut prefs: Preferences) -> Self {
+        let artwork_gl = crate::artwork_gl::Diagnostics::default();
+        let live_textures = crate::artwork_textures::ArtworkTextures::new(
+            crate::artwork_gl::Backend::new(artwork_gl.clone()),
+            crate::artwork_textures::Config::default(),
+        )
+        .expect("Default live texture limits");
         let mut catalogue = Catalogue::default();
         catalogue.refresh(&snapshot.applications, &snapshot.launch_ids);
         let seeded = !prefs.initialized;
@@ -1114,6 +1129,15 @@ impl Shell {
             input: InputMachine::new(),
             surface: Self::blank(Page::Home),
             textures: BTreeMap::new(),
+            live_textures,
+            artwork_gl,
+            artwork: None,
+            artwork_filter: None,
+            artwork_origin: std::time::Instant::now(),
+            artwork_interest: (Vec::new(), Vec::new()),
+            artwork_retry_at: 0,
+            artwork_upload_failures: 0,
+            artwork_catalogue_live: false,
             now: 0,
             status: cstr("Captured TV state • hold OK to pin an application"),
             pending: Vec::new(),
@@ -1307,7 +1331,12 @@ impl Shell {
                         continue;
                     }
                     let initials = app.title.chars().take(2).collect::<String>().to_uppercase();
-                    let tex = self.textures.get(&app.id).copied().unwrap_or_default();
+                    let tex = self
+                        .live_textures
+                        .texture(&app.id)
+                        .map(|t| (t.handle, t.width as f32, t.height as f32))
+                        .or_else(|| self.textures.get(&app.id).copied())
+                        .unwrap_or_default();
                     self.surface.cards.items.push(Card {
                         key: app.key.0,
                         id: app.id.clone(),
@@ -1561,6 +1590,31 @@ impl Shell {
         }
     }
     pub fn apply_live(&mut self, update: &Update, now: u32) {
+        if let Some(artwork) = &mut self.artwork {
+            let filtered;
+            let sources = match &update.artwork {
+                live::Reading::Value(sources)
+                    if matches!(update.catalogue, live::Reading::Value(_))
+                        && Freshness::current(Some(update.observed_ms), now) =>
+                {
+                    if let Some(ids) = &self.artwork_filter {
+                        filtered = sources
+                            .iter()
+                            .filter(|(id, _)| ids.contains(*id))
+                            .map(|(id, s)| (id.clone(), s.clone()))
+                            .collect();
+                        Some(&filtered)
+                    } else {
+                        Some(sources)
+                    }
+                }
+                _ => None,
+            };
+            self.artwork_catalogue_live = sources.is_some();
+            if artwork.update_catalogue(sources).is_err() {
+                let _ = artwork.update_catalogue(None);
+            }
+        }
         self.system_keyboard_available = update.system_keyboard;
         let before = self.snapshot.clone();
         let mut fresh = self.live_state.take().unwrap_or_default();
@@ -1594,6 +1648,12 @@ impl Shell {
     }
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
+        if self.artwork_catalogue_live && !self.artwork_catalogue_current() {
+            self.artwork_catalogue_live = false;
+            if let Some(artwork) = &mut self.artwork {
+                let _ = artwork.update_catalogue(None);
+            }
+        }
         if let Some(fresh) = &self.live_state {
             if live::needs_expiry(&self.snapshot, fresh, now) {
                 plx_machine::idle::invalidate();
@@ -1980,6 +2040,181 @@ impl Shell {
             }
         }
         self.rebuild(self.surface.page);
+    }
+    pub fn enable_live_artwork(
+        &mut self,
+        runtime: crate::artwork_runtime::Runtime,
+        filter: Option<BTreeSet<String>>,
+    ) {
+        let _ = self.finish_live_artwork();
+        self.artwork = Some(runtime);
+        self.artwork_filter = filter;
+        self.artwork_origin = std::time::Instant::now();
+        self.artwork_retry_at = 0;
+        self.artwork_interest = (Vec::new(), Vec::new());
+    }
+    pub fn set_artwork_active(&mut self, active: bool) {
+        if let Some(runtime) = &mut self.artwork {
+            runtime.set_active(active);
+        }
+    }
+    fn artwork_visible(&self) -> Vec<String> {
+        if self.surface.page == Page::Home {
+            return self
+                .surface
+                .cards
+                .items
+                .iter()
+                .take(12)
+                .map(|c| c.id.clone())
+                .collect();
+        }
+        if self.surface.page != Page::Applications {
+            return Vec::new();
+        }
+        let focused = self.focused_item();
+        let index = self
+            .surface
+            .cards
+            .items
+            .iter()
+            .position(|c| Some(c.id.as_str()) == focused.as_deref())
+            .unwrap_or(0);
+        let area = self.surface.grid_area();
+        let cx = self.context(&LegacyMeasure);
+        self.surface
+            .cards
+            .items
+            .iter()
+            .skip(index.saturating_sub(16))
+            .take(36)
+            .filter(|card| {
+                self.surface
+                    .grid
+                    .place(&cx, &self.surface.cards, &card.key, At::SpringTarget)
+                    .is_some_and(|p| {
+                        p.rect.x < area.x + area.w
+                            && p.rect.x + p.rect.w > area.x
+                            && p.rect.y < area.y + area.h
+                            && p.rect.y + p.rect.h > area.y
+                    })
+            })
+            .map(|c| c.id.clone())
+            .collect()
+    }
+    /// Replace only drawing references. Do not rebuild focus/layout or cancel
+    /// an armed press merely because new pixels became available.
+    fn refresh_artwork_cards(&mut self) -> bool {
+        let mut changed = false;
+        for card in &mut self.surface.cards.items {
+            let next = self
+                .live_textures
+                .texture(&card.id)
+                .map(|t| (t.handle, t.width as f32, t.height as f32))
+                .or_else(|| self.textures.get(&card.id).copied())
+                .unwrap_or_default();
+            if card.texture != next {
+                card.texture = next;
+                changed = true;
+            }
+        }
+        changed
+    }
+    fn pump_artwork(&mut self) {
+        if self.artwork.is_none() {
+            return;
+        }
+        let visible = self.artwork_visible();
+        let favourites = self.prefs.favourites.iter().cloned().collect::<Vec<_>>();
+        let mut candidates = visible.clone();
+        candidates.extend(favourites.iter().cloned());
+        let runtime = self.artwork.as_mut().expect("artwork enabled");
+        if self.artwork_interest.0 != visible || self.artwork_interest.1 != favourites {
+            let _ = runtime.set_interest(&visible, &favourites);
+            self.artwork_interest = (visible, favourites);
+        }
+        let now = self.artwork_origin.elapsed().as_millis() as u64;
+        let frame = runtime.frame(now);
+        for key in &frame.evicted {
+            self.live_textures.evict(key);
+        }
+        if let Some(key) = frame.changed {
+            candidates.insert(0, key.source.app_id);
+        }
+        if runtime.active() && now >= self.artwork_retry_at {
+            for id in candidates {
+                let Some(view) = runtime.resident(&id) else {
+                    continue;
+                };
+                if self
+                    .live_textures
+                    .texture(&id)
+                    .is_some_and(|t| t.key == view.key)
+                {
+                    continue;
+                }
+                // Exactly one backend upload attempt per frame, including a
+                // retry after a backend allocation failure.
+                if self.live_textures.install(&view).is_err() {
+                    self.artwork_upload_failures += 1;
+                    self.artwork_retry_at = now.saturating_add(5000);
+                }
+                break;
+            }
+        }
+        if self.refresh_artwork_cards() {
+            plx_machine::idle::invalidate();
+        }
+    }
+    pub fn live_artwork_receipt(&self) -> serde_json::Value {
+        let textures = self.live_textures.stats();
+        serde_json::json!({"runtime":self.artwork.as_ref().map(|r|r.receipt()),
+            "textures":{"entries":textures.entries,"rgba_bytes_estimate":textures.rgba_bytes_estimate},
+            "gl":self.artwork_gl.receipt(),"upload_failures":self.artwork_upload_failures})
+    }
+    pub fn artwork_target(&mut self, id: &str, hash_pixels: bool) -> Option<serde_json::Value> {
+        let runtime = self.artwork.as_mut()?;
+        let view = runtime.resident(id)?;
+        let texture = self.live_textures.texture(id)?;
+        if texture.key != view.key {
+            return None;
+        }
+        let hex = |b: &[u8]| b.iter().map(|v| format!("{v:02x}")).collect::<String>();
+        Some(
+            serde_json::json!({"source_key":view.key.source,"revision":view.key.revision,
+            "encoded_sha256":hex(&view.fingerprint.content_sha256),
+            "rgba_sha256":hash_pixels.then(||hex(&plx_base::sha256::sha256(view.rgba))),
+            "width":view.width,"height":view.height,"texture_handle":texture.handle}),
+        )
+    }
+    pub fn artwork_target_absent(&mut self, id: &str) -> bool {
+        self.artwork
+            .as_mut()
+            .is_some_and(|r| r.source(id).is_none() && r.resident(id).is_none())
+            && self.live_textures.texture(id).is_none()
+            && !self.catalogue.applications.iter().any(|a| a.id == id)
+    }
+    pub fn artwork_catalogue_current(&self) -> bool {
+        self.live_state
+            .as_ref()
+            .is_some_and(|f| Freshness::current(f.catalogue, self.live_now))
+    }
+    pub fn finish_live_artwork(&mut self) -> Option<serde_json::Value> {
+        let mut runtime = self.artwork.take()?;
+        let finished = runtime.finish();
+        for key in &finished.evicted {
+            self.live_textures.evict(key);
+        }
+        self.live_textures.clear();
+        self.refresh_artwork_cards();
+        let gl = self.artwork_gl.receipt();
+        Some(
+            serde_json::json!({"joined":finished.joined,"panicked":finished.panicked,
+            "outstanding_resolved":finished.outstanding_resolved,"closed":true,
+            "gpu_cleanup_qualified":gl["deletion_failures"]==0 && gl["observed_gl_errors"]==0,
+            "remaining_live_textures":self.live_textures.stats().entries,
+            "runtime":runtime.receipt(),"gl":gl}),
+        )
     }
     fn moved(&mut self, outcome: plx_ui::focus::Outcome<u32>) {
         if let plx_ui::focus::Outcome::Moved { from, to, by } = outcome {
@@ -2684,6 +2919,7 @@ impl Shell {
     }
     pub fn tick(&mut self, ms: u32, dt: f32) {
         self.now = ms;
+        self.pump_artwork();
         for event in self.input.tick(ms, dt) {
             match event {
                 PressEvent::Commit(_, _, k) => self.activate(k, false),
@@ -4033,6 +4269,7 @@ impl Shell {
 }
 impl Drop for Shell {
     fn drop(&mut self) {
+        let _ = self.finish_live_artwork();
         if self.brand_texture != 0 {
             plx_gfx::gfx::delete_tex(self.brand_texture);
         }
@@ -4050,3 +4287,7 @@ impl Drop for Shell {
 #[cfg(test)]
 #[path = "shell_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "shell_artwork_tests.rs"]
+mod artwork_tests;

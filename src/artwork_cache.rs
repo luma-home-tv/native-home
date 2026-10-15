@@ -442,6 +442,15 @@ impl ArtworkCache {
         self.use_id = self.use_id.saturating_add(1);
         self.use_id
     }
+    fn priority(&self, id: &str) -> u8 {
+        if self.visible.contains(id) {
+            0
+        } else if self.favourites.contains(id) {
+            1
+        } else {
+            2
+        }
+    }
     pub fn apply_next(&mut self, now_ms: u64) -> Option<Applied> {
         let pending = self.results.pop_front()?;
         self.result_bytes -= pending.bytes();
@@ -459,6 +468,28 @@ impl ArtworkCache {
         entry.next_due = now_ms.saturating_add(self.config.refresh_after_ms);
         match pending.result {
             FetchResult::Decoded { fingerprint, image } => {
+                let priority = self.priority(&app_id);
+                let previous = entry
+                    .resident
+                    .as_ref()
+                    .map_or(0, |r| r.image.rgba.capacity());
+                let needed = (self.resident_bytes - previous + image.rgba.capacity())
+                    .saturating_sub(self.config.resident_bytes);
+                let reclaimable = self
+                    .entries
+                    .iter()
+                    .filter(|(id, _)| self.priority(id) >= priority)
+                    .filter_map(|(_, e)| e.resident.as_ref())
+                    .map(|r| r.image.rgba.capacity())
+                    .sum::<usize>();
+                if needed > reclaimable {
+                    // Background fills cannot displace displayed/favourite
+                    // pixels. Becoming interesting schedules a fresh fetch.
+                    entry.was_evicted = true;
+                    entry.refresh_again = false;
+                    self.entries.insert(app_id, entry);
+                    return Some(applied);
+                }
                 entry.was_evicted = false;
                 if let Some(old) = entry.resident.take() {
                     self.remove_resident(old, &mut applied.evicted);
@@ -467,9 +498,14 @@ impl ArtworkCache {
                     let victim = self
                         .entries
                         .iter()
-                        .filter_map(|(id, e)| e.resident.as_ref().map(|r| (r.used, id.clone())))
+                        .filter(|(id, _)| self.priority(id) >= priority)
+                        .filter_map(|(id, e)| {
+                            e.resident
+                                .as_ref()
+                                .map(|r| (std::cmp::Reverse(self.priority(id)), r.used, id.clone()))
+                        })
                         .min()
-                        .map(|(_, id)| id)
+                        .map(|(_, _, id)| id)
                         .expect("resident bytes account for owned entries");
                     let old = self
                         .entries
@@ -627,6 +663,31 @@ mod tests {
             SubmitOutcome::Queued
         );
         cache.apply_next(now).unwrap()
+    }
+    #[test]
+    fn background_fills_cannot_evict_a_visible_image_at_capacity() {
+        let mut c = cache(4);
+        c.update_catalogue(&catalogue(&[
+            ("fixture.a", "1", "a.png"),
+            ("fixture.b", "1", "b.png"),
+        ]))
+        .unwrap();
+        c.set_interest(&["fixture.a".into()], &[]).unwrap();
+        let a = c.next_work(0).unwrap();
+        assert_eq!(a.source().app_id, "fixture.a");
+        let first = finish(&mut c, a, 1, 0).changed.unwrap();
+        let b = c.next_work(0).unwrap();
+        assert_eq!(b.source().app_id, "fixture.b");
+        let applied = finish(&mut c, b, 2, 0);
+        assert!(applied.evicted.is_empty() && applied.changed.is_none());
+        assert_eq!(c.resident("fixture.a").unwrap().key, &first);
+        assert!(c.resident("fixture.b").is_none());
+        c.set_interest(&["fixture.b".into()], &[]).unwrap();
+        let b = c.next_work(1).unwrap();
+        assert_eq!(b.source().app_id, "fixture.b");
+        let applied = finish(&mut c, b, 2, 1);
+        assert_eq!(applied.evicted, vec![first]);
+        assert!(applied.changed.is_some());
     }
     #[test]
     fn unchanged_poll_preserves_resident_and_inflight_across_catalogue_generations() {

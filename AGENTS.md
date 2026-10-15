@@ -21,10 +21,13 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The current active goal restricts device work to the G2. Do not contact or modify
-the C2 under this goal. Earlier C2 records remain historical evidence; any future
-C2 work requires a later explicit user instruction. Preserve both TVs' retained
-previews and saved favourites.
+The G2 is the primary device. The user explicitly reopened isolated C2 testing on
+2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
+coordinator may run isolated tests under the existing C2 lease, preserving its
+retained preview and favourites. Do not start a C2 test after 20:15 local time;
+finish cleanup before the user's 20:30 cutoff. After that window, do not contact
+or modify C2 without a later explicit instruction. Earlier C2 records remain
+historical evidence; G2 results never establish C2 behaviour.
 
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.

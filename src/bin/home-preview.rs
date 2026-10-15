@@ -65,6 +65,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let live_artwork_marker = if assets.join("live-artwork-proof.json").exists() {
+        if !device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || unsafe { libc::geteuid() } < 1000
+        {
+            return Err("Live artwork recipe requires an ordinary isolated native Proof".into());
+        }
+        for entry in std::fs::read_dir(&assets)? {
+            let name = entry?.file_name().to_string_lossy().into_owned();
+            if name != "live-artwork-proof.json"
+                && (name.ends_with("-proof.json")
+                    || name.ends_with("-probe.json")
+                    || name.ends_with("observer.json"))
+            {
+                return Err("Live artwork recipe cannot mix with another trial".into());
+            }
+        }
+        Some(native_home::artwork_live_proof::Marker::read(
+            &assets.join("live-artwork-proof.json"),
+        )?)
+    } else {
+        None
+    };
     let navigation_proof = assets.join("navigation-proof.json").exists()
         || args.iter().any(|s| s == "--navigation-proof");
     if device
@@ -465,6 +489,26 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     shell.enable_app_launches(app_launches_enabled);
     shell.enable_home_launches(home_launches_enabled);
     shell.load_icons(&assets);
+    if live_artwork_marker.is_some() {
+        let worker = native_home::artwork_worker::Worker::start(|| {
+            native_home::artwork_worker::DirectProvider
+        })?;
+        let runtime = native_home::artwork_runtime::Runtime::new(
+            worker,
+            native_home::artwork_cache::Config {
+                retry_delay_ms: 1000,
+                refresh_after_ms: 2000,
+                ..Default::default()
+            },
+        )
+        .map_err(|e| format!("Artwork runtime config: {e:?}"))?;
+        shell.enable_live_artwork(
+            runtime,
+            Some(std::collections::BTreeSet::from([
+                native_home::identity::TARGET.to_owned(),
+            ])),
+        );
+    }
     let mut now = 0;
     let mut capture_diagnostics = Vec::new();
     let mut drawer_proof = None;
@@ -589,8 +633,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             let locale_preferences = shell.preferences().clone();
             let mut stages = Vec::new();
             for (offset, (key, frame)) in [
-                (native_home::locale_reads::Key::MenuLanguage, "locale-menu-language"),
-                (native_home::locale_reads::Key::AudioLanguage, "locale-audio-language"),
+                (
+                    native_home::locale_reads::Key::MenuLanguage,
+                    "locale-menu-language",
+                ),
+                (
+                    native_home::locale_reads::Key::AudioLanguage,
+                    "locale-audio-language",
+                ),
                 (
                     native_home::locale_reads::Key::SecondaryAudioLanguage,
                     "locale-secondary-audio-language",
@@ -632,7 +682,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     || matching[0]["available"] != true
                     || matching[0]["protected"] != true
                 {
-                    return Err("Language/region row was unavailable or lacked visible read-only focus".into());
+                    return Err(
+                        "Language/region row was unavailable or lacked visible read-only focus"
+                            .into(),
+                    );
                 }
                 stages.push(serde_json::json!({"frame":frame,"layout":row,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":readouts}));
             }
@@ -647,7 +700,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 || route["disabled"] != false
                 || route["fully_visible"] != true
             {
-                return Err("General LG Settings row did not settle into visible enabled focus".into());
+                return Err(
+                    "General LG Settings row did not settle into visible enabled focus".into(),
+                );
             }
             let lg_settings = serde_json::json!({"frame":"locale-lg-settings","layout":route,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["general"]});
             for _ in 0..5 {
@@ -1170,8 +1225,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut recipe_open = 0_u32;
     let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
+    let live_artwork_receipt = if let Some(marker) = &live_artwork_marker {
+        Some(native_home::artwork_live_proof::run(
+            &mut shell,
+            &window,
+            &output,
+            marker,
+            |shell| poll_live(&live_worker, shell, live_origin, &mut live_history),
+        )?)
+    } else {
+        None
+    };
     if text_probe {
         reason = "text_proof_complete";
+    } else if live_artwork_receipt.is_some() {
+        reason = "live_artwork_complete";
     } else if !capture_only {
         plx_machine::idle::set_enabled(true);
         plx_machine::idle::wake();
@@ -1186,6 +1254,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             last = current;
             plx_machine::idle::frame_begin(dt);
             now = now.wrapping_add((dt * 1000.0) as u32);
+            shell.set_artwork_active(hidden_at.is_none() && !session.idle(start.elapsed()));
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
             pump_description(
                 &description_worker,
@@ -1307,6 +1376,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             decision = observation::Decision::Accepted;
                             shell.cancel_press();
                             hidden_at.get_or_insert(current);
+                            shell.set_artwork_active(false);
                         }
                         9 => {
                             decision = observation::Decision::Accepted;
@@ -1317,6 +1387,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 shell.storage_notice("Returned from LG Settings");
                             }
                             hidden_at = None;
+                            shell.set_artwork_active(!session.idle(start.elapsed()));
                         }
                         2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
                             decision = observation::Decision::Accepted;
@@ -1743,6 +1814,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
+    report["live_artwork_proof"] = serde_json::json!(live_artwork_receipt);
     report["sound_layout_proof"] = serde_json::json!(sound_layout_proof);
     report["locale_layout_proof"] = serde_json::json!(locale_layout_proof);
     report["text_input_proof"] = serde_json::json!(text_receipt);
