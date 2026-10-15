@@ -38,8 +38,9 @@ bounded runtime observations remain valid; their source/dependency declarations
 do **not** establish byte-exact reproduction of those executables.
 
 The original checkout and diff were preserved privately before recreating the
-pinned dependency. Of 620 differing tracked paths, two non-Rust files were byte
-identical to the correctly patched checkout. Canonical formatting made 617 of
+pinned dependency. It had 620 tracked paths modified relative to upstream.
+Comparing those paths with the correctly patched checkout, both non-Rust files
+were byte identical. Canonical formatting made 617 of
 618 Rust pairs byte identical. The remaining pair differed only in indentation
 on five plain comment lines; a separate inspection records that residual. The
 primary comparison retains its `inspection_required` result. This supports a

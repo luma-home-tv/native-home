@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "scope": "Synthetic host shared-form raster and activation fixture; no TV or panel measurement",
+  "example": "examples/read_only_contrast.rs",
+  "frames": [
+    {
+      "file": "current-focused.png",
+      "png_sha256": "26eb0f3b923ee9c460fd6aba4ccc2dd25402b1d50d6545ef3376cdf4263176dc"
+    },
+    {
+      "file": "current-unfocused.png",
+      "png_sha256": "2445824f0192f8bc3617a06557c8d34b93fb7b929fe39630b714259099aeb07f"
+    },
+    {
+      "file": "unavailable-focused.png",
+      "png_sha256": "77399085732b5ad2c026dafa9c8e3b70193cf2bdeab0c24fbfb284e102785bd9"
+    }
+  ],
+  "current_value_focused_contrast": 5.65742579495815,
+  "current_value_unfocused_contrast": 8.5928290507458,
+  "unavailable_value_focused_contrast": 2.564628863377929,
+  "pixel_checks": 85,
+  "private_pixel_audit_sha256": "95a7c57c43d998ceee8220f0ad2757fc69581f10de25d25b2454c982827a8090",
+  "limits": [
+    "Glyph-interior sRGB clusters against paired uniform local backgrounds; antialias edges excluded.",
+    "4.5:1 is an internal current-value design target, not a compliance or calibrated TV-panel claim.",
+    "No physical input, TV compatibility, performance, normal update or full release established."
+  ],
+  "app_source_revision": "fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848",
+  "fixture_source_revision": "e6ffc4b51d28187b9b9ca6f85cb3f4bf5ccd3910",
+  "fixture_sha256": "f18bf55c3010434bfbd6be281e323e9932a11663b6670d5ec33d873240d665e1"
+}

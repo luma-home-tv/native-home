@@ -66,6 +66,8 @@ checks remain separate. The C2 was not contacted for this delivery.
 The [build-input record](docs/build-inputs.md) documents a subsequently discovered
 formatting drift in 0.29/0.30 dependency inputs and the new verification guards.
 The frozen runtime evidence remains scoped to its actual executable hashes.
+The 0.31.0 candidate adds [legible current read-only values](docs/verification/read-only-values/README.md)
+with activation still blocked and unavailable/inactive styling preserved.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
