@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "kind": "Synthetic real-Shell update and presentation-gate replay; no draw, GL or TV performance measurement",
+  "baseline_revision": "ab4914de5d04a2d6a8d7c94daca94fe172432264",
+  "app_count": 70,
+  "arrows": [
+    "Right",
+    "Right",
+    "Down",
+    "Left",
+    "Up",
+    "Left"
+  ],
+  "frames_per_key_wait": 120,
+  "dt_seconds": 0.01666666753590107,
+  "sample_window": "Last sixty iterations of the two-second wait after the final arrow",
+  "before": {
+    "selected_frames": 60,
+    "settled_numeric_scroll_damage_frames": 60,
+    "final_position": 2.6147507126989385e-20,
+    "target": 0.0,
+    "final_velocity": -3.3450796230732305e-19
+  },
+  "after": {
+    "selected_frames": 0,
+    "settled_numeric_scroll_damage_frames": 0,
+    "final_position": 0.0,
+    "target": 0.0,
+    "final_velocity": 0.0
+  },
+  "raw_trace_sha256": {
+    "before": "872b7e67c2d9b780c169039c9c3d553c304a798873355066b78ef71b2e7df498",
+    "after": "c298e76af1df9d850de24077567b3413ccb55e453895f7ceab757849c1d34286"
+  },
+  "source_sha256": {
+    "baseline_shell_rs": "76b6972abb092678c0bc91fe4dc1e7fb0596e6ed8dcfee8bd4900549d999f7ea",
+    "candidate_shell_rs": "a2bed64ad2f25eb452556aa4462f8af7c1ce0a2026656739eddb6a04034f38c5",
+    "candidate_shell_tests_rs": "01d93ba57722effa781dc0fb2c63d57dbc1f906781aeecb274d0f43c84a08112"
+  },
+  "checks": {
+    "library_tests_passed": 190,
+    "clippy_all_targets_hostsim_warnings_denied": true,
+    "arm_release_passed": true,
+    "final_damaged_frame_and_subsequent_quiet_test": true,
+    "near_target_high_velocity_preserved": true,
+    "midflight_retargeting": true,
+    "nonzero_end_target_rest_and_caption_visibility": true
+  },
+  "limits": [
+    "Synthetic update/gate proof, not graphics submission, CPU savings, panel latency, physical input or native acceptance.",
+    "The old .26 native timing profile remains historical baseline; .28 device evidence is pending.",
+    "No runtime instrumentation or shared framework implementation changed."
+  ]
+}

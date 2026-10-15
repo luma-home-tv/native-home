@@ -2033,3 +2033,190 @@ fn fallback_observation_counts_effective_registered_targets_not_an_editing_const
     s.back();
     assert_eq!(s.effective_fallback_targets(), 0);
 }
+
+struct RestoreDrawerIdle(bool, bool);
+impl RestoreDrawerIdle {
+    fn start() -> Self {
+        let saved=Self(plx_machine::idle::enabled(),plx_machine::idle::video_plane_bound());
+        plx_machine::idle::set_enabled(true);
+        plx_machine::idle::note(plx_machine::present::PresentEvent::VideoPlane(false));
+        saved
+    }
+}
+impl Drop for RestoreDrawerIdle {
+    fn drop(&mut self) {
+        use plx_machine::idle;
+        idle::frame_begin(1.0 / 60.0);
+        let now=idle::now_ms();
+        if idle::should_present(now) {idle::note_present(now);}
+        let _=idle::take_page_damage();
+        idle::note(plx_machine::present::PresentEvent::VideoPlane(self.1));
+        idle::set_enabled(self.0);
+    }
+}
+fn drawer_gate_fixture() -> Shell {
+    let mut data = fixture();
+    for i in 12..70 {
+        let id = format!("com.example.app{i:02}");
+        data.launch_ids.insert(id.clone());
+        data.applications.push(Application {
+            id,
+            title: format!("Application {i:02}"),
+            kind: "native".into(),
+            visible: true,
+            icon: None,
+        });
+    }
+    let mut shell = Shell::new(data, Preferences::default());
+    shell.open(Page::Applications);
+    shell
+}
+fn drawer_gate_tick(shell:&mut Shell)->(bool,bool) {
+    use plx_machine::idle;
+    idle::frame_begin(1.0/60.0);
+    let now=idle::now_ms();
+    shell.tick(now,1.0/60.0);
+    let moving=idle::present_moving();
+    let present=idle::should_present(now);
+    if present {idle::note_present(now);}
+    (present,moving)
+}
+
+#[test]
+fn apps_six_arrow_replay_stops_subvisible_scroll_tail_presentations() {
+    use plx_machine::idle;
+    let _serial = plx_base::testlock::serial();
+    let _restore = RestoreDrawerIdle::start();
+    let mut shell=drawer_gate_fixture();
+    const DT: f32 = 1.0 / 60.0;
+    const WAIT_FRAMES: usize = 120;
+    let arrows = [Dir::Right, Dir::Right, Dir::Down, Dir::Left, Dir::Up, Dir::Left];
+    let mut trace = Vec::new();
+    let mut last_second_presents = 0;
+    let mut last_second_settled_damage = 0;
+    let mut observed_nonzero_target = false;
+    // Two seconds of warm-up followed by six discrete arrows, each with two
+    // seconds of real Shell updates. No draw/GL context, live worker or clock
+    // refresh is introduced: this isolates the update -> actual idle-gate path.
+    for frame in 0..WAIT_FRAMES * (1 + arrows.len()) {
+        idle::frame_begin(DT);
+        let now = idle::now_ms();
+        let key = if frame >= WAIT_FRAMES && frame % WAIT_FRAMES == 0 {
+            let index = frame / WAIT_FRAMES - 1;
+            shell.direction(arrows[index]);
+            Some(index)
+        } else {
+            None
+        };
+        let _ = idle::take_page_damage();
+        let before = shell.drawer_scroll.pos;
+        shell.tick(now, DT);
+        let damage = idle::take_page_damage();
+        let pos = shell.drawer_scroll.pos;
+        let vel = shell.drawer_scroll.vel;
+        let target = shell.drawer_scroll_target;
+        let settled = idle::settled(pos, target, vel);
+        let moving = idle::present_moving();
+        let present = idle::should_present(now);
+        let dirty = idle::present_dirty();
+        if present {
+            // A selected frame was presented in the gate replay; no actual GL
+            // submission or compositor/performance claim follows from this.
+            idle::note_present(now);
+        }
+        observed_nonzero_target |= target > 0.0;
+        if frame >= WAIT_FRAMES * arrows.len() + 60 {
+            last_second_presents += usize::from(present);
+            last_second_settled_damage +=
+                usize::from(settled && !moving && damage && dirty && present && pos != before);
+        }
+        trace.push(serde_json::json!({"frame":frame,"ms":now,"key_index":key,
+            "scroll_pos":pos,"scroll_vel":vel,"scroll_target":target,
+            "pos_changed":pos!=before,"idle_settled":settled,"moving":moving,
+            "tick_page_damage":damage,"dirty":dirty,"present":present}));
+    }
+    println!("LUMA_APPS_GATE_REPLAY {}", serde_json::json!({
+        "dt":DT,"app_count":70,"arrows":["Right","Right","Down","Left","Up","Left"],
+        "frames_per_key_wait":WAIT_FRAMES,"actual_idle_gate":true,"draw_or_gl_invoked":false,
+        "observed_nonzero_scroll_target":observed_nonzero_target,
+        "last_second_presents":last_second_presents,
+        "last_second_settled_numeric_scroll_damage":last_second_settled_damage,
+        "frames":trace}));
+    assert!(observed_nonzero_target, "replay did not exercise drawer scrolling");
+    assert!(shell.take_requests().is_empty(), "arrow-only replay emitted a TV action");
+    assert!(
+        last_second_presents <= 2,
+        "settled Apps drawer kept selecting {last_second_presents}/60 frames in the last second; \
+         {last_second_settled_damage} had sub-visible numeric scroll motion, discrete damage, \
+         no visible spring motion, and an actual present decision (keepalive is only every 2 s)"
+    );
+}
+
+#[test]
+fn drawer_exact_rest_handoff_presents_final_target_then_goes_quiet() {
+    let _serial=plx_base::testlock::serial();
+    let _restore=RestoreDrawerIdle::start();
+    let mut shell=drawer_gate_fixture();
+    for _ in 0..360 {drawer_gate_tick(&mut shell);}
+    assert_eq!(shell.drawer_scroll_target,0.0);
+    shell.drawer_scroll.pos=0.0005;
+    shell.drawer_scroll.vel=0.0;
+    let (present,moving)=drawer_gate_tick(&mut shell);
+    assert!(present,"the exact final target must get a selected frame");
+    assert!(plx_machine::idle::present_dirty(),"the final frame must carry damage, not only a keepalive");
+    assert!(!moving);
+    assert_eq!(shell.drawer_scroll.pos,0.0);
+    assert_eq!(shell.drawer_scroll.vel,0.0);
+    assert_eq!(drawer_gate_tick(&mut shell),(false,false));
+    assert!(shell.take_requests().is_empty());
+}
+
+#[test]
+fn drawer_rest_handoff_does_not_discard_velocity_or_prevent_retargeting() {
+    let _serial=plx_base::testlock::serial();
+    let _restore=RestoreDrawerIdle::start();
+    let mut shell=drawer_gate_fixture();
+    for _ in 0..360 {drawer_gate_tick(&mut shell);}
+    // The analytic step lands near its target with substantial velocity. A
+    // position-only rest check would incorrectly discard that momentum.
+    let dt=1.0/60.0;
+    let velocity=200.0;
+    shell.drawer_scroll.pos=-velocity*dt/(1.0+plx_ui::consts::K_SCROLL.sqrt()*dt);
+    shell.drawer_scroll.vel=velocity;
+    shell.surface.grid.set_page(340.0,shell.drawer_scroll.pos);
+    let (present,moving)=drawer_gate_tick(&mut shell);
+    assert!(present&&moving);
+    assert!(shell.drawer_scroll.pos.abs()<0.001);
+    assert!(!plx_machine::idle::settled(shell.drawer_scroll.pos,shell.drawer_scroll_target,shell.drawer_scroll.vel));
+    assert_ne!(shell.drawer_scroll.vel,0.0);
+    assert!(shell.focus_application("com.example.app69"));
+    for _ in 0..20 {drawer_gate_tick(&mut shell);}
+    assert!(shell.drawer_scroll_target>0.0&&shell.drawer_scroll.pos>0.0);
+    let old_target=shell.drawer_scroll_target;
+    assert!(shell.focus_application("com.example.app00"));
+    for _ in 0..360 {drawer_gate_tick(&mut shell);}
+    assert!(shell.drawer_scroll_target<old_target);
+    assert_eq!(shell.drawer_scroll.pos,shell.drawer_scroll_target);
+    assert_eq!(shell.drawer_scroll.vel,0.0);
+    assert!(shell.take_requests().is_empty());
+}
+
+#[test]
+fn drawer_nonzero_rest_preserves_end_visibility_and_stops_repeated_damage() {
+    let _serial=plx_base::testlock::serial();
+    let _restore=RestoreDrawerIdle::start();
+    let mut shell=drawer_gate_fixture();
+    assert!(shell.focus_application("com.example.app69"));
+    for _ in 0..360 {drawer_gate_tick(&mut shell);}
+    let target=shell.drawer_scroll_target;
+    assert!(target>0.0);
+    assert_eq!(shell.drawer_scroll.pos,target);
+    assert_eq!(shell.drawer_scroll.vel,0.0);
+    let (rect,clip)=shell.drawer_focus_bounds().unwrap();
+    assert!(rect.y>=clip.y-1.0&&rect.y+rect.h<=clip.y+clip.h+1.0);
+    let frames=(0..60).filter(|_|drawer_gate_tick(&mut shell).0).count();
+    assert!(frames<=1,"resting nonzero target kept selecting frames");
+    assert_eq!(shell.drawer_scroll.pos,target,"content-end target drifted");
+    assert_eq!(shell.drawer_scroll.vel,0.0);
+    assert!(shell.take_requests().is_empty());
+}

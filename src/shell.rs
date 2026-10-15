@@ -2744,6 +2744,15 @@ impl Shell {
             self.drawer_scroll_target = self.drawer_scroll_target.clamp(0.0, max_scroll);
             self.drawer_scroll
                 .step(self.drawer_scroll_target, plx_ui::consts::K_SCROLL, dt);
+            // Hand the externally positioned grid an exact resting value. Its
+            // jump reports discrete changes, including invisible numeric tails.
+            if plx_machine::idle::settled(
+                self.drawer_scroll.pos,
+                self.drawer_scroll_target,
+                self.drawer_scroll.vel,
+            ) {
+                self.drawer_scroll.jump(self.drawer_scroll_target);
+            }
             self.surface.grid.set_page(340.0, self.drawer_scroll.pos);
             if (self.drawer_scroll.pos - self.drawer_scroll_target).abs() > 0.25
                 || self.drawer_scroll.vel.abs() > 0.5
