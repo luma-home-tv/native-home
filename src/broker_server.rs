@@ -436,6 +436,7 @@ mod proof {
             entry.preferred()
         })
         .ok_or(ResourceFailure::Changed)?;
+        record["source_key_after"] = json!(source.key());
         if source.key() != prepared.source.key() {
             return Err(ResourceFailure::Changed);
         }
