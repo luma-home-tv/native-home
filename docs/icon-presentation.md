@@ -33,10 +33,11 @@ confirms every pixel outside the updated fixture stayed unchanged.
 
 The [isolated 0.37 G2 capture](icon-presentation-037.md) now qualifies synthetic
 transparent and non-square fixtures with looked-at native frames and clean
-removal. Normal promotion remains separate; neither retained preview has been
-updated by this change. Production resource startup and
-all-app live artwork remain separate work; this style change does not supply
-otherwise inaccessible icons.
+removal. The subsequent [normal G2 delivery](retained-preview-037.md) installs
+this styling with real packaged artwork, preserves favourites and verifies two
+normal sessions. C2 is unchanged. Production resource startup and all-app live
+artwork remain separate work; this style change does not supply otherwise
+inaccessible icons.
 
 
 ## Isolated 0.37 capture candidate
@@ -62,5 +63,6 @@ host source files are private.
 The subsequent [0.37 result](icon-presentation-037.md) records the matching
 frozen ARM package, independent pixels, looked-at frames and cleanup evidence.
 Its static fixtures do not qualify production live artwork or catalogue work.
-Focused Home variants, physical-panel appearance, production artwork startup
-and a retained update remain separate acceptance work.
+Normal Home/Apps and a bounded idle/relaunch now have their
+[separate retained evidence](retained-preview-037.md). Exhaustive icon shapes,
+physical-panel appearance and production artwork startup remain separate work.

@@ -61,11 +61,14 @@ and [isolated G2 Sound/Accessibility qualification](docs/control-row-presentatio
 remain separate evidence. The [0.28 G2 delivery](docs/apps-scroll-rest-milestone.json)
 also fixes a reproduced Apps scroll redraw tail, profiles the new build and
 verifies the backed-up normal update with favourites preserved.
-The [latest backed-up G2 delivery](docs/retained-preview-031-milestone.json) is
-0.31.0: legible current protected readings with activation still blocked, plus
-verified build/package input binding. Normal Apps/Search/keyboard and General
-navigation, favourites preservation and cleanup are verified; physical and
-broader release checks remain separate. The C2 was not contacted.
+The [latest backed-up G2 delivery](docs/retained-preview-037.md) is 0.37.0:
+app icons retain their own shape and alpha directly on black, with initials only
+for missing artwork. Two normal sessions verified Apps/Search/keyboard, read-only
+General/Inputs, a bounded black idle/wake and relaunch, with favourites and checked
+LG state preserved. Physical input, all-app live artwork and broader release
+checks remain separate. The earlier [0.31 delivery](docs/retained-preview-031-milestone.json)
+introduced legible protected readings with activation still blocked. C2 was not
+contacted for the 0.37 delivery.
 The [build-input record](docs/build-inputs.md) documents a subsequently discovered
 formatting drift in 0.29/0.30 dependency inputs and the new verification guards.
 The frozen runtime evidence remains scoped to its actual executable hashes.
@@ -77,7 +80,7 @@ is recorded separately above.
 The [0.32 passive artwork-access survey](docs/artwork-access-032.md) adds a bounded
 reader and decoder groundwork. One developer-app sample was readable; four other
 locations were absent in the ordinary jail. Full live artwork remains unfinished,
-and normal G2 stays on 0.31.0.
+At that survey, normal G2 remained on 0.31.0.
 The [0.33 Identify-only candidate](docs/artwork-broker-identify.md) adds a separate
 temporary native helper and restricted caller-binding proof. Host checks pass;
 the isolated G2 app/helper were cleanly removed with checked state preserved.
@@ -94,7 +97,8 @@ then verified an owned fixture through ordinary I/O, worker decode/cache, GL
 refresh and removal, with clean shutdown and preservation. A direct RGB recheck
 confirms every pixel outside the fixture icon stayed unchanged; the initial
 missing-text report was incorrect and is corrected in that record. Production
-helper startup, all-app artwork and normal delivery remain unfinished. G2 retains 0.31.0 and C2 retains 0.20.0.
+helper startup and all-app live artwork delivery remain unfinished. G2 now
+retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
@@ -138,8 +142,8 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.31.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
-remains on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
+package modes and removal. Version 0.37.0 is installed on the OLED55G26LA G2;
+the OLED65C26LD C2 was last verified on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
 category/detail composition, native navigation, G2 Settings-return regression

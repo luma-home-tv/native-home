@@ -8,8 +8,9 @@ and application changes through one integration owner. This extends the
 It does not change device authorisation or the protections in `AGENTS.md`.
 G2 remains primary. C2 was reopened for isolated tests on 15 October 2026 until
 20:30 Europe/London, with no new test after 20:15; after that window it requires
-renewed authorisation. All TV access stays with the coordinator. G2 now retains [0.31.0](retained-preview-031-milestone.json)
-after a backed-up update, normal UI smoke and preserved favourites.
+renewed authorisation. All TV access stays with the coordinator. G2 now retains
+[0.37.0](retained-preview-037.md) after a backed-up update, two normal sessions,
+bounded idle/wake and same-install relaunch, with saved state preserved.
 The next product slice is [live app artwork](live-app-artwork.md). Its ordinary-jail
 access survey comes before implementation admission, with worker, shared decoder,
 integration and independent review lanes. HDMI detail and broader control inventory
@@ -55,8 +56,8 @@ remain subsequent feature work; the release gates below remain open.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 now retains 0.31.0
-   after its separate normal-build qualification; C2 remains on 0.20.0. Component
+   framework changes for possible upstream contribution. G2 now retains 0.37.0
+   after its separate normal qualification; C2 was last verified on 0.20.0. Component
    tests alone do not admit a retained update.
 
 ## How the parallel work shortens delivery

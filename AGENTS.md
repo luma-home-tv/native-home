@@ -22,6 +22,13 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
+The latest verified retained G2 installation is 0.37.0, with dashboard ELF
+SHA-256 `3310d1a5c0e7d7910dc2052673e6f508efaa25b9e83f2602204c5f72e5ae2c21`.
+Its two normal sessions, full bundle/state preservation and temporary cleanup
+are recorded in `docs/retained-preview-037.md`. Historical drivers pinned to
+0.31.0 must remain historical; prepare a fresh guarded candidate for later tests
+and preserve the current installation and favourites.
+
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
 coordinator may run isolated tests under the existing C2 lease, preserving its

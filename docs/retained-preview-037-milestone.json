@@ -1,0 +1,139 @@
+{
+  "schema": 1,
+  "status": "backed_up_normal_g2_preview_037_delivered_and_verified",
+  "version": "0.37.0",
+  "previous_version": "0.31.0",
+  "source_revision": "24aee07b53036e5f7201eda7bc46ecdaafb37470",
+  "binary_sha256": "3310d1a5c0e7d7910dc2052673e6f508efaa25b9e83f2602204c5f72e5ae2c21",
+  "binary_bytes": 3433680,
+  "normal_ipk_sha256": "1deb3559303c75298b77eb0f85492d26f5a95ba9ea51a3423d8ea0ac64e31af6",
+  "rollback_ipk_sha256": "312c880dea933fc48596e63fa41522e02036686edc868a577a156bb9273ee707",
+  "isolated_qualification": "icon-presentation-037-milestone.json",
+  "change": "Packaged app icons retain source aspect, alpha and shape on OLED black without an added graphite plate; missing artwork keeps the labelled initials fallback.",
+  "package_delta": {
+    "bundle_entries_each": 32,
+    "files_each": 30,
+    "changed_files": [
+      "appinfo.json",
+      "home-preview"
+    ],
+    "appinfo_change": "version only",
+    "unchanged_resource_files": 28,
+    "unchanged_packaged_icons": 22,
+    "normal_snapshot_fonts_branding_and_interactive_marker_unchanged": true,
+    "mode_changes": 0,
+    "synthetic_fixture_assets_deployed": false,
+    "diagnostic_or_root_resource_markers": false,
+    "root_asset_delta_receipt_sha256": "7d993e7a3f551ee3f15d71f8e689c380efff7541227096460cf5abd0597ae387"
+  },
+  "normal_delivery": {
+    "model": "OLED55G26LA",
+    "webos_generation": 24,
+    "driver_terminal_exit": 0,
+    "complete_old_bundle_and_state_backed_up": true,
+    "full_bundle_verified_after_upgrade_both_sessions_and_final": true,
+    "saved_state_bytes_owners_groups_modes_preserved": true,
+    "typed_tv_state_domains_unchanged": 20,
+    "core_file_hashes_unchanged": 5,
+    "ordinary_sessions": 2,
+    "raw_process_binding_records": 12,
+    "private_compositor_frames": 41,
+    "fixed_network_key_acknowledgements": 39,
+    "local_general_review_checkpoints": 1,
+    "natural_no_input_idle_holds": 1,
+    "meaningful_visual_checkpoints_reviewed_by_root": true,
+    "all_41_frames_visually_reviewed": false,
+    "general_values_visually_matched_independent_getters": 5,
+    "inputs_selection_and_focus_distinguished_without_activation": true,
+    "source_and_last_input_preserved": true,
+    "sessions": [
+      {
+        "session": 1,
+        "keyboard": {
+          "opens": 1,
+          "stops": 1,
+          "dismissals": 1,
+          "failures": 0
+        },
+        "single_lg_keyboard_without_fallback_observed": true,
+        "idle_hold_seconds": 125,
+        "checkpoint_injected_inputs": 0,
+        "same_process_and_sole_card_sampled": true,
+        "idle_frame_dark_pixel_fraction": 1.0,
+        "idle_frame_mean_rgb_channel": 0.0,
+        "idle_presentations": 1,
+        "idle_wakes": 1,
+        "wake": "one fixed arrow",
+        "preferences_preserved": true,
+        "home_returned_naturally": true
+      },
+      {
+        "session": 2,
+        "same_installed_app_relaunched": true,
+        "new_pid_and_start_identity_same_ordinary_uid": true,
+        "flow": "Home to Apps to Home to Back exit",
+        "keyboard": {
+          "opens": 0,
+          "stops": 0,
+          "dismissals": 0,
+          "failures": 0
+        },
+        "idle_presentations": 0,
+        "idle_wakes": 0,
+        "preferences_preserved": true,
+        "home_returned_naturally": true
+      }
+    ],
+    "setting_writes": false,
+    "household_app_launches": false,
+    "normal_session_processes_checked_absent": true,
+    "normal_runtime_receipt_folders_preserved": true,
+    "temporary_uploads_and_compositor_files_removed": true,
+    "device_lease_and_private_agent_removed": true,
+    "closeout_errors": 0,
+    "rollback_needed": false,
+    "rollback_executed": false,
+    "retained_uninstalled_or_favourites_reset": false,
+    "c2_contacted": false,
+    "full_normal_view_pixel_oracle_or_ocr": false
+  },
+  "build_admission": {
+    "selected_historical_source_inputs_verified": 85,
+    "framework_patch_files": 10,
+    "actual_arm_binary_and_before_contact_build_receipt_bound": true,
+    "deterministic_or_hermetic_rebuild_qualified": false
+  },
+  "verification": {
+    "new_host_update_tests_passed": 18,
+    "independent_saved_audit_assertions": 1886,
+    "independent_readonly_reviews_completed": true
+  },
+  "private_evidence_sha256": {
+    "candidate": "aee8e79b763a8ad54ab2df80b4893a7cc1f0bbabbf9d9a9acb53a0480319fbd2",
+    "build_receipt": "fa590403aaf5073e0ce2a2f311c57eda3cfbc4328fdff82d2c6e6e4c57af3da0",
+    "driver": "3210d428d0219a8e58a603e2fdcf9274417ef67b31422e739f6565446a17acb5",
+    "validator": "06e8f80f6da2f1e7b6cd9fbb2c778e986afb04f7edfd1030d51cce26412f73ee",
+    "publisher": "26ebea7eaf478376efd460a80c643481243e71c3f41fa58b5515d995c454930d",
+    "normal_package_receipt": "01e4ab86aa84fbc16dcf53c773c91afd164c8afbb5a725af6f2d1a4bd8070b99",
+    "independent_audit_helper": "904b4c9ced03e0b8dc44f4c041b2697149353c5ebfd4257e755e2737454ce3ca",
+    "independent_audit_result": "997e1d7ea7de536b4dcf0eebe7ad3bdaee7a38845e13d7920be1e87829323063"
+  },
+  "boundaries": {
+    "normal_live_artwork_runtime_enabled": false,
+    "all_app_or_dynamic_icon_coverage_qualified": false,
+    "physical_remote_or_ime_qualified": false,
+    "native_normal_row_observer_added": false,
+    "idle_no_draw_cpu_gpu_or_power_qualified": false,
+    "general_startup_reboot_reliability_qualified": false,
+    "full_hdmi_media_drm_qualified": false,
+    "full_release_qualified": false,
+    "sampled_process_window_continuity_source_bound": true,
+    "key_request_payloads_and_some_cleanup_absence_source_bound": true,
+    "normal_root_resource_or_production_bootstrap_qualified": false
+  },
+  "next": [
+    "Qualified production resource startup and broader live artwork integration",
+    "Separate physical input and comprehensive device acceptance",
+    "Current workload-specific performance and idle-power measurement"
+  ]
+}

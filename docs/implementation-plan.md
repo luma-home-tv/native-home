@@ -14,7 +14,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 retains 0.31.0; the recorded C2 version is 0.20.0. The
+current native interface. G2 now retains [0.37.0](retained-preview-037.md) after
+two normal sessions, a bounded idle/wake and same-install relaunch, with the full
+saved state preserved. C2 was last verified on 0.20.0. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -93,9 +95,10 @@ were deliberately excluded; initials in that test are not a C2 capability failur
 A direct RGB recheck withdraws the initial missing-text report: every pixel
 outside the updated fixture was unchanged. The isolated 0.37 G2 capture now
 qualifies synthetic icon-only alpha/aspect/fallback presentation with preserved
-checked state; normal promotion remains separate.
-Next, qualify the production resource startup route,
-then broader artwork coverage and a backed-up retained rollout. The
+checked state. Its [backed-up normal G2 delivery](retained-preview-037.md) then
+verified real packaged artwork and the normal loop across two launches.
+Next, qualify the production resource startup route, then broader live artwork
+coverage and a separately admitted retained integration. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent

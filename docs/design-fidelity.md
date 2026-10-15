@@ -8,8 +8,10 @@ fallbacks and controls. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-G2 0.21.0 and C2 0.20.0 move the running interface closer to those concepts. This is a
-progress map, not a claim that the complete concept is implemented.
+G2 now retains [0.37.0](retained-preview-037.md), including unboxed real app
+artwork, the Luma identity and a separately checked normal workflow. C2 was last
+verified on 0.20.0. This is a progress map, not a claim that the complete concept
+is implemented.
 
 | Element | Native implementation | Remaining gap |
 | --- | --- | --- |

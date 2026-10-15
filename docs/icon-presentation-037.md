@@ -6,8 +6,9 @@ OLED black, retaining its aspect ratio, alpha and source shape without an added
 graphite plate or forced image rounding. Missing artwork retains the graphite
 initials/name fallback. The shared renderer supplies a focus-only outline.
 
-This is a static presentation result. It does not enable all-app live icons,
-change either retained preview or qualify production resource startup.
+This is a static presentation result. It does not by itself enable all-app live
+icons, update a retained preview or qualify production resource startup. The later
+[normal G2 delivery](retained-preview-037.md) has its own acceptance record.
 
 ## Shared rendering and isolated recipe
 
