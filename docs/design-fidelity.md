@@ -77,6 +77,13 @@ inside the panel, menu context stays visible, and closing the menu clamps to the
 content end. Whole-tile admission is an opt-in attributed framework change, shared
 by paint and pointer stops; it is a candidate for upstream contribution.
 
+The [numeric adapter experiment](numeric-control-experiment.json) validates one
+signed audio-description level transition and restoration under the isolated
+ordinary-app identity on G2, with description checked off. C2 was skipped at
+preflight; its existing preference is preserved. The experiment adds no UI or
+production write capability. A shared numeric widget, concept-aligned editor and
+native input/commit/cancel proof remain separate work.
+
 Next design work should complete source/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on
 both devices. HDMI switching,

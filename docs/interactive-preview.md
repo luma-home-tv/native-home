@@ -137,7 +137,7 @@ and the selected device's private snapshot/icons through the documented
 distribute a household package as a generic release.
 
 Normal interactive packages have no capture markers or scripted navigation,
-hold, launch, capability, viewport or pointer-write proof actions. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
+hold, launch, capability, viewport, numeric-write or pointer-write proof actions. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
 explicit development captures of initial Home, idle black and wake. It must be
 used only in a scoped device test and removed afterward. Without interactive
 mode, the existing diagnostic package keeps its captures and 30-second lifetime.
@@ -145,6 +145,14 @@ mode, the existing diagnostic package keeps its captures and 30-second lifetime.
 Use `NATIVE_HOME_TEST_IDENTITY=1` for a separate `com.ash.nativehome.proof` package,
 shown as **Luma Home Test**. It has its own runtime and favourites directory, and
 passive tests cannot launch household apps. Named proof markers admit only their explicit owned target or fixed LG route. Keep capture/probe markers out of the retained normal app.
+
+`NATIVE_HOME_DESCRIPTION_LEVEL_PROOF=1` is an isolated backend experiment only.
+It cannot be packaged under the normal identity, in interactive mode or alongside
+another scripted trial. It requires description to be off, preserves the observed
+numeric representation, permits one adjacent step, and restores the original.
+Independent readback and complete removal checks are required. It adds no slider
+to the retained app; see the [experiment record](numeric-control-experiment.json)
+for the G2 result and C2 preflight skip.
 
 ## Removal and future tests
 

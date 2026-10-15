@@ -89,7 +89,12 @@ request. Physical input and full text/IME coverage remain to verify.
    both TVs; signed ranges, enums, dimensions and expiry are checked. Descriptor
    success does not grant write authority. Pointer speed now has a separate fixed
    enum adapter with firmware/descriptor/foreground/expected-value checks and
-   independent native change/restoration proof on both. Other settings remain
+   independent native change/restoration proof on both. An isolated
+   [signed numeric adapter trial](numeric-control-experiment.json) now proves a
+   one-step audio-description level change and restoration on G2, with
+   description checked off. C2 was skipped before installation when the safe
+   test context was unavailable. It is restricted to the proof identity and does not
+   enable a production slider. Other settings remain
    read-only or LG-managed. Use a restricted
    local helper only for operations that actually need privilege, with caller,
    executable and session validation and a fixed operation allowlist.

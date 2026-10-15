@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "status": "isolated backend experiment; no production slider or new production write capability",
+  "source_revision": "a4d764907a68cf9b9a2022881d112cb9b0dac529",
+  "binary_sha256": "92d41f045f2e37c88da66ea72db0de635fa95f5bfa20a65450c6e3593d6d811b",
+  "firmware": "23.25.55",
+  "sdk": "9.2.2",
+  "webos": "24",
+  "operation": {
+    "category": "sound",
+    "key": "audioDescriptionVolume",
+    "range": {
+      "minimum": -15,
+      "maximum": 15,
+      "step": 1
+    },
+    "enable_condition": "audioDescription checked off in the global sound scope before each write and during readback",
+    "scale": "signed audio-description level; not percent, master volume or external amplifier volume",
+    "wire_set_value": "preserves the validated existing integer or canonical decimal-string representation; both value and type require readback"
+  },
+  "admission": [
+    "isolated com.ash.nativehome.proof identity only; normal preview rejected",
+    "known model, firmware and SDK",
+    "own foreground card and no overlay before inspection and again before commit",
+    "one global, non-account, nonvolatile, visible and active descriptor per fixed key",
+    "exact signed range and on/off enable metadata; duplicate or changed descriptors rejected",
+    "description off and expected numeric value checked twice; bounded validation age",
+    "idempotent request performs no setter; non-idempotent trial restricted to one adjacent step",
+    "fixed category/key/value; no arbitrary settings, service URI, shell, helper or jail policy"
+  ],
+  "verification": {
+    "luma_checks": {
+      "passed": 109,
+      "failed": 0
+    },
+    "clippy_all_targets_hostsim": "passed with warnings denied",
+    "arm_release": "passed; existing target-feature neon warning",
+    "rejected_packaging_cases": [
+      "normal identity",
+      "interactive proof",
+      "mixed numeric and pointer write proofs"
+    ],
+    "devices": {
+      "OLED55G26LA": {
+        "ordinary_uid": 6583,
+        "independent_change_seen": true,
+        "independent_restoration_seen": true,
+        "native_change_verified": true,
+        "native_restore_verified": true,
+        "description_off": true,
+        "one_step": true,
+        "no_other_setting_actions": true,
+        "native_receipt_matches": true,
+        "no_app_actions": true,
+        "write_attempt_reported": true,
+        "non_root": true,
+        "wire_format_preserved": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_process_absent": true,
+          "retained_metadata_unchanged": true,
+          "test_state_absent": true,
+          "catalogue_absent": true,
+          "launchpoint_absent": true,
+          "retained_unchanged": true,
+          "core_unchanged": true,
+          "picture_unchanged": true,
+          "audio_unchanged": true,
+          "expanded_settings_restored": true,
+          "numeric_level_restored": true,
+          "source_unchanged": true,
+          "last_input_unchanged": true,
+          "sound_settings_restored": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        }
+      },
+      "OLED65C26LD": {
+        "status": "skipped at host preflight; required safe-test context unavailable, existing preference preserved",
+        "before_install": true,
+        "native_trial_ran": false,
+        "setting_writes": false,
+        "closeout": {
+          "skipped_before_install": true,
+          "no_native_trial_ran": true,
+          "sound_values_and_wire_types_unchanged": true,
+          "core_hashes_unchanged": true,
+          "foreground_unchanged": true,
+          "proof_paths_mounts_absent": true,
+          "proof_state_absent": true,
+          "proof_process_absent": true,
+          "proof_catalogue_absent": true,
+          "proof_launchpoint_absent": true,
+          "retained_version_unchanged": true,
+          "retained_binary_matches_0_20": true,
+          "favourites_match_retained_update_receipt": true,
+          "favourites_metadata_match_retained_update_receipt": true
+        }
+      }
+    }
+  },
+  "regression": {
+    "initial_g2_trial": {
+      "source_revision": "859708d",
+      "numeric_value_restored": true,
+      "exact_representation_restored": false,
+      "reason": "integer setter converted an original decimal string into an integer",
+      "all_other_cleanup_comparisons": true
+    },
+    "recovery": "original numeric string representation independently restored before further testing",
+    "fix": "carry the observed representation through both setter and readback; reject representation changes between validation reads",
+    "host_regression": "both integer and decimal-string change/restoration plus stale-representation refusal"
+  },
+  "retained_previews": {
+    "version": "0.20.0",
+    "binary_sha256": "ca1054b00d02f8a2dbdc3a52a224b3023619507483e041b018438f80f2092cf0",
+    "updated_by_this_experiment": false,
+    "favourites_and_metadata_preserved": true
+  },
+  "limitations": [
+    "No shared numeric widget, native range editing screen or production slider has been enabled.",
+    "Readback proves the stored setting transition and restoration, not audible output, description mixing or live programme behaviour. Description was checked off before and after both writes.",
+    "The fixed setter has no compare-and-swap API. Repeated context checks reduce stale requests but do not establish atomic exclusion of an external settings writer.",
+    "Only one adjacent value and its original value were exercised on G2. C2 was skipped before installation because its safe-test context was unavailable. Exhaustive range, enabled-description and sound-output coverage remain unproven.",
+    "C2 production HDMI switching remains gated; this experiment does not alter the prior idle tuner restoration limitation.",
+    "LG Home remains the default; checked core hashes, picture/audio/source/last-input reads and retained app state were preserved. No reboot, boot hook, firmware or core component edit.",
+    "Raw descriptors, original/target household values, app inventories and detailed receipts remain private."
+  ]
+}
