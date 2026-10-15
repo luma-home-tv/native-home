@@ -63,7 +63,7 @@ impl Catalogue {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Page { Home, Applications, Inputs, Controls, Picture, Sound, Network, Accessibility, General, PanelCare, PointerSpeed }
+pub enum Page { Home, Applications, Inputs, Controls, Picture, Sound, Network, Accessibility, General, PanelCare, PointerSpeed, RangeEditor }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {

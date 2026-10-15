@@ -100,7 +100,7 @@ index ff9994c..2f19905 100644
 +    }
 +}
 diff --git a/rust-modules/ui/src/theme.rs b/rust-modules/ui/src/theme.rs
-index 0b445f3..73f0b78 100644
+index 0b445f3..604e58e 100644
 --- a/rust-modules/ui/src/theme.rs
 +++ b/rust-modules/ui/src/theme.rs
 @@ -394,6 +394,9 @@ pub const CONTROL_CAST_FOCUS: [(f32, f32, f32); 2] = [(5.0, 32.0, 0.34), (1.0, 6
@@ -113,8 +113,17 @@ index 0b445f3..73f0b78 100644
  /// Opaque sheet drawn over the hardware video plane when a detail page scrolls the hero away.
  /// Same stop as [`SURFACE_APP`] so the rising page and the cover are one surface. Different role:
  /// this hides the plane. It is not atmosphere, so [`scrim`] is the wrong token.
+@@ -1401,3 +1404,8 @@ const PURPLE_700: [f32; 4] = rgb8(0x70, 0x30, 0xa0);
+ /// Opaque main-thread checker warning surface (developer builds only).
+ #[cfg(feature = "threadcheck")]
+ pub const RUNTIME_WARNING: [f32; 4] = PURPLE_700;
++
++/// Discrete numeric editor's unfilled track, staged fill and saved-value marker.
++pub const RANGE_TRACK: [f32;4] = with_a(WHITE, 0.34);
++pub const RANGE_FILL: [f32;4] = TEXT_PRIMARY;
++pub const RANGE_SAVED: [f32;4] = TEXT_SECONDARY;
 diff --git a/rust-modules/ui/src/widgets.rs b/rust-modules/ui/src/widgets.rs
-index e92ccee..bc97fab 100644
+index e92ccee..1688540 100644
 --- a/rust-modules/ui/src/widgets.rs
 +++ b/rust-modules/ui/src/widgets.rs
 @@ -297,6 +297,10 @@ pub fn warm_tex_on(
@@ -177,6 +186,323 @@ index e92ccee..bc97fab 100644
          Art::Poster(m) => {
              // **The ROW's server, not the current one.** A `thumb` path is a key on the server that
              // issued it — image-transcode paths embed a server-local ratingKey — so a bare
+@@ -8113,3 +8129,316 @@ mod hero_scrim_tests;
+ #[cfg(test)]
+ #[path = "widgets_art_crop_tests.rs"]
+ mod art_crop_tests;
++
++// ---- Staged signed range: a native setting editor, without service or commit ownership. ----
++/// Discrete range admitted once; geometry and staging share this exact scale.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct RangeScale {
++    min: i64,
++    max: i64,
++    step: i64,
++}
++impl RangeScale {
++    pub fn new(min: i64, max: i64, step: i64) -> Option<Self> {
++        let span = max.checked_sub(min)?;
++        if step <= 0 || span <= 0 || span % step != 0 || span / step > 1_000_000 {
++            return None;
++        }
++        Some(Self { min, max, step })
++    }
++    pub fn min(self) -> i64 {
++        self.min
++    }
++    pub fn max(self) -> i64 {
++        self.max
++    }
++    pub fn step(self) -> i64 {
++        self.step
++    }
++    pub fn contains(self, value: i64) -> bool {
++        value >= self.min && value <= self.max && (value - self.min) % self.step == 0
++    }
++    fn fraction(self, value: i64) -> f32 {
++        ((value - self.min) as f64 / (self.max - self.min) as f64) as f32
++    }
++    fn at(self, fraction: f32) -> Option<i64> {
++        if !fraction.is_finite() {
++            return None;
++        }
++        let steps = (self.max - self.min) / self.step;
++        let index = (fraction.clamp(0.0, 1.0) as f64 * steps as f64).round() as i64;
++        Some(self.min + index * self.step)
++    }
++}
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum RangeStep {
++    Decrease,
++    Increase,
++}
++/// Local editing state only. Moving the thumb cannot commit or change the saved value.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct StagedRange {
++    scale: RangeScale,
++    saved: i64,
++    staged: i64,
++}
++impl StagedRange {
++    pub fn new(scale: RangeScale, saved: i64) -> Option<Self> {
++        scale.contains(saved).then_some(Self {
++            scale,
++            saved,
++            staged: saved,
++        })
++    }
++    pub fn scale(self) -> RangeScale {
++        self.scale
++    }
++    pub fn saved(self) -> i64 {
++        self.saved
++    }
++    pub fn staged(self) -> i64 {
++        self.staged
++    }
++    pub fn dirty(self) -> bool {
++        self.saved != self.staged
++    }
++    pub fn nudge(&mut self, direction: RangeStep) -> bool {
++        let value = match direction {
++            RangeStep::Decrease => self
++                .staged
++                .saturating_sub(self.scale.step)
++                .max(self.scale.min),
++            RangeStep::Increase => self
++                .staged
++                .saturating_add(self.scale.step)
++                .min(self.scale.max),
++        };
++        self.stage(value)
++    }
++    pub fn stage(&mut self, value: i64) -> bool {
++        if !self.scale.contains(value) || value == self.staged {
++            return false;
++        }
++        self.staged = value;
++        true
++    }
++    pub fn cancel(&mut self) {
++        self.staged = self.saved;
++    }
++    /// A transport owner must compare this pair against current capability/context before writing.
++    pub fn proposal(self) -> Option<(i64, i64)> {
++        self.dirty().then_some((self.saved, self.staged))
++    }
++    /// Only the owner of a verified readback may publish a successful commit.
++    pub fn confirm(&mut self, expected: i64, value: i64) -> bool {
++        if self.proposal() != Some((expected, value)) {
++            return false;
++        }
++        self.saved = value;
++        true
++    }
++}
++#[derive(Clone, Copy)]
++pub struct RangeLayout {
++    pub track: Rect,
++    pub thumb: Rect,
++    pub saved_marker: Rect,
++}
++impl RangeLayout {
++    pub fn new(frame: Rect, state: StagedRange) -> Option<Self> {
++        if ![frame.x, frame.y, frame.w, frame.h]
++            .iter()
++            .all(|v| v.is_finite())
++            || frame.w < 360.0
++            || frame.h < 168.0
++        {
++            return None;
++        }
++        let track = Rect::new(frame.x + 28.0, frame.y + 88.0, frame.w - 56.0, 8.0);
++        let thumb = Rect::new(
++            track.x + state.scale.fraction(state.staged) * track.w - 14.0,
++            track.cy() - 14.0,
++            28.0,
++            28.0,
++        );
++        let saved_marker = Rect::new(
++            track.x + state.scale.fraction(state.saved) * track.w - 2.0,
++            track.cy() - 19.0,
++            4.0,
++            38.0,
++        );
++        Some(Self {
++            track,
++            thumb,
++            saved_marker,
++        })
++    }
++    /// The same track that is painted maps a click to a discrete staged value.
++    pub fn value_at(self, scale: RangeScale, x: f32) -> Option<i64> {
++        scale.at((x - self.track.x) / self.track.w)
++    }
++}
++/// Shared range leaf. Saved marker and staged thumb have distinct text as well as geometry.
++/// No spring/timer: the owner invalidates on a changed value or focus.
++pub struct RangeControl<'a> {
++    pub frame: Rect,
++    pub state: StagedRange,
++    pub label: &'a str,
++    pub focused: bool,
++    pub enabled: bool,
++}
++impl View for RangeControl<'_> {
++    fn draw(&self, _e: &Env, p: Painter) {
++        let Some(layout) = RangeLayout::new(self.frame, self.state) else {
++            return;
++        };
++        p.rrect(self.frame, 18.0, 18.0, theme::CONTROL_IDLE_FILL);
++        if self.focused {
++            p.rring(self.frame, 18.0, 2.0, theme::TEXT_PRIMARY);
++        }
++        let ink = if self.enabled {
++            theme::TEXT_PRIMARY
++        } else {
++            theme::TEXT_SECONDARY
++        };
++        let label = CString::new(self.label.replace('\0', "")).unwrap();
++        let value = CString::new(self.state.staged.to_string()).unwrap();
++        let head = Rect::new(
++            self.frame.x + 28.0,
++            self.frame.y + 16.0,
++            self.frame.w - 56.0,
++            44.0,
++        );
++        let value_width = LegacyMeasure
++            .bounds(&value, theme::size::HEADLINE, true)
++            .0
++            .max(80.0)
++            .min(head.w);
++        let label_rect = Rect::new(
++            head.x,
++            head.y,
++            (head.w - value_width - 24.0).max(0.0),
++            head.h,
++        );
++        Label::new(label.as_ptr(), theme::size::BODY, ink)
++            .bold()
++            .draw(p.clipped(label_rect), label_rect);
++        let value_rect = Rect::new(head.x + head.w - value_width, head.y, value_width, head.h);
++        Label::new(value.as_ptr(), theme::size::HEADLINE, ink)
++            .bold()
++            .h(HAlign::Right)
++            .draw(p, value_rect);
++        p.rrect(layout.track, 4.0, 4.0, theme::RANGE_TRACK);
++        let fill = Rect::new(
++            layout.track.x,
++            layout.track.y,
++            (layout.thumb.cx() - layout.track.x).max(0.0),
++            layout.track.h,
++        );
++        if fill.w > 0.0 {
++            p.rrect(
++                fill,
++                4.0,
++                4.0,
++                if self.enabled {
++                    theme::RANGE_FILL
++                } else {
++                    theme::RANGE_TRACK
++                },
++            );
++        }
++        p.rrect(layout.saved_marker, 2.0, 2.0, theme::RANGE_SAVED);
++        p.rrect(layout.thumb, 14.0, 14.0, ink);
++        let bottom = Rect::new(head.x, self.frame.y + 120.0, head.w, 40.0);
++        let min = CString::new(self.state.scale.min.to_string()).unwrap();
++        let max = CString::new(self.state.scale.max.to_string()).unwrap();
++        let saved = CString::new(format!("Saved {}", self.state.saved)).unwrap();
++        let left=Rect::new(bottom.x,bottom.y,bottom.w/3.0,bottom.h);
++        let middle=Rect::new(bottom.x+bottom.w/3.0,bottom.y,bottom.w/3.0,bottom.h);
++        let right=Rect::new(bottom.x+bottom.w*2.0/3.0,bottom.y,bottom.w/3.0,bottom.h);
++        Label::new(min.as_ptr(), theme::size::CAPTION, theme::TEXT_SECONDARY).draw(p.clipped(left),left);
++        Label::new(max.as_ptr(), theme::size::CAPTION, theme::TEXT_SECONDARY)
++            .h(HAlign::Right)
++            .draw(p.clipped(right), right);
++        Label::new(saved.as_ptr(), theme::size::CAPTION, theme::TEXT_SECONDARY)
++            .h(HAlign::Center)
++            .draw(p.clipped(middle), middle);
++    }
++}
++#[cfg(test)]
++mod staged_range_tests {
++    use super::*;
++    #[test]
++    fn signed_steps_and_cancel_never_change_saved_or_emit_an_unchanged_proposal() {
++        let scale = RangeScale::new(-15, 15, 1).unwrap();
++        let mut state = StagedRange::new(scale, -15).unwrap();
++        assert!(!state.nudge(RangeStep::Decrease));
++        assert_eq!(state.proposal(), None);
++        for expected in -14..=15 {
++            assert!(state.nudge(RangeStep::Increase));
++            assert_eq!(state.staged(), expected);
++            assert_eq!(state.saved(), -15);
++        }
++        assert!(!state.nudge(RangeStep::Increase));
++        assert_eq!(state.proposal(), Some((-15, 15)));
++        assert!(!state.confirm(-14, 15));
++        state.cancel();
++        assert_eq!(state.staged(), -15);
++        assert!(!state.dirty());
++        state.nudge(RangeStep::Increase);
++        assert!(state.confirm(-15, -14));
++        assert!(!state.dirty());
++    }
++    #[test]
++    fn invalid_ranges_and_off_step_values_are_rejected_without_wraparound() {
++        for (min, max, step) in [
++            (0, 0, 1),
++            (1, 0, 1),
++            (-15, 15, 0),
++            (-15, 15, -1),
++            (0, 9, 2),
++            (i64::MIN, i64::MAX, 1),
++            (0, 1_000_001, 1),
++        ] {
++            assert!(RangeScale::new(min, max, step).is_none());
++        }
++        let scale = RangeScale::new(-10, 10, 2).unwrap();
++        assert!(StagedRange::new(scale, 1).is_none());
++        let mut state = StagedRange::new(scale, 0).unwrap();
++        assert!(!state.stage(1));
++        assert!(!state.stage(i64::MAX));
++        assert_eq!(state.staged(), 0);
++        for min in [i64::MIN, i64::MAX - 10] {
++            let scale = RangeScale::new(min, min + 10, 2).unwrap();
++            let mut state = StagedRange::new(scale, min).unwrap();
++            for _ in 0..6 {
++                state.nudge(RangeStep::Increase);
++            }
++            assert_eq!(state.staged(), min + 10);
++        }
++    }
++    #[test]
++    fn paint_and_pointer_share_translated_discrete_track_geometry() {
++        let scale = RangeScale::new(-15, 15, 1).unwrap();
++        for value in -15..=15 {
++            let state = StagedRange::new(scale, value).unwrap();
++            for (x, y) in [(0.0, 0.0), (838.0, 480.0), (-40.0, 50.0)] {
++                let frame = Rect::new(x, y, 946.0, 184.0);
++                let layout = RangeLayout::new(frame, state).unwrap();
++                assert_eq!(layout.value_at(scale, layout.thumb.cx()), Some(value));
++                assert!(
++                    layout.thumb.x >= frame.x
++                        && layout.thumb.x + layout.thumb.w <= frame.x + frame.w
++                );
++                assert_eq!(layout.value_at(scale, frame.x - 100.0), Some(-15));
++                assert_eq!(layout.value_at(scale, frame.x + frame.w + 100.0), Some(15));
++                assert_eq!(layout.value_at(scale, f32::NAN), None);
++            }
++        }
++        assert!(RangeLayout::new(
++            Rect::new(0.0, 0.0, 100.0, 168.0),
++            StagedRange::new(scale, 0).unwrap()
++        )
++        .is_none());
++    }
++}
 diff --git a/rust-modules/ui/src/widgets_art_crop_tests.rs b/rust-modules/ui/src/widgets_art_crop_tests.rs
 index 803e2c3..647ddb7 100644
 --- a/rust-modules/ui/src/widgets_art_crop_tests.rs

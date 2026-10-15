@@ -17,7 +17,8 @@
   "patch_purpose": [
     "Generic local texture artwork support",
     "Opt-in true-black surface role",
-    "Opt-in whole-tile grid viewport admission shared by paint and pointer stops"
+    "Opt-in whole-tile grid viewport admission shared by paint and pointer stops",
+    "Shared staged signed range state and native editor geometry"
   ],
   "excluded_application_crates": [
     "plxnative-modules",
@@ -31,10 +32,10 @@
   ],
   "boundary": "External upstream checkout is ignored, explicitly attributed and only used as a framework dependency. No Plex application source is tracked in this repository.",
   "patched_file_sha256": {
-    "rust-modules/ui/src/widgets.rs": "01289a47824cd962bfbf16e12f4ebeec317d3e46ac6f8aaeab93679530e91214",
+    "rust-modules/ui/src/widgets.rs": "e9500dcb67c930f8ff9d9e587e9c74c082a0ef1c6ed767fcd9746de9defcb2cc",
     "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26",
-    "rust-modules/ui/src/theme.rs": "76412eec1daf50a5fdf52b7808851c14b48ffa2f665f18c4abbe6b4df099bd3e",
+    "rust-modules/ui/src/theme.rs": "4ac3845a3da2dbea1115c32cb7ecda76c17333e9509e04d6ae0f56569348923e",
     "rust-modules/ui/src/cards/grid.rs": "470b8010186e173ce53438b96be6a7907e063fd403db67feaf66f94f0fb732f9"
   },
-  "integration_patch_sha256": "b57965221228d6df410729f8831107810ddf33c07cd9cec894cc8126df8ea739"
+  "integration_patch_sha256": "b7a4e2db806109892fd08fee74e58b909b3207252f0b21bcec4bb48834f112c9"
 }

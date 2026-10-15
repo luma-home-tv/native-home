@@ -18,7 +18,9 @@ use plx_ui::screen::{
     GroupKind, GroupSpec, Hover, Link, Placed, ScreenEvent, Seat, Step, Stop,
 };
 use plx_ui::table::Row;
-use plx_ui::widgets::{Art, LegacyMeasure, TabPill};
+use plx_ui::widgets::{
+    Art, LegacyMeasure, RangeControl, RangeLayout, RangeScale, RangeStep, StagedRange, TabPill,
+};
 use plx_ui::{theme, Env, Painter, Rect, View};
 use serde::{Deserialize, Serialize};
 
@@ -29,6 +31,26 @@ use crate::model::{
     SettingsSection,
 };
 
+const RANGE_BASE: u32 = 35_000;
+const RANGE_FRAME: Rect = Rect::new(838.0, 480.0, 946.0, 184.0);
+fn range_rect(index: usize) -> Rect {
+    match index {
+        0 => RANGE_FRAME,
+        1 => Rect::new(838.0, 716.0, 946.0, 64.0),
+        _ => Rect::new(838.0, 804.0, 946.0, 64.0),
+    }
+}
+fn range_key(key: u32) -> Option<usize> {
+    (RANGE_BASE..RANGE_BASE + 3)
+        .contains(&key)
+        .then(|| (key - RANGE_BASE) as usize)
+}
+struct RangeSession {
+    label: String,
+    state: StagedRange,
+    pending: bool,
+    return_page: Page,
+}
 const MENU_BASE: u32 = 32_000;
 const MENU_PANEL: Rect = Rect::new(1360.0, 330.0, 464.0, 598.0);
 const MENU_ROWS: Rect = Rect::new(1380.0, 424.0, 424.0, 464.0);
@@ -288,6 +310,7 @@ impl ScreenArg for Page {
             Self::General => "General",
             Self::PanelCare => "Panel care",
             Self::PointerSpeed => "Pointer speed",
+            Self::RangeEditor => "Adjust value",
         })
     }
     fn same_instance(&self, other: &Self) -> bool {
@@ -487,7 +510,8 @@ fn root_tab(page: Page) -> Page {
         | Page::Accessibility
         | Page::General
         | Page::PanelCare
-        | Page::PointerSpeed => Page::Controls,
+        | Page::PointerSpeed
+        | Page::RangeEditor => Page::Controls,
         _ => page,
     }
 }
@@ -525,6 +549,9 @@ impl Surface {
             .unwrap_or(0)
     }
     fn keys(&self) -> Vec<u32> {
+        if self.page == Page::RangeEditor {
+            return (RANGE_BASE..RANGE_BASE + 3).collect();
+        }
         if let Some(menu) = &self.menu {
             return (0..menu.table.n_rows().max(0) as usize)
                 .filter_map(|i| menu.key_at(i).map(|k| MENU_BASE + k.0))
@@ -549,6 +576,19 @@ impl Surface {
 }
 impl Focusable<HomeHost> for Surface {
     fn groups(&self, _cx: &Cx<'_, HomeHost>, out: &mut Vec<GroupSpec>) {
+        if self.page == Page::RangeEditor {
+            out.push(GroupSpec {
+                id: GroupId(9),
+                kind: GroupKind::Column,
+                seat: Seat::Remembered,
+                reachable: AxisMask::BOTH,
+                edge: [EdgeRule::Stop; 4],
+                extent: DETAIL_ROWS,
+                len: 3,
+                elem: ElemKind::Control,
+            });
+            return;
+        }
         if self.menu.is_some() {
             out.push(GroupSpec {
                 id: GroupId(5),
@@ -664,6 +704,9 @@ impl Focusable<HomeHost> for Surface {
         });
     }
     fn group_of(&self, key: &u32, _cx: &Cx<'_, HomeHost>) -> Option<GroupId> {
+        if self.page == Page::RangeEditor {
+            return range_key(*key).map(|_| GroupId(9));
+        }
         if self.menu.is_some() {
             return self.key_index(*key).map(|_| GroupId(5));
         }
@@ -687,6 +730,20 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn neighbour(&self, key: FocusKey<u32>, dir: Dir, _cx: &Cx<'_, HomeHost>) -> Step<u32> {
+        if self.page == Page::RangeEditor {
+            let next = range_key(key.elem).and_then(|i| match dir {
+                Dir::Up => i.checked_sub(1),
+                Dir::Down => (i < 2).then_some(i + 1),
+                _ => None,
+            });
+            return next.map_or(Step::Edge, |i| {
+                Step::Move(FocusKey {
+                    entry: key.entry,
+                    elem: RANGE_BASE + i as u32,
+                })
+            });
+        }
+
         if self.menu.is_some() {
             let keys = self.keys();
             let Some(i) = keys.iter().position(|k| *k == key.elem) else {
@@ -792,6 +849,17 @@ impl Focusable<HomeHost> for Surface {
         })
     }
     fn place(&self, key: &u32, cx: &Cx<'_, HomeHost>, at: At) -> Option<Placed> {
+        if self.page == Page::RangeEditor {
+            return range_key(*key).map(|i| {
+                let rect = range_rect(i);
+                Placed {
+                    rect,
+                    rest_rect: rect,
+                    clip: DETAIL_ROWS,
+                    index: Some(i as u32),
+                }
+            });
+        }
         if let Some(menu) = &self.menu {
             let i = menu.index_of_key(RowKey(key.checked_sub(MENU_BASE)?))?;
             let rect = menu.table.row_frame(MENU_ROWS, i as i32)?;
@@ -898,6 +966,13 @@ impl Focusable<HomeHost> for Surface {
         }
     }
     fn seat(&self, group: GroupId, from: Placed, _cx: &Cx<'_, HomeHost>) -> FocusKey<u32> {
+        if self.page == Page::RangeEditor {
+            return FocusKey {
+                entry: entry(self.page),
+                elem: RANGE_BASE,
+            };
+        }
+
         let key = if self.page == Page::Home && group == GroupId(7) {
             HOME_APPS_LINK
         } else if self.page == Page::Home && group == GroupId(8) {
@@ -988,6 +1063,8 @@ pub struct Shell {
     drawer_scroll: plx_ui::Spring,
     drawer_scroll_target: f32,
     home_return: Option<(Page, usize)>,
+    range: Option<RangeSession>,
+    range_request: Option<(i64, i64)>,
     pointer_enabled: bool,
     pointer_pending: bool,
     pointer_expected: Option<crate::pointer_speed::Speed>,
@@ -1057,6 +1134,8 @@ impl Shell {
             drawer_scroll: plx_ui::Spring::at(0.0),
             drawer_scroll_target: 0.0,
             home_return: None,
+            range: None,
+            range_request: None,
             pointer_enabled: false,
             pointer_pending: false,
             pointer_expected: None,
@@ -1123,6 +1202,16 @@ impl Shell {
         }
     }
     fn rebuild(&mut self, page: Page) {
+        let page = if page == Page::RangeEditor && self.range.is_none() {
+            Page::Controls
+        } else {
+            page
+        };
+        if page != Page::RangeEditor {
+            self.range = None;
+            self.range_request = None;
+        }
+
         plx_machine::idle::invalidate();
         if page != Page::Applications {
             self.menu = None;
@@ -1142,7 +1231,9 @@ impl Shell {
         self.input.cancel_press();
         self.surface = Self::blank(page);
         if root_tab(page) == Page::Controls {
-            if page == Page::PointerSpeed {
+            if page == Page::RangeEditor {
+                self.control_category = Page::Accessibility;
+            } else if page == Page::PointerSpeed {
                 self.control_category = Page::General;
             } else if page != Page::Controls {
                 self.control_category = page;
@@ -1180,6 +1271,7 @@ impl Shell {
             }
             Page::Inputs if self.input_launches_enabled => "OK open source • Back Home",
             Page::Inputs => "HDMI status • source switching unavailable on this TV",
+            Page::RangeEditor => "Left/Right adjust • Down choose Apply • Back cancel",
             Page::PointerSpeed if self.pointer_pending => "Applying pointer speed…",
             Page::PointerSpeed => "OK apply selection • Back cancel",
             Page::General if self.pointer_enabled => {
@@ -1252,6 +1344,9 @@ impl Shell {
                     ),
                     None,
                 );
+                if page == Page::RangeEditor {
+                    self.surface.table.set(Form::new(), None);
+                }
                 if page == Page::PointerSpeed {
                     let mut choices = FormSection::new("POINTER SPEED");
                     for (i, value) in crate::pointer_speed::Speed::ALL.into_iter().enumerate() {
@@ -1385,29 +1480,29 @@ impl Shell {
         let outcome = self.input.engine.enter(
             owner,
             &self.surface,
-            FocusTarget::ContainerGroup(GroupId(
-                if self.surface.control_page.is_some()
-                    && (page == Page::Controls || self.surface.keys().is_empty())
-                {
-                    6
-                } else if self.surface.menu.is_some() {
-                    5
-                } else if self.surface.keys().is_empty() {
-                    if page == Page::Applications {
-                        3
-                    } else {
-                        0
-                    }
-                } else if self.surface.editing {
-                    4
+            FocusTarget::ContainerGroup(GroupId(if page == Page::RangeEditor {
+                9
+            } else if self.surface.control_page.is_some()
+                && (page == Page::Controls || self.surface.keys().is_empty())
+            {
+                6
+            } else if self.surface.menu.is_some() {
+                5
+            } else if self.surface.keys().is_empty() {
+                if page == Page::Applications {
+                    3
                 } else {
-                    if page == Page::Home && self.surface.cards.items.is_empty() {
-                        2
-                    } else {
-                        1
-                    }
-                },
-            )),
+                    0
+                }
+            } else if self.surface.editing {
+                4
+            } else {
+                if page == Page::Home && self.surface.cards.items.is_empty() {
+                    2
+                } else {
+                    1
+                }
+            })),
             old,
             &cx,
         );
@@ -1539,7 +1634,9 @@ impl Shell {
         self.refresh_control_breadcrumb();
     }
     fn refresh_control_breadcrumb(&mut self) {
-        let page = if self.surface.page == Page::PointerSpeed {
+        let page = if self.surface.page == Page::RangeEditor {
+            Some(Page::RangeEditor)
+        } else if self.surface.page == Page::PointerSpeed {
             Some(Page::PointerSpeed)
         } else {
             self.surface.control_page
@@ -1566,6 +1663,7 @@ impl Shell {
             Some(Page::Sound) => cstr("Sound readings • view only"),
             Some(Page::Network) => cstr("Connection status • view only"),
             Some(Page::PanelCare) => cstr("OLED protections stay managed by LG"),
+            Some(Page::RangeEditor) => cstr("Staged value • changes require explicit Apply"),
             Some(Page::PointerSpeed) => cstr("Choose a value • press OK to apply"),
             Some(Page::General) if self.pointer_enabled => {
                 cstr("Pointer speed can be adjusted here")
@@ -1732,6 +1830,10 @@ impl Shell {
         } else {
             self.pointer_enabled = false;
         }
+        if self.surface.page == Page::RangeEditor {
+            self.close_range_editor();
+            return;
+        }
         if self.surface.page == Page::PointerSpeed {
             self.close_pointer_picker();
         } else {
@@ -1883,6 +1985,10 @@ impl Shell {
     fn moved(&mut self, outcome: plx_ui::focus::Outcome<u32>) {
         if let plx_ui::focus::Outcome::Moved { from, to, by } = outcome {
             plx_machine::idle::invalidate();
+            if self.surface.page == Page::RangeEditor {
+                self.input.abandon_if_off(entry(self.surface.page), to);
+                return;
+            }
             if let Some(index) =
                 category_key(to.elem).filter(|_| self.surface.control_page.is_some())
             {
@@ -1931,10 +2037,26 @@ impl Shell {
         }
     }
     pub fn direction(&mut self, dir: Dir) {
-        if self.pointer_pending {
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
         self.input.hit.note_dpad();
+        if self.surface.page == Page::RangeEditor
+            && self.focused_item().as_deref() == Some("range-value")
+            && matches!(dir, Dir::Left | Dir::Right)
+        {
+            self.input.cancel_press();
+            if let Some(r) = self.range.as_mut() {
+                if r.state.nudge(if dir == Dir::Left {
+                    RangeStep::Decrease
+                } else {
+                    RangeStep::Increase
+                }) {
+                    plx_machine::idle::invalidate();
+                }
+            }
+            return;
+        }
         let owner = InputOwner::Entry(entry(self.surface.page));
         let cx = Cx::<HomeHost> {
             views: (),
@@ -2050,7 +2172,7 @@ impl Shell {
         self.input.note_alive(self.now);
     }
     pub fn press(&mut self, down: bool, from: PressFrom) {
-        if self.pointer_pending {
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
         if down {
@@ -2079,7 +2201,7 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
-        if self.pointer_pending {
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
         if self.surface.page == Page::PointerSpeed {
@@ -2137,7 +2259,29 @@ impl Shell {
         }
     }
     pub fn pointer(&mut self, x: f32, y: f32, click: bool) {
-        if self.pointer_pending {
+        if self.surface.page == Page::RangeEditor
+            && click
+            && self.range.as_ref().is_some_and(|r| !r.pending)
+            && x >= RANGE_FRAME.x
+            && x <= RANGE_FRAME.x + RANGE_FRAME.w
+            && y >= RANGE_FRAME.y
+            && y <= RANGE_FRAME.y + RANGE_FRAME.h
+        {
+            self.input.cancel_press();
+            self.focus_special(RANGE_BASE, GroupId(9));
+            if let Some(r) = self.range.as_mut() {
+                if let Some(value) = RangeLayout::new(RANGE_FRAME, r.state)
+                    .and_then(|layout| layout.value_at(r.state.scale(), x))
+                {
+                    if r.state.stage(value) {
+                        plx_machine::idle::invalidate();
+                    }
+                }
+            }
+            return;
+        }
+
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
         let owner = InputOwner::Entry(entry(self.surface.page));
@@ -2172,6 +2316,26 @@ impl Shell {
         }
     }
     fn activate(&mut self, key: FocusKey<u32>, hold: bool) {
+        if self.surface.page == Page::RangeEditor {
+            if key.entry != entry(Page::RangeEditor) {
+                return;
+            }
+            match range_key(key.elem) {
+                Some(1) => {
+                    if let Some(r) = self.range.as_mut().filter(|r| !r.pending) {
+                        if let Some(proposal) = r.state.proposal() {
+                            r.pending = true;
+                            self.range_request = Some(proposal);
+                            self.status = cstr("Applying value…");
+                            plx_machine::idle::invalidate();
+                        }
+                    }
+                }
+                Some(2) => self.close_range_editor(),
+                _ => {}
+            }
+            return;
+        }
         if key.entry != entry(self.surface.page) {
             return;
         }
@@ -2357,7 +2521,7 @@ impl Shell {
         }
     }
     fn select_control_category(&mut self, index: usize) {
-        if self.pointer_pending {
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
         let Some((page, _)) = CATEGORIES.get(index) else {
@@ -2378,6 +2542,9 @@ impl Shell {
         self.rebuild(Page::Controls);
     }
     pub fn focus_control_category(&mut self, index: usize) -> bool {
+        if self.surface.page == Page::RangeEditor {
+            return false;
+        }
         if self.surface.control_page.is_none() || index >= 6 {
             return false;
         }
@@ -2594,6 +2761,7 @@ impl Shell {
     pub fn presentation_probe(&self) -> serde_json::Value {
         serde_json::json!({
             "page":format!("{:?}",self.surface.page),
+            "range_editor":(self.surface.page==Page::RangeEditor).then(||serde_json::json!({"modal":true,"stops":(0..3).map(|i|{let r=range_rect(i);[r.x,r.y,r.w,r.h]}).collect::<Vec<_>>()})),
             "rail_rows":self.surface.rail.table.n_rows(),
             "rail_scroll":self.surface.rail.table.scroll_pos(),
             "rail_focused":self.surface.rail.table.list_focused,
@@ -2823,7 +2991,9 @@ impl Shell {
                 }
                 p.rrect(DETAIL_PANEL, 28.0, 28.0, theme::SURFACE_PANEL);
                 Label::new(
-                    cstr(if self.surface.page == Page::PointerSpeed {
+                    cstr(if self.surface.page == Page::RangeEditor {
+                        "Adjust value"
+                    } else if self.surface.page == Page::PointerSpeed {
                         "Pointer speed"
                     } else {
                         category.title().unwrap_or("Settings")
@@ -2842,12 +3012,51 @@ impl Shell {
                 )
                 .draw(p.clipped(at), at);
             }
-            let area = self.surface.table_area();
-            let _clip = f.clip(p, area);
-            self.surface
-                .table
-                .table
-                .draw_page(p.clipped(area), area, &LegacyMeasure);
+            if let Some(r) = self
+                .range
+                .as_ref()
+                .filter(|_| self.surface.page == Page::RangeEditor)
+            {
+                RangeControl {
+                    frame: RANGE_FRAME,
+                    state: r.state,
+                    label: &r.label,
+                    focused: focused == Some(RANGE_BASE),
+                    enabled: !r.pending,
+                }
+                .draw(&Env::inert(), p);
+                for (i, text) in [(1, "Apply"), (2, "Cancel")] {
+                    let enabled = !r.pending && (i != 1 || r.state.dirty());
+                    TabPill::new(cstr(text).as_ptr(), theme::size::BODY, range_rect(i))
+                        .focused(focused == Some(RANGE_BASE + i as u32))
+                        .draw(&Env::inert(), if enabled { p } else { p.alpha(0.4) });
+                }
+                for i in 0..3 {
+                    let rect = range_rect(i);
+                    f.stop(
+                        p,
+                        Stop {
+                            key: FocusKey {
+                                entry: entry(self.surface.page),
+                                elem: RANGE_BASE + i as u32,
+                            },
+                            rect,
+                            rest_rect: rect,
+                            clip: DETAIL_ROWS,
+                            hover: Hover::Focus,
+                            activate: Activate::Press,
+                        },
+                    );
+                }
+            }
+            if self.surface.page != Page::RangeEditor {
+                let area = self.surface.table_area();
+                let _clip = f.clip(p, area);
+                self.surface
+                    .table
+                    .table
+                    .draw_page(p.clipped(area), area, &LegacyMeasure);
+            }
         } else if self.surface.page == Page::Home {
             Label::new(
                 c"Your favourites".as_ptr(),
@@ -3385,6 +3594,11 @@ impl Shell {
             .input
             .engine
             .current(InputOwner::Entry(entry(self.surface.page)))?;
+        if self.surface.page == Page::RangeEditor {
+            return range_key(key.elem)
+                .map(|i| ["range-value", "range-apply", "range-cancel"][i].into());
+        }
+
         if let Some(index) = category_key(key.elem).filter(|_| self.surface.control_page.is_some())
         {
             return Some(format!("category-{}", CATEGORIES[index].1));
@@ -3447,7 +3661,69 @@ impl Shell {
     pub fn take_requests(&mut self) -> Vec<Action> {
         std::mem::take(&mut self.pending)
     }
+    pub fn open_range_editor(&mut self, label: &str, scale: RangeScale, saved: i64) -> bool {
+        if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
+            return false;
+        }
+        let Some(state) = StagedRange::new(scale, saved) else {
+            return false;
+        };
+        let return_page = if self.surface.page == Page::RangeEditor {
+            self.range.as_ref().unwrap().return_page
+        } else {
+            self.surface.page
+        };
+        self.range = Some(RangeSession {
+            label: label.into(),
+            state,
+            pending: false,
+            return_page,
+        });
+        self.range_request = None;
+        self.rebuild(Page::RangeEditor);
+        self.focus_special(RANGE_BASE, GroupId(9));
+        true
+    }
+    fn close_range_editor(&mut self) {
+        if let Some(r) = self.range.as_ref().filter(|r| !r.pending) {
+            let page = r.return_page;
+            self.rebuild(page);
+        }
+    }
+    pub fn range_layout(&self) -> Option<RangeLayout> {
+        self.range
+            .as_ref()
+            .and_then(|r| RangeLayout::new(RANGE_FRAME, r.state))
+    }
+    pub fn range_state(&self) -> Option<StagedRange> {
+        self.range.as_ref().map(|r| r.state)
+    }
+    pub fn take_range_request(&mut self) -> Option<(i64, i64)> {
+        self.range_request.take()
+    }
+    pub fn range_reply(&mut self, expected: i64, value: i64, verified: bool) -> bool {
+        let Some(r) = self
+            .range
+            .as_mut()
+            .filter(|r| r.pending && r.state.proposal() == Some((expected, value)))
+        else {
+            return false;
+        };
+        r.pending = false;
+        let confirmed = verified && r.state.confirm(expected, value);
+        self.status = cstr(if confirmed {
+            "Value confirmed"
+        } else {
+            "Change not confirmed • Back cancel"
+        });
+        self.input.cancel_press();
+        plx_machine::idle::invalidate();
+        confirmed
+    }
     pub fn open(&mut self, page: Page) {
+        if self.range.as_ref().is_some_and(|r| r.pending) && page != Page::RangeEditor {
+            return;
+        }
         self.rebuild(page)
     }
 }

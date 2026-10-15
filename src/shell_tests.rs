@@ -1480,3 +1480,113 @@ fn drawer_owned_scroll_reports_motion_and_becomes_quiet_after_settling() {
     assert!(!moving);
     plx_machine::idle::set_enabled(old);
 }
+
+fn range_shell() -> Shell {
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Controls);
+    s.focus_control_category(3);
+    assert!(s.open_range_editor("Example level", RangeScale::new(-15, 15, 1).unwrap(), 0));
+    s
+}
+#[test]
+fn range_staging_cancel_and_unchanged_apply_cannot_emit_a_tv_operation() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = range_shell();
+    let before = s.preferences().clone();
+    assert_eq!(s.focused_item().as_deref(), Some("range-value"));
+    s.direction(Dir::Down);
+    assert_eq!(s.focused_item().as_deref(), Some("range-apply"));
+    tap(&mut s);
+    assert!(s.take_range_request().is_none());
+    s.direction(Dir::Up);
+    for _ in 0..40 {
+        s.direction(Dir::Left);
+    }
+    assert_eq!(s.range_state().unwrap().staged(), -15);
+    assert_eq!(s.range_state().unwrap().saved(), 0);
+    assert!(s.take_range_request().is_none());
+    assert!(s.take_requests().is_empty());
+    s.back();
+    assert_eq!(s.page(), Page::Controls);
+    assert!(s.range_state().is_none());
+    assert_eq!(&before, s.preferences());
+    assert!(s.take_range_request().is_none());
+}
+#[test]
+fn range_apply_is_single_flight_and_only_matching_verified_readback_moves_saved_marker() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = range_shell();
+    s.direction(Dir::Right);
+    s.direction(Dir::Down);
+    tap(&mut s);
+    assert_eq!(s.take_range_request(), Some((0, 1)));
+    assert!(s.take_range_request().is_none());
+    s.back();
+    s.direction(Dir::Up);
+    s.press(true, PressFrom::Key);
+    s.press(false, PressFrom::Key);
+    assert_eq!(s.page(), Page::RangeEditor);
+    assert_eq!(s.range_state().unwrap().saved(), 0);
+    assert!(!s.range_reply(0, 2, true));
+    assert!(!s.open_range_editor("Other", RangeScale::new(0, 100, 1).unwrap(), 50));
+    s.open(Page::Home);assert_eq!(s.page(),Page::RangeEditor);
+    assert!(s.range_reply(0, 1, true));
+    assert_eq!(s.range_state().unwrap().saved(), 1);
+    assert!(!s.range_reply(0, 1, true));
+    assert!(s.take_requests().is_empty());
+    s.direction(Dir::Up);
+    s.direction(Dir::Left);
+    s.direction(Dir::Down);
+    tap(&mut s);
+    assert_eq!(s.take_range_request(), Some((1, 0)));
+    assert!(!s.range_reply(1, 0, false));
+    assert_eq!(s.range_state().unwrap().saved(), 1);
+    s.back();
+    assert_eq!(s.page(), Page::Controls);
+}
+#[test]
+fn range_direction_cancels_armed_apply_and_old_page_keys_cannot_commit_the_new_editor() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = range_shell();
+    s.direction(Dir::Right);
+    s.direction(Dir::Down);
+    s.press(true, PressFrom::Key);
+    s.direction(Dir::Up);
+    s.direction(Dir::Right);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert!(s.take_range_request().is_none());
+    assert_eq!(s.range_state().unwrap().staged(), 2);
+    s.activate(
+        FocusKey {
+            entry: entry(Page::Accessibility),
+            elem: RANGE_BASE + 1,
+        },
+        false,
+    );
+    assert!(s.take_range_request().is_none());
+    let cx = s.context(&LegacyMeasure);
+    assert!(s.surface.group_of(&RAIL_BASE, &cx).is_none());
+    assert!(s.surface.group_of(&CATEGORY_BASE, &cx).is_none());
+    assert!(!s.focus_control_category(0));
+}
+#[test]
+fn range_track_click_stages_the_painted_value_while_hover_and_external_refresh_preserve_it() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = range_shell();
+    let layout = RangeLayout::new(RANGE_FRAME, s.range_state().unwrap()).unwrap();
+    s.pointer(layout.track.x, layout.track.cy(), false);
+    assert_eq!(s.range_state().unwrap().staged(), 0);
+    s.pointer(layout.track.x, layout.track.cy(), true);
+    assert_eq!(s.range_state().unwrap().staged(), -15);
+    assert!(s.take_range_request().is_none());
+    let mut changed = s.snapshot.clone();
+    changed.context.input = "HDMI_2".into();
+    let before = std::mem::replace(&mut s.snapshot, changed);
+    s.refresh_shown_data(&before);
+    assert_eq!(s.range_state().unwrap().staged(), -15);
+    assert_eq!(s.range_state().unwrap().saved(), 0);
+    s.open(Page::Home);
+    assert!(s.range_state().is_none());
+    assert!(s.take_requests().is_empty());
+}

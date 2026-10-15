@@ -31,6 +31,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         return Err("Navigation proof requires isolated diagnostic identity".into());
     }
+    let range_layout_proof = assets.join("range-layout-proof.json").exists()
+        || args.iter().any(|a| a == "--range-layout-proof");
+    if range_layout_proof
+        && (interactive
+            || (device && plx_base::paths::app_id() != native_home::identity::PROOF)
+            || navigation_proof
+            || [
+                "launch-proof.json",
+                "pointer-proof.json",
+                "pointer-ui-proof.json",
+                "description-level-proof.json",
+                "management-proof.json",
+                "controls-proof.json",
+                "drawer-proof.json",
+                "preferences-hold-probe.json",
+            ]
+            .iter()
+            .any(|p| assets.join(p).exists()))
+    {
+        return Err("Range layout proof requires isolated non-interactive identity and no other action trial".into());
+    }
     let pointer_ui_proof = assets.join("pointer-ui-proof.json").exists();
     if pointer_ui_proof
         && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
@@ -77,6 +98,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
+            "range-layout-proof.json",
             "description-level-proof.json",
             "pointer-proof.json",
             "pointer-ui-proof.json",
@@ -614,6 +636,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    let range_receipt = if range_layout_proof {
+        Some(range_layout_trial(&mut shell, &window, &output, &mut now)?)
+    } else {
+        None
+    };
     let mut proof_request = None;
     if let Some(request) = launch_proof {
         match &request {
@@ -1007,6 +1034,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["range_layout_proof"] = serde_json::json!(range_receipt);
     report["navigation_proof"] = serde_json::json!(navigation_receipt);
     report["source_switching_enabled"] = shell.input_launches_enabled().into();
     report["description_level_proof"] = serde_json::json!(description_receipt);
@@ -1618,4 +1646,96 @@ fn description_level_proof(folder: &std::path::Path) -> serde_json::Value {
     .into();
     let _ = stage(&receipt);
     receipt
+}
+
+/// Synthetic staged-edit interaction proof. It deliberately has no TV transport.
+fn range_layout_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    now: &mut u32,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    use plx_ui::widgets::RangeScale;
+    let before = shell.preferences().clone();
+    let scale = RangeScale::new(-15, 15, 1).unwrap();
+    let mut layouts = Vec::new();
+    let mut capture =
+        |s: &mut Shell, name: &str, n: &mut u32| -> Result<(), Box<dyn std::error::Error>> {
+            s.storage_notice("Interface preview • no TV settings will be changed");
+            drawer_capture(s, window, output, name, n)?;
+            layouts.push(serde_json::json!({"name":name,"layout":s.presentation_probe()}));
+            Ok(())
+        };
+    shell.open(Page::Controls);
+    shell.focus_control_category(3);
+    let parent = shell.page();
+    if !shell.open_range_editor("Preview level", scale, 0) {
+        return Err("No range editor".into());
+    }
+    capture(shell, "range-initial", now)?;
+    shell.direction(Dir::Right);
+    if shell.range_state().unwrap().proposal() != Some((0, 1))
+        || shell.take_range_request().is_some()
+        || !shell.take_requests().is_empty()
+    {
+        return Err("Adjustment emitted an effect or changed saved value".into());
+    }
+    capture(shell, "range-staged", now)?;
+    shell.back();
+    if shell.page() != parent
+        || shell.range_state().is_some()
+        || shell.take_range_request().is_some()
+    {
+        return Err("Range Back did not discard staging".into());
+    }
+    shell.open_range_editor("Preview level", scale, 0);
+    // Use the same public layout as painting, without restating its track in the driver.
+    let layout = shell.range_layout().unwrap();
+    shell.pointer(layout.track.x, layout.track.cy(), false);
+    if shell.range_state().unwrap().staged() != 0 {
+        return Err("Hover changed the staged value".into());
+    }
+    shell.pointer(layout.track.x, layout.track.cy(), true);
+    if shell.range_state().unwrap().staged() != -15 {
+        return Err("Pointer minimum mismatch".into());
+    }
+    capture(shell, "range-minimum", now)?;
+    shell.pointer(layout.track.x + layout.track.w, layout.track.cy(), true);
+    if shell.range_state().unwrap().staged() != 15 {
+        return Err("Pointer maximum mismatch".into());
+    }
+    capture(shell, "range-maximum", now)?;
+    shell.back();
+    shell.open_range_editor("Preview level", scale, 0);
+    shell.direction(Dir::Right);
+    shell.direction(Dir::Down);
+    drawer_tap(shell, now);
+    if shell.take_range_request() != Some((0, 1)) || shell.take_range_request().is_some() {
+        return Err("Apply did not emit exactly one typed proposal".into());
+    }
+    shell.back();
+    shell.direction(Dir::Up);
+    drawer_tap(shell, now);
+    if shell.page() != Page::RangeEditor || shell.take_range_request().is_some() {
+        return Err("Pending range edit was abandoned or duplicated".into());
+    }
+    // No native transport is connected in this proof. A refused result must never move Saved.
+    if shell.range_reply(0, 1, false) || shell.range_state().unwrap().saved() != 0 {
+        return Err("Unconfirmed result moved Saved".into());
+    }
+    capture(shell, "range-unconfirmed", now)?;
+    shell.back();
+    shell.open(Page::Home);
+    if shell.preferences() != &before || !shell.take_requests().is_empty() {
+        return Err("Range proof changed favourites or emitted TV actions".into());
+    }
+    let receipt = serde_json::json!({"synthetic_values":true,"transport":"none; staged interaction only","staging_emits_no_effect":true,"back_discards_staging":true,"pointer_hover_is_read_only":true,"pointer_endpoints_match_paint":true,"apply_emits_one_proposal":true,"pending_blocks_navigation_and_duplicates":true,"unconfirmed_value_never_becomes_saved":true,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false,"layouts":layouts});
+    let file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+        .open(output.join("range-layout-complete.json"))?;
+    serde_json::to_writer_pretty(file, &receipt)?;
+    Ok(receipt)
 }
