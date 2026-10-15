@@ -49,8 +49,9 @@ The app never supplies it.
 
 Socket operations have monotonic deadlines. The server's 25-second I/O deadline
 does not guarantee process lifetime: synchronous bus registration and file reads
-can outlast it. A subsequent safety refinement schedules default `SIGALRM`
-termination of the helper's own process after 30 seconds. Signal delivery can
+can outlast it. The helper resets `SIGALRM` to its default disposition, explicitly
+unblocks that signal, checks its mask, and schedules its own termination after
+30 seconds. Signal delivery can
 still be deferred by a kernel uninterruptible wait. The driver never signals an
 external root PID based on sampled procfs identity. It waits, verifies actual
 process/endpoint absence, and removes only its verified executable and enrollment,
@@ -79,27 +80,39 @@ checks. Host all-target clippy with warnings denied and 13 framework-verifier
 tests and 14 build/provenance guard tests pass. The helper has no binary-specific
 unit tests.
 
-The initial ARM release builds pass from source
-`f137bd5bdd643f91e7392c9922d20f172b53e41d`, with equal snapshots of 73 selected
-inputs and the same verified framework. Ten actual local packaging cases pass:
+Both final ARM release builds pass from source
+`e098ac2d51ff1837ae5b75e8ef3beef0e193c113`, with equal snapshots of 73 selected
+inputs and the same verified framework. The ARM-only signal configuration is
+cross-compiled; it has not yet run on G2. Ten actual local packaging cases pass:
 Identify has exactly its two diagnostic markers; ordinary passive and normal
 interactive packages omit the broker marker; retained identity, interactive
 Identify, mixed trials, invalid nonce/hash, stray marker values and packaging
 the helper itself are rejected. These used a synthetic snapshot and made no TV
 contact. The existing ARM target-feature warning remains.
 
-| Initial artifact (before own-process alarm refinement) | SHA-256 |
+| Final artifact | SHA-256 |
 | --- | --- |
 | Dashboard ELF | `7ada786be729bbc4cd17a270f3ea88fa9f97b4eafa083742ad10ef31cd06206a` |
-| Separate helper ELF | `be944ea507f760a808880e231e34a9fde84b6b13595e7e156a7c3420a1f41ad5` |
+| Separate helper ELF | `b6b8245c7a0d07aec79d7022f06635c2f088465c24490fce0a9af5c6bbe3f6cd` |
 
-The own-process alarm refinement then built successfully from
-`dacf4c981cfdc6c6976fafde979e43e6de197dc1`, again with 73 equal selected input
-snapshots for both executables. The dashboard ELF is byte-identical to the one
-above; the helper is now
-`38906d4ac221c9e739da0e9de9b693be14f0c9865f9500495778fe22a59c7ddc`.
 A fresh separate Proof IPK binds that helper hash and the new build receipt with
 a new session nonce. It remains a private test package, separate from normal G2.
+57 private host harness checks also pass, including independent policy review,
+preservation-path invariance and an actual local child verifying the startup
+token and EOF. The coordinator reran all 57 and executed the real candidate's
+local admission prefix with every process except two pinned framework-verifier
+calls forbidden. Both ARM receipts, current source/framework and the exact
+two-marker package passed before any device access.
+
+The first G2 attempt then declined at the initial idle-window gate, before
+upload, install or app/helper launch. No TV setting, input, household app or
+retained-preview update was attempted. The helper directory and abstract endpoint
+were absent, and the own lease plus host agent/process/socket/directory cleanup
+were verified. This is a predeployment decline, not installed-app removal or a
+successful broker exchange. Retained/core bundles were not rehashed because the
+lane exited before collecting those baselines. Raw household observations remain
+private; [the scoped record](artwork-broker-033-milestone.json) contains only
+sanitized admission and cleanup facts.
 
 The host is macOS: Linux transport tests are compiled conditionally and have not
 been executed there. Isolated G2 communication and complete removal remain

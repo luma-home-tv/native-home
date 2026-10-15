@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "version": "0.33.0",
+  "status": "candidate_predeployment_decline",
+  "source_revision": "e098ac2d51ff1837ae5b75e8ef3beef0e193c113",
+  "scope": "Operator-started temporary Identify-only native connection; no resource operation or production startup",
+  "artifacts": {
+    "dashboard_elf_sha256": "7ada786be729bbc4cd17a270f3ea88fa9f97b4eafa083742ad10ef31cd06206a",
+    "dashboard_elf_bytes": 3096848,
+    "helper_elf_sha256": "b6b8245c7a0d07aec79d7022f06635c2f088465c24490fce0a9af5c6bbe3f6cd",
+    "helper_elf_bytes": 670192,
+    "both_arm_builds_passed": true,
+    "equal_selected_input_snapshots": true,
+    "selected_inputs": 73,
+    "existing_arm_target_feature_warning": true
+  },
+  "host_evidence": {
+    "library_tests_passed": 245,
+    "dashboard_binary_tests_passed": 5,
+    "helper_binary_specific_tests": 0,
+    "host_all_target_clippy_warnings_denied_passed": true,
+    "framework_verifier_tests_passed": 13,
+    "build_provenance_guard_tests_passed": 14,
+    "actual_local_packager_cases_passed": 10,
+    "private_harness_tests_passed_and_coordinator_rerun": 57,
+    "actual_local_startup_token_eof_fixture": true,
+    "actual_candidate_admission_prefix_passed_without_tv_access": true,
+    "prefix_only_processes": "Two pinned read-only framework-verifier calls",
+    "linux_transport_tests_executed": false,
+    "arm_only_alarm_configuration_executed": false
+  },
+  "device_attempt": {
+    "outcome": "declined_before_deployment",
+    "boundary": "Initial foreground/window idle predicate",
+    "ipk_upload_attempted": false,
+    "app_install_attempted": false,
+    "proof_app_launched": false,
+    "helper_staged_or_launched": false,
+    "tv_setting_or_input_write_attempted": false,
+    "household_app_launch_attempted": false,
+    "retained_update_attempted": false,
+    "retained_and_core_bundles_rehashed": false,
+    "c2_contacted": false
+  },
+  "predeployment_cleanup": {
+    "helper_never_started": true,
+    "helper_directory_absent": true,
+    "abstract_endpoint_absent": true,
+    "own_device_lease_absent": true,
+    "host_agent_process_absent": true,
+    "host_agent_socket_absent": true,
+    "host_agent_directory_removed": true,
+    "recovery_needed": false,
+    "installed_proof_removal_qualified": false
+  },
+  "remaining": [
+    "Repeat isolated G2 admission when its foreground/window state is idle",
+    "Qualify actual jailed-app transport, both process/context bindings and clean installed-proof removal",
+    "Qualify production enrollment/startup and each restricted resource operation separately",
+    "Complete bounded live artwork worker/cache and native replacement/removal validation"
+  ],
+  "privacy": "Actual TV inventory, input/window observations, paths, nonce, packages, credentials and raw receipts remain private. No full runtime, resource, normal-delivery or release claim."
+}
