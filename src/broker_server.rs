@@ -417,7 +417,22 @@ mod proof {
         if unsafe { libc::signal(libc::SIGALRM, libc::SIG_DFL) } == libc::SIG_ERR {
             return Err(io::Error::last_os_error().into());
         }
+        let mut alarm_set: libc::sigset_t = unsafe { std::mem::zeroed() };
+        let mut actual_mask: libc::sigset_t = unsafe { std::mem::zeroed() };
+        if unsafe { libc::sigemptyset(&mut alarm_set) } != 0
+            || unsafe { libc::sigaddset(&mut alarm_set, libc::SIGALRM) } != 0
+            || unsafe { libc::sigprocmask(libc::SIG_UNBLOCK, &alarm_set, std::ptr::null_mut()) }
+                != 0
+            || unsafe { libc::sigprocmask(libc::SIG_SETMASK, std::ptr::null(), &mut actual_mask) }
+                != 0
+        {
+            return Err(io::Error::last_os_error().into());
+        }
+        if unsafe { libc::sigismember(&actual_mask, libc::SIGALRM) } != 0 {
+            return Err(invalid("Helper alarm signal mask was not cleared").into());
+        }
         unsafe { libc::alarm(30) };
+        report["own_alarm"] = json!({"requested_seconds":30,"sigalrm_unblocked_readback":true,"default_disposition_requested":true});
         let limit = libc::rlimit {
             rlim_cur: 0,
             rlim_max: 0,
