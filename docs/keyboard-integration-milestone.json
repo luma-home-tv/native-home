@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "status": "Shared search controller and audited webOS24 text adapter verified in isolated G2 and C2 builds; retained previews unchanged",
+  "source": {
+    "functional_revision": "760db0eb11217e3de7766bc7d3223d995d1fc634",
+    "proof_version": "0.23.0",
+    "binary_sha256": "4e16cc41314026c4b15349e7f1d3072dc5293e67de6bfa4f507596dc0183c8f0",
+    "framework_patch_sha256": "25eceaa39552667edcc2c26bbc49bb42fbbc90489d8d001dd160cdaca2301b3c"
+  },
+  "interface": {
+    "search": "LG keyboard preferred only on the two admitted models, firmware23.25.55/SDK9.2.2 and actual SDL2.0.14; unknown platforms retain the Luma keypad",
+    "explicit_keypad": "Separate Keypad toolbar control; never selected just because LG dismissed its panel",
+    "close": "Retain committed query, end editing, stop own SDL request, return focus to Search",
+    "input_drain_ms": 200,
+    "idle_and_departure": "Close own request on app idle/window departure; no new hidden-window retention or global key policy",
+    "text": "Literal commit boundaries, separate preedit rendering, 256-byte owned draft; prediction replacement not enabled"
+  },
+  "implementation": {
+    "native_preedit_abi": "Explicit audited 52-byte SDL2.0.14 record; unknown native preedit versions rejected",
+    "opaque_source": "The text-input source field carries protocol serial metadata; no source-enum prediction heuristic",
+    "bounded_rendering": "Only visible graphemes plus limited edge context are uploaded. Kerning anchor and pathological-cluster bounds have reproduced regression cases; draft is retained even if an oversized cluster cannot be rendered."
+  },
+  "checks": {
+    "luma_tests": {
+      "passed": 132,
+      "failed": 0
+    },
+    "framework_tests": {
+      "passed": 1028,
+      "failed": 0
+    },
+    "framework_shipping_no_default_features": "passed",
+    "host_clippy_all_targets": "warnings denied; passed",
+    "arm_release": "passed; existing neon target-feature warning",
+    "firmware_symbol_inventory": "14 inventories resolve; releases >=9.2.0 gated, not a behavioural compatibility claim",
+    "exact_dependency_lock": "passed"
+  },
+  "devices": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "webos": "24",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "runtime_sdl": "2.0.14",
+      "ordinary_uid": 6583,
+      "shared_controller": {
+        "dismissals": 2,
+        "failures": 0,
+        "opens": 2,
+        "stops": 2
+      },
+      "synthetic_native_text_commits": 4,
+      "synthetic_preedit_clear_roundtrips": 4,
+      "committed_query_unchanged_by_preedit": true,
+      "native_query_match_each_cycle": true,
+      "independent_panel_opens": 2,
+      "independent_panel_closes": 2,
+      "dismissal_input": "Two harness Back presses guarded by own foreground and independently observed LG keyboard",
+      "explicit_fallback_no_new_system_request": true,
+      "long_draft_bytes": 256,
+      "long_caret_positions": 3,
+      "native_gl_errors": 0,
+      "expanded_readouts_match": {
+        "picture": 8,
+        "accessibility": 4,
+        "general": 5,
+        "panel_care": 3
+      },
+      "real_live_cycles": 8,
+      "frame_review": "Scoped native preedit/fallback/long-draft captures reviewed; LG overlay itself is established by separate window audit",
+      "all_proof_uid_processes_absent": true,
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "reboot_required": false
+      },
+      "retained_version": "0.21.0",
+      "retained_modified": false
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "webos": "24",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "runtime_sdl": "2.0.14",
+      "ordinary_uid": 6432,
+      "shared_controller": {
+        "dismissals": 2,
+        "failures": 0,
+        "opens": 2,
+        "stops": 2
+      },
+      "synthetic_native_text_commits": 4,
+      "synthetic_preedit_clear_roundtrips": 4,
+      "committed_query_unchanged_by_preedit": true,
+      "native_query_match_each_cycle": true,
+      "independent_panel_opens": 2,
+      "independent_panel_closes": 2,
+      "dismissal_input": "Two harness Back presses guarded by own foreground and independently observed LG keyboard",
+      "explicit_fallback_no_new_system_request": true,
+      "long_draft_bytes": 256,
+      "long_caret_positions": 3,
+      "native_gl_errors": 0,
+      "expanded_readouts_match": {
+        "picture": 8,
+        "accessibility": 4,
+        "general": 5,
+        "panel_care": 3
+      },
+      "real_live_cycles": 8,
+      "frame_review": "Scoped native preedit/fallback/long-draft captures reviewed; LG overlay itself is established by separate window audit",
+      "all_proof_uid_processes_absent": true,
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "all_proof_uid_processes_absent": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "reboot_required": false,
+        "keyboard_absent": true
+      },
+      "retained_version": "0.20.0",
+      "retained_modified": false
+    }
+  },
+  "human_g2_prediction_probe": {
+    "immutable_old_proof_version": "0.22.0",
+    "user_report": "No predictions appeared at all",
+    "native_text_events_observed": 3,
+    "interpretation": "No prediction replacement case was available to test in this keyboard mode. This is not a prediction-support pass or a failed replacement test.",
+    "probe_limit": "The timed manual diagnostic expired before a complete two-cycle receipt. Own package was removed; independent core/retained state, picture/audio/description/source/last-input and LG Home checks passed.",
+    "no_more_human_typing_requested_this_milestone": true
+  },
+  "remaining": [
+    "Exercise the actual interactive event loop through remote/pointer input, including idle/window departure and delayed release sequences; the diagnostic calls shared controller/search code but is not a normal interactive lifecycle proof.",
+    "Qualify actual composing-language, surrounding-text deletion, cursor selection, hardware keyboard and any prediction contract separately.",
+    "Measure normal interactive frame pacing, input latency and memory.",
+    "Back up and verify a retained update only after the normal interactive acceptance checks; ordinary previews remain G2 0.21.0 and C2 0.20.0."
+  ]
+}

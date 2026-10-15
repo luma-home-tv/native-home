@@ -81,6 +81,23 @@ Done/Back retains the query and ends editing. Never switch to a second keyboard
 merely because the first one closed. Normal request/fallback integration,
 prediction and broader script/font qualification remain before deployment.
 
+The [shared keyboard-controller record](keyboard-integration-milestone.json)
+adds the candidate's Search/Keypad routing, admitted platform gate, corrected
+native preedit ABI and bounded visible text uploads. The same frozen binary
+passed isolated G2 and C2 trials: two guarded dismissals, synthetic preedit/clear,
+explicit fallback and maximum-length text at three caret positions. Both were
+removed with preserved-state checks. The normal interactive event loop, actual
+composing languages and retained updates remain separate gates. The user saw no
+word predictions in the available G2 keyboard mode; no prediction-replacement
+contract is inferred. See [ABI notes](webos24-text-compatibility.md).
+
+The [parallel plan](parallel-development.md) assigns independent firmware/text,
+controls and C2-validation lanes around one integration owner and one live owner
+per TV. The [coverage audit](controls-coverage-next.md) preserves the comprehensive
+control-centre backlog; existing category routes do not establish every-setting
+coverage. Its next candidate is a separately admitted pointer-size control after
+capability/semantics review, rather than a generic setter.
+
 ## Next implementation stages
 
 1. **Expand live data.** The typed normal-app provider now refreshes catalogue,

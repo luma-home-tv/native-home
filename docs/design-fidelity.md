@@ -114,3 +114,9 @@ LG system keyboard preferred, Luma keypad available as a fallback. The native
 field and drawer remain Luma-rendered. Closing the LG panel ends editing and
 returns to Search; it must not expose an active second keypad. Corrected G2
 proof frames show that transition. The retained previews are unchanged.
+
+The [shared-controller record](keyboard-integration-milestone.json) adds isolated
+G2/C2 Search/Keypad routing, corrected legacy preedit decoding and maximum draft
+rendering. It does not establish normal interactive performance or complete IME
+support. [Control coverage](controls-coverage-next.md) and
+[parallel ownership](parallel-development.md) make the remaining work explicit.

@@ -41,6 +41,11 @@ and build-script coupling.
 The [text-input milestone](docs/text-input-milestone.json) records isolated G2
 system-keyboard typing/lifecycle work and the single-keyboard design. The retained
 previews remain on their existing keypad until normal integration is qualified.
+The newer [shared-controller record](docs/keyboard-integration-milestone.json)
+adds independent G2/C2 isolated flow, preedit and long-query evidence. See the
+[parallel-development plan](docs/parallel-development.md),
+[controls coverage audit](docs/controls-coverage-next.md) and
+[webOS24 text compatibility notes](docs/webos24-text-compatibility.md).
 
 ## Layout
 
