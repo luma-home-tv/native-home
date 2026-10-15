@@ -6,7 +6,7 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.20.0 moves the running interface closer to those concepts. This is a
+G2 0.21.0 and C2 0.20.0 move the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
@@ -17,7 +17,7 @@ progress map, not a claim that the complete concept is implemented.
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Full text/IME input, further typography polish and physical hold/pointer/wheel proof. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs; all four G2 source selections have independent readback/restoration proof and are enabled. | Live video/format, exact C2 idle-state restoration and C2 production switching; source artwork. |
-| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Connect the isolated native range editor to verified setting transports; broader edits/setting coverage and physical input proof. |
+| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs; G2 audio-description range entry/Apply/endpoints/restoration now proved with description off. | Broader verified edits/setting coverage and physical input proof. |
 
 The sound output, TV volume/mute and sound profile are distinct readings. TV
 volume is not a measurement of an external amplifier's volume. Wired and Wi-Fi
@@ -82,16 +82,22 @@ signed audio-description level transition and restoration under the isolated
 ordinary-app identity on G2, with description checked off. C2 was skipped at
 preflight; its existing preference is preserved. The experiment adds no UI or
 production write capability. That adapter record did not include an editor; the
-separate UI proof below covers staging and cancellation. Their combined native
-setting path remains unproven.
+separate UI proof below covers staging and cancellation. Those component
+records alone do not establish a combined native setting path.
 
 The [native range editor record](range-editor-milestone.json) adds the shared
 signed-range widget and modal detail composition. Both TVs rendered synthetic
 initial, staged, endpoint and unconfirmed states; saved markers stay separate
 from the staged thumb, and Back cancels. The native proof emits no TV writes.
 The [host preview](range-editor-preview.png) shows the working widget with
-synthetic values. Production capability, live context and asynchronous transport
-still need to be connected and tested together.
+synthetic values. That record precedes connection to a TV setting.
+
+The [combined numeric-control record](numeric-control-milestone.json) now joins
+that editor to a fixed G2-only operation. The native entry, staged-only cancel,
+Apply, signed endpoints and original stored value/type restoration passed under
+the isolated app identity. The normal G2 0.21.0 preview passed a no-write
+readiness/update check. This does not prove audible mixing, enabled-description
+behaviour or native numeric writes on C2.
 
 Next design work should complete source/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on

@@ -67,8 +67,8 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.20.0 is installed on both the OLED65C26LD C2
-and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
+package modes and removal. Version 0.21.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
+remains on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
 category/detail composition, native navigation, G2 Settings-return regression
@@ -117,7 +117,8 @@ omits incomplete unfocused tiles from both painting and pointer targets.
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching is enabled on the verified G2 and gated on the C2;
-pointer speed has a verified native choice control; other adjustments remain
+pointer speed has a verified native choice control, and the G2 has a guarded
+audio-description level range; other adjustments remain
 read-only or LG-managed. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
 closing its overlay. Version 0.13.0 validates both TVs and all six section entry points. Private TV details and native household captures
@@ -137,9 +138,15 @@ validated and installed as version 0.8.0 on the G2 with saved favourites preserv
 The [range editor proof](docs/range-editor-milestone.json) adds a shared native
 signed-range widget and modal staged-edit page. Both TVs passed synthetic
 interaction, native capture and clean-removal checks without TV setting writes.
-This remains isolated from the production controls until a validated transport is
-connected. The image below is a **host render with synthetic values**, not a TV
-capture or an enabled setting.
+The [numeric-control milestone](docs/numeric-control-milestone.json) now connects
+that editor to the fixed G2 audio-description level adapter, with fresh context,
+asynchronous Apply and exact value/type readback. Native staging/cancel, both
+endpoints and original-state restoration passed in the isolated app; the normal
+0.21.0 G2 preview passed a no-write capability/update check. The control is under
+**Controls → Accessibility → Audio-description level**, available only with its
+validated G2 firmware and audio description off. C2 numeric edits remain gated.
+The image below remains a **host render with synthetic values**, not a TV capture
+or evidence of an audible change.
 
 ![Native range editor, synthetic host preview](docs/range-editor-preview.png)
 

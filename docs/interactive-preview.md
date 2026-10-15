@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.20.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.21.0 on G2 and 0.20.0 on C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -61,7 +61,7 @@ on the G2: focus a source card on Home or Inputs and press OK. LG handles the
 source window; relaunch Luma from LG Home afterward. The C2 remains read-only
 for source selection while exact idle-state restoration is unproven. Its last
 physical preference and LG Home were recovered after the experiment. Source
-selection proof does not establish live HDMI video/HDR, CEC behaviour or format. Pointer speed now has a native control; other adjustments remain
+selection proof does not establish live HDMI video/HDR, CEC behaviour or format. Pointer speed and the G2 audio-description level now have native controls; other adjustments remain
 read-only or LG-managed. Controls now shows a persistent six-category column beside the
 selected detail panel. Arrows preview categories; Right or OK enters the rows.
 Back returns through the category column to Home. Accessibility, General and
@@ -84,7 +84,7 @@ to Luma. Luma keeps only its own underlying window alive behind a verified
 Settings overlay and stops painting while covered; LG continues to own its controls.
 Other departures retain the preview's existing teardown behaviour. The
 [handoff record](settings-handoff-milestone.json) describes native/injected-Back
-proof and runtime firmware checks. Pointer speed uses a separate fixed adapter; no generic settings-write action is available.
+proof and runtime firmware checks. Pointer speed and the G2 audio-description level each use a separate fixed adapter; no generic settings-write action is available.
 The dashboard is still a development
 preview; complete controls, physical input, performance and reboot persistence
 remain unfinished. The [deployment record](deployment-milestone.json) identifies
@@ -110,6 +110,21 @@ update flags can be supplied; the payloads come from a fixed route registry. The
 remaining differences from the concepts. API research used the
 [official webOS OSE LS2 reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-service-systemservice/);
 commercial-TV compatibility is based on the recorded ordinary-app device tests.
+
+## Audio-description level on G2
+
+Open **Controls → Accessibility → Audio-description level**. This signed
+−15…15 level is available on the validated G2 firmware only when audio description
+is off. It does not change description enablement, master volume or sound routing.
+If the capability is unavailable, the row stays LG-managed.
+
+Left/Right or a track click stages a value. Move Down to **Apply** and press OK;
+only verified value/type readback advances **Saved**. Back or Cancel discards a
+staged change. Freshness or an external value change closes the editor so it
+cannot commit an old selection. Input is blocked while one request is pending.
+The [numeric-control record](numeric-control-milestone.json) separates the isolated
+native write/restoration proof from the normal identity's no-write readiness check.
+C2 numeric edits remain gated; its existing accessibility settings are preserved.
 
 ## Pointer speed
 
@@ -150,7 +165,7 @@ passive tests cannot launch household apps. Named proof markers admit only their
 It cannot be packaged under the normal identity, in interactive mode or alongside
 another scripted trial. It requires description to be off, preserves the observed
 numeric representation, permits one adjacent step, and restores the original.
-Independent readback and complete removal checks are required. It adds no slider
+Independent readback and complete removal checks are required. That earlier experiment alone added no slider
 to the retained app; see the [experiment record](numeric-control-experiment.json)
 for the G2 result and C2 preflight skip.
 
@@ -158,8 +173,14 @@ for the G2 result and C2 preflight skip.
 under the separate test identity. It refuses interactive mode and other action
 trials. The host equivalent is `home-preview ASSETS NEW_OUTPUT --range-layout-proof`.
 The proof captures five states, checks adjustment/cancel/pointer/proposal rules,
-and returns an unconfirmed local reply; it has no TV transport. The retained
-0.20.0 previews are unchanged. See the [range editor record](range-editor-milestone.json).
+and returns an unconfirmed local reply; it has no TV transport. That proof did not update the retained previews. See the [range editor record](range-editor-milestone.json).
+
+`NATIVE_HOME_DESCRIPTION_UI_PROOF=1` runs the fixed live numeric G2 trial under
+the separate identity. It verifies staging/cancel without writes, native Apply,
+both signed endpoints and original value/type restoration. Host observers must
+independently read every stage and check complete test removal. It cannot be
+mixed with another action trial or an interactive package. Keep it out of the
+retained normal app.
 
 ## Removal and future tests
 

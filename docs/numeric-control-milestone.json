@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "status": "G2 native numeric entry and guarded Apply/restoration proved in isolated app; normal preview updated to 0.21.0",
+  "source": {
+    "functional_revision": "6f83721e25e90a4551909f7ecdaa1791954ecc03",
+    "normal_reporting_revision": "bbb53716abf4a890f45bec4dc605024eaa193a78",
+    "proof_binary_sha256": "5f6461fd482b1e7ad1c898c09ede26c3abedb3d1fa46eca953f5d6090236534f",
+    "retained_binary_sha256": "481b3e0f8c298b4ae7ccc262238543262c080f2d302169bc50c5a947bd198e55",
+    "reporting_only_difference": "one boolean numeric_control_available_at_last_poll; functional source files unchanged"
+  },
+  "platform": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "webos": "24"
+  },
+  "interface": {
+    "location": "Controls > Accessibility > Audio-description level",
+    "range": {
+      "minimum": -15,
+      "maximum": 15,
+      "step": 1
+    },
+    "scale": "signed audio-description level; no percentage or decibel claim",
+    "behaviour": [
+      "Opening the row reads a fresh admitted value. Left/Right and track clicks stage locally; Back/Cancel returns to the originating page.",
+      "Apply queues one typed request off the GL/input thread. A matching verified readback alone advances Saved.",
+      "Expired or externally changed values close the editor; reads begun before a confirmed write cannot rewind its saved marker.",
+      "Unavailable capability stays LG-managed. Numeric control is admitted only for this G2 firmware, with audio description checked off. C2 production numeric control stays gated."
+    ]
+  },
+  "adapter": {
+    "ordinary_app": true,
+    "fixed_category": "sound",
+    "fixed_key": "audioDescriptionVolume",
+    "no_enable_or_routing_writes": true,
+    "gates": [
+      "known app identity, G2 model, exact firmware and SDK",
+      "own foreground card and no overlay before validation and again before commit",
+      "global non-account nonvolatile active visible descriptors, exact range and on/off metadata",
+      "description off and expected value/representation checked twice",
+      "queued gesture expires after two seconds; pre-write validation expires after four seconds",
+      "one-slot request and read-sample channels; bounded recent outcome history",
+      "readback requires both selected numeric value and original integer/decimal-string representation"
+    ],
+    "ui_freshness_ms": 8000,
+    "sample_refresh_interval_seconds": 3,
+    "privileged_helper_installed": false
+  },
+  "verification": {
+    "luma_checks": {
+      "passed": 118,
+      "failed": 0
+    },
+    "clippy_all_targets_hostsim": "passed with warnings denied",
+    "arm_release": "passed; existing target-feature neon warning",
+    "isolated_g2": {
+      "ordinary_uid": 6583,
+      "scope": {
+        "all_five_stages_seen": true,
+        "native_ui_verified": true,
+        "native_change_verified": true,
+        "native_restore_verified": true,
+        "wire_format_preserved": true,
+        "description_off": true,
+        "no_other_setting_actions": true,
+        "native_transitions": 4,
+        "non_root": true,
+        "no_app_actions": true,
+        "write_attempt_reported": true
+      },
+      "independent_stages": {
+        "staged": true,
+        "changed": true,
+        "minimum": true,
+        "maximum": true,
+        "restored": true
+      },
+      "native_frames": 5,
+      "frame_review": "maximum and restored native controls; logo, typography and saved marker checked",
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_process_absent": true,
+        "retained_metadata_unchanged": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "expanded_settings_restored": true,
+        "numeric_level_restored": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "sound_settings_restored": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      }
+    },
+    "normal_g2": {
+      "version": "0.21.0",
+      "ordinary_uid": 5724,
+      "numeric_read_capability_at_last_poll": true,
+      "automatic_setting_writes": false,
+      "state": {
+        "numeric_values_and_types_unchanged": true,
+        "saved_metadata_unchanged": true,
+        "last_input_cache_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "selected_source_unchanged": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      },
+      "captures_or_proof_markers": false,
+      "write_test_under_retained_identity": false,
+      "successful_general_live_cycles": 17,
+      "no_write_check_seconds_minimum": 30
+    }
+  },
+  "c2": {
+    "modified_this_milestone": false,
+    "retained_version": "0.20.0",
+    "numeric_writes": "not enabled; prior safe-test context unavailable",
+    "hdmi_switching": "still gated; earlier idle tuner restoration limitation unchanged"
+  },
+  "remaining": [
+    "The combined numeric write proof ran under the separate ordinary-app test identity. The retained identity passed a no-write readiness/smoke check, not a retained-ID write test.",
+    "Stored-value and exact-type readback are proved. Audible description mixing, enabled-description behaviour and listening tests are unverified.",
+    "Only this fixed numeric operation is enabled. Picture/HDR/input-context native edits, other controls and protected operations remain read-only or LG-managed.",
+    "No compare-and-swap API is available; context/value checks do not prove atomic exclusion of another settings writer.",
+    "Physical remote/pointer/wheel, full text/IME, live HDMI video/format, reboot persistence and sustained performance remain open.",
+    "The bounded UI proof refreshed the numeric worker but did not consume the general live-status queue during its scripted edit loop. The normal main loop refreshes both; stale general-status text in those private proof frames is not a live numeric reading."
+  ],
+  "privacy": "Original/target household settings, detailed replies, inventories and TV captures remain private. This record contains scoped model/build/boolean/count evidence."
+}

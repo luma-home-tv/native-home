@@ -76,7 +76,7 @@
         "General",
         "Panel Care"
       ],
-      "pilot": "Native pointer-speed enum control with per-operation metadata/context/readback validation; other adjustments read-only or LG-managed"
+      "pilot": "Native pointer-speed choice on both TVs and G2-only signed audio-description level, each with fixed metadata/context/readback validation; other adjustments read-only or LG-managed"
     }
   },
   "interaction": {
