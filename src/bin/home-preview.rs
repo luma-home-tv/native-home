@@ -24,6 +24,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
     let session_capture = interactive && assets.join("session-proof.json").exists();
+    let performance_proof = interactive && assets.join("performance-proof.json").exists();
+    if performance_proof && device && plx_base::paths::app_id() != native_home::identity::PROOF {
+        return Err("Performance diagnostics require the isolated identity".into());
+    }
+    let mut performance = performance_proof.then(native_home::performance::Monitor::default);
     if interactive
         && [
             "drawer-proof.json",
@@ -543,10 +548,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut settings_returns = 0_u32;
     let mut capture_settings_return = false;
 
+    let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
     if !capture_only {
         reason = "timeout";
         while !session.expired(start.elapsed()) && !shell.should_exit() {
+            if performance_proof && start.elapsed() >= Duration::from_secs(240) {
+                reason = "performance_proof_limit";
+                break;
+            }
             let current = Instant::now();
             let dt = (current - last).as_secs_f32().clamp(0.001, 0.05);
             last = current;
@@ -559,6 +569,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             shell.set_clock(clock.view(live_origin.elapsed()));
             shell.tick(now, dt);
             while let Some(e) = poll() {
+                if e.kind == 2 {
+                    if let Some(m) = &mut performance {
+                        m.input(e.key, start.elapsed());
+                    }
+                }
                 events = events.saturating_add(1_u32);
                 // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
                 // Consume the first wake input and cancel any gesture armed before blanking.
@@ -699,11 +714,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             window.capture(&output.join("session-idle.ppm"))?;
                         }
                         window.swap();
+                        if let Some(m) = &mut performance {
+                            m.idle_blanks += 1;
+                            m.suspended();
+                        }
                         idle_presentations = idle_presentations.saturating_add(1);
                         idle_blanked = true;
                     }
                 } else {
+                    let draw_start = Instant::now();
                     shell.draw();
+                    let draw_elapsed = draw_start.elapsed();
                     if capture_settings_return
                         && matches!(
                             proof_request,
@@ -722,7 +743,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if session_capture && idle_blanked && session.wakes == 1 {
                         window.capture(&output.join("session-awake.ppm"))?;
                     }
+                    let swap_start = Instant::now();
                     window.swap();
+                    if let Some(m) = &mut performance {
+                        m.presented(start.elapsed(), draw_elapsed, swap_start.elapsed());
+                    }
                     idle_blanked = false;
                 }
                 if interactive && !ready_written {
@@ -736,6 +761,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     serde_json::to_writer_pretty(file, &ready)?;
                     ready_written = true;
                 }
+            }
+            if hidden_at.is_some() {
+                if let Some(m) = &mut performance {
+                    m.suspended();
+                }
+            }
+            if let Some(monitor) = performance.as_ref().filter(|_| {
+                start.elapsed().saturating_sub(last_performance_snapshot) >= Duration::from_secs(1)
+            }) {
+                last_performance_snapshot = start.elapsed();
+                let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
+                let path = output.join("performance-current.json");
+                let temporary = output.join("performance-current-next.json");
+                let file = std::fs::OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .mode(0o600)
+                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                    .open(&temporary)?;
+                serde_json::to_writer(file, &sample)?;
+                std::fs::rename(temporary, path)?;
             }
             // Bounded 60 Hz host cap also handles compositors whose swap does not block.
             let elapsed = current.elapsed();
@@ -786,7 +832,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
-    let report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
+    let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
         "interactive_session":interactive,"idle_presentations":idle_presentations,"idle_wakes":session.wakes,
         "clock":clock.view(live_origin.elapsed()),
         "settings_returns":settings_returns,
@@ -795,6 +841,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
+    report["performance"] = performance
+        .as_ref()
+        .map(|m| m.report())
+        .unwrap_or(serde_json::Value::Null);
     let mut file = std::fs::OpenOptions::new()
         .create_new(true)
         .write(true)

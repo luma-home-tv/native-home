@@ -75,6 +75,7 @@ pub struct Window {
     window: *mut c_void,
     context: *mut c_void,
     pub renderer: String,
+    pub swap_interval_request_accepted: bool,
 }
 impl Window {
     pub fn new(visible: bool) -> Result<Self, Box<dyn std::error::Error>> {
@@ -140,6 +141,7 @@ impl Window {
                 window,
                 context,
                 renderer: String::new(),
+                swap_interval_request_accepted: false,
             };
             let (mut w, mut h) = (0, 0);
             SDL_GL_GetDrawableSize(window, &mut w, &mut h);
@@ -152,7 +154,7 @@ impl Window {
             }
             owner.renderer = CStr::from_ptr(ptr.cast()).to_string_lossy().into_owned();
             glViewport(0, 0, w, h);
-            SDL_GL_SetSwapInterval(1);
+            owner.swap_interval_request_accepted = SDL_GL_SetSwapInterval(1) == 0;
             plx_gfx::gfx::init_gl();
             plx_gfx::gfx::init_image();
             plx_gfx::text::init_text();

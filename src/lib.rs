@@ -23,3 +23,5 @@ pub mod session;
 pub mod identity;
 
 pub mod clock;
+
+pub mod performance;
