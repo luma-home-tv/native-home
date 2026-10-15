@@ -79,7 +79,41 @@ Its actual frozen-candidate admission prefix passed with all processes except
 two pinned read-only framework verifiers forbidden and no agent/device lane
 created. Those are local admission checks, not a TV run.
 
-Native helper context reads, the cross-jail Identify exchange and full isolated
-removal/state checks are pending.
-No icon operation, production startup or normal-preview update is part of this
-candidate. Live artwork worker/cache integration follows resource qualification.
+## Isolated G2 result
+
+The native run completed with one verified Identify request/reply across the
+jail boundary. Both sides bound connection and per-packet kernel credentials,
+nonce, process/start identity and executable hashes. The helper's three context
+snapshots used nine successful fixed client invocations, with known cleanup,
+owned-group cleanup before leader reap, and the same pinned Core executable
+across 24 reader measurements. The ordinary client also checked its own context
+before and after the exchange. These remain sampled context checks.
+
+The driver's independent post-exit scan found none of the nine reported child
+PIDs or groups. This is observed absence, not independent live child executable
+measurement or a descendant sandbox. Per-child output digests are computed by
+the bound reader; raw child stdout was not separately saved for recomputation.
+The client probe took 3,112 ms including its own context and readback work. That
+is not a UI performance or physical-input latency result.
+
+The ordinary native collector exited at its bounded timeout after 30.14 seconds,
+saved 13 frames, and was removed. All 24 positive preservation checks passed,
+including checked retained-preview/favourites bytes and metadata, five selected
+Core hashes, Core-client metadata, 20 explicit settings domains, input/last-input
+and checked audio profiles. LG Home was current. Proof processes/runtime/jail/
+state/catalogue/launchpoint, helper/endpoint, known child groups, two staged files,
+empty directory, upload, lease and private SSH agent were verified absent.
+Normal G2 stays on 0.31.0; C2 was not contacted.
+An independent saved-evidence audit passed 1,006 assertions across the pinned
+inputs/artifacts, raw process records, reader and wire/credential observations,
+20 preservation domains and cleanup. Its result hash is
+`825350be68335a3247b3362a0c69c4ef1deef89a229348b2a6456b26573473fe`.
+The raw response packet was saved and replayed; the raw request packet was not
+separately saved. Request admission is observed through the bound server and
+client receipts.
+
+The [scoped milestone](broker-context-034-milestone.json) records these facts.
+One valid native exchange does not execute every negative transport case or
+prove alarm delivery, image reads, a production startup path, normal delivery,
+playback/DRM/HDMI-format behaviour or full release readiness. Live artwork
+worker/cache integration follows server-owned resource qualification.

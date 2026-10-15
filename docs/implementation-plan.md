@@ -76,6 +76,12 @@ four sampled directories absent inside the ordinary jail. Qualify the missing
 resource route before treating a direct-file worker as complete artwork support.
 The [Identify-only candidate](artwork-broker-identify.md) now separates that
 route's caller/transport qualification from icon reads and production startup.
+The subsequent [fixed context reader](broker-context-reader-034.md) qualified one
+restricted native G2 exchange and clean removal with checked state preserved.
+Next, derive artwork sources from the helper's own admitted live catalogue,
+qualify bounded reads across the observed root classes, and transfer encoded
+images for ordinary-worker decoding and main-thread texture updates. The
+operator-started helper is still separate from production enrollment/startup.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent
 bounded, read-only inventory work. Existing verified source selection and LG
 routes remain available throughout.

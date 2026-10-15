@@ -27,6 +27,17 @@ The subsequent [fixed context reader candidate](broker-context-reader-034.md)
 addresses the measured anonymous-registration refusal without changing the
 existing context authorization or TV permission policy.
 
+That candidate now has one native G2 Identify exchange with verified cleanup.
+This admits further resource experiments; it supplies no icon access by itself.
+The next implementation must derive sources from server-obtained app and launch
+metadata rather than accept filesystem paths from the UI. Admit only registered
+visible apps and the existing sealed root/app-ID/relative-component rules, with
+descriptor-based regular-file reads and before/after identity checks. Send
+bounded encoded data with declared length/digest and per-packet credential
+binding; decode only in the ordinary worker using the prepared bounded decoder.
+Keep the operator-started test path explicit until production startup is
+separately qualified. Do not treat a cached development snapshot as live artwork.
+
 ## Admission experiment
 
 After the retained 0.31 delivery, run a small separate Proof app on G2. Select one
