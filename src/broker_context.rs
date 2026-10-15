@@ -66,12 +66,38 @@ impl ReadSet {
 }
 
 #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
-fn helper_scope(path: &std::path::Path, _set: ReadSet, installed_authority: bool) -> bool {
+fn installed_authority_for(
+    path: &std::path::Path,
+    expected_sha256: &str,
+    load: impl FnOnce(
+        crate::broker_installation::Profile,
+    ) -> Option<(crate::broker_installation::Profile, String)>,
+) -> Option<crate::broker_installation::Profile> {
+    use crate::broker_installation::Profile;
+    if expected_sha256.len() != 64
+        || !expected_sha256
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return None;
+    }
+    let profile = [Profile::Proof, Profile::Preview]
+        .into_iter()
+        .find(|profile| path.as_os_str() == std::ffi::OsStr::new(&profile.helper_path()))?;
+    let (loaded_profile, pinned_sha256) = load(profile)?;
+    (loaded_profile == profile && pinned_sha256 == expected_sha256).then_some(profile)
+}
+
+#[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+fn helper_scope(
+    path: &std::path::Path,
+    _set: ReadSet,
+    installed_authority: Option<crate::broker_installation::Profile>,
+) -> bool {
     path.file_name()
         .is_some_and(|name| name == "artwork-broker-proof")
-        || (installed_authority
-            && path
-                == std::path::Path::new(&crate::broker_installation::Profile::Proof.helper_path()))
+        || installed_authority
+            .is_some_and(|profile| path.as_os_str() == std::ffi::OsStr::new(&profile.helper_path()))
 }
 
 fn unavailable() -> Value {
@@ -826,15 +852,20 @@ mod core {
         // its exact kernel executable. Both read sets contain fixed GETs;
         // catalogue data stays inside the helper's sealed resource admission.
         // The historical operator helper keeps its separately qualified scope.
-        let installed_authority = root
-            && path.as_deref()
-                == Some(std::path::Path::new(
-                    &crate::broker_installation::Profile::Proof.helper_path(),
-                ))
-            && crate::broker_installation::Installation::load(
-                crate::broker_installation::Profile::Proof,
-            )
-            .is_ok_and(|installation| installation.pins().context_reader_sha256 == expected_sha256);
+        let installed_authority = if root {
+            path.as_deref().and_then(|path| {
+                installed_authority_for(path, expected_sha256, |profile| {
+                    let installation =
+                        crate::broker_installation::Installation::load(profile).ok()?;
+                    Some((
+                        installation.pins().profile,
+                        installation.pins().context_reader_sha256.clone(),
+                    ))
+                })
+            })
+        } else {
+            None
+        };
         if !root
             || path
                 .as_deref()
@@ -974,33 +1005,100 @@ mod core {
         use super::*;
         #[test]
         fn installed_fixed_read_sets_need_exact_protected_authority() {
-            let path = crate::broker_installation::Profile::Proof.helper_path();
-            let path = std::path::Path::new(&path);
-            assert!(helper_scope(path, ReadSet::Context, true));
-            assert!(!helper_scope(path, ReadSet::Context, false));
-            assert!(helper_scope(path, ReadSet::Catalogue, true));
-            assert!(!helper_scope(path, ReadSet::Catalogue, false));
-            let preview = crate::broker_installation::Profile::Preview.helper_path();
-            assert!(!helper_scope(
-                std::path::Path::new(&preview),
-                ReadSet::Catalogue,
-                true
-            ));
-            assert!(!helper_scope(
-                std::path::Path::new("/tmp/artwork-broker-startup-proof"),
-                ReadSet::Context,
-                true
-            ));
-            assert!(helper_scope(
-                std::path::Path::new("/tmp/operator/artwork-broker-proof"),
-                ReadSet::Catalogue,
-                false
-            ));
-            assert!(!helper_scope(
-                std::path::Path::new("/tmp/home-preview"),
-                ReadSet::Context,
-                true
-            ));
+            use crate::broker_installation::Profile;
+            for (profile, other) in [
+                (Profile::Proof, Profile::Preview),
+                (Profile::Preview, Profile::Proof),
+            ] {
+                let path = profile.helper_path();
+                let path = std::path::Path::new(&path);
+                for set in [ReadSet::Context, ReadSet::Catalogue] {
+                    assert!(helper_scope(path, set, Some(profile)));
+                    assert!(!helper_scope(path, set, None));
+                    assert!(!helper_scope(path, set, Some(other)));
+                    assert!(helper_scope(
+                        std::path::Path::new("/tmp/operator/artwork-broker-proof"),
+                        set,
+                        None
+                    ));
+                    for wrong in [
+                        "/tmp/artwork-broker-startup-proof",
+                        "/tmp/artwork-broker",
+                        "/tmp/home-preview",
+                        "/var/lib/luma-home-proof/artwork-broker",
+                        "/var/lib/luma-home/artwork-broker-startup-proof",
+                        "/var/lib/./luma-home/artwork-broker",
+                        "/var/lib/luma-home/artwork-broker (deleted)",
+                    ] {
+                        assert!(!helper_scope(
+                            std::path::Path::new(wrong),
+                            set,
+                            Some(profile)
+                        ));
+                    }
+                }
+            }
+        }
+        #[test]
+        fn installed_authority_loads_only_the_role_selected_by_exact_kernel_path() {
+            use crate::broker_installation::Profile;
+            let expected = "a".repeat(64);
+            for profile in [Profile::Proof, Profile::Preview] {
+                let path = profile.helper_path();
+                let path = std::path::Path::new(&path);
+                assert_eq!(
+                    installed_authority_for(path, &expected, |selected| {
+                        assert_eq!(selected, profile);
+                        Some((selected, expected.clone()))
+                    }),
+                    Some(profile)
+                );
+            }
+            for path in [
+                "/tmp/artwork-broker",
+                "/tmp/artwork-broker-proof",
+                "/media/developer/apps/usr/palm/applications/com.ash.nativehome.preview/artwork-broker",
+                "/var/lib/./luma-home/artwork-broker",
+                "/var/lib/luma-home/artwork-broker (deleted)",
+            ] {
+                assert_eq!(
+                    installed_authority_for(std::path::Path::new(path), &expected, |_| {
+                        panic!("Unrecognized executable must not select installed authority")
+                    }),
+                    None
+                );
+            }
+        }
+        #[test]
+        fn failed_cross_role_or_wrong_core_installation_never_admits_fixed_gets() {
+            use crate::broker_installation::Profile;
+            let expected = "a".repeat(64);
+            for (profile, other) in [
+                (Profile::Proof, Profile::Preview),
+                (Profile::Preview, Profile::Proof),
+            ] {
+                let path = profile.helper_path();
+                let path = std::path::Path::new(&path);
+                for loaded in [
+                    None,
+                    Some((other, expected.clone())),
+                    Some((profile, "b".repeat(64))),
+                ] {
+                    let admitted = installed_authority_for(path, &expected, |_| loaded);
+                    assert_eq!(admitted, None);
+                    for set in [ReadSet::Context, ReadSet::Catalogue] {
+                        assert!(!helper_scope(path, set, admitted));
+                    }
+                }
+                for invalid in ["A".repeat(64), "a".repeat(63), String::new()] {
+                    assert_eq!(
+                        installed_authority_for(path, &invalid, |_| {
+                            panic!("Malformed Core pin must refuse before loading authority")
+                        }),
+                        None
+                    );
+                }
+            }
         }
         fn spawn(script: &str) -> Child {
             let mut c = Command::new("/bin/sh");

@@ -99,10 +99,12 @@ binds the actual executables and build receipts. The existing target-feature
 stability warning remains. No new package was created or installed, and these
 builds do not qualify the new dispatch guard or actual Preview capability.
 
-The current source foundation does not activate the Preview provider, add a
-Preview Root entry or update the retained TV app. Those are remaining
-implementation and native-validation steps, along with the new Proof dispatch
-guard's device regression. LG Home,
+The foundation revision above did not activate the Preview provider, add a
+Preview Root entry or update the retained TV app. The subsequent
+[0.44 source candidate](artwork-installed-profiles-044.md) now supplies the fixed
+entry and closed provider/resource wiring plus an isolated restart test. Native
+guard/profile regressions and the actual Preview-ID trial remain separate gates;
+the normal renderer still does not activate its Preview provider. LG Home,
 boot, firmware, jail/service policy, media and OLED protections stay untouched.
 C2 remains outside this work.
 

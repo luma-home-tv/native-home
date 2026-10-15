@@ -1,10 +1,11 @@
 //! Shared bounded artwork operations. The historical operator helper and the
-//! protected installed Proof bootstrap use distinct authority paths.
+//! protected installed bootstraps use distinct authority paths.
 //! Fixed context/catalogue GETs use the pinned installed system client.
 //! Artwork requests select an app and icon variant from our own fixed catalogue.
 //! No caller-selected command, filesystem path or service URI exists.
 #[cfg(any(target_arch = "arm", test))]
 mod proof {
+    use crate::broker_installation::Profile;
     use crate::broker_protocol as protocol;
     #[derive(Clone, Copy)]
     enum ResourceLimit {
@@ -252,6 +253,13 @@ mod proof {
     }
     #[cfg(target_arch = "arm")]
     pub(super) fn peer(pid: u32) -> io::Result<PeerEvidence> {
+        peer_for_profile(pid, Profile::Proof)
+    }
+    fn peer_paths(profile: Profile, exe: &str, root: &str) -> bool {
+        exe == profile.peer_exe_path() && root == profile.jail_root()
+    }
+    #[cfg(target_arch = "arm")]
+    pub(super) fn peer_for_profile(pid: u32, profile: Profile) -> io::Result<PeerEvidence> {
         if pid <= 1 {
             return Err(invalid("Invalid enrolled PID"));
         }
@@ -263,8 +271,10 @@ mod proof {
         let uids = uid_fields(&text(&dir, "status", 65536)?)?;
         let exe_path = link(&dir, "exe")?;
         let root_path = link(&dir, "root")?;
-        if exe_path != protocol::PROOF_EXE_PATH || root_path != protocol::PROOF_JAIL_ROOT {
-            return Err(invalid("Enrolled process is outside the exact Proof jail"));
+        if !peer_paths(profile, &exe_path, &root_path) {
+            return Err(invalid(
+                "Enrolled process is outside its exact installed jail",
+            ));
         }
         // Deliberately follow only this kernel procfs executable link. We never
         // open a path supplied by the client or use its JSON as process evidence.
@@ -332,11 +342,19 @@ mod proof {
         value: &serde_json::Value,
         expected_sha256: &str,
     ) -> Result<(), protocol::Error> {
+        check_context_for_profile(value, expected_sha256, Profile::Proof)
+    }
+    fn check_context_for_profile(
+        value: &serde_json::Value,
+        expected_sha256: &str,
+        profile: Profile,
+    ) -> Result<(), protocol::Error> {
         check_reader(value, expected_sha256)?;
-        protocol::validate_context(
+        protocol::validate_context_for_profile(
             &value["system_info"],
             &value["foreground"],
             &value["windows"],
+            profile,
         )
     }
     #[cfg(target_arch = "arm")]
@@ -362,6 +380,12 @@ mod proof {
     }
     #[cfg(target_arch = "arm")]
     impl ResourceAuthority<'_> {
+        fn profile(self) -> Profile {
+            match self {
+                Self::Operator => Profile::Proof,
+                Self::Installed(installation) => installation.pins().profile,
+            }
+        }
         fn limit(self) -> ResourceLimit {
             match self {
                 Self::Operator => ResourceLimit::Operator,
@@ -385,6 +409,7 @@ mod proof {
         enrolled: &Enrollment,
         deadline: std::time::Instant,
         summary: &mut serde_json::Value,
+        profile: Profile,
     ) -> Result<crate::app_artwork::SourceMap, Box<dyn std::error::Error>> {
         use serde_json::json;
         let value = crate::broker_context::catalogue(deadline, &enrolled.context_reader_sha256);
@@ -394,7 +419,7 @@ mod proof {
             "launch_point_count":value["launch_points"]["launchPoints"].as_array().map(Vec::len)});
         check_reader(&value, &enrolled.context_reader_sha256)?;
         let raw = json!({"replies":{"apps":value["apps"],"launch_points":value["launch_points"]}});
-        let map = crate::app_artwork::sources_from_raw(&raw, crate::identity::PROOF)
+        let map = crate::app_artwork::sources_from_raw(&raw, profile.app_id())
             .map_err(|_| invalid("Server-owned artwork catalogue admission failed"))?;
         Ok(map)
     }
@@ -440,8 +465,13 @@ mod proof {
         authority: ResourceAuthority<'_>,
     ) -> Result<PreparedArtwork, ResourceFailure> {
         use serde_json::json;
-        let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_before"])
-            .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
+        let map = resource_catalogue(
+            enrolled,
+            deadline,
+            &mut record["catalogue_before"],
+            authority.profile(),
+        )
+        .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
         let entry = map.get(app_id).ok_or(ResourceFailure::NoSource)?;
         let source = (if icon_only {
             entry.icon.as_ref()
@@ -477,8 +507,13 @@ mod proof {
         authority: ResourceAuthority<'_>,
     ) -> Result<(), ResourceFailure> {
         use serde_json::json;
-        let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_after"])
-            .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
+        let map = resource_catalogue(
+            enrolled,
+            deadline,
+            &mut record["catalogue_after"],
+            authority.profile(),
+        )
+        .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
         let entry = map
             .get(prepared.source.app_id())
             .ok_or(ResourceFailure::Changed)?;
@@ -520,8 +555,9 @@ mod proof {
         message: &crate::broker_transport::Credentials,
         authority: ResourceAuthority<'_>,
     ) -> Result<PeerEvidence, Box<dyn std::error::Error>> {
-        enrolled.validate(now()?)?;
-        let evidence = peer(enrolled.client_pid)?;
+        let profile = authority.profile();
+        enrolled.validate_for_profile(now()?, profile)?;
+        let evidence = peer_for_profile(enrolled.client_pid, profile)?;
         match authority {
             ResourceAuthority::Operator => {
                 if enrollment(&enrolled.nonce)? != *enrolled {
@@ -533,8 +569,7 @@ mod proof {
             }
             ResourceAuthority::Installed(installation) => {
                 let pins = installation.pins();
-                if pins.profile != crate::broker_installation::Profile::Proof
-                    || pins.rendezvous_nonce != enrolled.nonce
+                if pins.rendezvous_nonce != enrolled.nonce
                     || pins.ui_sha256 != enrolled.ui_sha256
                     || pins.broker_sha256 != enrolled.broker_sha256
                     || pins.context_reader_sha256 != enrolled.context_reader_sha256
@@ -544,7 +579,7 @@ mod proof {
                 installation.admit_peer(connect, message, &evidence)?;
             }
         }
-        protocol::authorize(enrolled, connect, message, &evidence)?;
+        protocol::authorize_for_profile(enrolled, connect, message, &evidence, profile)?;
         Ok(evidence)
     }
     #[cfg(target_arch = "arm")]
@@ -572,8 +607,9 @@ mod proof {
     ) -> Result<(), Box<dyn std::error::Error>> {
         use crate::artwork_transfer as wire;
         use serde_json::json;
+        let profile = authority.profile();
         let identity = response_identity(enrolled);
-        identity.validate()?;
+        identity.validate_for_profile(profile)?;
         report["handshake_only"] = json!(false);
         report["artwork_reads_only"] = json!(true);
         report["icon_reads"] = json!(true);
@@ -592,14 +628,14 @@ mod proof {
                 let context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 report["artwork_finish_context"] = context.clone();
-                check_context(&context, &enrolled.context_reader_sha256)?;
+                check_context_for_profile(&context, &enrolled.context_reader_sha256, profile)?;
                 let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 if after != before {
                     return Err(invalid("Artwork caller changed before finish").into());
                 }
                 report["artwork_finish_peer_after"] = json!(after);
-                let finished = wire::Finished::new(&finish, &identity)?;
-                wire::send_finished(connection, &finished, deadline)?;
+                let finished = wire::Finished::new_for_profile(&finish, &identity, profile)?;
+                wire::send_finished_for_profile(connection, &finished, deadline, profile)?;
                 report["artwork_finished"] = json!(finished);
                 report["artwork_session_completed"] = json!(true);
                 return Ok(());
@@ -621,7 +657,7 @@ mod proof {
                 let context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 record["context_before"] = context.clone();
-                check_context(&context, &enrolled.context_reader_sha256)?;
+                check_context_for_profile(&context, &enrolled.context_reader_sha256, profile)?;
                 let icon_only = matches!(request.variant, wire::Variant::Icon);
                 let prepared = prepare_artwork(
                     enrolled,
@@ -639,17 +675,19 @@ mod proof {
                 }
                 let mut header = None;
                 if let Ok(value) = &prepared {
-                    let value_header = wire::Header::from_file(
+                    let value_header = wire::Header::from_file_for_profile(
                         &request,
                         &identity,
                         value.source.key(),
                         &value.file,
+                        profile,
                     )?;
-                    wire::send_header_chunks(
+                    wire::send_header_chunks_for_profile(
                         connection,
                         &value_header,
                         &value.file.bytes,
                         deadline,
+                        profile,
                     )?;
                     record["encoded_data_released"] = json!(true);
                     record["header"] = json!(value_header);
@@ -675,7 +713,11 @@ mod proof {
                 let after_context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 record["context_after"] = after_context.clone();
-                check_context(&after_context, &enrolled.context_reader_sha256)?;
+                check_context_for_profile(
+                    &after_context,
+                    &enrolled.context_reader_sha256,
+                    profile,
+                )?;
                 let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 record["peer_after"] = json!(after);
                 if after != before {
@@ -683,19 +725,24 @@ mod proof {
                 }
                 match readback {
                     Ok(()) => {
-                        let complete = wire::Complete::from_header(
+                        let complete = wire::Complete::from_header_for_profile(
                             header
                                 .as_ref()
                                 .ok_or_else(|| invalid("Missing transferred artwork header"))?,
+                            profile,
                         )?;
-                        wire::send_complete(connection, &complete, deadline)?;
+                        wire::send_complete_for_profile(connection, &complete, deadline, profile)?;
                         record["complete"] = json!(complete);
                         record["completed"] = json!(true);
                     }
                     Err(reason) => {
-                        let refusal =
-                            wire::Refusal::new(&request, &identity, refusal_reason(reason))?;
-                        wire::send_refusal(connection, &refusal, deadline)?;
+                        let refusal = wire::Refusal::new_for_profile(
+                            &request,
+                            &identity,
+                            refusal_reason(reason),
+                            profile,
+                        )?;
+                        wire::send_refusal_for_profile(connection, &refusal, deadline, profile)?;
                         record["refusal"] = json!(refusal);
                     }
                 }
@@ -924,6 +971,65 @@ mod proof {
     mod tests {
         use super::*;
         #[test]
+        fn installed_peer_paths_never_cross_profiles_or_leave_the_exact_jail() {
+            for profile in [Profile::Proof, Profile::Preview] {
+                let other = if profile == Profile::Proof {
+                    Profile::Preview
+                } else {
+                    Profile::Proof
+                };
+                assert!(peer_paths(
+                    profile,
+                    &profile.peer_exe_path(),
+                    &profile.jail_root()
+                ));
+                assert!(!peer_paths(
+                    profile,
+                    &other.peer_exe_path(),
+                    &other.jail_root()
+                ));
+                assert!(!peer_paths(
+                    profile,
+                    &profile.ui_path(),
+                    &profile.jail_root()
+                ));
+                assert!(!peer_paths(
+                    profile,
+                    &profile.peer_exe_path(),
+                    &format!("{}/", profile.jail_root())
+                ));
+                assert!(!peer_paths(
+                    profile,
+                    &format!("{} (deleted)", profile.peer_exe_path()),
+                    &profile.jail_root()
+                ));
+            }
+        }
+        #[test]
+        fn installed_context_binds_the_fixed_reader_and_source_selected_role() {
+            use serde_json::json;
+            let sha = "d".repeat(64);
+            for profile in [Profile::Proof, Profile::Preview] {
+                let other = if profile == Profile::Proof {
+                    Profile::Preview
+                } else {
+                    Profile::Proof
+                };
+                let value = json!({"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"},
+                    "foreground":{"returnValue":true,"appId":profile.app_id()},
+                    "windows":{"returnValue":true,"windows":[{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"}]},
+                    "_reader":{"kind":"fixed_core_luna_send","program":"/usr/bin/luna-send","approved":true,"qualified":true,"cleanup_known":true,"executable":{"sha256":sha}}});
+                assert!(check_context_for_profile(&value, &sha, profile).is_ok());
+                assert!(check_context_for_profile(&value, &sha, other).is_err());
+                for key in ["approved", "qualified", "cleanup_known"] {
+                    let mut bad = value.clone();
+                    bad["_reader"][key] = json!(false);
+                    assert!(check_context_for_profile(&bad, &sha, profile).is_err());
+                }
+                assert!(check_context_for_profile(&value, &"e".repeat(64), profile).is_err());
+            }
+        }
+        #[test]
         fn installed_resources_admit_one_read_and_never_relax_nonce_or_sequence() {
             use crate::artwork_transfer::{Request, Variant};
             let nonce = "a".repeat(32);
@@ -1108,11 +1214,14 @@ mod proof {
     }
 }
 
-/// Kernel-bound fixed Proof process evidence reused by the installed bootstrap.
-/// The caller supplies a PID obtained from socket credentials, never a wire PID.
+/// Profile comes only from the fixed bootstrap/protected Installation. The PID
+/// must still come from actual socket credentials; no caller-selected proc path.
 #[cfg(target_arch = "arm")]
-pub(crate) fn proof_peer(pid: u32) -> std::io::Result<crate::broker_protocol::PeerEvidence> {
-    proof::peer(pid)
+pub(crate) fn installed_peer(
+    pid: u32,
+    profile: crate::broker_installation::Profile,
+) -> std::io::Result<crate::broker_protocol::PeerEvidence> {
+    proof::peer_for_profile(pid, profile)
 }
 
 /// Reuse the qualified bounded transfer operation with protected installed

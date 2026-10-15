@@ -110,6 +110,29 @@ class EntrypointTests(unittest.TestCase):
                 self.assert_no_tool_or_package()
                 self.assertFalse(self.receipt.exists())
 
+    def test_fixed_preview_helper_build_choice_does_not_bypass_framework_admission(self):
+        (self.root / 'framework-drift').write_text('refuse')
+        result = self.run_entrypoint('build-client.py', 'arm', '--bin', 'artwork-broker')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('CalledProcessError', result.stderr)
+        self.assertNotIn('invalid choice', result.stderr)
+        self.assert_no_tool_or_package()
+
+    def test_installed_helpers_can_never_be_packaged_as_the_ui_executable(self):
+        raw = self.binary.read_bytes()
+        for name in ('artwork-broker-startup-proof', 'artwork-broker'):
+            with self.subTest(name=name):
+                self.binary = self.base / name
+                self.binary.write_bytes(raw)
+                self.receipt = self.binary.with_name(name + '.build.json')
+                self.env['NATIVE_HOME_ARM_BINARY'] = str(self.binary)
+                self.record()
+                result = self.run_entrypoint('package-preview.py')
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn('Unexpected preview binary', result.stderr)
+                self.assertFalse((self.output / 'preview-package').exists())
+                self.assert_no_tool_or_package()
+
     def test_missing_or_tampered_receipt_refuses_before_staging(self):
         result = self.run_entrypoint('package-preview.py')
         self.assertNotEqual(result.returncode, 0)

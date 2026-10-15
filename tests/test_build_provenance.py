@@ -56,6 +56,19 @@ class ProvenanceTests(unittest.TestCase):
         self.receipt.chmod(0o400)
         p.validate_build_receipt(self.root, self.binary, self.receipt)
 
+    def test_fixed_installed_helper_names_still_require_actual_arm_and_bound_source(self):
+        raw = self.binary.read_bytes()
+        for name in ('artwork-broker-startup-proof', 'artwork-broker'):
+            with self.subTest(name=name):
+                binary = self.binary.with_name(name)
+                binary.write_bytes(raw)
+                before = p.snapshot(self.root)
+                receipt = p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root))
+                self.assertEqual(p.validate_build_receipt(self.root, binary, receipt)['binary']['name'], name)
+                binary.write_bytes(b'not an ARM executable')
+                with self.assertRaisesRegex(ValueError, 'Actual ARM32'):
+                    p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root))
+
     def test_missing_receipt_or_binary_refuses(self):
         with self.assertRaises(FileNotFoundError):
             p.validate_build_receipt(self.root, self.binary, self.receipt)

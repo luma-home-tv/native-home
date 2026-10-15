@@ -35,13 +35,58 @@ class InstalledArtworkPackageTests(unittest.TestCase):
     def refused(self, changes, message=None):
         self.fixture.refused(self.environment() | changes, message)
 
+    def guard_environment(self):
+        result = self.environment()
+        result.pop('NATIVE_HOME_INSTALLED_ARTWORK_PROOF')
+        result['NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF'] = '1'
+        return result
+
+    def test_guard_relaunch_is_a_sole_ordinary_marker_without_root_payload(self):
+        result, output = self.fixture.package(self.guard_environment())
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt = json.loads((output / 'preview-package-receipt.json').read_text())
+        members = _BASE.ar_members(Path(receipt['ipk']).read_bytes())
+        files = {}
+        prefix = 'usr/palm/applications/' + _BASE.APP + '/'
+        with tarfile.open(fileobj=io.BytesIO(members['data.tar.gz'])) as data:
+            for row in data:
+                self.assertTrue(row.isdir() or row.isfile())
+                if row.isfile():
+                    name = row.name.removeprefix('./')
+                    self.assertTrue(name.startswith(prefix))
+                    files[name[len(prefix):]] = data.extractfile(row).read()
+        self.assertEqual(set(files), {'appinfo.json', 'home-preview', 'snapshot.json',
+                                     'appfont.ttf', 'appfont-bold.ttf', 'OFL.txt',
+                                     'icon.png', 'artwork-guard-relaunch-proof.json'})
+        pins = self.fixture.pins
+        self.assertEqual(json.loads(files['artwork-guard-relaunch-proof.json']),
+                         {'schema': 1, 'nonce': pins['rendezvous_nonce'],
+                          'ui_sha256': pins['ui_sha256'], 'broker_sha256': pins['broker_sha256']})
+        self.assertIs(receipt['artwork_guard_relaunch_proof'], True)
+        self.assertIs(receipt['installed_artwork_proof'], False)
+        self.assertIs(receipt['broker_startup_proof'], False)
+        self.assertIs(receipt['broker_negative_proof'], False)
+        self.assertEqual(json.loads(files['appinfo.json'])['requiredPermissions'], [])
+        for field in ('services', 'permissions', 'boot_hooks', 'system_files'):
+            self.assertEqual(receipt[field], [])
+
+    def test_guard_relaunch_refuses_normal_interactive_or_mixed_modes(self):
+        for changes in ({'NATIVE_HOME_TEST_IDENTITY': '0'},
+                        {'NATIVE_HOME_INTERACTIVE_SESSION': '1'},
+                        {'NATIVE_HOME_INSTALLED_ARTWORK_PROOF': '1'},
+                        {'NATIVE_HOME_BROKER_STARTUP_PROOF': '1'},
+                        {'NATIVE_HOME_NATIVE_READ_PROBE': '1'},
+                        {'NATIVE_HOME_ICON_PRESENTATION_PROOF': '1'}):
+            with self.subTest(changes=changes):
+                self.fixture.refused(self.guard_environment() | changes)
+
     def test_exact_ordinary_payload_marker_and_helper_context_without_root_files(self):
         result, output = self.fixture.package(self.environment())
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt = json.loads((output / 'preview-package-receipt.json').read_text())
         ipk = Path(receipt['ipk'])
         self.assertEqual(ipk.parent, output)
-        self.assertEqual(ipk.name, _BASE.APP + '_0.43.0_arm.ipk')
+        self.assertEqual(ipk.name, _BASE.APP + '_0.44.0_arm.ipk')
         self.assertEqual(_BASE.sha(ipk.read_bytes()), receipt['sha256'])
         archives = _BASE.ar_members(ipk.read_bytes())
         self.assertEqual(set(archives), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -53,7 +98,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
             fields = dict(line.split(': ', 1) for line in
                           control.extractfile(members[0]).read().decode().splitlines())
             self.assertEqual(fields['Package'], _BASE.APP)
-            self.assertEqual(fields['Version'], '0.43.0')
+            self.assertEqual(fields['Version'], '0.44.0')
         files, modes = {}, {}
         prefix = 'usr/palm/applications/' + _BASE.APP + '/'
         with tarfile.open(fileobj=io.BytesIO(archives['data.tar.gz'])) as data:
@@ -85,7 +130,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
         self.assertEqual(files['icon.png'], (self.f.root / 'assets/luma-home/icon-160.png').read_bytes())
         info = json.loads(files['appinfo.json'])
         self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                         (_BASE.APP, '0.43.0', 'home-preview', 'native'))
+                         (_BASE.APP, '0.44.0', 'home-preview', 'native'))
         self.assertEqual(info['requiredPermissions'], [])
         self.assertIs(receipt['installed_artwork_proof'], True)
         self.assertIs(receipt['broker_startup_proof'], False)

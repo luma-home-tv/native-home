@@ -1,10 +1,11 @@
-//! Proof-only worker provider. One installed helper per fetch; no decoder or GL.
+//! Source-selected installed-profile provider. One helper per fetch; no decoder or GL.
 //! Unknown command/child completion quarantines this provider instance. A new
 //! instance is not a recovery procedure for an unresolved helper. Native dispatch
 //! also requires the negative-only own-state pending guard across instances.
 use crate::{
     app_artwork::{EncodedFile, Source},
     artwork_worker::{Cancellation, Provider, ProviderError},
+    broker_installation::Profile,
     broker_protocol::Marker,
 };
 use std::{
@@ -14,6 +15,7 @@ use std::{
 
 pub struct InstalledProvider {
     marker: Marker,
+    profile: Profile,
     quarantined: bool,
     #[cfg(any(target_arch = "arm", test))]
     observation: Option<ProofObservation>,
@@ -42,42 +44,69 @@ impl InstalledProvider {
         marker: Marker,
         output: PathBuf,
     ) -> std::io::Result<crate::artwork_worker::Worker> {
+        Self::start_observation_worker(marker, output, Profile::Proof)
+    }
+    pub fn start_preview_worker(marker: Marker) -> std::io::Result<crate::artwork_worker::Worker> {
+        crate::artwork_worker::Worker::start(move || {
+            Init(Self::new_for_profile(marker, Profile::Preview))
+        })
+    }
+    /// Explicit diagnostic path only: ordinary Preview workers have no hold,
+    /// result files or dispatch cap. This method does not qualify activation.
+    pub fn start_preview_observation_worker(
+        marker: Marker,
+        output: PathBuf,
+    ) -> std::io::Result<crate::artwork_worker::Worker> {
+        Self::start_observation_worker(marker, output, Profile::Preview)
+    }
+    fn start_observation_worker(
+        marker: Marker,
+        output: PathBuf,
+        profile: Profile,
+    ) -> std::io::Result<crate::artwork_worker::Worker> {
         #[cfg(target_arch = "arm")]
         {
             crate::artwork_worker::Worker::start(move || {
-                Init(Self::new(marker).and_then(|mut provider| {
-                    provider.observation =
-                        Some(ProofObservation::open(output).map_err(|_| ProviderError::Denied)?);
-                    Ok(provider)
-                }))
+                Init(
+                    Self::new_for_profile(marker, profile).and_then(|mut provider| {
+                        provider.observation = Some(
+                            ProofObservation::open(output, profile)
+                                .map_err(|_| ProviderError::Denied)?,
+                        );
+                        Ok(provider)
+                    }),
+                )
             })
         }
         #[cfg(not(target_arch = "arm"))]
         {
-            let _ = (marker, output);
+            let _ = (marker, output, profile);
             Err(std::io::Error::new(
                 std::io::ErrorKind::Unsupported,
-                "Proof observation requires native ARM Proof",
+                "Installed observation requires its native ARM profile",
             ))
         }
     }
     pub fn new(marker: Marker) -> Result<Self, ProviderError> {
+        Self::new_for_profile(marker, Profile::Proof)
+    }
+    fn new_for_profile(marker: Marker, profile: Profile) -> Result<Self, ProviderError> {
         marker.validate().map_err(|_| ProviderError::Invalid)?;
         #[cfg(target_arch = "arm")]
         {
-            let own = crate::broker_probe::own_identity().map_err(|_| ProviderError::Denied)?;
+            let own = crate::broker_probe::own_identity_for_profile(profile)
+                .map_err(|_| ProviderError::Denied)?;
             if own.ui_sha256 != marker.ui_sha256 {
                 return Err(ProviderError::Denied);
             }
-            let guard = crate::artwork_session_guard::Guard::open(
-                crate::broker_installation::Profile::Proof,
-            )
-            .map_err(|_| ProviderError::Denied)?;
+            let guard = crate::artwork_session_guard::Guard::open(profile)
+                .map_err(|_| ProviderError::Denied)?;
             if guard.pending().map_err(|_| ProviderError::Denied)? {
                 return Err(ProviderError::Unavailable);
             }
             Ok(Self {
                 marker,
+                profile,
                 quarantined: false,
                 observation: None,
                 guard: Some(guard),
@@ -85,7 +114,7 @@ impl InstalledProvider {
         }
         #[cfg(not(target_arch = "arm"))]
         {
-            let _ = marker;
+            let _ = (marker, profile);
             Err(ProviderError::Unavailable)
         }
     }
@@ -113,7 +142,7 @@ impl Provider for InstalledProvider {
         }
         #[cfg(not(target_arch = "arm"))]
         {
-            let _ = (&self.marker, source, deadline);
+            let _ = (&self.marker, self.profile, source, deadline);
             Err(ProviderError::Unavailable)
         }
     }
@@ -146,14 +175,16 @@ impl ProofObservation {
         (meta.dev(), meta.ino(), meta.uid(), meta.gid(), meta.mode())
     }
     #[cfg(target_arch = "arm")]
-    fn open(path: PathBuf) -> std::io::Result<Self> {
-        let expected = PathBuf::from(format!(
-            "/tmp/{}/shell-{}",
-            crate::identity::PROOF,
-            std::process::id()
-        ));
+    fn open(path: PathBuf, profile: Profile) -> std::io::Result<Self> {
+        let expected = Self::runtime_path(profile, std::process::id());
         let uid = unsafe { libc::geteuid() };
         let gid = unsafe { libc::getegid() };
+        if !crate::broker_probe::ordinary_for_profile(plx_base::paths::app_id(), uid, profile) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Observation requires its exact ordinary installed profile",
+            ));
+        }
         let parent = std::fs::symlink_metadata(
             expected
                 .parent()
@@ -166,6 +197,10 @@ impl ProofObservation {
             ));
         }
         Self::open_exact(path, &expected, uid, gid)
+    }
+    #[cfg(any(target_arch = "arm", test))]
+    fn runtime_path(profile: Profile, pid: u32) -> PathBuf {
+        PathBuf::from(format!("/tmp/{}/shell-{pid}", profile.app_id()))
     }
     // The framework runtime root is shared sticky1777; only the held shell-PID leaf is private0700.
     fn runtime_parent_valid(metadata: &std::fs::Metadata, uid: u32, gid: u32) -> bool {
@@ -366,9 +401,9 @@ fn begin_pending(
     let attempt = (|| {
         if own.ui_sha256 != provider.marker.ui_sha256
             || !crate::broker_probe::ordinary_for_profile(
-                crate::identity::PROOF,
+                provider.profile.app_id(),
                 own.uid,
-                crate::broker_installation::Profile::Proof,
+                provider.profile,
             )
         {
             return Err(ProviderError::Denied);
@@ -379,7 +414,7 @@ fn begin_pending(
             .ok_or(ProviderError::Denied)?
             .begin(crate::artwork_session_guard::PendingIdentity {
                 schema: 1,
-                profile: crate::broker_installation::Profile::Proof,
+                profile: provider.profile,
                 caller_pid: own.pid,
                 caller_start_ticks: own.start_ticks,
                 ui_sha256: own.ui_sha256.clone(),
@@ -519,6 +554,7 @@ mod session {
         catalogue: bool,
         expected: &str,
         events: &mut Vec<Value>,
+        profile: Profile,
     ) -> Result<(), ProviderError> {
         let reader = &value["_reader"];
         if reader["schema"] != 1
@@ -563,7 +599,7 @@ mod session {
         } else {
             &context_ops
         };
-        if !catalogue && !crate::broker_probe::context_valid(value) {
+        if !catalogue && !crate::broker_probe::context_valid_for_profile(value, profile) {
             return Err(ProviderError::Denied);
         }
         if catalogue
@@ -629,14 +665,15 @@ mod session {
         hbc: &'a Value,
         exchange: &Exchange,
         marker: &Marker,
+        profile: Profile,
     ) -> Result<&'a Value, ProviderError> {
         if hbc["uri"] != crate::broker_startup_proof::EXEC_URI
-            || hbc["command"] != crate::broker_startup_proof::COMMAND
+            || hbc["command"] != crate::broker_startup_proof::fixed_command(profile)
             || hbc["attempts"] != 1
             || !hbc["error"].is_null()
             || hbc["raw_truncated"] != false
             || hbc["own_at_call"] != json!(exchange.own)
-            || !crate::broker_probe::context_valid(&hbc["context"])
+            || !crate::broker_probe::context_valid_for_profile(&hbc["context"], profile)
         {
             return Err(ProviderError::Invalid);
         }
@@ -656,8 +693,8 @@ mod session {
             || cap["own_before"] != json!(exchange.own)
             || cap["own_at_call"] != json!(exchange.own)
             || cap["own_after"] != json!(exchange.own)
-            || !crate::broker_probe::context_valid(&cap["context_before"])
-            || !crate::broker_probe::context_valid(&cap["context_after"])
+            || !crate::broker_probe::context_valid_for_profile(&cap["context_before"], profile)
+            || !crate::broker_probe::context_valid_for_profile(&cap["context_after"], profile)
             || cap["response"] != crate::artwork_startup_probe::parse_response(cap_raw)
             || cap["response"]["outcome"] != "root_true"
         {
@@ -667,27 +704,30 @@ mod session {
         if hbc["raw_bytes"].as_u64() != Some(raw.len() as u64) {
             return Err(ProviderError::Invalid);
         }
-        let parsed = crate::broker_startup_proof::parse_exec_resource_reply(raw)
-            .map_err(|_| ProviderError::Invalid)?;
+        let parsed =
+            crate::broker_startup_proof::parse_exec_resource_reply_for_profile(raw, profile)
+                .map_err(|_| ProviderError::Invalid)?;
         if hbc["parsed"] != parsed || parsed["envelope_success"] != true || parsed["stderr"] != "" {
             return Err(ProviderError::Invalid);
         }
         let helper = &hbc["parsed"]["helper_report"];
         let own = &exchange.own;
         let root = exchange.root;
-        crate::broker_probe::bind_response(
+        crate::broker_probe::bind_response_for_profile(
             marker,
             own,
             own,
             root,
             exchange.message,
             &exchange.identity,
+            profile,
         )
         .map_err(|_| ProviderError::Denied)?;
         let root_process = &helper["root_process"];
         if !exchange.clean_eof
             || exchange.finished.is_none()
             || helper["qualified"] != true
+            || helper["profile"] != json!(profile)
             || helper["outcome"] != "identified_artwork_finished"
             || helper["resource_mode"] != true
             || helper["artwork_session_completed"] != true
@@ -700,7 +740,7 @@ mod session {
             || root_process["uid_fields"] != json!([0, 0, 0, 0])
             || root_process["start_ticks"].as_u64().is_none_or(|v| v == 0)
             || root_process["root_path"] != "/"
-            || root_process["exe_path"] != crate::broker_startup_proof::COMMAND
+            || root_process["exe_path"] != crate::broker_startup_proof::fixed_command(profile)
             || root_process["exe_sha256"] != marker.broker_sha256
             || helper["broker_sha256"] != marker.broker_sha256
             || helper["nonce"] != marker.nonce
@@ -743,25 +783,26 @@ mod session {
             })
             .ok_or(ProviderError::Invalid)?;
         if pins["schema"] != 1
-            || pins["profile"] != "proof"
+            || pins["profile"] != json!(profile)
             || pins["rendezvous_nonce"] != marker.nonce
             || pins["ui_sha256"] != marker.ui_sha256
             || pins["broker_sha256"] != marker.broker_sha256
-            || installation["profile"] != "proof"
-            || installation["app_id"] != crate::identity::PROOF
+            || installation["profile"] != json!(profile)
+            || installation["app_id"] != profile.app_id()
             || installation["root_process"] != *root_process
-            || installation["files"]["helper"]["path"] != crate::broker_startup_proof::COMMAND
+            || installation["files"]["helper"]["path"]
+                != crate::broker_startup_proof::fixed_command(profile)
             || installation["files"]["helper"]["sha256"] != marker.broker_sha256
             || installation["files"]["helper"]["trusted_for_execution"] != true
-            || installation["files"]["configuration"]["path"]
-                != "/var/lib/luma-home-proof/broker-installation.json"
+            || installation["files"]["configuration"]["path"] != profile.config_path()
             || installation["files"]["configuration"]["trusted_for_execution"] != true
             || installation["files"]["ui"]["sha256"] != marker.ui_sha256
+            || installation["files"]["ui"]["path"] != profile.ui_path()
             || installation["files"]["ui"]["trusted_for_execution"] != false
         {
             return Err(ProviderError::Invalid);
         }
-        let peer = json!({"pid":own.pid,"uid_fields":[own.uid,own.uid,own.uid,own.uid],"start_ticks":own.start_ticks,"exe_path":crate::broker_protocol::PROOF_EXE_PATH,"root_path":crate::broker_protocol::PROOF_JAIL_ROOT,"exe_sha256":own.ui_sha256});
+        let peer = json!({"pid":own.pid,"uid_fields":[own.uid,own.uid,own.uid,own.uid],"start_ticks":own.start_ticks,"exe_path":profile.peer_exe_path(),"root_path":profile.jail_root(),"exe_sha256":own.ui_sha256});
         for key in [
             "peer_before",
             "peer_at_identify_send",
@@ -789,14 +830,26 @@ mod session {
             return Err(ProviderError::Invalid);
         }
         let mut events = Vec::new();
-        known_reader(&helper["context_before"], false, core, &mut events)?;
-        known_reader(&record["context_before"], false, core, &mut events)?;
-        known_reader(&record["catalogue_before"], true, core, &mut events)?;
+        known_reader(&helper["context_before"], false, core, &mut events, profile)?;
+        known_reader(&record["context_before"], false, core, &mut events, profile)?;
+        known_reader(
+            &record["catalogue_before"],
+            true,
+            core,
+            &mut events,
+            profile,
+        )?;
         if !record["catalogue_after"].is_null() {
-            known_reader(&record["catalogue_after"], true, core, &mut events)?;
+            known_reader(&record["catalogue_after"], true, core, &mut events, profile)?;
         }
-        known_reader(&record["context_after"], false, core, &mut events)?;
-        known_reader(&helper["artwork_finish_context"], false, core, &mut events)?;
+        known_reader(&record["context_after"], false, core, &mut events, profile)?;
+        known_reader(
+            &helper["artwork_finish_context"],
+            false,
+            core,
+            &mut events,
+            profile,
+        )?;
         let expected_count = if record["catalogue_after"].is_null() {
             14
         } else {
@@ -818,7 +871,7 @@ mod session {
                 let header: wire::Header = serde_json::from_value(record["header"].clone())
                     .map_err(|_| ProviderError::Invalid)?;
                 header
-                    .validate_for(&exchange.request, &exchange.identity)
+                    .validate_for_in_profile(&exchange.request, &exchange.identity, profile)
                     .map_err(|_| ProviderError::Invalid)?;
                 if record["encoded_data_released"] != true {
                     return Err(ProviderError::Invalid);
@@ -841,7 +894,7 @@ mod session {
             .finished
             .as_ref()
             .ok_or(ProviderError::Invalid)?
-            .validate_for(&finish, &exchange.identity)
+            .validate_for_in_profile(&finish, &exchange.identity, profile)
             .map_err(|_| ProviderError::Invalid)?;
         Ok(record)
     }
@@ -849,11 +902,12 @@ mod session {
         source: &SourceKey,
         exchange: Exchange,
         record: &Value,
+        profile: Profile,
     ) -> Result<EncodedFile, ProviderError> {
         match exchange.outcome {
             wire::Outcome::Refused(refusal) => {
                 refusal
-                    .validate_for(&exchange.request, &exchange.identity)
+                    .validate_for_in_profile(&exchange.request, &exchange.identity, profile)
                     .map_err(|_| ProviderError::Invalid)?;
                 if record.get("complete").is_some()
                     || record["refusal"] != json!(refusal)
@@ -880,11 +934,11 @@ mod session {
                 }
                 artwork
                     .header
-                    .validate_for(&exchange.request, &exchange.identity)
+                    .validate_for_in_profile(&exchange.request, &exchange.identity, profile)
                     .map_err(|_| ProviderError::Invalid)?;
                 artwork
                     .complete
-                    .validate_for(&artwork.header)
+                    .validate_for_in_profile(&artwork.header, profile)
                     .map_err(|_| ProviderError::Invalid)?;
                 let digest = plx_base::sha256::sha256(&artwork.bytes);
                 use std::fmt::Write;
@@ -950,7 +1004,7 @@ mod session {
         // Only its joined pre-dispatch failure is a known no-helper outcome.
         if exchange.is_err()
             && completion["uri"] == crate::broker_startup_proof::EXEC_URI
-            && completion["command"] == crate::broker_startup_proof::COMMAND
+            && completion["command"] == crate::broker_startup_proof::fixed_command(provider.profile)
             && completion["attempts"] == 0
             && completion["raw"].is_null()
             && completion["parsed"].is_null()
@@ -978,7 +1032,7 @@ mod session {
                 });
             }
         };
-        let record = match lifecycle(&completion, &exchange, &provider.marker) {
+        let record = match lifecycle(&completion, &exchange, &provider.marker, provider.profile) {
             Ok(value) => value,
             Err(error) => {
                 provider.quarantined = true;
@@ -992,7 +1046,7 @@ mod session {
         if expired {
             return Err(ProviderError::Expired);
         }
-        commit(source, exchange, record)
+        commit(source, exchange, record, provider.profile)
     }
 }
 
@@ -1044,6 +1098,7 @@ mod native {
     }
     fn exchange(
         marker: &Marker,
+        profile: Profile,
         source: &Source,
         deadline: Instant,
         cancellation: &Cancellation,
@@ -1059,7 +1114,7 @@ mod native {
                 Err(_) => return Err(ProviderError::Unavailable),
             }
         }
-        let own = probe::own_identity().map_err(|_| ProviderError::Denied)?;
+        let own = probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)?;
         observation.set("stage", serde_json::json!("connecting"));
         observation.set("own", serde_json::json!(own));
         observation.set("client_credentials",serde_json::json!({"pid":std::process::id(),"uid":unsafe{libc::geteuid()},"gid":unsafe{libc::getegid()}}));
@@ -1075,7 +1130,7 @@ mod native {
         if root.uid != 0 || root.pid <= 1 {
             return Err(ProviderError::Denied);
         }
-        if probe::own_identity().map_err(|_| ProviderError::Denied)? != own {
+        if probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)? != own {
             return Err(ProviderError::Denied);
         }
         observation.set("stage", serde_json::json!("connected_before_identify"));
@@ -1109,16 +1164,17 @@ mod native {
             .recv_until(protocol::RESPONSE_LIMIT, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
         observation.set("root_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
-        let identity =
-            protocol::parse_response(&packet.bytes).map_err(|_| ProviderError::Invalid)?;
+        let identity = protocol::parse_response_for_profile(&packet.bytes, profile)
+            .map_err(|_| ProviderError::Invalid)?;
         observation.set("identify_response", serde_json::json!(identity));
-        probe::bind_response(
+        probe::bind_response_for_profile(
             marker,
             &own,
-            &probe::own_identity().map_err(|_| ProviderError::Denied)?,
+            &probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)?,
             root,
             packet.credentials,
             &identity,
+            profile,
         )
         .map_err(|_| ProviderError::Denied)?;
         observation.set("identity", serde_json::json!(identity));
@@ -1129,8 +1185,8 @@ mod native {
         observation.set("request", serde_json::json!(read));
         observation.set("stage", serde_json::json!("read_artwork"));
         wire::send_request(&connection, &read, deadline).map_err(|_| ProviderError::Unavailable)?;
-        let mut receiver =
-            wire::Receiver::new(&read, &identity, root).map_err(|_| ProviderError::Invalid)?;
+        let mut receiver = wire::Receiver::new_for_profile(&read, &identity, root, profile)
+            .map_err(|_| ProviderError::Invalid)?;
         let mut header_matches = true;
         let mut resource_packets = 0u32;
         loop {
@@ -1143,15 +1199,15 @@ mod native {
                 serde_json::json!(resource_packets),
             );
             observation.set("last_resource_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
-            if let Ok(header) = wire::parse_header(&packet.bytes) {
+            if let Ok(header) = wire::parse_header_for_profile(&packet.bytes, profile) {
                 header_matches = session::header_matches(&header, source.key());
                 observation.set("header", serde_json::json!(header));
                 observation.set("header_matches", serde_json::json!(header_matches));
             }
-            if let Ok(complete) = wire::parse_complete(&packet.bytes) {
+            if let Ok(complete) = wire::parse_complete_for_profile(&packet.bytes, profile) {
                 observation.set("complete", serde_json::json!(complete));
             }
-            if let Ok(refusal) = wire::parse_refusal(&packet.bytes) {
+            if let Ok(refusal) = wire::parse_refusal_for_profile(&packet.bytes, profile) {
                 observation.set("refusal", serde_json::json!(refusal));
             }
             let ended = receiver
@@ -1181,16 +1237,25 @@ mod native {
         observation.set("stage", serde_json::json!("finish"));
         wire::send_finish_request(&connection, &finish, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
-        let finished = wire::receive_finished(&connection, &finish, &identity, root, deadline)
-            .map_err(|_| ProviderError::Unavailable)?;
-        let own_after = probe::own_identity().map_err(|_| ProviderError::Denied)?;
-        probe::bind_response(
+        let finished = wire::receive_finished_for_profile(
+            &connection,
+            &finish,
+            &identity,
+            root,
+            deadline,
+            profile,
+        )
+        .map_err(|_| ProviderError::Unavailable)?;
+        let own_after =
+            probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)?;
+        probe::bind_response_for_profile(
             marker,
             &own,
             &own_after,
             root,
             packet.credentials,
             &identity,
+            profile,
         )
         .map_err(|_| ProviderError::Denied)?;
         observation.set("own_after", serde_json::json!(own_after));
@@ -1220,8 +1285,9 @@ mod native {
         deadline: Instant,
         cancellation: &Cancellation,
     ) -> Result<EncodedFile, ProviderError> {
+        let profile = provider.profile;
         let ticket = proof_ticket(provider)?;
-        let own = probe::own_identity().map_err(|_| {
+        let own = probe::own_identity_for_profile(profile).map_err(|_| {
             provider.quarantined = true;
             ProviderError::Denied
         })?;
@@ -1234,11 +1300,12 @@ mod native {
         let handle = match std::thread::Builder::new()
             .name("artwork-installed-ls2".into())
             .spawn(move || {
-                crate::broker_startup_proof::native::invoke_resource(
+                crate::broker_startup_proof::native::invoke_resource_for_profile(
                     &marker,
                     &invoke_stop,
                     tx,
                     deadline,
+                    profile,
                 )
             }) {
             Ok(handle) => handle,
@@ -1265,6 +1332,7 @@ mod native {
             };
             let result = exchange(
                 &marker,
+                profile,
                 source,
                 deadline,
                 cancellation,

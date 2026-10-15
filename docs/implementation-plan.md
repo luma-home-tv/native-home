@@ -1,9 +1,10 @@
 # Luma Home implementation plan
 
 The current delivery target is a responsive native Home dashboard for the
-OLED55G26LA G2 on webOS24. The user reopened isolated OLED65C26LD C2 testing
-on 15 October 2026 until 20:30 Europe/London, with no new test after 20:15.
-After that dated window, C2 needs renewed authorisation. Results stay device-specific.
+OLED55G26LA G2 on webOS24. The user reopened both TVs for autonomous isolated
+tests from 00:00 Europe/London on 16 October 2026, with expected return around
+09:00. Finish overnight cleanup before then and start no new test after08:45.
+Refresh the C2 baseline before changes; results stay device-specific.
 It remains a separate application: LG Home, Home/power/volume handling, firmware,
 system libraries, boot configuration, media services and OLED protections stay
 under LG's control. Retained installations and each TV's saved favourites must

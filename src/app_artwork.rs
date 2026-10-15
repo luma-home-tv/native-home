@@ -481,7 +481,7 @@ pub(crate) fn read_root_encoded(source: &Source) -> Result<EncodedFile, ReadErro
     }
     read_admitted_source(source)
 }
-/// Installed Proof authority is separate from the historical operator helper.
+/// Closed installed Proof/Preview authority is separate from the operator helper.
 /// This accepts only an already sealed server-owned source, never a wire path.
 #[cfg(all(target_os = "linux", target_arch = "arm"))]
 pub(crate) fn read_installed_encoded(
@@ -489,11 +489,10 @@ pub(crate) fn read_installed_encoded(
     installation: &crate::broker_installation::Installation,
 ) -> Result<EncodedFile, ReadError> {
     let denied = || refusal(ReadReason::PrivilegedProcess, "installed_authority", 0);
-    if installation.pins().profile != crate::broker_installation::Profile::Proof {
-        return Err(denied());
-    }
     // Revalidates Root UID4/start/ELF and the protected policy/tree as well as
     // its pinned UI lookup. No developer-app ancestor becomes Root authority.
+    // Installation is sealed: neither Pins JSON nor a supplied path can create
+    // one. Its closed profile fixes the protected helper/config and peer paths.
     installation.revalidate().map_err(|_| denied())?;
     let file = read_admitted_source(source)?;
     installation.revalidate().map_err(|_| denied())?;

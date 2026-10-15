@@ -106,6 +106,9 @@ fn reader(catalogue: bool, next: &mut u64) -> Value {
     value
 }
 fn sync(hbc: &mut Value) {
+    sync_for_profile(hbc, Profile::Proof);
+}
+fn sync_for_profile(hbc: &mut Value, profile: Profile) {
     let helper = &hbc["parsed"]["helper_report"];
     let record = &helper["artwork_reads"][0];
     let mut events = Vec::new();
@@ -134,7 +137,8 @@ fn sync(hbc: &mut Value) {
     hbc["raw_bytes"] = json!(raw.len());
     hbc["raw_truncated"] = json!(false);
     hbc["raw"] = json!(raw.clone());
-    hbc["parsed"] = crate::broker_startup_proof::parse_exec_resource_reply(&raw).unwrap();
+    hbc["parsed"] =
+        crate::broker_startup_proof::parse_exec_resource_reply_for_profile(&raw, profile).unwrap();
 }
 fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
     let marker = marker();
@@ -203,7 +207,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
     let final_context = reader(false, &mut next);
     let record = json!({"request":request,"request_bytes":serde_json::to_vec(&request).unwrap(),"connect_credentials":client_value,"message_credentials":client_value,"peer_before":peer,"peer_after":peer,"context_before":before,"catalogue_before":cat_before,"catalogue_after":cat_after,"context_after":after,"source_key":source.key(),"source_key_after":source.key(),"header":header,"complete":complete,"completed":true,"encoded_data_released":true,"read_identity":header.file_identity,"readback_identity":header.file_identity,"encoded_sha256":header.encoded_sha256,"readback_sha256":header.encoded_sha256,"encoded_bytes":file.bytes.len()});
     let root_process = json!({"pid":789,"uid_fields":[0,0,0,0],"start_ticks":321,"root_path":"/","exe_path":crate::broker_startup_proof::COMMAND,"exe_sha256":marker.broker_sha256});
-    let installation = json!({"profile":"proof","app_id":crate::identity::PROOF,"root_process":root_process,"pins":{"schema":1,"profile":"proof","rendezvous_nonce":marker.nonce,"ui_sha256":marker.ui_sha256,"broker_sha256":marker.broker_sha256,"context_reader_sha256":"d".repeat(64)},"files":{"helper":{"path":crate::broker_startup_proof::COMMAND,"sha256":marker.broker_sha256,"trusted_for_execution":true},"configuration":{"path":"/var/lib/luma-home-proof/broker-installation.json","trusted_for_execution":true},"ui":{"sha256":marker.ui_sha256,"trusted_for_execution":false}}});
+    let installation = json!({"profile":"proof","app_id":crate::identity::PROOF,"root_process":root_process,"pins":{"schema":1,"profile":"proof","rendezvous_nonce":marker.nonce,"ui_sha256":marker.ui_sha256,"broker_sha256":marker.broker_sha256,"context_reader_sha256":"d".repeat(64)},"files":{"helper":{"path":crate::broker_startup_proof::COMMAND,"sha256":marker.broker_sha256,"trusted_for_execution":true},"configuration":{"path":"/var/lib/luma-home-proof/broker-installation.json","trusted_for_execution":true},"ui":{"path":Profile::Proof.ui_path(),"sha256":marker.ui_sha256,"trusted_for_execution":false}}});
     let mut helper = json!({"qualified":true,"outcome":"identified_artwork_finished","resource_mode":true,"artwork_session_completed":true,"connection_closed":true,"response_sent":true,"finished_sent":true,"finished":finished,"artwork_finished":finished,"icon_reads":true,"server_pid":789,"root_process":root_process,"broker_sha256":marker.broker_sha256,"nonce":marker.nonce,"response":identity,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"connect_credentials":client_value,"identify_message_credentials":client_value,"artwork_finish_connect_credentials":client_value,"artwork_finish_message_credentials":client_value,"peer_before":peer,"peer_at_identify_send":peer,"artwork_finish_peer_before":peer,"artwork_finish_peer_after":peer,"context_before":initial,"artwork_reads":[record],"artwork_finish_context":final_context,"installation":installation});
     helper["schema"] = json!(1);
     helper["stage"] = json!("startup_proof_complete");
@@ -231,6 +235,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
     (
         InstalledProvider {
             marker,
+            profile: Profile::Proof,
             quarantined: false,
             observation: None,
             guard: None,
@@ -239,6 +244,255 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
         exchange,
         hbc,
     )
+}
+// Convert only the role-specific synthetic fixture values. The source icon,
+// encoded bytes, child journals and Core measurements remain independent of role.
+fn preview_values(value: &mut Value, key: Option<&str>) {
+    match value {
+        Value::String(text) => {
+            let replacements = [
+                ("proof".to_owned(), "preview".to_owned()),
+                (
+                    Profile::Proof.app_id().to_owned(),
+                    Profile::Preview.app_id().to_owned(),
+                ),
+                (
+                    Profile::Proof.peer_exe_path(),
+                    Profile::Preview.peer_exe_path(),
+                ),
+                (Profile::Proof.jail_root(), Profile::Preview.jail_root()),
+                (Profile::Proof.ui_path(), Profile::Preview.ui_path()),
+                (Profile::Proof.config_path(), Profile::Preview.config_path()),
+                (
+                    crate::broker_startup_proof::fixed_command(Profile::Proof).to_owned(),
+                    crate::broker_startup_proof::fixed_command(Profile::Preview).to_owned(),
+                ),
+            ];
+            if let Some((_, replacement)) = replacements
+                .iter()
+                .find(|(original, _)| original.as_str() == text.as_str())
+            {
+                *text = replacement.clone();
+            }
+        }
+        Value::Number(number) if number.as_u64() == Some(6583) => {
+            *value = json!(if key == Some("gid") { 5000 } else { 5724 });
+        }
+        Value::Array(values) => {
+            for value in values {
+                preview_values(value, None);
+            }
+        }
+        Value::Object(values) => {
+            for (key, value) in values {
+                preview_values(value, Some(key));
+            }
+        }
+        _ => (),
+    }
+}
+fn preview_fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
+    let (mut provider, source, mut exchange, mut hbc) = fixture();
+    provider.profile = Profile::Preview;
+    exchange.own.uid = 5724;
+    exchange.client.uid = 5724;
+    exchange.client.gid = 5000;
+    exchange.identity.client_uid = 5724;
+    preview_values(&mut hbc, None);
+    let wire::Outcome::Artwork(artwork) = &mut exchange.outcome else {
+        panic!("Synthetic artwork fixture")
+    };
+    artwork.header.identity = exchange.identity.clone();
+    artwork.complete =
+        wire::Complete::from_header_for_profile(&artwork.header, Profile::Preview).unwrap();
+    hbc["parsed"]["helper_report"]["artwork_reads"][0]["header"] = json!(artwork.header);
+    hbc["parsed"]["helper_report"]["artwork_reads"][0]["complete"] = json!(artwork.complete);
+    let finish = wire::FinishRequest::new(2, &provider.marker.nonce).unwrap();
+    exchange.finished = Some(
+        wire::Finished::new_for_profile(&finish, &exchange.identity, Profile::Preview).unwrap(),
+    );
+    hbc["parsed"]["helper_report"]["finished"] = json!(exchange.finished);
+    hbc["parsed"]["helper_report"]["artwork_finished"] = json!(exchange.finished);
+    sync_for_profile(&mut hbc, Profile::Preview);
+    (provider, source, exchange, hbc)
+}
+
+#[test]
+fn explicit_preview_reserved_uid_closed_session_returns_only_bound_encoded_bytes() {
+    let (mut provider, source, exchange, hbc) = preview_fixture();
+    assert_eq!(exchange.own.uid, 5724);
+    assert_eq!(exchange.client.gid, 5000);
+    assert!(
+        exchange.identity.validate().is_err(),
+        "Old API remains Proof-only"
+    );
+    let file = session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false,
+    )
+    .unwrap();
+    assert_eq!(file.bytes, b"bounded encoded fixture bytes");
+    assert!(!provider.quarantined);
+    assert!(
+        provider.observation.is_none(),
+        "Ordinary workers have no diagnostic cap/hold"
+    );
+}
+#[test]
+fn selected_profile_rejects_cross_role_command_pins_context_and_peer_paths() {
+    for change in 0..8 {
+        let (mut provider, source, exchange, mut hbc) = preview_fixture();
+        match change {
+            0 => hbc["command"] = json!(crate::broker_startup_proof::fixed_command(Profile::Proof)),
+            1 => hbc["parsed"]["helper_report"]["installation"]["pins"]["profile"] = json!("proof"),
+            2 => {
+                hbc["parsed"]["helper_report"]["context_before"]["foreground"]["appId"] =
+                    json!(Profile::Proof.app_id())
+            }
+            3 => {
+                hbc["parsed"]["helper_report"]["peer_before"]["root_path"] =
+                    json!(Profile::Proof.jail_root())
+            }
+            4 => {
+                hbc["parsed"]["helper_report"]["peer_before"]["exe_path"] =
+                    json!(Profile::Proof.peer_exe_path())
+            }
+            5 => {
+                hbc["parsed"]["helper_report"]["installation"]["files"]["configuration"]["path"] =
+                    json!(Profile::Proof.config_path())
+            }
+            6 => {
+                hbc["parsed"]["helper_report"]["installation"]["files"]["ui"]["path"] =
+                    json!(Profile::Proof.ui_path())
+            }
+            _ => {
+                hbc["capability"]["context_after"]["windows"]["windows"][0]["appId"] =
+                    json!(Profile::Proof.app_id())
+            }
+        }
+        sync_for_profile(&mut hbc, Profile::Preview);
+        assert!(
+            session::settle(
+                &mut provider,
+                source.key(),
+                Ok(exchange),
+                Ok(hbc),
+                false,
+                false
+            )
+            .is_err(),
+            "Cross-role variant {change}"
+        );
+        assert!(provider.quarantined);
+    }
+    let (mut provider, source, exchange, hbc) = preview_fixture();
+    provider.profile = Profile::Proof;
+    assert!(session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false
+    )
+    .is_err());
+    let (mut provider, source, exchange, hbc) = fixture();
+    provider.profile = Profile::Preview;
+    assert!(session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false
+    )
+    .is_err());
+}
+#[test]
+fn preview_wrong_source_or_unknown_child_lifecycle_never_returns_content() {
+    let (mut provider, source, exchange, mut hbc) = preview_fixture();
+    hbc["parsed"]["helper_report"]["artwork_reads"][0]["source_key_after"]["version"] =
+        json!("changed");
+    sync_for_profile(&mut hbc, Profile::Preview);
+    assert!(matches!(
+        session::settle(
+            &mut provider,
+            source.key(),
+            Ok(exchange),
+            Ok(hbc),
+            false,
+            false
+        ),
+        Err(ProviderError::Changed)
+    ));
+    assert!(
+        !provider.quarantined,
+        "A known closed transfer can still have a stale SourceKey"
+    );
+    let (mut provider, source, exchange, mut hbc) = preview_fixture();
+    hbc["parsed"]["helper_report"]["context_before"]["_reader"]["cleanup_known"] = json!(false);
+    sync_for_profile(&mut hbc, Profile::Preview);
+    assert!(session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false
+    )
+    .is_err());
+    assert!(provider.quarantined);
+}
+#[test]
+fn preview_unknown_or_wrong_role_no_start_keeps_durable_pending() {
+    for wrong_command in [false, true] {
+        let directory = ObservationDirectory::new();
+        let (mut provider, source, exchange, _) = preview_fixture();
+        let own = guarded(&mut provider, &directory);
+        let ticket = begin_pending(&mut provider, &own).unwrap();
+        let completion = if wrong_command {
+            Ok(json!({"uri":crate::broker_startup_proof::EXEC_URI,
+            "command":crate::broker_startup_proof::fixed_command(Profile::Proof),"attempts":0,
+            "raw":null,"parsed":null,"error":"No dispatch from different role"}))
+        } else {
+            Err(ProviderError::Unavailable)
+        };
+        let result = session::settle(
+            &mut provider,
+            source.key(),
+            if wrong_command {
+                Err(ProviderError::Unavailable)
+            } else {
+                Ok(exchange)
+            },
+            completion,
+            false,
+            false,
+        );
+        assert!(guard_result(&mut provider, ticket, result).is_err());
+        assert!(provider.quarantined);
+        assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+        let (mut restarted, _, _, _) = preview_fixture();
+        let fresh = guarded(&mut restarted, &directory);
+        assert!(begin_pending(&mut restarted, &fresh).is_err());
+    }
+}
+#[test]
+fn diagnostic_runtime_paths_are_fixed_by_role_and_ordinary_workers_have_no_ticket() {
+    assert_eq!(
+        ProofObservation::runtime_path(Profile::Proof, 123),
+        PathBuf::from("/tmp/com.ash.nativehome.proof/shell-123")
+    );
+    assert_eq!(
+        ProofObservation::runtime_path(Profile::Preview, 123),
+        PathBuf::from("/tmp/com.ash.nativehome.preview/shell-123")
+    );
+    let (mut provider, _, _, _) = preview_fixture();
+    assert!(proof_ticket(&mut provider).unwrap().is_none());
 }
 #[test]
 fn complete_finished_and_hbc_agree_before_any_encoded_file_is_returned() {
@@ -504,15 +758,15 @@ impl Drop for ObservationDirectory {
 }
 fn guarded(provider: &mut InstalledProvider, directory: &ObservationDirectory) -> OwnIdentity {
     provider.guard = Some(
-        crate::artwork_session_guard::Guard::open_for_test(
-            &directory.0,
-            crate::broker_installation::Profile::Proof,
-        )
-        .unwrap(),
+        crate::artwork_session_guard::Guard::open_for_test(&directory.0, provider.profile).unwrap(),
     );
     OwnIdentity {
         pid: std::process::id(),
-        uid: 6583,
+        uid: if provider.profile == Profile::Preview {
+            5724
+        } else {
+            6583
+        },
         start_ticks: 456,
         ui_sha256: provider.marker.ui_sha256.clone(),
     }
@@ -615,7 +869,11 @@ fn unmeasured_or_missing_guard_cannot_reach_dispatch() {
     let (mut provider, _, _, _) = fixture();
     let own = OwnIdentity {
         pid: std::process::id(),
-        uid: 6583,
+        uid: if provider.profile == Profile::Preview {
+            5724
+        } else {
+            6583
+        },
         start_ticks: 456,
         ui_sha256: provider.marker.ui_sha256.clone(),
     };

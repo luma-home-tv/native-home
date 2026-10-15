@@ -71,3 +71,5 @@ pub mod broker_server;
 pub mod broker_startup_proof;
 pub mod broker_transport;
 pub mod startup_capability_proof;
+
+pub mod artwork_guard_relaunch_proof;

@@ -1,4 +1,5 @@
-//! Installed Proof helper: Identify plus Finish, or one sealed icon read then Finish.
+//! Fixed installed helper entries: Identify plus Finish, or one sealed icon read then Finish.
+use crate::broker_installation::Profile;
 #[cfg(any(target_arch = "arm", test))]
 use crate::{broker_protocol as protocol, broker_transport::Credentials};
 #[cfg(any(target_arch = "arm", test))]
@@ -17,8 +18,17 @@ fn no_arguments(arguments: &[String]) -> io::Result<()> {
     }
 }
 
-#[cfg(any(target_arch = "arm", test))]
+#[cfg(test)]
 fn checked_context(value: &Value, expected_sha256: &str) -> io::Result<()> {
+    checked_context_for_profile(value, expected_sha256, Profile::Proof)
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn checked_context_for_profile(
+    value: &Value,
+    expected_sha256: &str,
+    profile: Profile,
+) -> io::Result<()> {
     let reader = &value["_reader"];
     if reader["schema"].as_u64() != Some(1)
         || reader["kind"].as_str() != Some("fixed_core_luna_send")
@@ -31,15 +41,21 @@ fn checked_context(value: &Value, expected_sha256: &str) -> io::Result<()> {
     {
         return Err(invalid("Unqualified fixed Core context reader"));
     }
-    protocol::validate_context(
+    protocol::validate_context_for_profile(
         &value["system_info"],
         &value["foreground"],
         &value["windows"],
+        profile,
     )
-    .map_err(|_| invalid("Startup proof requires exact G2 and sole Proof CARD"))
+    .map_err(|_| {
+        invalid(match profile {
+            Profile::Proof => "Startup proof requires exact G2 and sole Proof CARD",
+            Profile::Preview => "Installed helper requires exact G2 and sole Preview CARD",
+        })
+    })
 }
 
-#[cfg(any(target_arch = "arm", test))]
+#[cfg(test)]
 fn enrolled_peer(
     marker: &protocol::Marker,
     context_reader_sha256: &str,
@@ -47,6 +63,27 @@ fn enrolled_peer(
     message: &Credentials,
     peer: &protocol::PeerEvidence,
     now: u64,
+) -> io::Result<protocol::Enrollment> {
+    enrolled_peer_for_profile(
+        marker,
+        context_reader_sha256,
+        connect,
+        message,
+        peer,
+        now,
+        Profile::Proof,
+    )
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn enrolled_peer_for_profile(
+    marker: &protocol::Marker,
+    context_reader_sha256: &str,
+    connect: &Credentials,
+    message: &Credentials,
+    peer: &protocol::PeerEvidence,
+    now: u64,
+    profile: Profile,
 ) -> io::Result<protocol::Enrollment> {
     if connect != message || peer.start_ticks == 0 {
         return Err(invalid(
@@ -67,21 +104,23 @@ fn enrolled_peer(
         context_reader_sha256: context_reader_sha256.into(),
     };
     enrollment
-        .validate(now)
+        .validate_for_profile(now, profile)
         .map_err(|_| invalid("Invalid kernel-derived enrollment"))?;
-    protocol::authorize(&enrollment, connect, message, peer)
-        .map_err(|_| invalid("Peer does not match installed Proof and kernel identity"))?;
+    protocol::authorize_for_profile(&enrollment, connect, message, peer, profile).map_err(
+        |_| {
+            invalid(match profile {
+                Profile::Proof => "Peer does not match installed Proof and kernel identity",
+                Profile::Preview => "Peer does not match installed Preview and kernel identity",
+            })
+        },
+    )?;
     Ok(enrollment)
 }
 
 #[cfg(target_arch = "arm")]
 mod native {
     use super::*;
-    use crate::{
-        artwork_transfer,
-        broker_installation::{Installation, Profile},
-        broker_transport::Listener,
-    };
+    use crate::{artwork_transfer, broker_installation::Installation, broker_transport::Listener};
     use serde_json::json;
     use std::{
         io::Write,
@@ -138,20 +177,24 @@ mod native {
         connect: &Credentials,
         message: &Credentials,
         deadline: Instant,
+        profile: Profile,
     ) -> Result<protocol::PeerEvidence, Box<dyn std::error::Error>> {
         remaining(deadline)?;
         installation.revalidate()?;
-        enrollment.validate(unix_now()?)?;
-        let peer = crate::broker_server::proof_peer(enrollment.client_pid)?;
+        enrollment.validate_for_profile(unix_now()?, profile)?;
+        let peer = crate::broker_server::installed_peer(enrollment.client_pid, profile)?;
         installation.admit_peer(connect, message, &peer)?;
-        protocol::authorize(enrollment, connect, message, &peer)?;
+        protocol::authorize_for_profile(enrollment, connect, message, &peer, profile)?;
         remaining(deadline)?;
         Ok(peer)
     }
-    pub(super) fn run(report: &mut Value) -> Result<(), Box<dyn std::error::Error>> {
+    pub(super) fn run(
+        report: &mut Value,
+        profile: Profile,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let deadline = Instant::now() + Duration::from_secs(20);
         alarm(report)?; // Before synchronous installation/proc/LS2 work.
-        let installation = Installation::load(Profile::Proof)?;
+        let installation = Installation::load(profile)?;
         let pins = installation.pins();
         report["installation"] = installation.evidence();
         report["root_process"] = report["installation"]["root_process"].clone();
@@ -172,8 +215,9 @@ mod native {
         }
         report["identify_message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
         report["identify_request"] = json!(request);
-        let peer = crate::broker_server::proof_peer(
+        let peer = crate::broker_server::installed_peer(
             u32::try_from(connect.pid).map_err(|_| invalid("Invalid client PID"))?,
+            profile,
         )?;
         installation.admit_peer(&connect, &packet.credentials, &peer)?;
         let marker = protocol::Marker {
@@ -182,25 +226,31 @@ mod native {
             ui_sha256: pins.ui_sha256.clone(),
             broker_sha256: pins.broker_sha256.clone(),
         };
-        let enrollment = enrolled_peer(
+        let enrollment = enrolled_peer_for_profile(
             &marker,
             &pins.context_reader_sha256,
             &connect,
             &packet.credentials,
             &peer,
             unix_now()?,
+            profile,
         )?;
         report["enrollment"] = json!(enrollment);
         report["peer_before"] = json!(peer);
         let context = crate::broker_context::collect(deadline, &pins.context_reader_sha256);
         report["context_before"] = context;
-        checked_context(&report["context_before"], &pins.context_reader_sha256)?;
+        checked_context_for_profile(
+            &report["context_before"],
+            &pins.context_reader_sha256,
+            profile,
+        )?;
         report["peer_at_identify_send"] = json!(admit(
             &installation,
             &enrollment,
             &connect,
             &packet.credentials,
-            deadline
+            deadline,
+            profile
         )?);
         let response = protocol::Response {
             schema: 1,
@@ -214,7 +264,7 @@ mod native {
             ui_sha256: enrollment.ui_sha256.clone(),
             broker_sha256: enrollment.broker_sha256.clone(),
         };
-        response.validate()?;
+        response.validate_for_profile(profile)?;
         connection.send_until(&serde_json::to_vec(&response)?, deadline)?;
         report["response"] = json!(response);
         report["response_sent"] = json!(true);
@@ -252,20 +302,26 @@ mod native {
             &enrollment,
             &connect,
             &packet.credentials,
-            deadline
+            deadline,
+            profile
         )?);
         let context = crate::broker_context::collect(deadline, &pins.context_reader_sha256);
         report["context_after"] = context;
-        checked_context(&report["context_after"], &pins.context_reader_sha256)?;
+        checked_context_for_profile(
+            &report["context_after"],
+            &pins.context_reader_sha256,
+            profile,
+        )?;
         report["peer_after"] = json!(admit(
             &installation,
             &enrollment,
             &connect,
             &packet.credentials,
-            deadline
+            deadline,
+            profile
         )?);
-        let finished = artwork_transfer::Finished::new(&finish, &response)?;
-        artwork_transfer::send_finished(&connection, &finished, deadline)?;
+        let finished = artwork_transfer::Finished::new_for_profile(&finish, &response, profile)?;
+        artwork_transfer::send_finished_for_profile(&connection, &finished, deadline, profile)?;
         report["finished"] = json!(finished);
         report["finished_sent"] = json!(true);
         // Closing this accepted connection and listener is the only endpoint
@@ -276,10 +332,10 @@ mod native {
         report["qualified"] = json!(true);
         Ok(())
     }
-    pub(super) fn entry() -> Result<(), String> {
+    pub(super) fn entry(profile: Profile) -> Result<(), String> {
         let began = Instant::now();
-        let mut report = json!({"schema":1,"stage":"startup_proof_complete","profile":"proof","server_pid":std::process::id(),"operation_budget_ms":20000,"listener_bound":false,"response_sent":false,"finished_sent":false,"connection_closed":false,"qualified":false,"icon_reads":false,"artwork_reads":false,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"context_cli_gets_only":true});
-        let result = run(&mut report);
+        let mut report = json!({"schema":1,"stage":"startup_proof_complete","profile":profile,"server_pid":std::process::id(),"operation_budget_ms":20000,"listener_bound":false,"response_sent":false,"finished_sent":false,"connection_closed":false,"qualified":false,"icon_reads":false,"artwork_reads":false,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"context_cli_gets_only":true});
+        let result = run(&mut report, profile);
         report["outcome"] = json!(if result.is_ok() {
             if report["artwork_session_completed"] == true {
                 "identified_artwork_finished"
@@ -301,14 +357,27 @@ mod native {
 
 /// No arguments, host fallback, command selection or standalone service mode.
 pub fn main_entry(arguments: &[String]) -> Result<(), String> {
+    entry_for_profile(arguments, Profile::Proof)
+}
+
+/// Fixed Preview entry; no argument, environment or wire value selects the role.
+pub fn preview_main_entry(arguments: &[String]) -> Result<(), String> {
+    entry_for_profile(arguments, Profile::Preview)
+}
+
+fn entry_for_profile(arguments: &[String], profile: Profile) -> Result<(), String> {
     no_arguments(arguments).map_err(|error| error.to_string())?;
     #[cfg(target_arch = "arm")]
     {
-        native::entry()
+        native::entry(profile)
     }
     #[cfg(not(target_arch = "arm"))]
     {
-        Err("Installed startup proof requires the admitted ARM Proof package".into())
+        Err(match profile {
+            Profile::Proof => "Installed startup proof requires the admitted ARM Proof package",
+            Profile::Preview => "Installed helper requires the admitted ARM Preview package",
+        }
+        .into())
     }
 }
 
@@ -380,5 +449,146 @@ mod tests {
             ..peer
         };
         assert!(enrolled_peer(&marker, &"d".repeat(64), &connect, &connect, &wrong, 100).is_err());
+    }
+    #[test]
+    fn preview_context_is_explicit_and_preserves_pinned_reader_and_sole_card_gates() {
+        let mut preview = context();
+        preview["foreground"]["appId"] = json!(Profile::Preview.app_id());
+        preview["windows"]["windows"][0]["appId"] = json!(Profile::Preview.app_id());
+        assert!(checked_context_for_profile(&preview, &"d".repeat(64), Profile::Preview).is_ok());
+        assert!(checked_context(&preview, &"d".repeat(64)).is_err());
+        assert!(
+            checked_context_for_profile(&context(), &"d".repeat(64), Profile::Preview).is_err()
+        );
+        let mut mixed = preview.clone();
+        mixed["windows"]["windows"][0]["appId"] = json!(Profile::Proof.app_id());
+        assert!(checked_context_for_profile(&mixed, &"d".repeat(64), Profile::Preview).is_err());
+        preview["_reader"]["cleanup_known"] = json!(false);
+        assert!(checked_context_for_profile(&preview, &"d".repeat(64), Profile::Preview).is_err());
+    }
+    #[test]
+    fn preview_enrollment_binds_kernel_identity_and_exact_installed_paths() {
+        let marker = protocol::Marker {
+            schema: 1,
+            nonce: "a".repeat(32),
+            ui_sha256: "b".repeat(64),
+            broker_sha256: "c".repeat(64),
+        };
+        for uid in [5724, 7001] {
+            let connect = Credentials {
+                pid: 123,
+                uid,
+                gid: uid,
+            };
+            let peer = protocol::PeerEvidence {
+                pid: 123,
+                uid_fields: [uid; 4],
+                start_ticks: 456,
+                exe_sha256: marker.ui_sha256.clone(),
+                exe_path: Profile::Preview.peer_exe_path(),
+                root_path: Profile::Preview.jail_root(),
+            };
+            let enrolled = enrolled_peer_for_profile(
+                &marker,
+                &"d".repeat(64),
+                &connect,
+                &connect,
+                &peer,
+                100,
+                Profile::Preview,
+            )
+            .unwrap();
+            assert_eq!(enrolled.client_uid, uid);
+            assert_eq!(enrolled.expires_unix, 125);
+            assert!(
+                enrolled_peer(&marker, &"d".repeat(64), &connect, &connect, &peer, 100).is_err()
+            );
+            let changed_message = Credentials { gid: 0, ..connect };
+            assert!(enrolled_peer_for_profile(
+                &marker,
+                &"d".repeat(64),
+                &connect,
+                &changed_message,
+                &peer,
+                100,
+                Profile::Preview
+            )
+            .is_err());
+            let mut drifted_uid = peer.clone();
+            drifted_uid.uid_fields[2] += 1;
+            assert!(enrolled_peer_for_profile(
+                &marker,
+                &"d".repeat(64),
+                &connect,
+                &connect,
+                &drifted_uid,
+                100,
+                Profile::Preview
+            )
+            .is_err());
+            for other in [
+                protocol::PeerEvidence {
+                    exe_path: Profile::Proof.peer_exe_path(),
+                    ..peer.clone()
+                },
+                protocol::PeerEvidence {
+                    root_path: Profile::Proof.jail_root(),
+                    ..peer.clone()
+                },
+            ] {
+                assert!(enrolled_peer_for_profile(
+                    &marker,
+                    &"d".repeat(64),
+                    &connect,
+                    &connect,
+                    &other,
+                    100,
+                    Profile::Preview
+                )
+                .is_err());
+            }
+            let proof_peer = protocol::PeerEvidence {
+                exe_path: Profile::Proof.peer_exe_path(),
+                root_path: Profile::Proof.jail_root(),
+                ..peer
+            };
+            assert!(enrolled_peer_for_profile(
+                &marker,
+                &"d".repeat(64),
+                &connect,
+                &connect,
+                &proof_peer,
+                100,
+                Profile::Preview
+            )
+            .is_err());
+            if uid == 5724 {
+                assert!(enrolled_peer(
+                    &marker,
+                    &"d".repeat(64),
+                    &connect,
+                    &connect,
+                    &proof_peer,
+                    100
+                )
+                .is_err());
+            }
+        }
+    }
+    #[test]
+    fn both_fixed_entries_reject_role_selection_arguments_before_native_dispatch() {
+        for arguments in [
+            vec!["--profile".into(), "preview".into()],
+            vec!["proof".into()],
+            vec!["".into()],
+        ] {
+            assert!(main_entry(&arguments).is_err());
+            assert!(preview_main_entry(&arguments).is_err());
+        }
+        #[cfg(not(target_arch = "arm"))]
+        {
+            assert!(main_entry(&[]).unwrap_err().contains("ARM Proof"));
+            assert!(preview_main_entry(&[]).unwrap_err().contains("ARM Preview"));
+        }
     }
 }

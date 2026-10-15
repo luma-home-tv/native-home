@@ -78,13 +78,27 @@ native regression, Preview Root/helper/provider wiring and actual Preview-ID
 qualification remain pending. Do not clear old pending records on age, restart,
 caller death or HBC false, or treat a parsed Preview response as Root authority.
 
-The G2 is the primary device. The user explicitly reopened isolated C2 testing on
-2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
-coordinator may run isolated tests under the existing C2 lease, preserving its
-retained preview and favourites. Do not start a C2 test after 20:15 local time;
-finish cleanup before the user's 20:30 cutoff. After that window, do not contact
-or modify C2 without a later explicit instruction. Earlier C2 records remain
-historical evidence; G2 results never establish C2 behaviour.
+The 0.44 source in `docs/artwork-installed-profiles-044.md` adds the fixed Preview
+helper entry, closed profile wiring through resource/provider validation and an
+exclusive no-dispatch guard-relaunch recipe. Host checks pass 440 library/five
+dashboard tests, Clippy and 46 Python checks. ARM compilation and native guard/
+positive regressions are pending; the ordinary Preview renderer stays disabled.
+The guard recipe intentionally leaves its own pending record. Only the host
+coordinator may remove the exact recorded file after this controlled no-helper
+experiment's complete process/namespace checks. This is not generic recovery
+from an uncertain real Root/helper/child outcome.
+
+The G2 is primary. The user's latest instruction reopens both TVs for autonomous
+isolated testing from 00:00 Europe/London on 2026-10-16 (23:00 UTC on 15 October).
+Do not contact C2 before that time. The user expects to be available again around
+09:00; finish the overnight runs and cleanup before then, starting no new test
+after 08:45 local. This replaces the earlier C2 window ending 20:30 on 15 October.
+Only the coordinator contacts TVs, with distinct per-device leases and private
+agents and preserved retained installations/favourites. Refresh C2's actual
+model, firmware, app version and complete bundle/state baseline before changes;
+G2 results never establish C2 behavior. No physical-input checks require the user
+overnight. This authorization does not broaden protected operations or permit
+LG Home, Core, boot, permission, media or OLED changes.
 
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.

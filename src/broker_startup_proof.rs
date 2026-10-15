@@ -1,5 +1,7 @@
 //! Isolated fixed-command startup and kernel-bound Identify/Finish observation.
 //! Two joined workers keep LS2's command completion wait off the native UI.
+#[cfg(any(target_arch = "arm", test))]
+use crate::broker_installation::Profile;
 use crate::{broker_protocol::Marker, model::Page, runtime::Window, shell::Shell};
 use serde_json::{json, Value};
 use std::{
@@ -15,6 +17,15 @@ use std::{
 
 pub const EXEC_URI: &str = "luna://org.webosbrew.hbchannel.service/exec";
 pub const COMMAND: &str = "/var/lib/luma-home-proof/artwork-broker-startup-proof";
+/// Fixed source-selected commands only. No request, marker or report supplies
+/// an executable path or argument to the existing HBC exec service.
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn fixed_command(profile: Profile) -> &'static str {
+    match profile {
+        Profile::Proof => COMMAND,
+        Profile::Preview => "/var/lib/luma-home/artwork-broker",
+    }
+}
 #[cfg(any(target_arch = "arm", test))]
 const REPLY_LIMIT: usize = 512 * 1024;
 
@@ -55,11 +66,21 @@ fn base64(bytes: &[u8]) -> String {
 /// JSON-encoded stdout strings. Refusals preserve output for child reconciliation.
 #[cfg(any(target_arch = "arm", test))]
 pub(crate) fn parse_exec_reply(raw: &str) -> Result<Value, String> {
-    parse_exec_fixed(raw, ExecReplyKind::Handshake)
+    parse_exec_fixed(raw, ExecReplyKind::Handshake, Profile::Proof)
 }
 #[cfg(any(target_arch = "arm", test))]
 pub(crate) fn parse_exec_resource_reply(raw: &str) -> Result<Value, String> {
-    parse_exec_fixed(raw, ExecReplyKind::Resource)
+    parse_exec_fixed(raw, ExecReplyKind::Resource, Profile::Proof)
+}
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn parse_exec_resource_reply_for_profile(
+    raw: &str,
+    profile: Profile,
+) -> Result<Value, String> {
+    match profile {
+        Profile::Proof => parse_exec_resource_reply(raw),
+        Profile::Preview => parse_exec_fixed(raw, ExecReplyKind::Resource, Profile::Preview),
+    }
 }
 #[cfg(any(target_arch = "arm", test))]
 #[derive(Clone, Copy)]
@@ -68,7 +89,7 @@ enum ExecReplyKind {
     Resource,
 }
 #[cfg(any(target_arch = "arm", test))]
-fn parse_exec_fixed(raw: &str, kind: ExecReplyKind) -> Result<Value, String> {
+fn parse_exec_fixed(raw: &str, kind: ExecReplyKind, profile: Profile) -> Result<Value, String> {
     if raw.len() > REPLY_LIMIT {
         return Err("Oversized SDK exec reply".into());
     }
@@ -119,7 +140,7 @@ fn parse_exec_fixed(raw: &str, kind: ExecReplyKind) -> Result<Value, String> {
     let report = rows.pop().ok_or("Missing helper final report")?;
     if report["schema"] != 1
         || report["stage"] != "startup_proof_complete"
-        || report["profile"] != "proof"
+        || report["profile"] != json!(profile)
     {
         return Err("Missing fixed helper completion report".into());
     }
@@ -171,7 +192,14 @@ pub(crate) mod native {
     use std::sync::mpsc::{self, Sender};
 
     pub(crate) fn invoke(marker: &Marker, cancel: &AtomicBool, started: Sender<()>) -> Value {
-        invoke_fixed(marker, cancel, started, ExecReplyKind::Handshake, None)
+        invoke_fixed(
+            marker,
+            cancel,
+            started,
+            ExecReplyKind::Handshake,
+            None,
+            Profile::Proof,
+        )
     }
     pub(crate) fn invoke_resource(
         marker: &Marker,
@@ -185,7 +213,27 @@ pub(crate) mod native {
             started,
             ExecReplyKind::Resource,
             Some(deadline),
+            Profile::Proof,
         )
+    }
+    pub(crate) fn invoke_resource_for_profile(
+        marker: &Marker,
+        cancel: &AtomicBool,
+        started: Sender<()>,
+        deadline: Instant,
+        profile: Profile,
+    ) -> Value {
+        match profile {
+            Profile::Proof => invoke_resource(marker, cancel, started, deadline),
+            Profile::Preview => invoke_fixed(
+                marker,
+                cancel,
+                started,
+                ExecReplyKind::Resource,
+                Some(deadline),
+                Profile::Preview,
+            ),
+        }
     }
     fn invoke_fixed(
         marker: &Marker,
@@ -193,20 +241,22 @@ pub(crate) mod native {
         started: Sender<()>,
         kind: ExecReplyKind,
         deadline: Option<Instant>,
+        profile: Profile,
     ) -> Value {
-        let mut report = json!({"uri":EXEC_URI,"command":COMMAND,"attempts":0,
+        let command = fixed_command(profile);
+        let mut report = json!({"uri":EXEC_URI,"command":command,"attempts":0,
             "capability":null,"context":null,"own_at_call":null,"raw":null,
             "raw_bytes":0,"raw_truncated":false,"parsed":null,"error":null});
         let result = (|| -> Result<(), String> {
             if deadline.is_some_and(|end| Instant::now() >= end) {
                 return Err("Resource job expired before capability".into());
             }
-            let capability = crate::artwork_startup_probe::collect();
+            let capability = crate::artwork_startup_probe::collect_for_profile(profile);
             report["capability"] = capability.clone();
             if capability["verified"] != true || cancel.load(Ordering::Acquire) {
                 return Err("Fresh inert HBC capability gate declined".into());
             }
-            let own = probe::own_identity()?;
+            let own = probe::own_identity_for_profile(profile)?;
             if own.ui_sha256 != marker.ui_sha256 {
                 return Err("UI differs from installed marker".into());
             }
@@ -217,9 +267,12 @@ pub(crate) mod native {
                 deadline.map_or(context_end, |end| end.min(context_end)),
             );
             report["context"] = context.clone();
-            let current = probe::own_identity()?;
+            let current = probe::own_identity_for_profile(profile)?;
             report["own_at_call"] = json!(current);
-            if !probe::context_valid(&context) || current != own || cancel.load(Ordering::Acquire) {
+            if !probe::context_valid_for_profile(&context, profile)
+                || current != own
+                || cancel.load(Ordering::Acquire)
+            {
                 return Err("Caller/context changed before fixed startup request".into());
             }
             let budget = deadline.map_or(Duration::from_secs(30), |end| {
@@ -232,7 +285,7 @@ pub(crate) mod native {
             report["attempts"] = json!(1);
             let _ = started.send(());
             let raw = bus
-                .call(EXEC_URI, &json!({"command":COMMAND}).to_string(), budget)
+                .call(EXEC_URI, &json!({"command":command}).to_string(), budget)
                 .map_err(|e| match e {
                     plx_platform::webos::ls2::Fail::Timeout => {
                         "SDK exec completion unobserved: reply wait timed out".to_owned()
@@ -250,7 +303,7 @@ pub(crate) mod native {
             }
             report["raw"] = json!(&raw[..end]);
             report["raw_truncated"] = json!(raw.len() > REPLY_LIMIT);
-            report["parsed"] = parse_exec_fixed(&raw, kind)?;
+            report["parsed"] = parse_exec_fixed(&raw, kind, profile)?;
             Ok(())
         })();
         if let Err(error) = result {
@@ -512,6 +565,36 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn installed_commands_and_completion_profiles_are_fixed_and_never_interchangeable() {
+        for profile in [Profile::Proof, Profile::Preview] {
+            let other = if profile == Profile::Proof {
+                Profile::Preview
+            } else {
+                Profile::Proof
+            };
+            assert_eq!(fixed_command(profile), profile.helper_path());
+            assert!(!fixed_command(profile).contains(' '));
+            let journal = json!({"schema":1,"stage":"catalogue_child_started","child_pid":123,
+                "process_group":123,"program_sha256":"d".repeat(64)});
+            let report = json!({"schema":1,"stage":"startup_proof_complete","profile":profile,
+                "qualified":false,"outcome":"refused"});
+            let stdout = format!("{journal}\n{report}\n");
+            let raw = json!({"returnValue":false,"errorText":"fixed child refused",
+                "stdoutString":stdout,"stdoutBytes":base64(stdout.as_bytes()),
+                "stderrString":"","stderrBytes":""})
+            .to_string();
+            let parsed = parse_exec_resource_reply_for_profile(&raw, profile).unwrap();
+            assert_eq!(parsed["envelope_success"], false);
+            assert!(parse_exec_resource_reply_for_profile(&raw, other).is_err());
+            // The historical handshake decoder still disallows catalogue journals.
+            assert!(parse_exec_reply(&raw).is_err());
+            let mut bad: Value = serde_json::from_str(&raw).unwrap();
+            bad["stdoutBytes"] = json!("eA==");
+            assert!(parse_exec_resource_reply_for_profile(&bad.to_string(), profile).is_err());
+        }
+        assert_eq!(fixed_command(Profile::Proof), COMMAND);
+    }
     #[test]
     fn output_bytes_are_checked_as_base64_not_json_string_encoding() {
         for (bytes, expected) in [

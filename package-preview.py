@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.43.0' if main == 'home-preview' else '0.1.0'
+version = '0.44.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -44,7 +44,8 @@ startup_capability_proof = os.environ.get('NATIVE_HOME_STARTUP_CAPABILITY_PROOF'
 broker_startup_proof = os.environ.get('NATIVE_HOME_BROKER_STARTUP_PROOF') == '1'
 broker_negative_proof = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_PROOF') == '1'
 installed_artwork_proof = os.environ.get('NATIVE_HOME_INSTALLED_ARTWORK_PROOF') == '1'
-if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof)) > 1:
+artwork_guard_relaunch_proof = os.environ.get('NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF') == '1'
+if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof)) > 1:
     raise ValueError('Only one installed helper proof mode is allowed')
 broker_negative_case = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_CASE', '')
 if broker_negative_proof:
@@ -55,10 +56,12 @@ elif broker_negative_case:
 broker_startup_marker = None
 broker_negative_marker = None
 installed_artwork_marker = None
+artwork_guard_marker = None
 broker_startup_helper = None
 broker_startup_pins_sha256 = None
-if broker_startup_proof or broker_negative_proof or installed_artwork_proof:
+if broker_startup_proof or broker_negative_proof or installed_artwork_proof or artwork_guard_relaunch_proof:
     allowed = {'NATIVE_HOME_BROKER_STARTUP_PINS',
+               'NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF' if artwork_guard_relaunch_proof else
                'NATIVE_HOME_INSTALLED_ARTWORK_PROOF' if installed_artwork_proof else
                'NATIVE_HOME_BROKER_NEGATIVE_PROOF' if broker_negative_proof else 'NATIVE_HOME_BROKER_STARTUP_PROOF'}
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
@@ -91,6 +94,9 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof:
     broker_startup_marker={'schema':1,'nonce':pins['rendezvous_nonce'],'ui_sha256':pins['ui_sha256'],'broker_sha256':pins['broker_sha256']}
     if broker_negative_proof:
         broker_negative_marker={'schema':1,'scenario':broker_negative_case,'marker':broker_startup_marker}
+        broker_startup_marker=None
+    elif artwork_guard_relaunch_proof:
+        artwork_guard_marker=broker_startup_marker
         broker_startup_marker=None
     elif installed_artwork_proof:
         installed_artwork_marker=broker_startup_marker
@@ -208,6 +214,10 @@ if main == 'home-preview':
     if installed_artwork_marker is not None:
         marker_path=stage/'installed-artwork-proof.json'
         marker_path.write_text(json.dumps(installed_artwork_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
+    if artwork_guard_marker is not None:
+        marker_path=stage/'artwork-guard-relaunch-proof.json'
+        marker_path.write_text(json.dumps(artwork_guard_marker,separators=(',',':'))+'\n')
         marker_path.chmod(0o644)
     if startup_capability_proof:
         marker_path = stage / 'startup-capability-proof.json'
@@ -351,6 +361,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'broker_negative_proof': broker_negative_proof,
            'broker_negative_case': broker_negative_case or None,
            'installed_artwork_proof': installed_artwork_proof,
+           'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
            'broker_startup_helper': broker_startup_helper,
            'broker_startup_root_pins_sha256': broker_startup_pins_sha256,
            'artwork_target_fixture': artwork_target_fixture or None,
