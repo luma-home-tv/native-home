@@ -2262,10 +2262,8 @@ impl Shell {
         if self.surface.page == Page::RangeEditor
             && click
             && self.range.as_ref().is_some_and(|r| !r.pending)
-            && x >= RANGE_FRAME.x
-            && x <= RANGE_FRAME.x + RANGE_FRAME.w
-            && y >= RANGE_FRAME.y
-            && y <= RANGE_FRAME.y + RANGE_FRAME.h
+            && (RANGE_FRAME.x..=RANGE_FRAME.x + RANGE_FRAME.w).contains(&x)
+            && (RANGE_FRAME.y..=RANGE_FRAME.y + RANGE_FRAME.h).contains(&y)
         {
             self.input.cancel_press();
             self.focus_special(RANGE_BASE, GroupId(9));
