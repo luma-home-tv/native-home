@@ -2,7 +2,7 @@
 //!
 //! Kernel credentials, process evidence and service replies must be collected by
 //! the server itself. Parsing this data does not establish its provenance.
-use crate::broker_transport::Credentials;
+use crate::{broker_installation::Profile, broker_transport::Credentials};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -66,8 +66,8 @@ fn identity(schema: u32, nonce: &str, ui: &str, broker: &str) -> Result<(), Erro
     }
     Ok(())
 }
-fn client(pid: u32, uid: u32) -> Result<(), Error> {
-    if pid <= 1 || uid < 1000 || uid == 5724 {
+fn client_for_profile(pid: u32, uid: u32, profile: Profile) -> Result<(), Error> {
+    if pid <= 1 || uid < 1000 || (profile == Profile::Proof && uid == 5724) {
         return Err(Error::Client);
     }
     Ok(())
@@ -119,7 +119,7 @@ pub struct Enrollment {
     pub context_reader_sha256: String,
 }
 impl Enrollment {
-    fn validate_identity(&self) -> Result<(), Error> {
+    fn validate_identity_for_profile(&self, profile: Profile) -> Result<(), Error> {
         identity(
             self.schema,
             &self.nonce,
@@ -129,12 +129,17 @@ impl Enrollment {
         if !hex(&self.context_reader_sha256, 64) {
             return Err(Error::Hash);
         }
-        client(self.client_pid, self.client_uid)
+        client_for_profile(self.client_pid, self.client_uid, profile)
     }
     /// Revalidate with a fresh clock before accept AND every RPC. Identity-only
     /// authorization below deliberately does not supply or read a clock.
     pub fn validate(&self, now: u64) -> Result<(), Error> {
-        self.validate_identity()?;
+        self.validate_for_profile(now, Profile::Proof)
+    }
+    /// Profile is selected by protected installed authority, never by enrollment
+    /// JSON. Parsing/validation does not establish that authority or provenance.
+    pub fn validate_for_profile(&self, now: u64, profile: Profile) -> Result<(), Error> {
+        self.validate_identity_for_profile(profile)?;
         let latest = now.checked_add(90).ok_or(Error::Expiry)?;
         if self.expires_unix <= now || self.expires_unix > latest {
             return Err(Error::Expiry);
@@ -143,8 +148,15 @@ impl Enrollment {
     }
 }
 pub fn parse_enrollment(bytes: &[u8], now: u64) -> Result<Enrollment, Error> {
+    parse_enrollment_for_profile(bytes, now, Profile::Proof)
+}
+pub fn parse_enrollment_for_profile(
+    bytes: &[u8],
+    now: u64,
+    profile: Profile,
+) -> Result<Enrollment, Error> {
     let value: Enrollment = parse(bytes, ENROLLMENT_LIMIT)?;
-    value.validate(now)?;
+    value.validate_for_profile(now, profile)?;
     Ok(value)
 }
 
@@ -208,13 +220,18 @@ impl Response {
     /// Structural validation only. The client must also compare every binding
     /// with its marker, own process identity and independently received kernel credentials.
     pub fn validate(&self) -> Result<(), Error> {
+        self.validate_for_profile(Profile::Proof)
+    }
+    /// Structural validation for a source-selected installed role; this does
+    /// not replace kernel-peer, protected-policy or context admission.
+    pub fn validate_for_profile(&self, profile: Profile) -> Result<(), Error> {
         identity(
             self.schema,
             &self.nonce,
             &self.ui_sha256,
             &self.broker_sha256,
         )?;
-        client(self.client_pid, self.client_uid)?;
+        client_for_profile(self.client_pid, self.client_uid, profile)?;
         if self.server_pid <= 1 || self.server_uid != 0 {
             return Err(Error::Server);
         }
@@ -222,8 +239,11 @@ impl Response {
     }
 }
 pub fn parse_response(bytes: &[u8]) -> Result<Response, Error> {
+    parse_response_for_profile(bytes, Profile::Proof)
+}
+pub fn parse_response_for_profile(bytes: &[u8], profile: Profile) -> Result<Response, Error> {
     let value: Response = parse(bytes, RESPONSE_LIMIT)?;
-    value.validate()?;
+    value.validate_for_profile(profile)?;
     Ok(value)
 }
 
@@ -245,7 +265,18 @@ pub fn authorize(
     message_cred: &Credentials,
     peer: &PeerEvidence,
 ) -> Result<(), Error> {
-    enrollment.validate_identity()?;
+    authorize_for_profile(enrollment, connect_cred, message_cred, peer, Profile::Proof)
+}
+/// The role must come from protected Installation/source policy. A caller's
+/// chosen profile, serialized role or ordinary UID alone grants no authority.
+pub fn authorize_for_profile(
+    enrollment: &Enrollment,
+    connect_cred: &Credentials,
+    message_cred: &Credentials,
+    peer: &PeerEvidence,
+    profile: Profile,
+) -> Result<(), Error> {
+    enrollment.validate_identity_for_profile(profile)?;
     if connect_cred != message_cred
         || u32::try_from(connect_cred.pid).ok() != Some(enrollment.client_pid)
         || connect_cred.uid != enrollment.client_uid
@@ -259,19 +290,27 @@ pub fn authorize(
     {
         return Err(Error::PeerIdentity);
     }
-    if peer.exe_path != PROOF_EXE_PATH || peer.root_path != PROOF_JAIL_ROOT {
+    if peer.exe_path != profile.peer_exe_path() || peer.root_path != profile.jail_root() {
         return Err(Error::PeerPath);
     }
     Ok(())
 }
 
 pub fn validate_context(system: &Value, foreground: &Value, windows: &Value) -> Result<(), Error> {
+    validate_context_for_profile(system, foreground, windows, Profile::Proof)
+}
+pub fn validate_context_for_profile(
+    system: &Value,
+    foreground: &Value,
+    windows: &Value,
+    profile: Profile,
+) -> Result<(), Error> {
     let sole_card = windows
         .get("windows")
         .and_then(Value::as_array)
         .is_some_and(|rows| {
             rows.len() == 1
-                && rows[0].get("appId").and_then(Value::as_str) == Some(crate::identity::PROOF)
+                && rows[0].get("appId").and_then(Value::as_str) == Some(profile.app_id())
                 && rows[0].get("windowType").and_then(Value::as_str)
                     == Some("_WEBOS_WINDOW_TYPE_CARD")
         });
@@ -280,7 +319,7 @@ pub fn validate_context(system: &Value, foreground: &Value, windows: &Value) -> 
         || system.get("firmwareVersion").and_then(Value::as_str) != Some("23.25.55")
         || system.get("sdkVersion").and_then(Value::as_str) != Some("9.2.2")
         || foreground.get("returnValue").and_then(Value::as_bool) != Some(true)
-        || foreground.get("appId").and_then(Value::as_str) != Some(crate::identity::PROOF)
+        || foreground.get("appId").and_then(Value::as_str) != Some(profile.app_id())
         || windows.get("returnValue").and_then(Value::as_bool) != Some(true)
         || !sole_card
     {
@@ -670,6 +709,216 @@ mod tests {
         assert_eq!(
             validate_context(&system, &fg, &Value::Null),
             Err(Error::Context)
+        );
+    }
+
+    fn preview(uid: u32) -> (Enrollment, Credentials, PeerEvidence, Response) {
+        let mut e = enrollment();
+        e.client_uid = uid;
+        let c = Credentials {
+            uid,
+            gid: 5000,
+            ..credentials()
+        };
+        let p = PeerEvidence {
+            uid_fields: [uid; 4],
+            exe_path: Profile::Preview.peer_exe_path(),
+            root_path: Profile::Preview.jail_root(),
+            ..peer()
+        };
+        let r = Response {
+            schema: 1,
+            op: Operation::Identify,
+            nonce: e.nonce.clone(),
+            server_pid: 987,
+            server_uid: 0,
+            client_pid: e.client_pid,
+            client_uid: uid,
+            client_start_ticks: e.client_start_ticks,
+            ui_sha256: e.ui_sha256.clone(),
+            broker_sha256: e.broker_sha256.clone(),
+        };
+        (e, c, p, r)
+    }
+
+    #[test]
+    fn preview_reserved_uid_is_structural_only_through_explicit_profile_apis() {
+        for uid in [5724, 9001] {
+            let (e, c, p, response) = preview(uid);
+            assert_eq!(e.validate_for_profile(100, Profile::Preview), Ok(()));
+            assert_eq!(response.validate_for_profile(Profile::Preview), Ok(()));
+            let raw = serde_json::to_vec(&e).unwrap();
+            assert_eq!(
+                parse_enrollment_for_profile(&raw, 100, Profile::Preview),
+                Ok(e.clone())
+            );
+            let raw_response = serde_json::to_vec(&response).unwrap();
+            assert_eq!(
+                parse_response_for_profile(&raw_response, Profile::Preview),
+                Ok(response.clone())
+            );
+            assert_eq!(
+                authorize_for_profile(&e, &c, &c, &p, Profile::Preview),
+                Ok(())
+            );
+            assert!(authorize(&e, &c, &c, &p).is_err());
+            if uid == 5724 {
+                assert_eq!(e.validate(100), Err(Error::Client));
+                assert_eq!(response.validate(), Err(Error::Client));
+                assert_eq!(parse_enrollment(&raw, 100), Err(Error::Client));
+                assert_eq!(parse_response(&raw_response), Err(Error::Client));
+            }
+        }
+    }
+
+    #[test]
+    fn profile_authorization_still_binds_credentials_and_every_kernel_field() {
+        let (e, c, p, _) = preview(5724);
+        for bad in [
+            Credentials { pid: 124, ..c },
+            Credentials { uid: 9001, ..c },
+            Credentials { gid: 0, ..c },
+        ] {
+            assert!(authorize_for_profile(&e, &c, &bad, &p, Profile::Preview).is_err());
+            assert!(authorize_for_profile(&e, &bad, &c, &p, Profile::Preview).is_err());
+        }
+        let mut variants = Vec::new();
+        for index in 0..4 {
+            let mut bad = p.clone();
+            bad.uid_fields[index] = 0;
+            variants.push(bad);
+        }
+        let mut bad = p.clone();
+        bad.start_ticks += 1;
+        variants.push(bad);
+        let mut bad = p.clone();
+        bad.exe_sha256 = "e".repeat(64);
+        variants.push(bad);
+        let mut bad = p.clone();
+        bad.pid += 1;
+        variants.push(bad);
+        let mut bad = p.clone();
+        bad.exe_path = Profile::Proof.peer_exe_path();
+        variants.push(bad);
+        let mut bad = p;
+        bad.root_path = Profile::Proof.jail_root();
+        variants.push(bad);
+        for bad in variants {
+            assert!(authorize_for_profile(&e, &c, &c, &bad, Profile::Preview).is_err());
+        }
+        // An ordinary dynamic UID is not a role; each role still has fixed paths.
+        let (e, c, preview_peer, _) = preview(9001);
+        let mut proof_peer = preview_peer.clone();
+        proof_peer.exe_path = Profile::Proof.peer_exe_path();
+        proof_peer.root_path = Profile::Proof.jail_root();
+        assert_eq!(authorize(&e, &c, &c, &proof_peer), Ok(()));
+        assert_eq!(
+            authorize_for_profile(&e, &c, &c, &proof_peer, Profile::Preview),
+            Err(Error::PeerPath)
+        );
+        assert_eq!(authorize(&e, &c, &c, &preview_peer), Err(Error::PeerPath));
+    }
+
+    #[test]
+    fn preview_context_requires_its_exact_card_without_relaxing_platform_or_proof() {
+        let (system, mut foreground, mut windows) = context();
+        foreground["appId"] = json!(Profile::Preview.app_id());
+        windows["windows"][0]["appId"] = json!(Profile::Preview.app_id());
+        assert_eq!(
+            validate_context_for_profile(&system, &foreground, &windows, Profile::Preview),
+            Ok(())
+        );
+        assert_eq!(
+            validate_context(&system, &foreground, &windows),
+            Err(Error::Context)
+        );
+        let (_, proof_fg, proof_windows) = context();
+        assert_eq!(
+            validate_context_for_profile(&system, &proof_fg, &proof_windows, Profile::Preview),
+            Err(Error::Context)
+        );
+        let mut mixed = windows.clone();
+        mixed["windows"][0]["appId"] = json!(Profile::Proof.app_id());
+        assert_eq!(
+            validate_context_for_profile(&system, &foreground, &mixed, Profile::Preview),
+            Err(Error::Context)
+        );
+        let mut multiple = windows.clone();
+        multiple["windows"].as_array_mut().unwrap().push(
+            json!({"appId":"com.webos.app.keyboard","windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"}),
+        );
+        assert_eq!(
+            validate_context_for_profile(&system, &foreground, &multiple, Profile::Preview),
+            Err(Error::Context)
+        );
+        for (key, value) in [
+            ("modelName", json!("OLED65C26LD")),
+            ("firmwareVersion", json!("23.25.56")),
+            ("sdkVersion", json!("9.2.2-61")),
+            ("returnValue", json!(1)),
+        ] {
+            let mut changed = system.clone();
+            changed[key] = value;
+            assert_eq!(
+                validate_context_for_profile(&changed, &foreground, &windows, Profile::Preview),
+                Err(Error::Context)
+            );
+        }
+    }
+
+    #[test]
+    fn installed_profile_parsers_keep_closed_wire_schema_and_existing_limits() {
+        let (e, _, _, r) = preview(5724);
+        for field in ["profile", "path", "command", "uri"] {
+            let mut value = serde_json::to_value(&e).unwrap();
+            value[field] = json!("preview");
+            assert_eq!(
+                parse_enrollment_for_profile(
+                    &serde_json::to_vec(&value).unwrap(),
+                    100,
+                    Profile::Preview
+                ),
+                Err(Error::InvalidJson)
+            );
+            let mut value = serde_json::to_value(&r).unwrap();
+            value[field] = json!("preview");
+            assert_eq!(
+                parse_response_for_profile(&serde_json::to_vec(&value).unwrap(), Profile::Preview),
+                Err(Error::InvalidJson)
+            );
+        }
+        let raw = serde_json::to_string(&e).unwrap();
+        assert_eq!(
+            parse_enrollment_for_profile(
+                raw.replacen('{', "{\"client_uid\":5724,", 1).as_bytes(),
+                100,
+                Profile::Preview
+            ),
+            Err(Error::InvalidJson)
+        );
+        for uid in [0, 999] {
+            let mut bad = e.clone();
+            bad.client_uid = uid;
+            assert_eq!(
+                bad.validate_for_profile(100, Profile::Preview),
+                Err(Error::Client)
+            );
+        }
+        for pid in [0, 1] {
+            let mut bad = r.clone();
+            bad.client_pid = pid;
+            assert_eq!(
+                bad.validate_for_profile(Profile::Preview),
+                Err(Error::Client)
+            );
+        }
+        assert_eq!(
+            e.validate_for_profile(190, Profile::Preview),
+            Err(Error::Expiry)
+        );
+        assert_eq!(
+            parse_response_for_profile(&vec![b' '; RESPONSE_LIMIT + 1], Profile::Preview),
+            Err(Error::TooLarge)
         );
     }
 }

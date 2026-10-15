@@ -1,5 +1,8 @@
-//! Isolated Proof-only Identify handshake. No icon reads, commands, service
+//! Proof Identify handshake with closed installed-profile identity primitives.
+//! No icon reads, commands, service
 //! elevation, normal-app worker, or production launcher are provided here.
+#[cfg(any(target_arch = "arm", test))]
+use crate::broker_installation::Profile;
 #[cfg(any(target_arch = "arm", test))]
 use crate::broker_protocol::{Marker, Response};
 #[cfg(any(target_arch = "arm", test))]
@@ -18,27 +21,29 @@ pub(crate) struct OwnIdentity {
 }
 
 #[cfg(any(target_arch = "arm", test))]
+pub(crate) fn ordinary_for_profile(app_id: &str, uid: u32, profile: Profile) -> bool {
+    app_id == profile.app_id() && uid >= 1000 && (profile != Profile::Proof || uid != 5724)
+}
+
+#[cfg(test)]
 fn ordinary_proof(app_id: &str, uid: u32) -> bool {
-    app_id == crate::identity::PROOF && uid >= 1000 && uid != 5724
+    ordinary_for_profile(app_id, uid, Profile::Proof)
 }
 
 #[cfg(any(target_arch = "arm", test))]
 pub(crate) fn context_valid(context: &Value) -> bool {
-    let info = &context["system_info"];
-    let foreground = &context["foreground"];
-    let windows = &context["windows"];
-    info["returnValue"].as_bool() == Some(true)
-        && info["modelName"].as_str() == Some("OLED55G26LA")
-        && info["firmwareVersion"].as_str() == Some("23.25.55")
-        && info["sdkVersion"].as_str() == Some("9.2.2")
-        && foreground["returnValue"].as_bool() == Some(true)
-        && foreground["appId"].as_str() == Some(crate::identity::PROOF)
-        && windows["returnValue"].as_bool() == Some(true)
-        && windows["windows"].as_array().is_some_and(|rows| {
-            rows.len() == 1
-                && rows[0]["appId"].as_str() == Some(crate::identity::PROOF)
-                && rows[0]["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_CARD")
-        })
+    context_valid_for_profile(context, Profile::Proof)
+}
+
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn context_valid_for_profile(context: &Value, profile: Profile) -> bool {
+    crate::broker_protocol::validate_context_for_profile(
+        &context["system_info"],
+        &context["foreground"],
+        &context["windows"],
+        profile,
+    )
+    .is_ok()
 }
 
 #[cfg(any(target_arch = "arm", test))]
@@ -65,9 +70,28 @@ pub(crate) fn bind_response(
     message: Credentials,
     response: &Response,
 ) -> Result<(), String> {
+    bind_response_for_profile(marker, own, after, peer, message, response, Profile::Proof)
+}
+
+/// The profile is selected by installed source policy, never a response field.
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn bind_response_for_profile(
+    marker: &Marker,
+    own: &OwnIdentity,
+    after: &OwnIdentity,
+    peer: Credentials,
+    message: Credentials,
+    response: &Response,
+    profile: Profile,
+) -> Result<(), String> {
     marker.validate().map_err(|error| error.to_string())?;
-    response.validate().map_err(|error| error.to_string())?;
-    if !ordinary_proof(crate::identity::PROOF, own.uid) || own.pid <= 1 || own.start_ticks == 0 {
+    response
+        .validate_for_profile(profile)
+        .map_err(|error| error.to_string())?;
+    if !ordinary_for_profile(profile.app_id(), own.uid, profile)
+        || own.pid <= 1
+        || own.start_ticks == 0
+    {
         return Err("Invalid ordinary client identity".into());
     }
     if peer.uid != 0 || peer.pid <= 1 || message != peer {
@@ -121,13 +145,18 @@ fn hash_reader(reader: &mut impl std::io::Read) -> Result<String, String> {
 
 #[cfg(target_arch = "arm")]
 pub(crate) fn own_identity() -> Result<OwnIdentity, String> {
+    own_identity_for_profile(Profile::Proof)
+}
+
+#[cfg(target_arch = "arm")]
+pub(crate) fn own_identity_for_profile(profile: Profile) -> Result<OwnIdentity, String> {
     use std::fs::File;
     use std::io::Read;
     use std::os::unix::fs::MetadataExt;
     let pid = std::process::id();
     let uid = unsafe { libc::geteuid() };
-    if !ordinary_proof(plx_base::paths::app_id(), uid) {
-        return Err("Identify is restricted to an ordinary isolated Proof process".into());
+    if !ordinary_for_profile(plx_base::paths::app_id(), uid, profile) {
+        return Err("Identify requires the selected ordinary installed profile".into());
     }
     let stat = || -> Result<u64, String> {
         let file = File::open("/proc/self/stat").map_err(|error| error.to_string())?;
@@ -164,6 +193,7 @@ pub(crate) fn own_identity() -> Result<OwnIdentity, String> {
     if identity(&before) != identity(&after)
         || stat()? != start
         || unsafe { libc::geteuid() } != uid
+        || !ordinary_for_profile(plx_base::paths::app_id(), uid, profile)
     {
         return Err("Self identity changed during executable measurement".into());
     }
@@ -561,6 +591,84 @@ mod tests {
                 assert!(bind_response(&marker, &own, &own, peer, peer, &bad).is_err());
             }
         }
+    }
+    #[test]
+    fn preview_binding_requires_explicit_profile_and_keeps_kernel_identity_checks() {
+        for uid in [5724, 7001] {
+            let (marker, mut own, peer, mut response) = identities();
+            own.uid = uid;
+            response.client_uid = uid;
+            assert!(ordinary_for_profile(
+                crate::identity::PREVIEW,
+                uid,
+                Profile::Preview
+            ));
+            assert!(!ordinary_for_profile(
+                crate::identity::PROOF,
+                uid,
+                Profile::Preview
+            ));
+            assert!(bind_response_for_profile(
+                &marker,
+                &own,
+                &own,
+                peer,
+                peer,
+                &response,
+                Profile::Preview
+            )
+            .is_ok());
+            if uid == 5724 {
+                assert!(bind_response(&marker, &own, &own, peer, peer, &response).is_err());
+            }
+            let stale = OwnIdentity {
+                start_ticks: own.start_ticks + 1,
+                ..own.clone()
+            };
+            assert!(bind_response_for_profile(
+                &marker,
+                &own,
+                &stale,
+                peer,
+                peer,
+                &response,
+                Profile::Preview
+            )
+            .is_err());
+            let other_message = Credentials {
+                gid: peer.gid + 1,
+                ..peer
+            };
+            assert!(bind_response_for_profile(
+                &marker,
+                &own,
+                &own,
+                peer,
+                other_message,
+                &response,
+                Profile::Preview
+            )
+            .is_err());
+        }
+        for uid in [0, 999] {
+            assert!(!ordinary_for_profile(
+                crate::identity::PREVIEW,
+                uid,
+                Profile::Preview
+            ));
+        }
+    }
+    #[test]
+    fn profile_context_delegates_exact_protocol_policy_without_cross_role_cards() {
+        let mut preview = context();
+        preview["foreground"]["appId"] = json!(crate::identity::PREVIEW);
+        preview["windows"]["windows"][0]["appId"] = json!(crate::identity::PREVIEW);
+        preview["windows"]["windows"][0]["harmless_metadata"] = json!(123);
+        assert!(context_valid_for_profile(&preview, Profile::Preview));
+        assert!(!context_valid(&preview));
+        assert!(!context_valid_for_profile(&context(), Profile::Preview));
+        preview["windows"]["windows"][0]["appId"] = json!(crate::identity::PROOF);
+        assert!(!context_valid_for_profile(&preview, Profile::Preview));
     }
     #[test]
     fn stat_start_uses_field22_after_parenthesized_comm() {

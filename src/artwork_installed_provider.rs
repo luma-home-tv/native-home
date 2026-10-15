@@ -1,6 +1,7 @@
 //! Proof-only worker provider. One installed helper per fetch; no decoder or GL.
 //! Unknown command/child completion quarantines this provider instance. A new
-//! instance is not a recovery procedure for an unresolved helper.
+//! instance is not a recovery procedure for an unresolved helper. Native dispatch
+//! also requires the negative-only own-state pending guard across instances.
 use crate::{
     app_artwork::{EncodedFile, Source},
     artwork_worker::{Cancellation, Provider, ProviderError},
@@ -16,6 +17,8 @@ pub struct InstalledProvider {
     quarantined: bool,
     #[cfg(any(target_arch = "arm", test))]
     observation: Option<ProofObservation>,
+    #[cfg(any(target_arch = "arm", test))]
+    guard: Option<crate::artwork_session_guard::Guard>,
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
@@ -66,10 +69,18 @@ impl InstalledProvider {
             if own.ui_sha256 != marker.ui_sha256 {
                 return Err(ProviderError::Denied);
             }
+            let guard = crate::artwork_session_guard::Guard::open(
+                crate::broker_installation::Profile::Proof,
+            )
+            .map_err(|_| ProviderError::Denied)?;
+            if guard.pending().map_err(|_| ProviderError::Denied)? {
+                return Err(ProviderError::Unavailable);
+            }
             Ok(Self {
                 marker,
                 quarantined: false,
                 observation: None,
+                guard: Some(guard),
             })
         }
         #[cfg(not(target_arch = "arm"))]
@@ -344,6 +355,69 @@ fn proof_ticket(provider: &mut InstalledProvider) -> Result<Option<ProofTicket>,
             }
         },
     }
+}
+/// Negative-only dispatch arbitration. Own identity is measured by the native
+/// caller; the state file supplies no authority to the Root helper.
+#[cfg(any(target_arch = "arm", test))]
+fn begin_pending(
+    provider: &mut InstalledProvider,
+    own: &crate::broker_probe::OwnIdentity,
+) -> Result<crate::artwork_session_guard::Ticket, ProviderError> {
+    let attempt = (|| {
+        if own.ui_sha256 != provider.marker.ui_sha256
+            || !crate::broker_probe::ordinary_for_profile(
+                crate::identity::PROOF,
+                own.uid,
+                crate::broker_installation::Profile::Proof,
+            )
+        {
+            return Err(ProviderError::Denied);
+        }
+        provider
+            .guard
+            .as_ref()
+            .ok_or(ProviderError::Denied)?
+            .begin(crate::artwork_session_guard::PendingIdentity {
+                schema: 1,
+                profile: crate::broker_installation::Profile::Proof,
+                caller_pid: own.pid,
+                caller_start_ticks: own.start_ticks,
+                ui_sha256: own.ui_sha256.clone(),
+                nonce: provider.marker.nonce.clone(),
+            })
+            .map_err(|_| ProviderError::Unavailable)
+    })();
+    if attempt.is_err() {
+        provider.quarantined = true;
+    }
+    attempt
+}
+/// Only the existing lifecycle grader may clear quarantine. Unknown completion
+/// drops the ticket without unlinking, blocking a new provider/process too.
+#[cfg(any(target_arch = "arm", test))]
+fn resolve_pending(
+    provider: &mut InstalledProvider,
+    ticket: crate::artwork_session_guard::Ticket,
+) -> Result<(), ProviderError> {
+    if provider.quarantined {
+        return Ok(());
+    }
+    ticket.finish_known().map_err(|_| {
+        provider.quarantined = true;
+        ProviderError::Invalid
+    })
+}
+#[cfg(any(target_arch = "arm", test))]
+fn guard_result(
+    provider: &mut InstalledProvider,
+    ticket: crate::artwork_session_guard::Ticket,
+    result: Result<EncodedFile, ProviderError>,
+) -> Result<EncodedFile, ProviderError> {
+    resolve_pending(provider, ticket)?;
+    if provider.quarantined && result.is_ok() {
+        return Err(ProviderError::Invalid);
+    }
+    result
 }
 #[cfg(any(target_arch = "arm", test))]
 fn observed_outcome(result: &Result<EncodedFile, ProviderError>) -> &'static str {
@@ -1147,6 +1221,11 @@ mod native {
         cancellation: &Cancellation,
     ) -> Result<EncodedFile, ProviderError> {
         let ticket = proof_ticket(provider)?;
+        let own = probe::own_identity().map_err(|_| {
+            provider.quarantined = true;
+            ProviderError::Denied
+        })?;
+        let pending = begin_pending(provider, &own)?;
         let stop = Arc::new(AtomicBool::new(false));
         let invoke_stop = stop.clone();
         let marker = provider.marker.clone();
@@ -1165,6 +1244,7 @@ mod native {
             Ok(handle) => handle,
             Err(_) => {
                 provider.quarantined = false;
+                resolve_pending(provider, pending)?;
                 if let Some(ticket) = ticket {
                     write_observed_result(
                         provider,
@@ -1214,6 +1294,7 @@ mod native {
             cancelled,
             expired,
         );
+        let result = guard_result(provider, pending, result);
         if let Some(ticket) = ticket {
             let helper = hbc
                 .as_ref()

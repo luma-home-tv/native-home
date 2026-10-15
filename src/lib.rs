@@ -20,6 +20,7 @@ pub mod drawer;
 
 pub mod session;
 
+pub mod artwork_session_guard;
 pub mod icon_presentation_proof;
 pub mod identity;
 

@@ -69,6 +69,14 @@ external live raw process binding; later helpers bind kernel/self/HBC records.
 Retained 0.37 and production startup are unchanged; normal-profile admission,
 all-app coverage and a backed-up retained promotion remain pending.
 
+The source foundation in `docs/preview-artwork-admission.md` adds explicit closed
+profile protocol/self/capability APIs while default APIs remain Proof-only. The
+Proof provider now uses an own-state pending latch before HBC dispatch, retained
+on unknown completion across new instances. Host checks pass; the new guard's
+native regression, Preview Root/helper/provider wiring and actual Preview-ID
+qualification remain pending. Do not clear old pending records on age, restart,
+caller death or HBC false, or treat a parsed Preview response as Root authority.
+
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
 coordinator may run isolated tests under the existing C2 lease, preserving its

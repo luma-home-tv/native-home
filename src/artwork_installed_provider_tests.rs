@@ -233,6 +233,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
             marker,
             quarantined: false,
             observation: None,
+            guard: None,
         },
         source,
         exchange,
@@ -499,6 +500,138 @@ impl ObservationDirectory {
 impl Drop for ObservationDirectory {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+fn guarded(provider: &mut InstalledProvider, directory: &ObservationDirectory) -> OwnIdentity {
+    provider.guard = Some(
+        crate::artwork_session_guard::Guard::open_for_test(
+            &directory.0,
+            crate::broker_installation::Profile::Proof,
+        )
+        .unwrap(),
+    );
+    OwnIdentity {
+        pid: std::process::id(),
+        uid: 6583,
+        start_ticks: 456,
+        ui_sha256: provider.marker.ui_sha256.clone(),
+    }
+}
+#[test]
+fn unknown_join_retains_pending_and_a_new_provider_cannot_dispatch_again() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, exchange, _) = fixture();
+    let own = guarded(&mut provider, &directory);
+    let ticket = begin_pending(&mut provider, &own).unwrap();
+    let result = session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Err(ProviderError::Unavailable),
+        false,
+        false,
+    );
+    assert!(guard_result(&mut provider, ticket, result).is_err());
+    assert!(provider.quarantined);
+    drop(provider);
+    let (mut restarted, _, _, _) = fixture();
+    let mut fresh_own = guarded(&mut restarted, &directory);
+    restarted.marker.nonce = "f".repeat(32);
+    fresh_own.start_ticks += 1;
+    assert!(restarted.guard.as_ref().unwrap().pending().unwrap());
+    assert!(begin_pending(&mut restarted, &fresh_own).is_err());
+    assert!(restarted.quarantined);
+    assert!(restarted.guard.as_ref().unwrap().pending().unwrap());
+}
+#[test]
+fn only_known_closed_or_no_start_lifecycles_release_pending_without_touching_favourites() {
+    for no_start in [false, true] {
+        let directory = ObservationDirectory::new();
+        let favourites = directory.0.join("preferences.json");
+        std::fs::write(&favourites, b"unchanged favourites fixture").unwrap();
+        let (mut provider, source, exchange, hbc) = fixture();
+        let own = guarded(&mut provider, &directory);
+        let ticket = begin_pending(&mut provider, &own).unwrap();
+        let result = if no_start {
+            session::settle(
+                &mut provider,
+                source.key(),
+                Err(ProviderError::Unavailable),
+                Ok(json!({"uri":crate::broker_startup_proof::EXEC_URI,
+                    "command":crate::broker_startup_proof::COMMAND,"attempts":0,
+                    "raw":null,"parsed":null,"error":"Before fixed dispatch"})),
+                false,
+                false,
+            )
+        } else {
+            session::settle(
+                &mut provider,
+                source.key(),
+                Ok(exchange),
+                Ok(hbc),
+                false,
+                false,
+            )
+        };
+        let result = guard_result(&mut provider, ticket, result);
+        assert_eq!(result.is_ok(), !no_start);
+        assert!(!provider.quarantined);
+        assert!(!provider.guard.as_ref().unwrap().pending().unwrap());
+        assert_eq!(
+            std::fs::read(&favourites).unwrap(),
+            b"unchanged favourites fixture"
+        );
+        let next = begin_pending(&mut provider, &own).unwrap();
+        provider.quarantined = false; // Controlled known no-start in this host fixture.
+        resolve_pending(&mut provider, next).unwrap();
+    }
+}
+#[test]
+fn pending_storage_failure_discards_even_a_completed_transfer() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, exchange, hbc) = fixture();
+    let own = guarded(&mut provider, &directory);
+    let ticket = begin_pending(&mut provider, &own).unwrap();
+    let completed = session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false,
+    );
+    assert!(completed.is_ok());
+    std::fs::write(directory.0.join("artwork-session-pending.json"), b"changed").unwrap();
+    assert!(guard_result(&mut provider, ticket, completed).is_err());
+    assert!(provider.quarantined);
+    assert!(provider.guard.as_ref().unwrap().pending().is_err());
+    let (mut restarted, _, _, _) = fixture();
+    let own = guarded(&mut restarted, &directory);
+    assert!(begin_pending(&mut restarted, &own).is_err());
+}
+#[test]
+fn unmeasured_or_missing_guard_cannot_reach_dispatch() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, _, _, _) = fixture();
+    let own = OwnIdentity {
+        pid: std::process::id(),
+        uid: 6583,
+        start_ticks: 456,
+        ui_sha256: provider.marker.ui_sha256.clone(),
+    };
+    assert!(begin_pending(&mut provider, &own).is_err());
+    assert!(provider.quarantined);
+    for altered in 0..3 {
+        let (mut provider, _, _, _) = fixture();
+        let mut own = guarded(&mut provider, &directory);
+        match altered {
+            0 => own.pid += 1,
+            1 => own.ui_sha256 = "0".repeat(64),
+            _ => own.start_ticks = 0,
+        }
+        assert!(begin_pending(&mut provider, &own).is_err());
+        assert!(provider.quarantined);
+        assert!(!provider.guard.as_ref().unwrap().pending().unwrap());
     }
 }
 #[test]

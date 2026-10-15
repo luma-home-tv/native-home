@@ -2,6 +2,7 @@
 //! No paths, commands, decoding, GL, or authority to read a resource lives here.
 //! Complete ends one transaction; only Finished plus clean EOF ends the session.
 use crate::app_artwork::{EncodedFile, FileIdentity, IconKind, RootClass, SourceKey};
+use crate::broker_installation::Profile;
 pub use crate::broker_protocol::Response as Identity;
 use crate::broker_transport::{Connection, Credentials};
 use serde::{Deserialize, Serialize};
@@ -264,8 +265,10 @@ fn app(value: &str) -> bool {
 fn text(value: &str, limit: usize) -> bool {
     !value.is_empty() && value.len() <= limit && !value.chars().any(char::is_control)
 }
-fn identity(value: &Identity) -> Result<(), Error> {
-    value.validate().map_err(|_| Error::Identity)?;
+fn identity(value: &Identity, profile: Profile) -> Result<(), Error> {
+    value
+        .validate_for_profile(profile)
+        .map_err(|_| Error::Identity)?;
     check(value.client_start_ticks > 0, Error::Identity)
 }
 fn hash(bytes: &[u8]) -> String {
@@ -349,8 +352,17 @@ impl Header {
         source: &SourceKey,
         file: &EncodedFile,
     ) -> Result<Self, Error> {
+        Self::from_file_for_profile(request, session, source, file, Profile::Proof)
+    }
+    pub fn from_file_for_profile(
+        request: &Request,
+        session: &Identity,
+        source: &SourceKey,
+        file: &EncodedFile,
+        profile: Profile,
+    ) -> Result<Self, Error> {
         request.validate()?;
-        identity(session)?;
+        identity(session, profile)?;
         check(file.bytes.len() <= ENCODED_LIMIT, Error::Bounds)?;
         let value = Self {
             schema: 1,
@@ -366,11 +378,14 @@ impl Header {
             encoded_sha256: hash(&file.bytes),
             chunk_count: file.bytes.len().div_ceil(CHUNK_BYTES) as u32,
         };
-        value.validate_for(request, session)?;
+        value.validate_for_in_profile(request, session, profile)?;
         Ok(value)
     }
     pub fn validate(&self) -> Result<(), Error> {
-        identity(&self.identity)?;
+        self.validate_for_profile(Profile::Proof)
+    }
+    pub fn validate_for_profile(&self, profile: Profile) -> Result<(), Error> {
+        identity(&self.identity, profile)?;
         self.file_identity.validate()?;
         check(
             self.schema == 1
@@ -386,7 +401,15 @@ impl Header {
         )
     }
     pub fn validate_for(&self, request: &Request, session: &Identity) -> Result<(), Error> {
-        self.validate()?;
+        self.validate_for_in_profile(request, session, Profile::Proof)
+    }
+    pub fn validate_for_in_profile(
+        &self,
+        request: &Request,
+        session: &Identity,
+        profile: Profile,
+    ) -> Result<(), Error> {
+        self.validate_for_profile(profile)?;
         request.validate()?;
         check(
             self.identity == *session && self.identity.nonce == request.nonce,
@@ -404,7 +427,10 @@ impl Complete {
     /// Construct only after the server has repeated its context, peer,
     /// enrollment and selected-source checks. Construction itself does no I/O.
     pub fn from_header(header: &Header) -> Result<Self, Error> {
-        header.validate()?;
+        Self::from_header_for_profile(header, Profile::Proof)
+    }
+    pub fn from_header_for_profile(header: &Header, profile: Profile) -> Result<Self, Error> {
+        header.validate_for_profile(profile)?;
         Ok(Self {
             schema: 1,
             op: CompleteOp::ArtworkComplete,
@@ -417,7 +443,10 @@ impl Complete {
         })
     }
     pub fn validate(&self) -> Result<(), Error> {
-        identity(&self.identity)?;
+        self.validate_for_profile(Profile::Proof)
+    }
+    pub fn validate_for_profile(&self, profile: Profile) -> Result<(), Error> {
+        identity(&self.identity, profile)?;
         check(
             self.schema == 1
                 && (1..=5).contains(&self.request_id)
@@ -430,8 +459,14 @@ impl Complete {
         )
     }
     pub fn validate_for(&self, header: &Header) -> Result<(), Error> {
-        self.validate()?;
-        check(*self == Self::from_header(header)?, Error::Digest)
+        self.validate_for_in_profile(header, Profile::Proof)
+    }
+    pub fn validate_for_in_profile(&self, header: &Header, profile: Profile) -> Result<(), Error> {
+        self.validate_for_profile(profile)?;
+        check(
+            *self == Self::from_header_for_profile(header, profile)?,
+            Error::Digest,
+        )
     }
 }
 impl Refusal {
@@ -440,8 +475,16 @@ impl Refusal {
         session: &Identity,
         reason: RefusalReason,
     ) -> Result<Self, Error> {
+        Self::new_for_profile(request, session, reason, Profile::Proof)
+    }
+    pub fn new_for_profile(
+        request: &Request,
+        session: &Identity,
+        reason: RefusalReason,
+        profile: Profile,
+    ) -> Result<Self, Error> {
         request.validate()?;
-        identity(session)?;
+        identity(session, profile)?;
         check(session.nonce == request.nonce, Error::Identity)?;
         Ok(Self {
             schema: 1,
@@ -453,14 +496,25 @@ impl Refusal {
         })
     }
     pub fn validate(&self) -> Result<(), Error> {
-        identity(&self.identity)?;
+        self.validate_for_profile(Profile::Proof)
+    }
+    pub fn validate_for_profile(&self, profile: Profile) -> Result<(), Error> {
+        identity(&self.identity, profile)?;
         check(
             self.schema == 1 && (1..=5).contains(&self.request_id) && app(&self.app_id),
             Error::Request,
         )
     }
     pub fn validate_for(&self, request: &Request, session: &Identity) -> Result<(), Error> {
-        self.validate()?;
+        self.validate_for_in_profile(request, session, Profile::Proof)
+    }
+    pub fn validate_for_in_profile(
+        &self,
+        request: &Request,
+        session: &Identity,
+        profile: Profile,
+    ) -> Result<(), Error> {
+        self.validate_for_profile(profile)?;
         check(
             self.identity == *session && self.identity.nonce == request.nonce,
             Error::Identity,
@@ -473,8 +527,15 @@ impl Refusal {
 }
 impl Finished {
     pub fn new(request: &FinishRequest, session: &Identity) -> Result<Self, Error> {
+        Self::new_for_profile(request, session, Profile::Proof)
+    }
+    pub fn new_for_profile(
+        request: &FinishRequest,
+        session: &Identity,
+        profile: Profile,
+    ) -> Result<Self, Error> {
         request.validate()?;
-        identity(session)?;
+        identity(session, profile)?;
         check(session.nonce == request.nonce, Error::Identity)?;
         Ok(Self {
             schema: 1,
@@ -484,15 +545,29 @@ impl Finished {
         })
     }
     pub fn validate(&self) -> Result<(), Error> {
-        identity(&self.identity)?;
+        self.validate_for_profile(Profile::Proof)
+    }
+    pub fn validate_for_profile(&self, profile: Profile) -> Result<(), Error> {
+        identity(&self.identity, profile)?;
         check(
             self.schema == 1 && (1..=6).contains(&self.request_id),
             Error::Request,
         )
     }
     pub fn validate_for(&self, request: &FinishRequest, session: &Identity) -> Result<(), Error> {
-        self.validate()?;
-        check(*self == Self::new(request, session)?, Error::Identity)
+        self.validate_for_in_profile(request, session, Profile::Proof)
+    }
+    pub fn validate_for_in_profile(
+        &self,
+        request: &FinishRequest,
+        session: &Identity,
+        profile: Profile,
+    ) -> Result<(), Error> {
+        self.validate_for_profile(profile)?;
+        check(
+            *self == Self::new_for_profile(request, session, profile)?,
+            Error::Identity,
+        )
     }
 }
 
@@ -507,10 +582,24 @@ macro_rules! parser {
 }
 parser!(parse_request, Request);
 parser!(parse_finish_request, FinishRequest);
-parser!(parse_header, Header);
-parser!(parse_complete, Complete);
-parser!(parse_refusal, Refusal);
-parser!(parse_finished, Finished);
+// A role is selected by the fixed installed entry/own application, never by
+// packet data. These codecs validate structure; they confer no Root authority.
+macro_rules! profile_parser {
+    ($function:ident,$profiled:ident,$type:ty) => {
+        pub fn $function(raw: &[u8]) -> Result<$type, Error> {
+            $profiled(raw, Profile::Proof)
+        }
+        pub fn $profiled(raw: &[u8], profile: Profile) -> Result<$type, Error> {
+            let value: $type = parse(raw)?;
+            value.validate_for_profile(profile)?;
+            Ok(value)
+        }
+    };
+}
+profile_parser!(parse_header, parse_header_for_profile, Header);
+profile_parser!(parse_complete, parse_complete_for_profile, Complete);
+profile_parser!(parse_refusal, parse_refusal_for_profile, Refusal);
+profile_parser!(parse_finished, parse_finished_for_profile, Finished);
 
 pub fn send_request(conn: &Connection, request: &Request, deadline: Instant) -> Result<(), Error> {
     request.validate()?;
@@ -531,12 +620,28 @@ pub fn send_complete(
     complete: &Complete,
     deadline: Instant,
 ) -> Result<(), Error> {
-    complete.validate()?;
+    send_complete_for_profile(conn, complete, deadline, Profile::Proof)
+}
+pub fn send_complete_for_profile(
+    conn: &Connection,
+    complete: &Complete,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<(), Error> {
+    complete.validate_for_profile(profile)?;
     conn.send_until(&json(complete)?, deadline)?;
     Ok(())
 }
 pub fn send_refusal(conn: &Connection, refusal: &Refusal, deadline: Instant) -> Result<(), Error> {
-    refusal.validate()?;
+    send_refusal_for_profile(conn, refusal, deadline, Profile::Proof)
+}
+pub fn send_refusal_for_profile(
+    conn: &Connection,
+    refusal: &Refusal,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<(), Error> {
+    refusal.validate_for_profile(profile)?;
     conn.send_until(&json(refusal)?, deadline)?;
     Ok(())
 }
@@ -545,7 +650,15 @@ pub fn send_finished(
     finished: &Finished,
     deadline: Instant,
 ) -> Result<(), Error> {
-    finished.validate()?;
+    send_finished_for_profile(conn, finished, deadline, Profile::Proof)
+}
+pub fn send_finished_for_profile(
+    conn: &Connection,
+    finished: &Finished,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<(), Error> {
+    finished.validate_for_profile(profile)?;
     conn.send_until(&json(finished)?, deadline)?;
     Ok(())
 }
@@ -602,7 +715,16 @@ pub fn send_header_chunks(
     bytes: &[u8],
     deadline: Instant,
 ) -> Result<(), Error> {
-    header.validate()?;
+    send_header_chunks_for_profile(conn, header, bytes, deadline, Profile::Proof)
+}
+pub fn send_header_chunks_for_profile(
+    conn: &Connection,
+    header: &Header,
+    bytes: &[u8],
+    deadline: Instant,
+    profile: Profile,
+) -> Result<(), Error> {
+    header.validate_for_profile(profile)?;
     check(
         bytes.len() == header.encoded_bytes as usize && hash(bytes) == header.encoded_sha256,
         Error::Digest,
@@ -617,8 +739,8 @@ pub fn send_header_chunks(
     Ok(())
 }
 
-fn expected_peer(session: &Identity, server: Credentials) -> Result<(), Error> {
-    identity(session)?;
+fn expected_peer(session: &Identity, server: Credentials, profile: Profile) -> Result<(), Error> {
+    identity(session, profile)?;
     check(
         server.uid == 0
             && server.pid > 1
@@ -631,14 +753,16 @@ fn connection_peer(
     conn: &Connection,
     session: &Identity,
     server: Credentials,
+    profile: Profile,
 ) -> Result<(), Error> {
-    expected_peer(session, server)?;
+    expected_peer(session, server, profile)?;
     check(conn.peer_credentials()? == server, Error::Credentials)
 }
 
 /// Pure transaction assembler. Any error, including an extra packet after a
 /// terminal, poisons the receiver and prevents later retrieval of its bytes.
 pub struct Receiver {
+    profile: Profile,
     request: Request,
     identity: Identity,
     server: Credentials,
@@ -651,10 +775,19 @@ pub struct Receiver {
 }
 impl Receiver {
     pub fn new(request: &Request, session: &Identity, server: Credentials) -> Result<Self, Error> {
+        Self::new_for_profile(request, session, server, Profile::Proof)
+    }
+    pub fn new_for_profile(
+        request: &Request,
+        session: &Identity,
+        server: Credentials,
+        profile: Profile,
+    ) -> Result<Self, Error> {
         request.validate()?;
-        expected_peer(session, server)?;
+        expected_peer(session, server, profile)?;
         check(request.nonce == session.nonce, Error::Identity)?;
         Ok(Self {
+            profile,
             request: request.clone(),
             identity: session.clone(),
             server,
@@ -686,16 +819,16 @@ impl Receiver {
             return Err(Error::Extra);
         }
         let Some(header) = self.header.as_ref() else {
-            if let Ok(header) = parse_header(raw) {
-                header.validate_for(&self.request, &self.identity)?;
+            if let Ok(header) = parse_header_for_profile(raw, self.profile) {
+                header.validate_for_in_profile(&self.request, &self.identity, self.profile)?;
                 self.bytes
                     .try_reserve_exact(header.encoded_bytes as usize)
                     .map_err(|_| Error::Allocation)?;
                 self.header = Some(header);
                 return Ok(false);
             }
-            let refusal = parse_refusal(raw)?;
-            refusal.validate_for(&self.request, &self.identity)?;
+            let refusal = parse_refusal_for_profile(raw, self.profile)?;
+            refusal.validate_for_in_profile(&self.request, &self.identity, self.profile)?;
             self.terminal = Some(Outcome::Refused(refusal));
             return Ok(true);
         };
@@ -716,14 +849,14 @@ impl Receiver {
             return Ok(false);
         }
         // A late source/context refusal is a terminal that discards all bytes.
-        if let Ok(refusal) = parse_refusal(raw) {
-            refusal.validate_for(&self.request, &self.identity)?;
+        if let Ok(refusal) = parse_refusal_for_profile(raw, self.profile) {
+            refusal.validate_for_in_profile(&self.request, &self.identity, self.profile)?;
             self.bytes.clear();
             self.terminal = Some(Outcome::Refused(refusal));
             return Ok(true);
         }
-        let complete = parse_complete(raw)?;
-        complete.validate_for(header)?;
+        let complete = parse_complete_for_profile(raw, self.profile)?;
+        complete.validate_for_in_profile(header, self.profile)?;
         check(
             self.bytes.len() == header.encoded_bytes as usize,
             Error::Incomplete,
@@ -762,12 +895,22 @@ pub fn receive(
     server: Credentials,
     deadline: Instant,
 ) -> Result<Outcome, Error> {
-    connection_peer(conn, session, server)?;
-    let mut receiver = Receiver::new(request, session, server)?;
+    receive_for_profile(conn, request, session, server, deadline, Profile::Proof)
+}
+pub fn receive_for_profile(
+    conn: &Connection,
+    request: &Request,
+    session: &Identity,
+    server: Credentials,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<Outcome, Error> {
+    connection_peer(conn, session, server, profile)?;
+    let mut receiver = Receiver::new_for_profile(request, session, server, profile)?;
     loop {
         let packet = conn.recv_until(MESSAGE_LIMIT, deadline)?;
         if receiver.push_packet(&packet.bytes, packet.credentials)? {
-            connection_peer(conn, session, server)?;
+            connection_peer(conn, session, server, profile)?;
             return receiver.finish();
         }
     }
@@ -782,14 +925,24 @@ pub fn receive_finished(
     server: Credentials,
     deadline: Instant,
 ) -> Result<Finished, Error> {
+    receive_finished_for_profile(conn, request, session, server, deadline, Profile::Proof)
+}
+pub fn receive_finished_for_profile(
+    conn: &Connection,
+    request: &FinishRequest,
+    session: &Identity,
+    server: Credentials,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<Finished, Error> {
     request.validate()?;
-    connection_peer(conn, session, server)?;
+    connection_peer(conn, session, server, profile)?;
     let packet = conn.recv_until(MESSAGE_LIMIT, deadline)?;
     check(packet.credentials == server, Error::Credentials)?;
-    let finished = parse_finished(&packet.bytes)?;
-    finished.validate_for(request, session)?;
+    let finished = parse_finished_for_profile(&packet.bytes, profile)?;
+    finished.validate_for_in_profile(request, session, profile)?;
     conn.expect_eof_until(deadline)?;
-    connection_peer(conn, session, server)?;
+    connection_peer(conn, session, server, profile)?;
     Ok(finished)
 }
 
@@ -863,6 +1016,176 @@ mod tests {
                 .unwrap());
         }
         (receiver, header, bytes, complete, server)
+    }
+    fn preview_fixture(
+        length: usize,
+    ) -> (Request, Identity, Credentials, Header, Vec<u8>, Complete) {
+        let (request, mut session, server, mut header, bytes, _) = fixture(length, 1);
+        session.client_uid = 5724;
+        header.identity = session.clone();
+        let complete = Complete::from_header_for_profile(&header, Profile::Preview).unwrap();
+        (request, session, server, header, bytes, complete)
+    }
+    #[test]
+    fn explicit_preview_profile_transfers_actual_chunks_and_preserves_proof_rejection() {
+        let (request, session, server, header, bytes, complete) = preview_fixture(CHUNK_BYTES + 7);
+        assert!(Receiver::new(&request, &session, server).is_err());
+        assert!(parse_header(&json(&header).unwrap()).is_err());
+        assert!(parse_complete(&json(&complete).unwrap()).is_err());
+        let mut receiver =
+            Receiver::new_for_profile(&request, &session, server, Profile::Preview).unwrap();
+        assert!(!receiver
+            .push_packet(&json(&header).unwrap(), server)
+            .unwrap());
+        for (index, payload) in bytes.chunks(CHUNK_BYTES).enumerate() {
+            assert!(!receiver
+                .push_packet(&encode_chunk(1, index as u32, payload).unwrap(), server)
+                .unwrap());
+        }
+        assert!(receiver
+            .push_packet(&json(&complete).unwrap(), server)
+            .unwrap());
+        let Outcome::Artwork(artwork) = receiver.finish().unwrap() else {
+            panic!("Expected completed Preview transfer");
+        };
+        assert_eq!(artwork.bytes, bytes);
+        assert_eq!(artwork.header.identity, session);
+        assert_eq!(artwork.complete, complete);
+        assert_eq!(
+            parse_header_for_profile(&json(&header).unwrap(), Profile::Preview).unwrap(),
+            header
+        );
+    }
+    #[test]
+    fn preview_header_constructor_is_profile_bound_without_wire_role_authority() {
+        let (request, session, _, header, bytes, _) = preview_fixture(7);
+        let m = &header.file_identity;
+        let file = EncodedFile {
+            identity: FileIdentity {
+                device: m.device,
+                inode: m.inode,
+                bytes: m.bytes,
+                mode: m.mode,
+                uid: m.uid,
+                gid: m.gid,
+                modified_seconds: m.modified_seconds,
+                modified_nanos: m.modified_nanos,
+                changed_seconds: m.changed_seconds,
+                changed_nanos: m.changed_nanos,
+            },
+            digest: plx_base::sha256::sha256(&bytes),
+            bytes,
+            png_dimensions: None,
+        };
+        let source = SourceKey {
+            app_id: request.app_id.clone(),
+            version: header.version.clone(),
+            class: RootClass::DeveloperApps,
+            folder: "/synthetic/not-read".into(),
+            relative: vec!["icon.png".into()],
+            kind: IconKind::Icon,
+        };
+        assert!(Header::from_file(&request, &session, &source, &file).is_err());
+        assert_eq!(
+            Header::from_file_for_profile(&request, &session, &source, &file, Profile::Preview)
+                .unwrap(),
+            header
+        );
+        assert!(Complete::from_header(&header).is_err());
+        let mut raw = serde_json::to_value(&header).unwrap();
+        assert!(raw.get("profile").is_none());
+        raw["profile"] = value!("preview");
+        assert!(
+            parse_header_for_profile(&serde_json::to_vec(&raw).unwrap(), Profile::Preview).is_err()
+        );
+        assert!(parse_header(&serde_json::to_vec(&raw).unwrap()).is_err());
+    }
+    #[test]
+    fn preview_refusal_discards_body_and_finished_keeps_strict_identity() {
+        let (request, session, server, header, bytes, _) = preview_fixture(7);
+        assert!(Refusal::new(&request, &session, RefusalReason::Changed).is_err());
+        let refusal =
+            Refusal::new_for_profile(&request, &session, RefusalReason::Changed, Profile::Preview)
+                .unwrap();
+        assert!(parse_refusal(&json(&refusal).unwrap()).is_err());
+        let mut receiver =
+            Receiver::new_for_profile(&request, &session, server, Profile::Preview).unwrap();
+        receiver
+            .push_packet(&json(&header).unwrap(), server)
+            .unwrap();
+        receiver
+            .push_packet(&encode_chunk(1, 0, &bytes).unwrap(), server)
+            .unwrap();
+        assert!(receiver
+            .push_packet(&json(&refusal).unwrap(), server)
+            .unwrap());
+        assert!(matches!(receiver.finish().unwrap(), Outcome::Refused(_)));
+        let finish = FinishRequest::new(2, &session.nonce).unwrap();
+        assert!(Finished::new(&finish, &session).is_err());
+        let finished = Finished::new_for_profile(&finish, &session, Profile::Preview).unwrap();
+        assert!(parse_finished(&json(&finished).unwrap()).is_err());
+        assert_eq!(
+            parse_finished_for_profile(&json(&finished).unwrap(), Profile::Preview).unwrap(),
+            finished
+        );
+        let mut wrong = session.clone();
+        wrong.client_pid += 1;
+        assert!(finished
+            .validate_for_in_profile(&finish, &wrong, Profile::Preview)
+            .is_err());
+        let wrong_finish = FinishRequest::new(1, &session.nonce).unwrap();
+        assert!(finished
+            .validate_for_in_profile(&wrong_finish, &session, Profile::Preview)
+            .is_err());
+    }
+    #[test]
+    fn preview_profile_does_not_weaken_credentials_completion_or_poisoning() {
+        let (request, session, server, header, bytes, complete) = preview_fixture(7);
+        for change in 0..3 {
+            let mut receiver =
+                Receiver::new_for_profile(&request, &session, server, Profile::Preview).unwrap();
+            receiver
+                .push_packet(&json(&header).unwrap(), server)
+                .unwrap();
+            receiver
+                .push_packet(&encode_chunk(1, 0, &bytes).unwrap(), server)
+                .unwrap();
+            let mut bad = complete.clone();
+            match change {
+                0 => bad.identity.client_uid = 6583,
+                1 => bad.header_sha256 = "0".repeat(64),
+                _ => bad.identity.nonce = "d".repeat(32),
+            }
+            assert!(receiver.push_packet(&json(&bad).unwrap(), server).is_err());
+            assert!(receiver
+                .push_packet(&json(&complete).unwrap(), server)
+                .is_err());
+            assert!(receiver.finish().is_err());
+        }
+        for wrong in [
+            Credentials {
+                pid: server.pid + 1,
+                ..server
+            },
+            Credentials { uid: 1, ..server },
+            Credentials { gid: 1, ..server },
+        ] {
+            let mut receiver =
+                Receiver::new_for_profile(&request, &session, server, Profile::Preview).unwrap();
+            assert!(receiver
+                .push_packet(&json(&header).unwrap(), wrong)
+                .is_err());
+            assert!(receiver.finish().is_err());
+        }
+        let mut incomplete =
+            Receiver::new_for_profile(&request, &session, server, Profile::Preview).unwrap();
+        incomplete
+            .push_packet(&json(&header).unwrap(), server)
+            .unwrap();
+        incomplete
+            .push_packet(&encode_chunk(1, 0, &bytes).unwrap(), server)
+            .unwrap();
+        assert!(incomplete.finish().is_err());
     }
     #[test]
     fn strict_request_rejects_paths_unknown_duplicates_maps_and_coercion() {

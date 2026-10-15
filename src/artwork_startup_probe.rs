@@ -1,6 +1,8 @@
-//! One inert ordinary-Proof HBC capability observation. The caller creates and
+//! One inert ordinary installed-profile HBC capability observation; default Proof.
+//! The caller creates and
 //! joins its worker; the LS2 registration stays on that worker. This module has
 //! no broker/command/URI selection, elevation, CLI, socket or resource operation.
+use crate::broker_installation::Profile;
 use serde::Deserialize;
 use serde_json::{json, Value};
 #[cfg(any(target_arch = "arm", test))]
@@ -160,11 +162,10 @@ fn report(app_id: &str, uid: u32) -> Value {
         "production_startup_qualified":false,"error":null})
 }
 #[cfg(any(target_arch = "arm", test))]
-fn valid_own(own: &crate::broker_probe::OwnIdentity, uid: u32) -> bool {
+fn valid_own(own: &crate::broker_probe::OwnIdentity, uid: u32, profile: Profile) -> bool {
     own.pid > 1
         && own.uid == uid
-        && uid >= 1000
-        && uid != 5724
+        && crate::broker_probe::ordinary_for_profile(profile.app_id(), uid, profile)
         && own.start_ticks > 0
         && own.ui_sha256.len() == 64
         && own
@@ -174,25 +175,29 @@ fn valid_own(own: &crate::broker_probe::OwnIdentity, uid: u32) -> bool {
 }
 #[cfg(any(target_arch = "arm", test))]
 fn run(backend: &mut impl Backend) -> Value {
-    use crate::broker_probe::context_valid;
+    run_for_profile(backend, Profile::Proof)
+}
+#[cfg(any(target_arch = "arm", test))]
+fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
+    use crate::broker_probe::{context_valid_for_profile, ordinary_for_profile};
     let began = backend.now();
     let mut output = report(backend.app_id(), backend.uid());
     let mut operations_deadline = None;
     let observed = (|| -> Result<(), (&'static str, Value)> {
-        if backend.app_id() != crate::identity::PROOF {
+        if !ordinary_for_profile(backend.app_id(), backend.uid(), profile) {
             return Err((
                 "identity_failure",
-                json!("Only the ordinary Proof caller is admitted"),
+                json!("Only the selected ordinary installed caller is admitted"),
             ));
         }
         let own = backend
             .identity()
             .map_err(|error| ("identity_failure", json!(bounded(&error, RAW_LIMIT))))?;
         output["own_before"] = json!(own);
-        if !valid_own(&own, backend.uid()) {
+        if !valid_own(&own, backend.uid(), profile) {
             return Err((
                 "identity_failure",
-                json!("Invalid ordinary Proof self identity"),
+                json!("Invalid ordinary installed self identity"),
             ));
         }
         backend
@@ -208,7 +213,7 @@ fn run(backend: &mut impl Backend) -> Value {
         loop {
             attempts += 1;
             let context = backend.context(gate);
-            let valid = context_valid(&context);
+            let valid = context_valid_for_profile(&context, profile);
             output["context_before"] = context;
             output["foreground_checks"] = json!(attempts);
             output["context_valid_before"] = json!(valid);
@@ -225,7 +230,7 @@ fn run(backend: &mut impl Backend) -> Value {
             if left.is_zero() {
                 return Err((
                     "context_unavailable",
-                    json!("Sole Proof CARD/model gate unavailable within 5 seconds"),
+                    json!("Selected sole CARD/model gate unavailable within 5 seconds"),
                 ));
             }
             backend.pause(left.min(Duration::from_millis(100)));
@@ -234,7 +239,10 @@ fn run(backend: &mut impl Backend) -> Value {
             .identity()
             .map_err(|error| ("identity_failure", json!(bounded(&error, RAW_LIMIT))))?;
         output["own_at_call"] = json!(at_call);
-        if at_call != own || !valid_own(&at_call, backend.uid()) {
+        if at_call != own
+            || !valid_own(&at_call, backend.uid(), profile)
+            || !ordinary_for_profile(backend.app_id(), backend.uid(), profile)
+        {
             return Err((
                 "identity_changed",
                 json!("Self identity changed before the inert request"),
@@ -267,13 +275,16 @@ fn run(backend: &mut impl Backend) -> Value {
         };
         output["response"] = received;
         let after_context = backend.context(deadline);
-        let after_valid = context_valid(&after_context);
+        let after_valid = context_valid_for_profile(&after_context, profile);
         output["context_after"] = after_context;
         output["context_valid_after"] = json!(after_valid);
         let after = backend
             .identity()
             .map_err(|error| ("identity_failure", json!(bounded(&error, RAW_LIMIT))))?;
-        let stable = own == after && at_call == after && valid_own(&after, backend.uid());
+        let stable = own == after
+            && at_call == after
+            && valid_own(&after, backend.uid(), profile)
+            && ordinary_for_profile(backend.app_id(), backend.uid(), profile);
         output["own_after"] = json!(after);
         output["identity_stable"] = json!(stable);
         if backend.now() >= deadline {
@@ -288,7 +299,7 @@ fn run(backend: &mut impl Backend) -> Value {
         if !after_valid {
             return Err((
                 "context_changed",
-                json!("Proof model/foreground/window context unavailable after request"),
+                json!("Selected model/foreground/window context unavailable after request"),
             ));
         }
         let root_true = output["response"]["outcome"] == "root_true";
@@ -310,8 +321,8 @@ fn run(backend: &mut impl Backend) -> Value {
 }
 
 #[cfg(target_arch = "arm")]
-#[derive(Default)]
 struct Native {
+    profile: Profile,
     bus: Option<plx_platform::webos::ls2::Registration>,
 }
 #[cfg(target_arch = "arm")]
@@ -329,7 +340,7 @@ impl Backend for Native {
         std::thread::sleep(duration);
     }
     fn identity(&mut self) -> Result<crate::broker_probe::OwnIdentity, String> {
-        crate::broker_probe::own_identity()
+        crate::broker_probe::own_identity_for_profile(self.profile)
     }
     fn register(&mut self) -> Result<(), Failure> {
         match plx_platform::webos::ls2::register() {
@@ -382,10 +393,22 @@ impl Backend for Native {
 /// actual join. A true reply does not prove a broker, child or resource route.
 #[cfg(target_arch = "arm")]
 pub fn collect() -> Value {
-    run(&mut Native::default())
+    run(&mut Native {
+        profile: Profile::Proof,
+        bus: None,
+    })
+}
+/// Closed source-selected role; this observes HBC status without executing a command.
+#[cfg(target_arch = "arm")]
+pub fn collect_for_profile(profile: Profile) -> Value {
+    run_for_profile(&mut Native { profile, bus: None }, profile)
 }
 #[cfg(not(target_arch = "arm"))]
 pub fn collect() -> Value {
+    collect_for_profile(Profile::Proof)
+}
+#[cfg(not(target_arch = "arm"))]
+pub fn collect_for_profile(_profile: Profile) -> Value {
     json!({"schema":1,"unsupported_host":true,"uri":URI,"payload":{},
         "inert_check_only":true,"registered":false,"request_attempted":false,
         "check_root_calls":0,"verified":false,"negative_observation_verified":false,
@@ -691,6 +714,87 @@ mod tests {
         assert_eq!(f.calls, 1);
         assert_eq!(f.budgets, [Duration::from_secs(1)]);
     }
+    fn preview_backend(uid: u32) -> Fake {
+        let identity = OwnIdentity { uid, ..own() };
+        let mut preview = context();
+        preview["foreground"]["appId"] = json!(crate::identity::PREVIEW);
+        preview["windows"]["windows"][0]["appId"] = json!(crate::identity::PREVIEW);
+        Fake {
+            caller: crate::identity::PREVIEW,
+            uid,
+            identities: VecDeque::from([Ok(identity.clone()), Ok(identity.clone()), Ok(identity)]),
+            contexts: VecDeque::from([preview.clone(), preview]),
+            ..Fake::default()
+        }
+    }
+    #[test]
+    fn preview_inert_check_requires_explicit_role_and_accepts_dynamic_ordinary_uids() {
+        for uid in [5724, 7001] {
+            let mut f = preview_backend(uid);
+            let r = run_for_profile(&mut f, Profile::Preview);
+            assert_eq!(r["verified"], true);
+            assert_eq!(r["app_id"], crate::identity::PREVIEW);
+            assert_eq!(r["uid"], uid);
+            assert_eq!(r["check_root_calls"], 1);
+            assert_eq!(r["uri"], URI);
+            assert_eq!(r["payload"], json!({}));
+            for key in [
+                "command_execution_requested",
+                "broker_child_requested",
+                "elevation_requested",
+                "resource_reads",
+                "normal_loader_qualified",
+                "production_startup_qualified",
+            ] {
+                assert_eq!(r[key], false);
+            }
+            let mut default_role = preview_backend(uid);
+            let refused = run(&mut default_role);
+            assert_eq!(refused["outcome"], "identity_failure");
+            assert!(!refused["registered"].as_bool().unwrap());
+            assert_eq!(default_role.calls, 0);
+        }
+    }
+    #[test]
+    fn profile_or_cross_card_mismatch_declines_before_the_inert_service_call() {
+        let mut proof = Fake::default();
+        let r = run_for_profile(&mut proof, Profile::Preview);
+        assert_eq!(r["outcome"], "identity_failure");
+        assert_eq!(r["registered"], false);
+        assert_eq!(proof.calls, 0);
+        let mut preview = preview_backend(5724);
+        preview.contexts = (0..100).map(|_| context()).collect();
+        let r = run_for_profile(&mut preview, Profile::Preview);
+        assert_eq!(r["outcome"], "context_unavailable");
+        assert_eq!(preview.calls, 0);
+        let mut wrong_app = preview_backend(5724);
+        wrong_app.caller = "com.ash.nativehome.preview.other";
+        let r = run_for_profile(&mut wrong_app, Profile::Preview);
+        assert_eq!(r["registered"], false);
+        assert_eq!(wrong_app.calls, 0);
+    }
+    #[test]
+    fn preview_late_identity_drift_never_qualifies_and_bare_false_stays_negative() {
+        let mut changed = preview_backend(5724);
+        changed.identities[2] = Ok(OwnIdentity {
+            uid: 5724,
+            start_ticks: 999,
+            ..own()
+        });
+        let r = run_for_profile(&mut changed, Profile::Preview);
+        assert_eq!(r["outcome"], "identity_changed");
+        assert_eq!(r["response"]["root"], true);
+        assert_eq!(r["verified"], false);
+        assert_eq!(r["negative_observation_verified"], false);
+        assert_eq!(changed.calls, 1);
+        let mut negative = preview_backend(5724);
+        negative.answer = Ok("{\"returnValue\":false}".into());
+        let r = run_for_profile(&mut negative, Profile::Preview);
+        assert_eq!(r["outcome"], "root_false");
+        assert_eq!(r["verified"], false);
+        assert_eq!(r["negative_observation_verified"], true);
+        assert_eq!(negative.calls, 1);
+    }
     #[cfg(not(target_arch = "arm"))]
     #[test]
     fn host_collect_is_inert_and_makes_no_native_capability_claim() {
@@ -698,5 +802,11 @@ mod tests {
         assert_eq!(r["outcome"], "unsupported_host");
         assert_eq!(r["check_root_calls"], 0);
         assert_eq!(r["verified"], false);
+        for profile in [Profile::Proof, Profile::Preview] {
+            let r = collect_for_profile(profile);
+            assert_eq!(r["outcome"], "unsupported_host");
+            assert_eq!(r["check_root_calls"], 0);
+            assert_eq!(r["verified"], false);
+        }
     }
 }

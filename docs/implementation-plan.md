@@ -121,6 +121,11 @@ passes; actual Preview-role startup and a backed-up retained rollout remain
 separate gates. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.
+The [Preview admission foundation](preview-artwork-admission.md) now supplies
+closed profile-aware identity/codecs and a negative-only pending-operation guard
+in the Proof provider. Host checks pass; its new native guard regression,
+remaining installed-profile integration and actual Preview-ID trial precede
+normal activation. A new app ID cannot prove the retained app's LS2 permissions.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent
 bounded, read-only inventory work. Existing verified source selection and LG
 routes remain available throughout.
