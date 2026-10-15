@@ -59,7 +59,7 @@ row visibility remain intact. The native row observer has no `dim` field: raster
 evidence establishes appearance, and binding metadata establishes disabled state.
 
 The bounded read/layout run passed all 24 preservation/removal checks and removed
-its separate Proof package. Retained normal G2 remains 0.30.0, with appinfo,
+its separate Proof package. Retained normal G2 stayed 0.30.0 during that run, with appinfo,
 executable and favourites bytes/owners/modes preserved. LG Home and checked core,
 settings, input, audio and locale state are unchanged. An independent saved audit
 passed 533 assertions, with a byte-identical second replay; six raw process files
@@ -69,3 +69,6 @@ bind the actual UID, start time and executable. The separate pixel audit passed
 This is an isolated G2 read/layout and captured-contrast result. No normal update,
 C2 contact, physical input, freshness-transition, calibrated panel or full-release
 claim follows. The historical dependency-input caveat for 0.30 remains explicit.
+The later [backed-up normal 0.31.0 delivery](../../retained-preview-031-milestone.json)
+separately verified normal operation and preserved favourites; its evidence is
+distinct from this isolated contrast check.

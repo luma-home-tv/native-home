@@ -1,7 +1,8 @@
 # Luma Home implementation plan
 
-The target is a responsive native Home dashboard for the OLED55G26LA G2 and
-OLED65C26LD C2 on webOS24. Both are authorised for development and independent testing.
+The current delivery target is a responsive native Home dashboard for the
+OLED55G26LA G2 on webOS24. Earlier OLED65C26LD C2 work remains separate historical
+evidence; the active goal excludes contacting or modifying the C2.
 It remains a separate application: LG Home, Home/power/volume handling, firmware,
 system libraries, boot configuration, media services and OLED protections stay
 under LG's control. Retained installations and each TV's saved favourites must
@@ -12,7 +13,7 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 retains 0.30.0; the recorded C2 version is 0.20.0. The
+current native interface. G2 retains 0.31.0; the recorded C2 version is 0.20.0. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -60,6 +61,19 @@ five protected General readings; [isolated ordinary-app reads and focused native
 are verified on G2. The [backed-up normal 0.30.0 delivery](retained-preview-030-milestone.json)
 then verified Apps/Search/keyboard, General rows and preservation; broader release
 checks remain open.
+The [isolated 0.31.0 qualification](read-only-values-031-milestone.json) adds
+legible current protected values, unchanged activation blocking and verified
+build/package inputs. Its [retained promotion](retained-preview-031-milestone.json)
+passed a separate backed-up normal workflow with favourites preserved.
+
+After that delivery, prioritise live app artwork: the current live catalogue
+preserves snapshot icons but cannot supply artwork for newly installed or
+revised apps. Use the shared native texture loader, bounded work/cache ownership
+and identity-preserving catalogue updates. First verify ordinary-app access to
+webOS24's actual icon paths; metadata alone does not establish filesystem access.
+HDMI format/status and missing Sound/Accessibility readings remain subsequent
+bounded, read-only inventory work. Existing verified source selection and LG
+routes remain available throughout.
 
 The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects

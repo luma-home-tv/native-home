@@ -1,13 +1,13 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.30.0 on G2 and recorded 0.20.0 on C2**.
-The [0.30.0 G2 delivery](retained-preview-030-milestone.json) verified the normal
-keyboard and five protected General readings with favourites preserved. C2 was
+`com.ash.nativehome.preview`, version **0.31.0 on G2 and recorded 0.20.0 on C2**.
+The [0.31.0 G2 delivery](retained-preview-031-milestone.json) verified the normal
+keyboard and clearer protected General readings with favourites preserved. C2 was
 not contacted or modified by that delivery.
-The [latest G2 update record](apps-scroll-rest-milestone.json) verifies the complete normal
+The [latest G2 update record](retained-preview-031-milestone.json) verifies the complete normal
 bundle, preserved favourites and a guarded Apps/Search/LG-keyboard/Back smoke.
-Both devices are authorised for development again. It is a normal native app in LG's
+Current development/device work is restricted to G2. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
 Open it from LG Home. The separate **LG Home** entry below Controls returns to

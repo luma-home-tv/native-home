@@ -58,18 +58,19 @@ and [isolated G2 Sound/Accessibility qualification](docs/control-row-presentatio
 remain separate evidence. The [0.28 G2 delivery](docs/apps-scroll-rest-milestone.json)
 also fixes a reproduced Apps scroll redraw tail, profiles the new build and
 verifies the backed-up normal update with favourites preserved.
-The [latest backed-up G2 delivery](docs/retained-preview-030-milestone.json) is
-0.30.0: queued-cancellation/duplicate-activation fixes and five protected
-language/region readings. Normal Apps/Search/keyboard and General navigation,
-favourites preservation and cleanup are verified; physical and broader release
-checks remain separate. The C2 was not contacted for this delivery.
+The [latest backed-up G2 delivery](docs/retained-preview-031-milestone.json) is
+0.31.0: legible current protected readings with activation still blocked, plus
+verified build/package input binding. Normal Apps/Search/keyboard and General
+navigation, favourites preservation and cleanup are verified; physical and
+broader release checks remain separate. The C2 was not contacted.
 The [build-input record](docs/build-inputs.md) documents a subsequently discovered
 formatting drift in 0.29/0.30 dependency inputs and the new verification guards.
 The frozen runtime evidence remains scoped to its actual executable hashes.
-The 0.31.0 candidate adds [legible current read-only values](docs/verification/read-only-values/README.md)
+Version 0.31.0 adds [legible current read-only values](docs/verification/read-only-values/README.md)
 with activation still blocked and unavailable/inactive styling preserved.
 Its [isolated G2 qualification](docs/read-only-values-031-milestone.json) verifies
-focused native text contrast and clean removal; normal G2 remains at 0.30.0.
+focused native text contrast and clean removal; its subsequent normal G2 delivery
+is recorded separately above.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
@@ -108,7 +109,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.30.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
+package modes and removal. Version 0.31.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
 remains on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the

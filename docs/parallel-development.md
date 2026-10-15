@@ -6,6 +6,13 @@ and application changes through one integration owner. This extends the
 [implementation plan](implementation-plan.md) and uses the
 [controls coverage audit](controls-coverage-next.md) as the control-centre backlog.
 It does not change device authorisation or the protections in `AGENTS.md`.
+The current goal permits G2 device work only. C2 results below are historical;
+do not contact or modify that TV. G2 now retains [0.31.0](retained-preview-031-milestone.json)
+after a backed-up update, normal UI smoke and preserved favourites.
+The next product slice is [live app artwork](live-app-artwork.md). Its ordinary-jail
+access survey comes before implementation admission, with worker, shared decoder,
+integration and independent review lanes. HDMI detail and broader control inventory
+remain subsequent feature work; the release gates below remain open.
 
 ## Broad remaining delivery steps
 
@@ -25,7 +32,7 @@ It does not change device authorisation or the protections in `AGENTS.md`.
    its own capability/context/readback/restoration proof. Network reconfiguration,
    boot/Home policy, firmware and panel protections remain protected/delegated.
 3. **Validate real TV integration.** Finish live HDMI video/format/HDR evidence,
-   the C2 source-restoration boundary, app-launch/return and LG Settings handoff
+   app-launch/return and LG Settings handoff
    regressions under actual use. Do not transfer G2 evidence to C2 or interpret
    an idle selected-source getter as live video proof.
 4. **Close the visual and usability gaps.** Match the agreed Apple TV-inspired
@@ -33,7 +40,7 @@ It does not change device authorisation or the protections in `AGENTS.md`.
    long/localized labels, dynamic/new app icons, empty/stale/error states, focus
    hierarchy and remote legibility on real panels.
 5. **Prove performance and reliability.** Measure matched idle/motion/input
-   workloads, CPU/RSS/frame submission and settling on both TVs; panel latency
+   workloads, CPU/RSS/frame submission and settling on G2; panel latency
    and physical smoothness require separate evidence. Check repeated app and
    keyboard sessions, memory growth, service failure/recovery, durable favourites
    and controlled restart/reboot persistence without changing boot configuration.
@@ -47,7 +54,7 @@ It does not change device authorisation or the protections in `AGENTS.md`.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 now retains 0.28.0
+   framework changes for possible upstream contribution. G2 now retains 0.31.0
    after its separate normal-build qualification; C2 remains on 0.20.0. Component
    tests alone do not admit a retained update.
 
@@ -55,8 +62,8 @@ It does not change device authorisation or the protections in `AGENTS.md`.
 
 Run three background lanes alongside the coordinator, with small owned outputs
 and explicit interfaces. Framework review and control-adapter development do not
-wait for a TV. G2 and C2 validators can run the same immutable candidate at the
-same time under different leases. While those tests run, host/review workers can
+wait for a TV. All G2 queries, launches and updates stay serial under one device
+lease. While those tests run, host/review workers can
 prepare the next independent change. This overlaps work that was previously
 serial without making two sessions compete for a file, build target or TV.
 

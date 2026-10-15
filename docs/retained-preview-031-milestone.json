@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "status": "backed_up_normal_g2_preview_031_delivered_and_verified",
+  "version": "0.31.0",
+  "previous_version": "0.30.0",
+  "source_revision": "fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848",
+  "binary_sha256": "2d0ea502971f5888adcc3e7501c6c970b89c1e1db7be06edcef6392af78d1d36",
+  "normal_ipk_sha256": "312c880dea933fc48596e63fa41522e02036686edc868a577a156bb9273ee707",
+  "rollback_ipk_sha256": "96b647728985419b3d51d6a3bac7aa3a6ddaa58004a7b378f6be3f9cf51c65d5",
+  "change": "Current protected readings use normal value ink while activation stays blocked; unavailable/wrong-context/inactive protected rows retain dim styling. Build/package inputs are freshly verified and bound to the ARM receipt.",
+  "isolated_qualification": "read-only-values-031-milestone.json",
+  "normal_delivery": {
+    "driver_terminal_exit": 0,
+    "full_old_upgraded_final_bundle_entries_verified": 32,
+    "complete_saved_state_bytes_owners_groups_modes_preserved": true,
+    "typed_tv_state_domains_unchanged": 20,
+    "raw_process_binding_files_retained": 6,
+    "ordinary_app_uid_start_and_actual_executable_bound": true,
+    "normal_frames_directly_reviewed_by_Root": 30,
+    "fixed_network_key_acknowledgements": 29,
+    "local_general_review_checkpoints_sending_zero_TV_inputs": 1,
+    "five_protected_locale_readings_visually_matched_independent_getters": true,
+    "lg_settings_route_focused_not_activated": true,
+    "keyboard_session": {
+      "dismissals": 1,
+      "failures": 0,
+      "opens": 1,
+      "stops": 1
+    },
+    "elapsed_seconds": 397.12098262,
+    "exit_reason": "back_from_home",
+    "preferences_loaded_and_readback_confirmed": true,
+    "setting_writes": false,
+    "household_app_launches": false,
+    "diagnostic_markers_or_native_row_observer_added": false,
+    "home_returned_naturally": true,
+    "temporary_uploads_compositor_files_lease_private_agent_removed": true,
+    "rollback_needed": false,
+    "C2_contacted": false
+  },
+  "build_admission": {
+    "actual_ARM_build_receipt_matches_source_framework_binary": true,
+    "selected_inputs_replayed_against_committed_source_and_current_bytes": 67,
+    "integration_patch_files": 9,
+    "scope": "Declared source/framework inputs and actual bytes, not deterministic reproduction or hermetic compiler/SDK/environment proof."
+  },
+  "verification": {
+    "host_harness_tests_passed": 35,
+    "independent_saved_audit_assertions": 317,
+    "peer_semantic_review_passed": true,
+    "peer_checked_publisher_and_30_visual_frame_hashes": true
+  },
+  "private_evidence_sha256": {
+    "candidate": "6bfb857f65bf263b6295800d74bccddc25073ae5e84546565eef18bcacc3093b",
+    "build_receipt": "eaabd37f2d22c1c9dc47c47f905cd080cc1adecc597bc43a71e2642bc54ac6b7",
+    "driver": "5aaada9d12c5ea6385ec12287485ca5b8f8ad8116608843bae01a914cc1cd45c",
+    "validator": "9941ab587a872abdbc32ee10edecaced94f1e4941934f94142bc611cb75740e4",
+    "publisher": "f001320eff45a4e4a6d5d99e664e07c89f8588d2b4f5cfe27ded0cef238b4536",
+    "normal_package_receipt": "3b7c6ee7a72ee969b6ef594c45caf0fd2a37e2d2d1bfa56aa2d5e089997c416d",
+    "root_package_comparison": "74c9af823b1c8a1311cc261beabf2a1f18c283b82a2c2811a62df1e51c6b10a1",
+    "normal_verification": "6d988dc4ad1f321f7d4902c187f919f8c89fd44a09316c1c5926ac969b6a7b5f",
+    "normal_terminal": "108af81bb4122287dbe3160ff112cc9e6b9747e001cb10ff5296944a89d0f8ae",
+    "closeout": "cd2b056d4a3e4de9a5222590b08871bec742cec90178e818e60f66b794628a45",
+    "general_visual_checkpoint": "777a040183f6f7de63dd0ef150b1198b1848b7ac1acc474c5710690c4d281afe",
+    "root_30_frame_visual_review": "6deebf43bb55ba72c6e9426c41b8e31f4b2fcbc21ee5a7e3c2e38366910400ef",
+    "independent_audit": "c5f0e9c74e116ff22e25a89014111dbc81844dbc773a92aabe8609c7d7e43a71",
+    "independent_audit_helper": "b3eb930acf81684c4ff88556b9ca2ed83d90330778bf21fd00611b771468bf2e"
+  },
+  "limitations": [
+    "Root visual General evidence plus separate independent GETs; no normal native row observer, new pixel measurement or native freshness-transition qualification.",
+    "Separate isolated031 captured contrast record does not establish calibrated panel contrast or physical readability.",
+    "No physical typing/hold/wheel, general cold-start reliability, reboot persistence, full HDMI/media/DRM, comprehensive setting coverage or current performance admission.",
+    "Historical030 remains the actual frozen rollback package; its dependency-formatting caveat remains in build-inputs.md. No retroactive receipt was minted and .31-to-.30 rollback execution was not needed/tested here.",
+    "Raw values, app inventories, household frames, backups, credentials and device addresses remain private."
+  ]
+}

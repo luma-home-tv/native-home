@@ -21,9 +21,10 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The user has reopened the C2 for device work. Deployment and isolated testing
-are authorised on both TVs. Validate each device independently and preserve
-its retained preview and saved favourites.
+The current active goal restricts device work to the G2. Do not contact or modify
+the C2 under this goal. Earlier C2 records remain historical evidence; any future
+C2 work requires a later explicit user instruction. Preserve both TVs' retained
+previews and saved favourites.
 
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.

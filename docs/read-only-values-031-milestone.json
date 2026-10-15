@@ -95,5 +95,10 @@
     "No native row.dim observer field exists; raster measurement and Root visual review establish appearance, metadata establishes disabled bindings.",
     "Historical .30 input-formatting caveat remains in build-inputs.md; actual frozen .30 capture bytes are the comparison baseline.",
     "Raw household values, images, inventories, backups, credentials and device addresses remain private."
-  ]
+  ],
+  "subsequent_retained_delivery": {
+    "version": "0.31.0",
+    "record": "retained-preview-031-milestone.json",
+    "scope": "Backed-up normal update and 30-frame Root visual/network UI smoke; isolated record above retains its historical identity and .30-preservation baseline."
+  }
 }

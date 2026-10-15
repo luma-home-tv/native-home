@@ -1,15 +1,15 @@
 # Control-centre coverage and next work
 
 Current application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
-The [latest retained-update record](retained-preview-030-milestone.json) establishes G2
-0.30.0 after a backed-up normal-package upgrade and guarded network UI smoke;
+The [latest retained-update record](retained-preview-031-milestone.json) establishes G2
+0.31.0 after a backed-up normal-package upgrade and guarded network UI smoke;
 C2 remains at its separately recorded 0.20.0. This document update reads source
 and saved evidence, not fresh TV state. Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
 The [isolated 0.31.0 readability qualification](read-only-values-031-milestone.json)
 improves current protected-value contrast without enabling activation. It preserves
-unavailable/inactive dimming, adds verified build/package inputs, and leaves retained
-normal G2 at 0.30.0. The [historical input caveat](build-inputs.md) qualifies the
+unavailable/inactive dimming and adds verified build/package inputs. Its later
+normal 0.31.0 delivery is recorded above. The [historical input caveat](build-inputs.md) qualifies the
 older 0.29/0.30 framework-byte declarations without rewriting frozen runtime evidence.
 
 The original coverage audit used `f3e58d6495c859dae02e6773ea9b41d788ab69c2`
