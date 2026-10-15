@@ -445,6 +445,45 @@ pub fn read_encoded(source: &Source) -> Result<EncodedFile, ReadError> {
     if unsafe { libc::geteuid() } == 0 {
         return Err(refusal(ReadReason::PrivilegedProcess, "uid", 0));
     }
+    read_admitted_source(source)
+}
+#[cfg_attr(not(all(target_os = "linux", target_arch = "arm")), allow(dead_code))]
+fn root_helper_identity(
+    arm_linux: bool,
+    real_uid: u32,
+    effective_uid: u32,
+    executable: Option<&std::path::Path>,
+) -> bool {
+    arm_linux
+        && real_uid == 0
+        && effective_uid == 0
+        && executable
+            .and_then(std::path::Path::file_name)
+            .is_some_and(|name| name == "artwork-broker-proof")
+}
+/// Explicit privileged helper entry, not an ordinary-reader fallback. The
+/// server must independently authorize its peer/context and derive this sealed
+/// Source from its own fresh catalogue before calling, then recheck it later.
+#[cfg_attr(not(all(target_os = "linux", target_arch = "arm")), allow(dead_code))]
+pub(crate) fn read_root_encoded(source: &Source) -> Result<EncodedFile, ReadError> {
+    let executable = std::env::current_exe().ok();
+    if !root_helper_identity(
+        cfg!(all(target_os = "linux", target_arch = "arm")),
+        unsafe { libc::getuid() },
+        unsafe { libc::geteuid() },
+        executable.as_deref(),
+    ) {
+        return Err(refusal(
+            ReadReason::PrivilegedProcess,
+            "root_helper_identity",
+            0,
+        ));
+    }
+    read_admitted_source(source)
+}
+// Shared exact no-follow engine. Only the two identity-gated entries above
+// reach this function; neither accepts a caller-supplied path.
+fn read_admitted_source(source: &Source) -> Result<EncodedFile, ReadError> {
     let slash = CString::new("/").expect("literal root");
     let fd = unsafe {
         libc::open(
@@ -825,5 +864,33 @@ mod tests {
         assert_ne!(original.identity.inode, fresh.identity.inode);
         assert_ne!(original.digest, fresh.digest);
         assert_eq!(fresh.bytes, b"after!");
+    }
+    #[test]
+    fn explicit_root_reader_requires_arm_root_and_exact_helper_basename() {
+        let helper = std::path::Path::new("/tmp/owned-proof/artwork-broker-proof");
+        assert!(root_helper_identity(true, 0, 0, Some(helper)));
+        for (platform, real, effective, path) in [
+            (false, 0, 0, Some(helper)),
+            (true, 501, 0, Some(helper)),
+            (true, 0, 501, Some(helper)),
+            (true, 0, 0, None),
+            (true, 0, 0, Some(std::path::Path::new("/tmp/home-preview"))),
+        ] {
+            assert!(!root_helper_identity(platform, real, effective, path));
+        }
+        let entry = parsed(app("fixture.app", RootClass::LgSystem));
+        let error = read_root_encoded(entry.preferred().unwrap()).unwrap_err();
+        assert_eq!(error.reason, ReadReason::PrivilegedProcess);
+        assert_eq!(error.operation, "root_helper_identity");
+        // This host test never grants Root access or opens the admitted TV path.
+    }
+    #[test]
+    fn ordinary_root_refusal_precedes_any_filesystem_read() {
+        if unsafe { libc::geteuid() } == 0 {
+            let entry = parsed(app("fixture.app", RootClass::LgSystem));
+            let error = read_encoded(entry.preferred().unwrap()).unwrap_err();
+            assert_eq!(error.reason, ReadReason::PrivilegedProcess);
+            assert_eq!(error.operation, "uid");
+        }
     }
 }

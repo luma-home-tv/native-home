@@ -1,6 +1,7 @@
-//! Temporary, Identify-only server. Started by the test operator over SSH,
+//! Temporary, isolated artwork/Identify server. Started by the test operator over SSH,
 //! never by the app. Fixed context GETs use the pinned installed system client.
-//! No caller-selected command or resource operation exists.
+//! Artwork requests select an app and icon variant from our own fixed catalogue.
+//! No caller-selected command, filesystem path or service URI exists.
 #[cfg(any(target_arch = "arm", test))]
 mod proof {
     use crate::broker_protocol as protocol;
@@ -288,7 +289,7 @@ mod proof {
         }
         Ok(hash)
     }
-    fn check_context(
+    fn check_reader(
         value: &serde_json::Value,
         expected_sha256: &str,
     ) -> Result<(), protocol::Error> {
@@ -302,11 +303,327 @@ mod proof {
         {
             return Err(protocol::Error::Context);
         }
+        Ok(())
+    }
+    fn check_context(
+        value: &serde_json::Value,
+        expected_sha256: &str,
+    ) -> Result<(), protocol::Error> {
+        check_reader(value, expected_sha256)?;
         protocol::validate_context(
             &value["system_info"],
             &value["foreground"],
             &value["windows"],
         )
+    }
+    #[cfg(target_arch = "arm")]
+    fn response_identity(enrolled: &Enrollment) -> protocol::Response {
+        protocol::Response {
+            schema: 1,
+            op: protocol::Operation::Identify,
+            nonce: enrolled.nonce.clone(),
+            server_pid: std::process::id(),
+            server_uid: 0,
+            client_pid: enrolled.client_pid,
+            client_uid: enrolled.client_uid,
+            client_start_ticks: enrolled.client_start_ticks,
+            ui_sha256: enrolled.ui_sha256.clone(),
+            broker_sha256: enrolled.broker_sha256.clone(),
+        }
+    }
+    #[cfg(target_arch = "arm")]
+    fn resource_catalogue(
+        enrolled: &Enrollment,
+        deadline: std::time::Instant,
+        summary: &mut serde_json::Value,
+    ) -> Result<crate::app_artwork::SourceMap, Box<dyn std::error::Error>> {
+        use serde_json::json;
+        let value = crate::broker_context::catalogue(deadline, &enrolled.context_reader_sha256);
+        // Preserve child ownership evidence even when admission fails. Never
+        // log the full catalogue or release a caller-selected filesystem path.
+        *summary = json!({"_reader":value["_reader"],"app_count":value["apps"]["apps"].as_array().map(Vec::len),
+            "launch_point_count":value["launch_points"]["launchPoints"].as_array().map(Vec::len)});
+        check_reader(&value, &enrolled.context_reader_sha256)?;
+        let raw = json!({"replies":{"apps":value["apps"],"launch_points":value["launch_points"]}});
+        let map = crate::app_artwork::sources_from_raw(&raw, crate::identity::PROOF)
+            .map_err(|_| invalid("Server-owned artwork catalogue admission failed"))?;
+        Ok(map)
+    }
+    #[cfg(target_arch = "arm")]
+    struct PreparedArtwork {
+        source: crate::app_artwork::Source,
+        file: crate::app_artwork::EncodedFile,
+    }
+    #[cfg(target_arch = "arm")]
+    #[derive(Clone, Copy, Debug)]
+    enum ResourceFailure {
+        CatalogueUnqualified,
+        NoSource,
+        Denied,
+        Missing,
+        Invalid,
+        TooLarge,
+        Changed,
+    }
+    #[cfg(target_arch = "arm")]
+    fn resource_failure(error: &crate::app_artwork::ReadError) -> ResourceFailure {
+        use crate::app_artwork::ReadReason;
+        match error.reason {
+            ReadReason::TooLarge => ResourceFailure::TooLarge,
+            ReadReason::Changed => ResourceFailure::Changed,
+            ReadReason::Io if error.errno == Some(libc::ENOENT) => ResourceFailure::Missing,
+            ReadReason::Io
+                if error.errno == Some(libc::EACCES) || error.errno == Some(libc::EPERM) =>
+            {
+                ResourceFailure::Denied
+            }
+            _ => ResourceFailure::Invalid,
+        }
+    }
+    #[cfg(target_arch = "arm")]
+    fn prepare_artwork(
+        enrolled: &Enrollment,
+        app_id: &str,
+        icon_only: bool,
+        deadline: std::time::Instant,
+        record: &mut serde_json::Value,
+    ) -> Result<PreparedArtwork, ResourceFailure> {
+        use serde_json::json;
+        let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_before"])
+            .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
+        let entry = map.get(app_id).ok_or(ResourceFailure::NoSource)?;
+        let source = (if icon_only {
+            entry.icon.as_ref()
+        } else {
+            entry.preferred()
+        })
+        .cloned()
+        .ok_or(ResourceFailure::NoSource)?;
+        record["source_key"] = json!(source.key());
+        let file = crate::app_artwork::read_root_encoded(&source).map_err(|error| {
+            record["read_error"] = json!(error);
+            resource_failure(&error)
+        })?;
+        record["read_identity"] = json!(file.identity);
+        record["encoded_sha256"] = json!(file
+            .digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>());
+        record["encoded_bytes"] = json!(file.bytes.len());
+        if !image_signature(&file.bytes) {
+            return Err(ResourceFailure::Invalid);
+        }
+        Ok(PreparedArtwork { source, file })
+    }
+    #[cfg(target_arch = "arm")]
+    fn verify_artwork_after(
+        enrolled: &Enrollment,
+        prepared: &PreparedArtwork,
+        icon_only: bool,
+        deadline: std::time::Instant,
+        record: &mut serde_json::Value,
+    ) -> Result<(), ResourceFailure> {
+        use serde_json::json;
+        let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_after"])
+            .map_err(|_| ResourceFailure::CatalogueUnqualified)?;
+        let entry = map
+            .get(prepared.source.app_id())
+            .ok_or(ResourceFailure::Changed)?;
+        let source = (if icon_only {
+            entry.icon.as_ref()
+        } else {
+            entry.preferred()
+        })
+        .ok_or(ResourceFailure::Changed)?;
+        if source.key() != prepared.source.key() {
+            return Err(ResourceFailure::Changed);
+        }
+        // The second bounded no-follow read covers same-path replacement or
+        // content change while bytes were transferred, even without a new app version.
+        let after = crate::app_artwork::read_root_encoded(source).map_err(|error| {
+            record["readback_error"] = json!(error);
+            resource_failure(&error)
+        })?;
+        record["readback_identity"] = json!(after.identity);
+        record["readback_sha256"] = json!(after
+            .digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>());
+        if after.identity != prepared.file.identity || after.digest != prepared.file.digest {
+            return Err(ResourceFailure::Changed);
+        }
+        Ok(())
+    }
+    fn image_signature(bytes: &[u8]) -> bool {
+        (bytes.len() >= 33 && bytes.starts_with(b"\x89PNG\r\n\x1a\n") && &bytes[12..16] == b"IHDR")
+            || (bytes.len() >= 4 && bytes.starts_with(&[0xff, 0xd8, 0xff]))
+    }
+    #[cfg(target_arch = "arm")]
+    fn resource_peer(
+        enrolled: &Enrollment,
+        connect: &crate::broker_transport::Credentials,
+        message: &crate::broker_transport::Credentials,
+    ) -> Result<PeerEvidence, Box<dyn std::error::Error>> {
+        enrolled.validate(now()?)?;
+        if enrollment(&enrolled.nonce)? != *enrolled {
+            return Err(invalid("Artwork enrollment changed or was revoked").into());
+        }
+        let evidence = peer(enrolled.client_pid)?;
+        protocol::authorize(enrolled, connect, message, &evidence)?;
+        if own_hash(&enrolled.nonce)? != enrolled.broker_sha256 {
+            return Err(invalid("Helper identity changed during artwork operation").into());
+        }
+        Ok(evidence)
+    }
+    #[cfg(target_arch = "arm")]
+    fn refusal_reason(reason: ResourceFailure) -> crate::artwork_transfer::RefusalReason {
+        use crate::artwork_transfer::RefusalReason as R;
+        match reason {
+            ResourceFailure::CatalogueUnqualified => R::Unavailable,
+            ResourceFailure::NoSource => R::NoSource,
+            ResourceFailure::Denied => R::Denied,
+            ResourceFailure::Missing => R::Missing,
+            ResourceFailure::Invalid => R::Invalid,
+            ResourceFailure::TooLarge => R::TooLarge,
+            ResourceFailure::Changed => R::Changed,
+        }
+    }
+    #[cfg(target_arch = "arm")]
+    fn serve_artwork(
+        connection: &crate::broker_transport::Connection,
+        enrolled: &Enrollment,
+        connect: crate::broker_transport::Credentials,
+        mut packet: crate::broker_transport::Packet,
+        deadline: std::time::Instant,
+        report: &mut serde_json::Value,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        use crate::artwork_transfer as wire;
+        use serde_json::json;
+        let identity = response_identity(enrolled);
+        identity.validate()?;
+        report["handshake_only"] = json!(false);
+        report["artwork_reads_only"] = json!(true);
+        report["icon_reads"] = json!(true);
+        report["artwork_reads"] = json!([]);
+        let mut expected_id = 1_u32;
+        loop {
+            if let Ok(finish) = wire::parse_finish_request(&packet.bytes) {
+                if finish.nonce != enrolled.nonce || finish.request_id != expected_id {
+                    return Err(invalid("Artwork finish sequence/session mismatch").into());
+                }
+                let before = resource_peer(enrolled, &connect, &packet.credentials)?;
+                report["artwork_finish_peer_before"] = json!(before);
+                let context =
+                    crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
+                report["artwork_finish_context"] = context.clone();
+                check_context(&context, &enrolled.context_reader_sha256)?;
+                let after = resource_peer(enrolled, &connect, &packet.credentials)?;
+                if after != before {
+                    return Err(invalid("Artwork caller changed before finish").into());
+                }
+                report["artwork_finish_peer_after"] = json!(after);
+                let finished = wire::Finished::new(&finish, &identity)?;
+                wire::send_finished(connection, &finished, deadline)?;
+                report["artwork_finished"] = json!(finished);
+                report["artwork_session_completed"] = json!(true);
+                return Ok(());
+            }
+            let request = wire::parse_request(&packet.bytes)?;
+            if request.nonce != enrolled.nonce
+                || request.request_id != expected_id
+                || expected_id > 5
+            {
+                return Err(invalid("Artwork request limit/sequence/session mismatch").into());
+            }
+            let mut record = json!({"request":request,"request_bytes":packet.bytes,"encoded_data_released":false,"completed":false});
+            let operation = (|| -> Result<(), Box<dyn std::error::Error>> {
+                let before = resource_peer(enrolled, &connect, &packet.credentials)?;
+                record["peer_before"] = json!(before);
+                let context =
+                    crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
+                record["context_before"] = context.clone();
+                check_context(&context, &enrolled.context_reader_sha256)?;
+                let icon_only = matches!(request.variant, wire::Variant::Icon);
+                let prepared =
+                    prepare_artwork(enrolled, &request.app_id, icon_only, deadline, &mut record);
+                if matches!(prepared, Err(ResourceFailure::CatalogueUnqualified)) {
+                    return Err(invalid(
+                        "Catalogue reader unqualified; no further operation permitted",
+                    )
+                    .into());
+                }
+                let mut header = None;
+                if let Ok(value) = &prepared {
+                    let value_header = wire::Header::from_file(
+                        &request,
+                        &identity,
+                        value.source.key(),
+                        &value.file,
+                    )?;
+                    wire::send_header_chunks(
+                        connection,
+                        &value_header,
+                        &value.file.bytes,
+                        deadline,
+                    )?;
+                    record["encoded_data_released"] = json!(true);
+                    record["header"] = json!(value_header);
+                    header = Some(value_header);
+                }
+                let readback = match &prepared {
+                    Ok(value) => {
+                        verify_artwork_after(enrolled, value, icon_only, deadline, &mut record)
+                    }
+                    Err(reason) => Err(*reason),
+                };
+                if matches!(readback, Err(ResourceFailure::CatalogueUnqualified)) {
+                    return Err(invalid(
+                        "Catalogue readback unqualified; no further operation permitted",
+                    )
+                    .into());
+                }
+                let after_context =
+                    crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
+                record["context_after"] = after_context.clone();
+                check_context(&after_context, &enrolled.context_reader_sha256)?;
+                let after = resource_peer(enrolled, &connect, &packet.credentials)?;
+                record["peer_after"] = json!(after);
+                if after != before {
+                    return Err(invalid("Artwork caller changed during operation").into());
+                }
+                match readback {
+                    Ok(()) => {
+                        let complete = wire::Complete::from_header(
+                            header
+                                .as_ref()
+                                .ok_or_else(|| invalid("Missing transferred artwork header"))?,
+                        )?;
+                        wire::send_complete(connection, &complete, deadline)?;
+                        record["complete"] = json!(complete);
+                        record["completed"] = json!(true);
+                    }
+                    Err(reason) => {
+                        let refusal =
+                            wire::Refusal::new(&request, &identity, refusal_reason(reason))?;
+                        wire::send_refusal(connection, &refusal, deadline)?;
+                        record["refusal"] = json!(refusal);
+                    }
+                }
+                Ok(())
+            })();
+            if let Err(ref error) = operation {
+                record["error"] = json!(error.to_string());
+            }
+            report["artwork_reads"]
+                .as_array_mut()
+                .ok_or_else(|| invalid("Missing artwork receipt container"))?
+                .push(record);
+            operation?;
+            expected_id += 1;
+            packet = connection.recv_until(protocol::REQUEST_LIMIT, deadline)?;
+        }
     }
     fn operator_barrier(input: libc::c_int, deadline: std::time::Instant) -> io::Result<()> {
         use std::time::Instant;
@@ -434,8 +751,8 @@ mod proof {
             "{}",
             json!({"schema":1,"stage":"ready","server_pid":std::process::id(),"server_uid":0,"nonce":session,"broker_sha256":enrolled.broker_sha256})
         );
-        // Exactly one accepted connection, one packet and one fixed operation.
-        // Any failure drops both FDs and terminates; no retry or broad fallback.
+        // One accepted connection: either one Identify or up to five icon reads
+        // and Finish. Any failure terminates; no retry or broad fallback.
         let connection = listener.accept_until(deadline)?;
         enrolled.validate(now()?)?;
         let connect = connection.peer_credentials()?;
@@ -446,6 +763,11 @@ mod proof {
             return Err(invalid("Unenrolled peer connection").into());
         }
         let packet = connection.recv_until(protocol::REQUEST_LIMIT, deadline)?;
+        if crate::artwork_transfer::parse_request(&packet.bytes).is_ok()
+            || crate::artwork_transfer::parse_finish_request(&packet.bytes).is_ok()
+        {
+            return serve_artwork(&connection, &enrolled, connect, packet, deadline, report);
+        }
         let request = protocol::parse_request(&packet.bytes)?;
         enrolled.validate(now()?)?;
         if request.nonce != enrolled.nonce {
@@ -505,6 +827,18 @@ mod proof {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn resource_bytes_need_an_image_signature_before_release() {
+            assert!(!image_signature(b"{\"account\":\"not an image\"}"));
+            assert!(!image_signature(b"/etc/anything"));
+            assert!(!image_signature(b"\x89PNG\r\n\x1a\n"));
+            let mut png = vec![0_u8; 33];
+            png[..8].copy_from_slice(b"\x89PNG\r\n\x1a\n");
+            png[12..16].copy_from_slice(b"IHDR");
+            assert!(image_signature(&png));
+            assert!(image_signature(&[0xff, 0xd8, 0xff, 0x00]));
+            // These are header admissions only, never validity or decoder proof.
+        }
         #[test]
         fn context_requires_the_pinned_reader_and_the_original_proof_policy() {
             use serde_json::json;
@@ -673,7 +1007,11 @@ pub fn main_entry(arguments: &[String]) -> Result<(), String> {
         let mut report = serde_json::json!({"schema":1,"handshake_only":true,"icon_reads":false,"commands":false,"setting_writes":false,"response_sent":false,"server_pid":std::process::id()});
         let result = proof::run(&arguments[1], &mut report);
         report["outcome"] = serde_json::json!(if result.is_ok() {
-            "identified"
+            if report["artwork_session_completed"] == true {
+                "artwork_finished"
+            } else {
+                "identified"
+            }
         } else {
             "unqualified"
         });

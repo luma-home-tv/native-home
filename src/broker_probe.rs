@@ -10,11 +10,11 @@ use serde_json::Value;
 
 #[cfg(any(target_arch = "arm", test))]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-struct OwnIdentity {
-    pid: u32,
-    uid: u32,
-    start_ticks: u64,
-    ui_sha256: String,
+pub(crate) struct OwnIdentity {
+    pub(crate) pid: u32,
+    pub(crate) uid: u32,
+    pub(crate) start_ticks: u64,
+    pub(crate) ui_sha256: String,
 }
 
 #[cfg(any(target_arch = "arm", test))]
@@ -23,7 +23,7 @@ fn ordinary_proof(app_id: &str, uid: u32) -> bool {
 }
 
 #[cfg(any(target_arch = "arm", test))]
-fn context_valid(context: &Value) -> bool {
+pub(crate) fn context_valid(context: &Value) -> bool {
     let info = &context["system_info"];
     let foreground = &context["foreground"];
     let windows = &context["windows"];
@@ -57,7 +57,7 @@ fn start_ticks(raw: &str, pid: u32) -> Result<u64, String> {
 }
 
 #[cfg(any(target_arch = "arm", test))]
-fn bind_response(
+pub(crate) fn bind_response(
     marker: &Marker,
     own: &OwnIdentity,
     after: &OwnIdentity,
@@ -120,7 +120,7 @@ fn hash_reader(reader: &mut impl std::io::Read) -> Result<String, String> {
 }
 
 #[cfg(target_arch = "arm")]
-fn own_identity() -> Result<OwnIdentity, String> {
+pub(crate) fn own_identity() -> Result<OwnIdentity, String> {
     use std::fs::File;
     use std::io::Read;
     use std::os::unix::fs::MetadataExt;
@@ -227,14 +227,14 @@ fn read_marker_file(path: &std::path::Path) -> Result<Marker, String> {
 }
 
 #[cfg(target_arch = "arm")]
-fn read_marker() -> Result<Marker, String> {
+pub(crate) fn read_marker() -> Result<Marker, String> {
     read_marker_file(std::path::Path::new(&plx_base::paths::in_app_dir(
         "artwork-broker-proof.json",
     )))
 }
 
 #[cfg(target_arch = "arm")]
-fn read_context(
+pub(crate) fn read_context(
     bus: &plx_platform::webos::ls2::Registration,
     deadline: std::time::Instant,
 ) -> Value {

@@ -5,7 +5,6 @@ use serde_json::{json, Value};
 use std::time::Instant;
 
 const PROGRAM: &str = "/usr/bin/luna-send";
-#[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
 const OPERATIONS: [(&str, &str, &str); 3] = [
     (
         "system_info",
@@ -23,24 +22,79 @@ const OPERATIONS: [(&str, &str, &str); 3] = [
         "{}",
     ),
 ];
+const CATALOGUE_OPERATIONS: [(&str, &str, &str); 2] = [
+    ("apps", "luna://com.webos.applicationManager/listApps", "{}"),
+    (
+        "launch_points",
+        "luna://com.webos.applicationManager/listLaunchPoints",
+        "{}",
+    ),
+];
+#[derive(Clone, Copy)]
+enum ReadSet {
+    Context,
+    Catalogue,
+}
+impl ReadSet {
+    fn operations(self) -> &'static [(&'static str, &'static str, &'static str)] {
+        match self {
+            Self::Context => &OPERATIONS,
+            Self::Catalogue => &CATALOGUE_OPERATIONS,
+        }
+    }
+    #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+    fn stdout_cap(self) -> usize {
+        match self {
+            Self::Context => 65536,
+            Self::Catalogue => 2 * 1024 * 1024,
+        }
+    }
+    #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+    fn operation_budget(self) -> std::time::Duration {
+        std::time::Duration::from_millis(match self {
+            Self::Context => 700,
+            Self::Catalogue => 1000,
+        })
+    }
+    #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+    fn child_stage(self) -> &'static str {
+        match self {
+            Self::Context => "context_child_started",
+            Self::Catalogue => "catalogue_child_started",
+        }
+    }
+}
+
 fn unavailable() -> Value {
     json!({"unavailable":true})
 }
-fn base_report() -> Value {
-    json!({"system_info":unavailable(),"foreground":unavailable(),"windows":unavailable(),
-        "_reader":{"schema":1,"kind":"fixed_core_luna_send","program":PROGRAM,"approved":false,"qualified":false,
-        "executable":null,"executable_after":null,"operations":[],"cleanup_known":true,"error":null}})
+fn base_report(set: ReadSet) -> Value {
+    let mut result = serde_json::Map::new();
+    for (key, _, _) in set.operations() {
+        result.insert((*key).to_owned(), unavailable());
+    }
+    result.insert("_reader".into(),json!({"schema":1,"kind":"fixed_core_luna_send","program":PROGRAM,"approved":false,"qualified":false,
+        "executable":null,"executable_after":null,"operations":[],"cleanup_known":true,"error":null}));
+    Value::Object(result)
 }
-pub fn collect(deadline: Instant, expected_sha256: &str) -> Value {
-    let mut report = base_report();
+fn collect_set(set: ReadSet, deadline: Instant, expected_sha256: &str) -> Value {
+    let mut report = base_report(set);
     #[cfg(all(target_os = "linux", target_arch = "arm"))]
-    core::collect_into(&mut report, deadline, expected_sha256);
+    core::collect_into(&mut report, deadline, expected_sha256, set);
     #[cfg(not(all(target_os = "linux", target_arch = "arm")))]
     {
         let _ = (deadline, expected_sha256);
         report["_reader"]["error"] = json!("unsupported_platform");
     }
     report
+}
+pub fn collect(deadline: Instant, expected_sha256: &str) -> Value {
+    collect_set(ReadSet::Context, deadline, expected_sha256)
+}
+/// Only these two catalogue GETs; no caller-selected route. The returned full
+/// catalogue is ephemeral helper input, not a payload to print to helper stdout.
+pub fn catalogue(deadline: Instant, expected_sha256: &str) -> Value {
+    collect_set(ReadSet::Catalogue, deadline, expected_sha256)
 }
 
 #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
@@ -488,7 +542,10 @@ mod core {
         pid: u32,
         held_empty_stdin: bool,
     }
-    fn run_child(mut child: Child, deadline: Instant) -> Outcome {
+    fn run_child(child: Child, deadline: Instant) -> Outcome {
+        run_child_bounded(child, deadline, OUT_CAP)
+    }
+    fn run_child_bounded(mut child: Child, deadline: Instant, stdout_cap: usize) -> Outcome {
         use std::os::fd::IntoRawFd;
         let pid = child.id();
         // A private empty pipe avoids luna-send interactive EOF before callback.
@@ -516,7 +573,7 @@ mod core {
             .stdout
             .take()
             .ok_or_else(invalid)
-            .and_then(|f| Pipe::new(f.into_raw_fd(), OUT_CAP));
+            .and_then(|f| Pipe::new(f.into_raw_fd(), stdout_cap));
         let err = child
             .stderr
             .take()
@@ -707,13 +764,22 @@ mod core {
             && core_unchanged
     }
     fn reader_qualified(rows: &[Value], cleanup_known: bool, core_unchanged: bool) -> bool {
-        rows.len() == 3
+        reader_qualified_for(rows, cleanup_known, core_unchanged, ReadSet::Context)
+    }
+    fn reader_qualified_for(
+        rows: &[Value],
+        cleanup_known: bool,
+        core_unchanged: bool,
+        set: ReadSet,
+    ) -> bool {
+        rows.len() == set.operations().len()
             && cleanup_known
             && core_unchanged
             && rows
                 .iter()
                 .all(|row| row["success"].as_bool() == Some(true))
     }
+
     fn receipt(key: &str, uri: &str, payload: &str) -> Value {
         json!({"key":key,"uri":uri,"argv":[PROGRAM,"-i","-n","1","-w","5000","-f",uri,payload],"attempted":false,"success":false,
             "child_pid":null,"process_group":null,"exit_code":null,"signal":null,"timed_out":false,"stdout_bytes":0,"stderr_bytes":0,
@@ -721,7 +787,12 @@ mod core {
             "cleanup_known":true,"held_empty_stdin":false,"stdin_bytes_sent":0,"group_cleanup_attempted":false,"group_kill_errno":null,"executable_before":null,"executable_after":null,"error":null})
     }
     #[cfg(all(target_os = "linux", target_arch = "arm"))]
-    pub(super) fn collect_into(report: &mut Value, deadline: Instant, expected_sha256: &str) {
+    pub(super) fn collect_into(
+        report: &mut Value,
+        deadline: Instant,
+        expected_sha256: &str,
+        set: ReadSet,
+    ) {
         if Instant::now() >= deadline {
             report["_reader"]["error"] = json!("deadline");
             return;
@@ -764,7 +835,7 @@ mod core {
         let mut operations = Vec::new();
         let mut all = true;
         let mut clean = true;
-        for (key, uri, payload) in OPERATIONS {
+        for &(key, uri, payload) in set.operations() {
             let mut row = receipt(key, uri, payload);
             let before = match executable.verify() {
                 Ok(v) => v,
@@ -782,7 +853,7 @@ mod core {
                 all = false;
                 break;
             }
-            let operation_deadline = deadline.min(Instant::now() + Duration::from_millis(700));
+            let operation_deadline = deadline.min(Instant::now() + set.operation_budget());
             let child = match spawn_fixed(&executable, uri, payload) {
                 Ok(v) => v,
                 Err(_) => {
@@ -794,10 +865,15 @@ mod core {
             };
             println!(
                 "{}",
-                json!({"schema":1,"stage":"context_child_started","child_pid":child.id(),"process_group":child.id(),"program_sha256":executable.initial.sha256})
+                json!({"schema":1,"stage":set.child_stage(),"child_pid":child.id(),"process_group":child.id(),"program_sha256":executable.initial.sha256})
             );
             let _ = std::io::Write::flush(&mut std::io::stdout());
-            let outcome = run_child(child, operation_deadline);
+            let outcome = match set {
+                ReadSet::Context => run_child(child, operation_deadline),
+                ReadSet::Catalogue => {
+                    run_child_bounded(child, operation_deadline, set.stdout_cap())
+                }
+            };
             row["attempted"] = json!(true);
             row["child_pid"] = json!(outcome.pid);
             row["process_group"] = json!(outcome.pid);
@@ -852,8 +928,12 @@ mod core {
         if let Ok(value) = &after {
             report["_reader"]["executable_after"] = json!(value);
         }
-        report["_reader"]["qualified"] =
-            json!(all && reader_qualified(&operations, clean, after.is_ok()));
+        report["_reader"]["qualified"] = json!(
+            all && match set {
+                ReadSet::Context => reader_qualified(&operations, clean, after.is_ok()),
+                ReadSet::Catalogue => reader_qualified_for(&operations, clean, after.is_ok(), set),
+            }
+        );
         report["_reader"]["cleanup_known"] = json!(clean);
         report["_reader"]["operations"] = json!(operations);
         if report["_reader"]["qualified"] != true {
@@ -950,6 +1030,86 @@ mod core {
             // Invokes only the fixed read-only admission path, never a command.
             #[cfg(not(all(target_os = "linux", target_arch = "arm")))]
             assert!(Executable::admit().is_err());
+        }
+        #[test]
+        fn catalogue_has_only_two_fixed_gets_and_separate_count_budget() {
+            assert_eq!(
+                ReadSet::Catalogue.operations(),
+                &[
+                    ("apps", "luna://com.webos.applicationManager/listApps", "{}"),
+                    (
+                        "launch_points",
+                        "luna://com.webos.applicationManager/listLaunchPoints",
+                        "{}"
+                    ),
+                ]
+            );
+            assert_eq!(ReadSet::Catalogue.stdout_cap(), 2 * 1024 * 1024);
+            assert_eq!(
+                ReadSet::Catalogue.operation_budget(),
+                Duration::from_millis(1000)
+            );
+            assert_eq!(ReadSet::Catalogue.child_stage(), "catalogue_child_started");
+            assert_eq!(ReadSet::Context.stdout_cap(), 65536);
+            assert_eq!(
+                ReadSet::Context.operation_budget(),
+                Duration::from_millis(700)
+            );
+            assert_eq!(ReadSet::Context.child_stage(), "context_child_started");
+            let rows = [json!({"success":true}), json!({"success":true})];
+            assert!(reader_qualified_for(&rows, true, true, ReadSet::Catalogue));
+            assert!(!reader_qualified(&rows, true, true));
+            let three = [
+                json!({"success":true}),
+                json!({"success":true}),
+                json!({"success":true}),
+            ];
+            assert!(!reader_qualified_for(
+                &three,
+                true,
+                true,
+                ReadSet::Catalogue
+            ));
+            assert!(!reader_qualified_for(
+                &[json!({"success":true}), json!({"success":false})],
+                true,
+                true,
+                ReadSet::Catalogue
+            ));
+            let report = base_report(ReadSet::Catalogue);
+            assert_eq!(
+                report
+                    .as_object()
+                    .unwrap()
+                    .keys()
+                    .cloned()
+                    .collect::<std::collections::BTreeSet<_>>(),
+                ["apps", "launch_points", "_reader"]
+                    .into_iter()
+                    .map(str::to_owned)
+                    .collect()
+            );
+        }
+        #[test]
+        fn catalogue_stdout_can_exceed_context_cap_without_changing_context_limit() {
+            let output = run_child_bounded(
+                spawn("printf '%070000d' 0"),
+                Instant::now() + Duration::from_secs(2),
+                ReadSet::Catalogue.stdout_cap(),
+            );
+            assert_eq!(output.stdout.len(), 70000);
+            assert_ne!(output.error, Some("output_limit"));
+            assert_native_exit_cleanup(&output);
+            let capped = run("printf '%070000d' 0");
+            assert_eq!(capped.stdout.len(), OUT_CAP + 1);
+            assert!(capped.error.is_some());
+            let oversized = run_child_bounded(
+                spawn("printf '%02097153d' 0"),
+                Instant::now() + Duration::from_secs(2),
+                ReadSet::Catalogue.stdout_cap(),
+            );
+            assert_eq!(oversized.stdout.len(), ReadSet::Catalogue.stdout_cap() + 1);
+            assert!(oversized.error.is_some());
         }
         #[test]
         fn root_cli_argv_is_fixed_in_receipt() {

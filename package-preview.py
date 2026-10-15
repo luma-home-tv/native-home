@@ -26,15 +26,20 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.34.0' if main == 'home-preview' else '0.1.0'
+version = '0.35.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
 broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '1'
+broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == '1'
+if broker_artwork_read_proof and not broker_identify_proof:
+    raise ValueError('Artwork transfer requires explicit isolated broker mode')
 broker_marker = None
 if broker_identify_proof:
     allowed = {'NATIVE_HOME_BROKER_IDENTIFY_PROOF', 'NATIVE_HOME_NATIVE_READ_PROBE'}
+    if broker_artwork_read_proof:
+        allowed.add('NATIVE_HOME_ARTWORK_READ_PROOF')
     others = [k for k, v in os.environ.items() if v and k.startswith('NATIVE_HOME_')
               and (k.endswith('_PROOF') or k.endswith('_PROBE')) and k not in allowed]
     if main != 'home-preview' or not test_identity or interactive or os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') != '1' or others:
@@ -153,6 +158,8 @@ if main == 'home-preview':
         (stage / 'native-read-probe.json').write_text('{}\n')
     if broker_marker is not None:
         (stage / 'artwork-broker-proof.json').write_text(json.dumps(broker_marker, separators=(',', ':'))+'\n')
+    if broker_artwork_read_proof:
+        (stage / 'artwork-read-proof.json').write_text('{}\n')
     if sound_read_proof:
         (stage / 'sound-read-proof.json').write_text('{}\n')
     for app in snapshot['applications']:
@@ -201,6 +208,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
            'broker_identify_proof': broker_identify_proof,
+           'broker_artwork_read_proof': broker_artwork_read_proof,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
            'keyboard_recipe_proof': keyboard_recipe,

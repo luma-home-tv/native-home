@@ -48,8 +48,11 @@ pub mod locale_reads;
 
 pub mod app_artwork;
 
-pub mod broker_protocol;
-pub mod broker_transport;
-pub mod broker_probe;
-pub mod broker_server;
+pub mod artwork_cache;
+pub mod artwork_probe;
+pub mod artwork_transfer;
 pub mod broker_context;
+pub mod broker_probe;
+pub mod broker_protocol;
+pub mod broker_server;
+pub mod broker_transport;

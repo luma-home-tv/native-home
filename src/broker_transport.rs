@@ -261,6 +261,56 @@ mod linux {
         }
     }
     impl Connection {
+        /// After the authenticated Finished packet, accept only clean kernel
+        /// EOF. A zero-byte credentialed packet is a message, never EOF.
+        pub fn expect_eof_until(&self, deadline: Instant) -> io::Result<()> {
+            loop {
+                check_deadline(deadline)?;
+                let mut byte = 0_u8;
+                let mut control = [0_usize; 512];
+                let mut iov = libc::iovec {
+                    iov_base: (&mut byte as *mut u8).cast(),
+                    iov_len: 1,
+                };
+                let mut message: libc::msghdr = unsafe { zeroed() };
+                message.msg_iov = &mut iov;
+                message.msg_iovlen = 1;
+                message.msg_control = control.as_mut_ptr().cast();
+                message.msg_controllen = size_of::<[usize; 512]>();
+                let rc = unsafe {
+                    libc::recvmsg(
+                        self.fd.as_raw_fd(),
+                        &mut message,
+                        libc::MSG_DONTWAIT | libc::MSG_CMSG_CLOEXEC,
+                    )
+                };
+                if rc < 0 {
+                    let error = io::Error::last_os_error();
+                    match error.kind() {
+                        io::ErrorKind::Interrupted => continue,
+                        io::ErrorKind::WouldBlock => {
+                            wait(self.fd.as_raw_fd(), libc::POLLIN, deadline)?;
+                            continue;
+                        }
+                        _ => return Err(error),
+                    }
+                }
+                let length = message.msg_controllen.min(size_of::<[usize; 512]>());
+                let ancillary =
+                    unsafe { std::slice::from_raw_parts(control.as_ptr().cast::<u8>(), length) };
+                // Dispose of any rights even though every further packet is rejected.
+                let _ = credentials_from_control(ancillary, |fd| unsafe {
+                    libc::close(fd);
+                });
+                if rc == 0
+                    && length == 0
+                    && message.msg_flags & (libc::MSG_TRUNC | libc::MSG_CTRUNC) == 0
+                {
+                    return Ok(());
+                }
+                return Err(invalid("Unexpected packet after Finished"));
+            }
+        }
         pub fn connect_until(nonce: &str, deadline: Instant) -> io::Result<Self> {
             let (addr, len) = address(nonce)?;
             let fd = socket()?;
@@ -453,6 +503,9 @@ mod unsupported {
         }
     }
     impl Connection {
+        pub fn expect_eof_until(&self, _deadline: Instant) -> io::Result<()> {
+            Err(unsupported())
+        }
         pub fn connect_until(_nonce: &str, _deadline: Instant) -> io::Result<Self> {
             Err(unsupported())
         }
@@ -592,6 +645,38 @@ mod tests {
             let client = Connection::connect_until(&n, deadline()).unwrap();
             let server = listener.accept_until(deadline()).unwrap();
             (client, server)
+        }
+        #[test]
+        fn eof_after_finished_rejects_empty_or_extra_messages() {
+            let (client, server) = pair();
+            drop(server);
+            assert!(client.expect_eof_until(deadline()).is_ok());
+            let (client, server) = pair();
+            server.send_until(b"extra", deadline()).unwrap();
+            drop(server);
+            assert!(client.expect_eof_until(deadline()).is_err());
+            let (client, server) = pair();
+            assert_eq!(
+                unsafe {
+                    libc::send(
+                        server.fd.as_raw_fd(),
+                        std::ptr::null(),
+                        0,
+                        libc::MSG_NOSIGNAL,
+                    )
+                },
+                0
+            );
+            drop(server);
+            assert!(client.expect_eof_until(deadline()).is_err());
+            let (client, _server) = pair();
+            assert_eq!(
+                client
+                    .expect_eof_until(Instant::now() + Duration::from_millis(10))
+                    .unwrap_err()
+                    .kind(),
+                io::ErrorKind::TimedOut
+            );
         }
         #[test]
         fn actual_packets_preserve_boundaries_and_kernel_credentials() {
