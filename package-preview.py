@@ -22,10 +22,17 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.25.0' if main == 'home-preview' else '0.1.0'
+version = '0.26.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
+sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
+if sound_read_proof and (main != 'home-preview' or not test_identity or interactive or os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') != '1' or any(os.environ.get(k) for k in (
+    'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
+    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF',
+    'NATIVE_HOME_RANGE_LAYOUT_PROOF', 'NATIVE_HOME_DESCRIPTION_UI_PROOF', 'NATIVE_HOME_TEXT_INPUT_PROOF', 'NATIVE_HOME_MANUAL_TEXT_PROOF', 'NATIVE_HOME_KEYBOARD_FLOW_PROOF',
+    'NATIVE_HOME_KEYBOARD_OBSERVER_PROOF', 'NATIVE_HOME_KEYBOARD_RECIPE_PROOF', 'NATIVE_HOME_SESSION_CAPTURE_PROOF', 'NATIVE_HOME_PERFORMANCE_PROOF'))):
+    raise ValueError('Sound read proof requires isolated native read diagnostics and no other trial')
 if os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1' and (main != 'home-preview' or not test_identity or interactive):
     raise ValueError('Native read/layout diagnostics require the isolated non-interactive dashboard')
 keyboard_observer = os.environ.get('NATIVE_HOME_KEYBOARD_OBSERVER_PROOF') == '1'
@@ -122,6 +129,8 @@ if main == 'home-preview':
         (stage / 'pointer-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1':
         (stage / 'native-read-probe.json').write_text('{}\n')
+    if sound_read_proof:
+        (stage / 'sound-read-proof.json').write_text('{}\n')
     for app in snapshot['applications']:
         icon_path = app.get('icon')
         if not icon_path: continue
@@ -162,6 +171,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
+           'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
            'keyboard_recipe_proof': keyboard_recipe,
            'keyboard_flow_proof': os.environ.get('NATIVE_HOME_KEYBOARD_FLOW_PROOF') == '1',

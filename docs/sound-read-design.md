@@ -141,6 +141,25 @@ ordinary-app permission, physical/audio effect, device cleanup, performance or
 native runtime layout. Current test results are recorded in the coordinator's
 private build workspace before publication.
 
+## Isolated native qualification profile
+
+The 0.26.0 package adds an explicit `sound-read-proof.json` marker and
+`native_sound_read_proof` receipt flag. It requires the native noninteractive
+Proof identity and the existing read probe, and rejects other action, input,
+performance and preferences trials, including their command-line forms. The
+normal retained profile never enters this helper. Existing 0.25.0 artifacts and
+receipts remain tied to their original binaries.
+
+The Sound helper uses shared arrows to focus rows 5..7 at keys 30..32, captures
+each fully contained disabled row, moves back up to balance and returns through
+Back to the Sound category. Its separate `sound_layout_proof` records schema 1,
+layout/graphics/presentation/readout snapshots and preference/request invariants.
+It does not activate OK, call a setter or change LG audio/accessibility state.
+The existing read probe supplies ordinary-app raw values/descriptors for an
+independent typed comparison. Capture helpers do not establish per-stage service
+freshness or failure transitions. Native execution and cleanup results belong in
+a separate milestone; adding this instrumentation alone does not qualify them.
+
 This is Luma-owned read-adapter code using the existing model and attributed
 PlxNative framework. No Plex features or proprietary LG implementation code are
 included.

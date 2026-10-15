@@ -185,6 +185,47 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Performance diagnostics require the isolated identity".into());
     }
     let observer_requested = assets.join("keyboard-observer.json").exists();
+    let sound_read_proof = assets.join("sound-read-proof.json").exists();
+    if sound_read_proof
+        && (!device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || !assets.join("native-read-probe.json").exists()
+            || navigation_proof
+            || range_layout_proof
+            || args.iter().any(|arg| {
+                matches!(
+                    arg.as_str(),
+                    "--drawer-proof" | "--management-proof" | "--controls-proof"
+                )
+            })
+            || [
+                "text-input-proof.json",
+                "manual-text-proof.json",
+                "keyboard-flow-proof.json",
+                "keyboard-observer.json",
+                "keyboard-recipe.json",
+                "performance-proof.json",
+                "session-proof.json",
+                "drawer-proof.json",
+                "management-proof.json",
+                "controls-proof.json",
+                "launch-proof.json",
+                "preferences-hold-probe.json",
+                "description-ui-proof.json",
+                "range-layout-proof.json",
+                "description-level-proof.json",
+                "pointer-proof.json",
+                "pointer-ui-proof.json",
+                "navigation-proof.json",
+            ]
+            .iter()
+            .any(|name| assets.join(name).exists()))
+    {
+        return Err(
+            "Sound read proof requires isolated native read diagnostics and no other trial".into(),
+        );
+    }
     if assets.join("native-read-probe.json").exists()
         && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
     {
@@ -215,6 +256,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
+            "sound-read-proof.json",
             "description-ui-proof.json",
             "range-layout-proof.json",
             "description-level-proof.json",
@@ -429,6 +471,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut management_proof = None;
     let mut controls_proof = None;
     let mut guidance_layout_proof = None;
+    let mut sound_layout_proof = None;
     let mut navigation = Vec::new();
     let mut navigation_page = None;
     let mut scripted_requests = Vec::new();
@@ -538,6 +581,56 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 || !no_requests
             {
                 return Err("Guidance navigation did not return to its row/category".into());
+            }
+        }
+        if sound_read_proof {
+            shell.open(Page::Sound);
+            shell.direction(Dir::Right);
+            let sound_preferences = shell.preferences().clone();
+            let mut stages = Vec::new();
+            for (index, id, frame) in [
+                (5, "audioBalance", "sound-balance"),
+                (6, "audioDescription", "sound-description"),
+                (7, "audioDescriptionVolume", "sound-description-level"),
+            ] {
+                for _ in 0..10 {
+                    if shell.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+                        break;
+                    }
+                    shell.direction(Dir::Down);
+                }
+                drawer_capture(&mut shell, &window, &output, frame, &mut now)?;
+                let row = shell
+                    .control_row_layout(id)
+                    .ok_or("Missing Sound row layout")?;
+                if row["focused"] != true || row["disabled"] != true || row["fully_visible"] != true
+                {
+                    return Err("Sound row did not settle into a visible read-only focus".into());
+                }
+                stages.push(serde_json::json!({"frame":frame,"layout":row,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["sound"]}));
+            }
+            for _ in 0..2 {
+                shell.direction(Dir::Up);
+            }
+            drawer_capture(&mut shell, &window, &output, "sound-return-up", &mut now)?;
+            let up = shell
+                .control_row_layout("audioBalance")
+                .ok_or("Missing Sound return row")?;
+            let return_up = serde_json::json!({"frame":"sound-return-up","layout":up,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["sound"]});
+            shell.back();
+            let back = shell.focused_item().as_deref() == Some("category-Sound");
+            let preferences_unchanged = shell.preferences() == &sound_preferences;
+            let no_requests = shell.take_requests().is_empty();
+            sound_layout_proof = Some(
+                serde_json::json!({"schema":1,"stages":stages,"return_up":return_up,"back_restores_category":back,"preferences_unchanged":preferences_unchanged,"no_tv_requests":no_requests,"input":"scripted shared arrows/Back; no OK activation"}),
+            );
+            if up["focused"] != true
+                || up["fully_visible"] != true
+                || !back
+                || !preferences_unchanged
+                || !no_requests
+            {
+                return Err("Sound navigation did not return to its row/category".into());
             }
         }
         if args.iter().any(|arg| arg == "--drawer-proof")
@@ -1551,6 +1644,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
+    report["sound_layout_proof"] = serde_json::json!(sound_layout_proof);
     report["text_input_proof"] = serde_json::json!(text_receipt);
     report["keyboard_session"] = serde_json::json!(keyboard);
     report["keyboard_main_observation"] = observer_requested.into();
