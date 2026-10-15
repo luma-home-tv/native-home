@@ -73,9 +73,24 @@ integration and end-to-end artwork replacement remain separate work.
 message and identity rejection, credential ancillary parsing, malformed marker
 file types, bounded hashing, and actual host-stream startup-token/EOF/deadline
 checks. Host all-target clippy with warnings denied and 13 framework-verifier
-tests pass. The helper has no binary-specific unit tests.
+tests and 14 build/provenance guard tests pass. The helper has no binary-specific
+unit tests.
+
+Both ARM release builds pass from source
+`f137bd5bdd643f91e7392c9922d20f172b53e41d`, with equal snapshots of 73 selected
+inputs and the same verified framework. Ten actual local packaging cases pass:
+Identify has exactly its two diagnostic markers; ordinary passive and normal
+interactive packages omit the broker marker; retained identity, interactive
+Identify, mixed trials, invalid nonce/hash, stray marker values and packaging
+the helper itself are rejected. These used a synthetic snapshot and made no TV
+contact. The existing ARM target-feature warning remains.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Dashboard ELF | `7ada786be729bbc4cd17a270f3ea88fa9f97b4eafa083742ad10ef31cd06206a` |
+| Separate helper ELF | `be944ea507f760a808880e231e34a9fde84b6b13595e7e156a7c3420a1f41ad5` |
 
 The host is macOS: Linux transport tests are compiled conditionally and have not
-been executed there. Final ARM builds, package-mode admission, isolated G2
-communication and complete removal are still pending. No device capability,
-artwork, normal-preview promotion or full-release claim follows from host tests.
+been executed there. Isolated G2 communication and complete removal remain
+pending. No device capability, artwork, normal-preview promotion or full-release
+claim follows from these tests/builds.
