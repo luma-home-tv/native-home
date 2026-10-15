@@ -71,6 +71,17 @@ pub enum Action {
     RequestApplication(String),
     RequestInput(String),
     OpenLgSettings,
+    OpenLgSettingsSection(SettingsSection),
+}
+
+/// Fixed LG-managed overview/entry routes; no arbitrary target, item, flags or path.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SettingsSection { Picture, Sound, Network, Accessibility, General, PanelCare }
+impl SettingsSection {
+    pub fn page(self) -> Page { match self { Self::Picture => Page::Picture, Self::Sound => Page::Sound, Self::Network => Page::Network, Self::Accessibility => Page::Accessibility, Self::General => Page::General, Self::PanelCare => Page::PanelCare } }
+    pub fn from_page(page: Page) -> Option<Self> { match page { Page::Picture => Some(Self::Picture), Page::Sound => Some(Self::Sound), Page::Network => Some(Self::Network), Page::Accessibility => Some(Self::Accessibility), Page::General => Some(Self::General), Page::PanelCare => Some(Self::PanelCare), _ => None } }
+    pub fn target(self) -> &'static str { match self {Self::Picture => "picture", Self::Sound => "sound", Self::Network | Self::General => "general", Self::Accessibility => "accessibility", Self::PanelCare => "OledCare"} }
 }
 
 /// No setting-write action exists in this pilot. A future broker cannot acquire write authority
@@ -130,6 +141,10 @@ pub fn controls_form(settings: &[Setting], current: &Context) -> Form<String, Ac
 
 /// Only the verified Picture route may emit the current Picture-only handoff request.
 pub fn controls_form_for(settings: &[Setting], current: &Context, picture_route: bool) -> Form<String, Action, Page> {
+    controls_form_for_section(settings, current, picture_route.then_some(SettingsSection::Picture))
+}
+
+pub fn controls_form_for_section(settings: &[Setting], current: &Context, section_route: Option<SettingsSection>) -> Form<String, Action, Page> {
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
         let unavailable = !setting.available || !setting.still_current(current);
@@ -142,8 +157,9 @@ pub fn controls_form_for(settings: &[Setting], current: &Context, picture_route:
             Action::Inspect(setting.id.clone()), Row::new(&setting.label).detail(detail).value(value).server_value())
             .disabled(unavailable || setting.protected);
     }
-    let lg = if picture_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(1000),
-        RowKind::Button, Action::OpenLgSettings, Row::new(Message::OpenLgSettings.text())) }
+    let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(1000),
+        RowKind::Button, if route == SettingsSection::Picture {Action::OpenLgSettings} else {Action::OpenLgSettingsSection(route)},
+        Row::new(if route == SettingsSection::Network {"Open LG Network entry"} else {Message::OpenLgSettings.text()})) }
         else { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-managed".to_owned(), RowKey(1001),
             RowKind::Button, Action::Inspect("lg-managed".into()),
             Row::new("More controls").detail("Open LG Settings from LG Home").value("LG-managed")).disabled(true) };

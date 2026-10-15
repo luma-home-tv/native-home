@@ -131,10 +131,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(native_home::actions::Request::Input { .. })
                 ),
                 settings: plx_base::paths::app_id() == native_home::identity::PREVIEW
-                    || matches!(
-                        launch_proof,
-                        Some(native_home::actions::Request::LgSettings {})
-                    ),
+                    || launch_proof
+                        .as_ref()
+                        .is_some_and(|request| request.is_settings()),
             },
         )?);
     }
@@ -390,7 +389,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 now += 17;
                 shell.tick(now, 1.0 / 60.0);
             }
-            let route_cancelled = shell.take_requests().is_empty() && !shell.focus_lg_settings();
+            let route_cancelled =
+                shell.take_requests().is_empty() && shell.control_category() == Some(Page::Sound);
             shell.back();
             let back_home = shell.page() == Page::Home;
             let preferences_unchanged = shell.preferences() == &preferences;
@@ -496,8 +496,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return Err("Launch target is not in live drawer".into());
                 }
             }
-            native_home::actions::Request::LgSettings {} => {
-                shell.open(Page::Picture);
+            native_home::actions::Request::LgSettings {}
+            | native_home::actions::Request::LgSettingsSection { .. } => {
+                shell.open(request.settings_section().unwrap().page());
                 if !shell.focus_lg_settings() {
                     return Err("LG Settings route unavailable".into());
                 }
@@ -634,12 +635,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             if let Some(worker) = &action_worker {
                 for reply in worker.poll() {
-                    if matches!(reply.request, native_home::actions::Request::LgSettings {}) {
+                    if reply.request.is_settings() {
                         settings_handoff.reply(live_origin.elapsed(), reply.verified);
                     }
                     if !reply.verified {
                         shell.storage_notice(match reply.request {
-                            native_home::actions::Request::LgSettings {} => {
+                            native_home::actions::Request::LgSettings {}
+                            | native_home::actions::Request::LgSettingsSection { .. } => {
                                 "LG Settings unavailable • open it from LG Home"
                             }
                             native_home::actions::Request::Application { .. } => {
@@ -705,7 +707,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if capture_settings_return
                         && matches!(
                             proof_request,
-                            Some(native_home::actions::Request::LgSettings {})
+                            Some(
+                                native_home::actions::Request::LgSettings {}
+                                    | native_home::actions::Request::LgSettingsSection { .. }
+                            )
                         )
                     {
                         window.capture(&output.join("settings-return.ppm"))?;
@@ -870,11 +875,12 @@ fn dispatch_requests(
                 request,
                 native_home::actions::Request::Application { .. }
                     | native_home::actions::Request::LgSettings {}
+                    | native_home::actions::Request::LgSettingsSection { .. }
             ),
         };
         if allowed {
             if let Some(worker) = worker {
-                let settings = matches!(request, native_home::actions::Request::LgSettings {});
+                let settings = request.is_settings();
                 if settings && handoff.pending() {
                     shell.storage_notice("LG Settings is already opening");
                     continue;

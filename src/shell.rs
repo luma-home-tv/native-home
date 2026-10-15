@@ -24,7 +24,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
-use crate::model::{controls_form_for, Action, Application, Catalogue, Context, Page, Setting};
+use crate::model::{
+    controls_form_for_section, Action, Application, Catalogue, Context, Page, Setting,
+    SettingsSection,
+};
 
 const MENU_BASE: u32 = 32_000;
 const MENU_PANEL: Rect = Rect::new(1360.0, 330.0, 464.0, 598.0);
@@ -1099,7 +1102,11 @@ impl Shell {
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
                 self.surface.table.set(
-                    controls_form_for(settings, &self.snapshot.context, detail == Page::Picture),
+                    controls_form_for_section(
+                        settings,
+                        &self.snapshot.context,
+                        SettingsSection::from_page(detail),
+                    ),
                     None,
                 );
             }
@@ -2574,7 +2581,7 @@ impl Shell {
         true
     }
     pub fn focus_lg_settings(&mut self) -> bool {
-        if self.surface.control_page != Some(Page::Picture)
+        if self.surface.control_page.is_none()
             || self.surface.table.index_of_key(RowKey(1000)).is_none()
         {
             return false;

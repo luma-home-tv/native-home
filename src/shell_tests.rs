@@ -839,7 +839,7 @@ fn controls_master_detail_uses_category_identity_and_back_hierarchy() {
     assert!(s.take_requests().is_empty());
 }
 #[test]
-fn category_movement_cancels_an_armed_settings_route_and_other_domains_cannot_emit_it() {
+fn category_movement_cancels_armed_picture_and_routes_each_category_to_its_typed_section() {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(controls_fixture(), Preferences::default());
     s.open(Page::Picture);
@@ -851,16 +851,20 @@ fn category_movement_cancels_an_armed_settings_route_and_other_domains_cannot_em
     settle(&mut s, 600);
     assert_eq!(s.control_category(), Some(Page::Sound));
     assert!(s.take_requests().is_empty());
-    for index in 1..6 {
+    for (index, (page, _)) in CATEGORIES.iter().enumerate().skip(1) {
         s.focus_control_category(index);
-        assert!(!s.focus_lg_settings());
-        assert!(s.surface.table.index_of_key(RowKey(1000)).is_none());
+        assert!(s.focus_lg_settings());
         tap(&mut s);
-        assert!(s.take_requests().is_empty());
+        assert_eq!(
+            s.take_requests(),
+            vec![Action::OpenLgSettingsSection(
+                SettingsSection::from_page(*page).unwrap()
+            )]
+        );
     }
 }
 #[test]
-fn unsupported_empty_categories_keep_navigation_and_cannot_invent_controls() {
+fn empty_native_categories_offer_only_the_lg_managed_route_and_keep_navigation() {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(controls_fixture(), Preferences::default());
     s.open(Page::Controls);
@@ -869,11 +873,14 @@ fn unsupported_empty_categories_keep_navigation_and_cannot_invent_controls() {
     s.direction(Dir::Down);
     assert_eq!(focus(&s), CATEGORY_BASE + 5);
     s.direction(Dir::Right);
-    assert_eq!(focus(&s), TABLE_BASE + 1001);
+    assert_eq!(focus(&s), TABLE_BASE + 1000);
     tap(&mut s);
-    assert_eq!(focus(&s), TABLE_BASE + 1001);
+    assert_eq!(focus(&s), TABLE_BASE + 1000);
     assert_eq!(s.control_category(), Some(Page::PanelCare));
-    assert!(s.take_requests().is_empty());
+    assert_eq!(
+        s.take_requests(),
+        vec![Action::OpenLgSettingsSection(SettingsSection::PanelCare)]
+    );
     assert_eq!(s.preferences(), &before);
     s.back();
     assert_eq!(focus(&s), CATEGORY_BASE + 5);

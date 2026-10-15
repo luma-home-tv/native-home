@@ -1,6 +1,6 @@
 //! Restricted normal-app launch adapter. Every operation uses fixed services/parameters,
 //! current platform metadata and readback. It has no setting-write or generic service action.
-use crate::model::{valid_app_id, Action};
+use crate::model::{valid_app_id, Action, SettingsSection};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{sync::mpsc, thread};
@@ -10,13 +10,25 @@ pub enum Request {
     Application { id: String },
     Input { id: String },
     LgSettings {},
+    LgSettingsSection { section: SettingsSection },
 }
 impl Request {
+    pub fn settings_section(&self) -> Option<SettingsSection> {
+        match self {
+            Self::LgSettings {} => Some(SettingsSection::Picture),
+            Self::LgSettingsSection { section } => Some(*section),
+            _ => None,
+        }
+    }
+    pub fn is_settings(&self) -> bool {
+        self.settings_section().is_some()
+    }
     pub fn from_action(action: Action) -> Option<Self> {
         match action {
             Action::RequestApplication(id) => Some(Self::Application { id }),
             Action::RequestInput(id) => Some(Self::Input { id }),
             Action::OpenLgSettings => Some(Self::LgSettings {}),
+            Action::OpenLgSettingsSection(section) => Some(Self::LgSettingsSection { section }),
             Action::Inspect(_) => None,
         }
     }
@@ -103,7 +115,9 @@ fn target(
             }
             (id.clone(), true)
         }
-        Request::LgSettings {} => ("com.palm.app.settings".to_owned(), false),
+        Request::LgSettings {} | Request::LgSettingsSection { .. } => {
+            ("com.palm.app.settings".to_owned(), false)
+        }
         Request::Input { id } => {
             let app = match id.as_str() {
                 "HDMI_1" => "com.webos.app.hdmi1",
@@ -173,18 +187,24 @@ pub fn execute<P: Platform>(
         let allowed = match request {
             Request::Application { .. } => caps.apps,
             Request::Input { .. } => caps.inputs,
-            Request::LgSettings {} => caps.settings,
+            Request::LgSettings {} | Request::LgSettingsSection { .. } => caps.settings,
         };
         if !allowed {
             return Err("Operation has not been validated".into());
         }
-        if matches!(request, Request::LgSettings {}) {
+        if request.is_settings() {
             let info = get(platform, Op::SystemInfo)?;
-            if info["modelName"].as_str() != Some("OLED55G26LA")
-                || info["firmwareVersion"].as_str() != Some("23.25.55")
-                || info["sdkVersion"].as_str() != Some("9.2.2")
-            {
-                return Err("LG Settings handoff is not validated for this TV firmware".into());
+            let known_firmware = info["firmwareVersion"].as_str() == Some("23.25.55")
+                && info["sdkVersion"].as_str() == Some("9.2.2");
+            let model = info["modelName"].as_str();
+            let verified = model == Some("OLED55G26LA")
+                && request.settings_section() == Some(SettingsSection::Picture);
+            let isolated_trial = own_id == crate::identity::PROOF
+                && matches!(model, Some("OLED55G26LA" | "OLED65C26LD"));
+            if !known_firmware || !(verified || isolated_trial) {
+                return Err(
+                    "LG Settings handoff is not validated for this TV firmware/section".into(),
+                );
             }
         }
         let before = get(platform, Op::Foreground)?;
@@ -203,10 +223,20 @@ pub fn execute<P: Platform>(
             None
         };
         let id = target(&request, own_id, &apps, points.as_ref(), inputs.as_ref())?;
+        if request.is_settings() {
+            let app = apps["apps"]
+                .as_array()
+                .and_then(|rows| rows.iter().find(|app| app["id"] == id))
+                .ok_or("Missing Settings metadata")?;
+            if app["version"].as_str() != Some("4.0.1")
+                || app["uiRevision"].as_u64() != Some(2)
+                || app["main"].as_str() != Some("index.multi.html")
+            {
+                return Err("Settings UI version has not been validated".into());
+            }
+        }
         receipt.target = Some(id.clone());
-        if matches!(request, Request::LgSettings {})
-            && settings_overlay(&get(platform, Op::Windows)?)?
-        {
+        if request.is_settings() && settings_overlay(&get(platform, Op::Windows)?)? {
             return Err("LG Settings is already open".into());
         }
         // Recheck ownership after the reads; an old queued gesture cannot switch another app.
@@ -214,8 +244,13 @@ pub fn execute<P: Platform>(
         if current.get("appId").and_then(Value::as_str) != Some(own_id) {
             return Err("Foreground changed before launch".into());
         }
-        let payload = if matches!(request, Request::LgSettings {}) {
-            json!({"id":id,"params":{"target":"picture"}})
+        let payload = if request.is_settings() {
+            let section = request.settings_section().unwrap();
+            if section == SettingsSection::Network {
+                json!({"id":id,"params":{"target":"general","item":"network"}})
+            } else {
+                json!({"id":id,"params":{"target":section.target()}})
+            }
         } else {
             json!({"id":id})
         };
@@ -225,22 +260,14 @@ pub fn execute<P: Platform>(
         }
         receipt.admitted = true;
         let deadline = std::time::Instant::now()
-            + std::time::Duration::from_secs(if matches!(request, Request::LgSettings {}) {
-                15
-            } else {
-                5
-            });
-        let attempts = if matches!(request, Request::LgSettings {}) {
-            60
-        } else {
-            8
-        };
+            + std::time::Duration::from_secs(if request.is_settings() { 15 } else { 5 });
+        let attempts = if request.is_settings() { 60 } else { 8 };
         for _ in 0..attempts {
             if std::time::Instant::now() >= deadline {
                 break;
             }
             let current = get(platform, Op::Foreground)?;
-            let overlay = if matches!(request, Request::LgSettings {}) {
+            let overlay = if request.is_settings() {
                 let windows = get(platform, Op::Windows)?;
                 settings_covering_own_card(&windows, own_id)?
             } else {
@@ -438,7 +465,7 @@ mod tests {
             Self {
                 foreground: "com.example.home".into(),
                 after: "com.example.target".into(),
-                rows: json!({"returnValue":true,"apps":[{"id":"com.example.target","type":"native","visible":true},{"id":"com.palm.app.settings","type":"web","visible":false},{"id":"com.webos.app.hdmi1","type":"native","visible":false}]}),
+                rows: json!({"returnValue":true,"apps":[{"id":"com.example.target","type":"native","visible":true},{"id":"com.palm.app.settings","type":"web","visible":false,"version":"4.0.1","uiRevision":2,"main":"index.multi.html"},{"id":"com.webos.app.hdmi1","type":"native","visible":false}]}),
                 points: json!({"returnValue":true,"launchPoints":[{"id":"com.example.target"}]}),
                 inputs: json!({"returnValue":true,"devices":[{"id":"HDMI_1","appId":"com.webos.app.hdmi1","activate":true}]}),
                 launches: Vec::new(),
@@ -459,7 +486,7 @@ mod tests {
                     if self.launches.is_empty() {
                         self.initial_windows.clone()
                     } else {
-                        json!({"returnValue":true,"windows":[{"appId":"com.example.home","windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":self.window_after.as_ref().unwrap_or(&self.after),"windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}]})
+                        json!({"returnValue":true,"windows":[{"appId":self.foreground,"windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":self.window_after.as_ref().unwrap_or(&self.after),"windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"}]})
                     }
                 }
                 Op::Foreground => {
@@ -727,5 +754,99 @@ mod tests {
             json!({"kind":"Application","id":"com.example.target","params":{"url":"bad"}})
         )
         .is_err());
+    }
+    #[test]
+    fn section_payloads_are_fixed_and_unverified_trials_are_isolated() {
+        let sections = [
+            SettingsSection::Picture,
+            SettingsSection::Sound,
+            SettingsSection::Network,
+            SettingsSection::Accessibility,
+            SettingsSection::General,
+            SettingsSection::PanelCare,
+        ];
+        for model in ["OLED55G26LA", "OLED65C26LD"] {
+            for section in sections {
+                let mut p = Fake::new();
+                p.foreground = crate::identity::PROOF.into();
+                p.after = p.foreground.clone();
+                p.window_after = Some("com.palm.app.settings".into());
+                p.system_info["modelName"] = model.into();
+                let result = execute(
+                    &mut p,
+                    crate::identity::PROOF,
+                    Request::LgSettingsSection { section },
+                    Capabilities {
+                        settings: true,
+                        ..Default::default()
+                    },
+                );
+                assert!(result.admitted && result.verified);
+                let params = if section == SettingsSection::Network {
+                    json!({"target":"general","item":"network"})
+                } else {
+                    json!({"target":section.target()})
+                };
+                assert_eq!(
+                    p.launches,
+                    vec![json!({"id":"com.palm.app.settings","params":params})]
+                );
+                let mut p = Fake::new();
+                p.system_info["modelName"] = model.into();
+                let result = execute(
+                    &mut p,
+                    "com.example.home",
+                    Request::LgSettingsSection { section },
+                    Capabilities {
+                        settings: true,
+                        ..Default::default()
+                    },
+                );
+                if !(model == "OLED55G26LA" && section == SettingsSection::Picture) {
+                    assert!(!result.admitted && p.launches.is_empty());
+                }
+            }
+        }
+    }
+    #[test]
+    fn trial_capability_cannot_bypass_firmware_metadata_or_operation_admission() {
+        for changed in 0..4 {
+            let mut p = Fake::new();
+            p.foreground = crate::identity::PROOF.into();
+            let mut caps = Capabilities {
+                settings: true,
+                ..Default::default()
+            };
+            match changed {
+                0 => p.system_info["firmwareVersion"] = "unknown".into(),
+                1 => p.system_info["modelName"] = "OLED99UNKNOWN".into(),
+                2 => p.rows["apps"][1]["version"] = "4.0.2".into(),
+                _ => caps.settings = false,
+            }
+            assert!(
+                !execute(
+                    &mut p,
+                    crate::identity::PROOF,
+                    Request::LgSettingsSection {
+                        section: SettingsSection::PanelCare
+                    },
+                    caps
+                )
+                .admitted
+            );
+            assert!(p.launches.is_empty());
+        }
+    }
+    #[test]
+    fn settings_wire_type_cannot_supply_mutating_flags_arbitrary_targets_or_items() {
+        for value in [
+            json!({"kind":"LgSettingsSection","section":"PixelCleaning"}),
+            json!({"kind":"LgSettingsSection","section":"sound","target":"SoftwareUpdate"}),
+            json!({"kind":"LgSettingsSection","section":"general","flagCheckInUpdateView":true}),
+            json!({"kind":"LgSettingsSection","section":"network","item":"reset"}),
+            json!({"kind":"LgSettingsSection","section":"panel_care","path":["reset"]}),
+        ] {
+            assert!(serde_json::from_value::<Request>(value).is_err());
+        }
     }
 }
