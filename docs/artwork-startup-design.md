@@ -14,10 +14,11 @@ records the protected policy placement required by the actual writable app tree.
 
 The subsequent [0.41 nonce refusals](artwork-startup-refusal-041.md) have their
 own completed native records. The [0.42 provider](artwork-installed-provider-042.md)
-and [0.43 renderer](artwork-installed-renderer-043.md) now have source, host and
-ARM build evidence; their combined installed-resource/rendering device run is
-still pending. These later candidates do not promote the earlier startup result
-into resource or production-loader qualification.
+and [0.43 renderer](artwork-installed-renderer-043.md) have source, host and
+ARM build evidence. The later 0.43 combined installed-resource/rendering G2 run
+now passes with its own evidence and full temporary cleanup. It qualifies that
+isolated Proof path without promoting the earlier startup result or enabling the
+production Preview loader.
 
 The isolated 0.35.0 component demonstrated five bounded Root-side icon transfers,
 ordinary-process decoding and Finish/EOF in an operator-started session. It did

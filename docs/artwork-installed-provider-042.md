@@ -54,6 +54,11 @@ worker/cache and main-thread texture ownership stay in place.
 
 ## Remaining admission
 
+The later [0.43 result](artwork-installed-renderer-043.md) now supplies the combined
+isolated G2 provider/worker/renderer run with clean removal. Its binaries and
+source are distinct from this 0.42 compiled candidate. The historical admission
+requirements below explain that step; normal Preview remains unqualified.
+
 Host checks pass 387 library tests, five dashboard tests, warnings-denied Clippy
 and 35 build/provenance/framework/package tests. New controlled provider checks
 cover withheld Complete, absent Finished/EOF, full SourceKey drift, late

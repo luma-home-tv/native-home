@@ -60,10 +60,14 @@ ARM builds pass; renderer activation and a combined native provider run remain
 pending. No 0.42 package is installed and Preview remains 0.37. Do not promote the
 historical 0.41 guards into proof of the new resource/renderer path.
 
-The 0.43 isolated renderer candidate in `docs/artwork-installed-renderer-043.md`
+The 0.43 isolated renderer result in `docs/artwork-installed-renderer-043.md`
 connects that provider to Home and Apps with bounded per-fetch observations and
-joined shutdown. Host checks pass; combined native qualification and external
-cleanup remain pending. Retained Preview and production startup are unchanged.
+joined shutdown. The G2 carrier exited zero: six completed transfers/helpers,
+96 known children, three shared live targets on both pages and all 24 cleanup
+gates. Independent replay passes 28,205 assertions. Only the first helper has
+external live raw process binding; later helpers bind kernel/self/HBC records.
+Retained 0.37 and production startup are unchanged; normal-profile admission,
+all-app coverage and a backed-up retained promotion remain pending.
 
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the

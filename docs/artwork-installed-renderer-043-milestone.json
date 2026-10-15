@@ -1,0 +1,119 @@
+{
+  "boundaries": {
+    "all_apps_or_all_installation_classes_qualified": false,
+    "hard_kernel_sdk_join_or_lifetime_bound": false,
+    "independent_full_frame_pixel_oracle": false,
+    "normal_loader_qualified": false,
+    "normal_updated": false,
+    "performance_or_power_qualified": false,
+    "physical_panel_or_remote_input_qualified": false,
+    "production_startup_qualified": false
+  },
+  "cleanup": {
+    "c2_contacted": false,
+    "known_root_helpers_and_children_absent": true,
+    "lease_removed": true,
+    "lg_home_returned": true,
+    "normal_037_full_bundle_state_and_metadata_preserved": true,
+    "positive_gates": 24,
+    "private_host_agent_removed": true,
+    "proof_supported_uninstall_and_runtime_state_absent": true,
+    "protected_exact_two_files_and_directory_removed": true,
+    "reboot_required": false,
+    "selected_core_hashes": 5,
+    "selected_state_domains": 20
+  },
+  "functional_source_revision": "e7f60903349ed5ad5dbdfcb19cf6d99c3865da39",
+  "helper": {
+    "bytes": 848088,
+    "name": "artwork-broker-startup-proof",
+    "sha256": "2367730237fc5c8705e43221265c4f5d4a91f36791153a58fd17125d6393cd80"
+  },
+  "host_checks": {
+    "build_provenance_framework_package_tests": 41,
+    "clippy_warnings_denied": true,
+    "dashboard_tests": 5,
+    "library_tests": 398,
+    "new_carrier_tests": 12,
+    "new_validator_tests": 12
+  },
+  "independent_audit": {
+    "assertions_passed": 28205,
+    "audit_execution_exit": 0,
+    "auditor_sha256": "624d65585f150b57b454ca9bec469ef8c71d566f592b95b29049459c6f6fb17e",
+    "correction": "Use declared LTRB header bounds instead of XYWH; move final receipt read before assertion count. Native frames and device run unchanged.",
+    "independent_full_frame_pixel_oracle": false,
+    "original_audit_geometry_error_preserved": true,
+    "original_auditor_sha256": "242e811c10b705d0b74bde034975dbf3a9bd814c500df60ca1d48e045d630304",
+    "result_sha256": "91653a9d1dc94fcc22dc2882903d2a22f79efe09bd965a80cf5c64a58114f6f8",
+    "root_execution_exit": 0
+  },
+  "local_package": {
+    "base_resource_files": 4,
+    "bytes": 2277606,
+    "device_installed": false,
+    "name": "com.ash.nativehome.proof_0.43.0_arm.ipk",
+    "readback_files": 30,
+    "receipt_sha256": "ab738c23458294818fe9fa46788fdedd11a2269cd3697beba359db020ce483d5",
+    "root_payload_or_hooks": false,
+    "sha256": "e92fd456cad1cfeee93fa9e1558a864304c7299dcb09f686d4bfa19aa971f4f5",
+    "snapshot_and_icon_files": 23
+  },
+  "native": {
+    "clock_poll_in_normal_main_loop_exercised": false,
+    "combined_component_qualified": true,
+    "device": "G2",
+    "distinct_visible_live_targets": 3,
+    "frames": {
+      "installed-artwork-applications.ppm": {
+        "bytes": 6220817,
+        "sha256": "00f28e596f82cd08b692b4abc9960d9ba7e2bf83ff1713f3e064beb3ba3456a0"
+      },
+      "installed-artwork-home.ppm": {
+        "bytes": 6220817,
+        "sha256": "d95c6e6b294d9af27e63b07f621135a052ab6d2db9b5ff69a6841251fae993e6"
+      }
+    },
+    "known_children": 96,
+    "known_completed_helpers": 6,
+    "other_helpers_bound_by_kernel_self_and_hbc": 5,
+    "pages": [
+      {
+        "fully_visible_live_targets": 3,
+        "page": "Home"
+      },
+      {
+        "fully_visible_live_targets": 3,
+        "page": "Applications"
+      }
+    ],
+    "platform": "webOS 24",
+    "raw7_independently_bound_helpers": 1,
+    "raw_header_region_equal_between_pages": true,
+    "result_count": 6,
+    "root_terminal_exit": 0,
+    "root_visual_review_performed": true,
+    "source_class_counts": {
+      "developer_apps": 1,
+      "encrypted_apps": 5
+    },
+    "visible_targets_shared_between_pages": true,
+    "worker_joined_and_live_textures_removed": true
+  },
+  "private_evidence": {
+    "candidate_sha256": "2f72b372f140dd51da7b70b5f063c5c640b11e9700175a4a9da4d9b7df2e71be",
+    "carrier_test_sha256": "5f844d3e3b4dc7fb13ac52dd0932bc31028b051ce19c80d07ffcf9e3ab4abb9b",
+    "driver_sha256": "a942870ae5c1797472ea32b98a094978ed970a4e41b45e485d25f6d792e74956",
+    "validator_sha256": "f3d0d5b1035222a03872ec4ee48ee247ab6ab41792832a62a0dae99af0fbe9b7",
+    "validator_test_sha256": "089222cc29f51cbac888208bd47381fd9c5a7a2cee111aae2d21e983eb450211"
+  },
+  "schema": 1,
+  "selected_source_inputs": 95,
+  "status": "Completed isolated G2 installed Provider/cache/GL component with complete temporary removal and independently replayed preservation",
+  "ui": {
+    "bytes": 3749448,
+    "name": "home-preview",
+    "sha256": "59a9c9b9c3423725d7d689e57609c645b861aec0dc2e7afcdb31146fbc8cda4c"
+  },
+  "version": "0.43.0"
+}

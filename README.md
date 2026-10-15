@@ -109,6 +109,12 @@ resource access or retained loader. The [0.41 nonce-refusal results](docs/artwor
 verify two exact refusal guards and complete temporary removal on G2; they add
 no resource or production capability. G2 now
 retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
+The [0.43 installed artwork result](docs/artwork-installed-renderer-043.md) now
+connects the protected installed provider to the real worker/cache/native
+Home/Apps renderer on G2. Six transfers completed; three shared live targets
+were visible on both pages. Full temporary removal and normal 0.37 preservation
+passed, with an independent saved-evidence replay. Actual Preview-role startup,
+all-app compatibility and normal delivery remain separate gates.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from

@@ -15,9 +15,11 @@ and label pixels outside the updated fixture; the earlier missing-text reading
 was incorrect. The [startup design](artwork-startup-design.md) records the
 remaining production bootstrap boundary.
 
-The [0.43 renderer candidate](artwork-installed-renderer-043.md) now connects the
-installed provider to the live Home/Apps texture path in an isolated mode. Host
-checks pass; its combined native run and separate retained rollout remain pending.
+The [0.43 renderer result](artwork-installed-renderer-043.md) now connects the
+installed provider to the live Home/Apps texture path in an isolated mode. Its G2
+run completed six transfers and verified three shared live targets on both pages,
+joined shutdown, complete temporary removal and preserved normal 0.37 state.
+The separate retained rollout and all-app compatibility remain pending.
 
 Available icons should preserve their aspect ratio, alpha and source shape on
 black, without an added graphite plate. Only missing artwork uses the labelled

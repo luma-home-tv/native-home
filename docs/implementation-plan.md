@@ -112,9 +112,13 @@ actual worker/cache/native textures, then broader live artwork
 coverage and a separately admitted retained integration. The
 [0.42 provider candidate](artwork-installed-provider-042.md) adds the finite
 installed transfer/provider and explicit worker budget in source; host checks
-and both ARM builds pass. The [0.43 renderer candidate](artwork-installed-renderer-043.md)
+and both ARM builds pass. The [0.43 renderer result](artwork-installed-renderer-043.md)
 adds isolated Home/Apps activation, raw captures and bounded joined-fetch
-observations; host checks pass, with its combined native run still pending. The
+observations. Its G2 carrier now exits zero with six completed helpers/transfers,
+96 known children, three shared live targets on both pages, complete temporary
+removal and preserved normal 0.37 state. A 28,205-assertion saved-evidence audit
+passes; actual Preview-role startup and a backed-up retained rollout remain
+separate gates. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent

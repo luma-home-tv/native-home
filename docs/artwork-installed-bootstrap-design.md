@@ -16,8 +16,9 @@ That is the historical 0.40 boundary. The later
 [0.42 source and ARM candidate](artwork-installed-provider-042.md) adds the
 installed single-resource operation and fixed catalogue readers. The
 [0.43 renderer candidate](artwork-installed-renderer-043.md) connects it to live
-Home/Apps textures in an isolated mode; combined native qualification remains
-pending. Neither candidate enables the retained Preview loader.
+Home/Apps textures in an isolated mode. That G2 run now passes with complete
+temporary removal and preserved normal 0.37 state. Neither step enables the
+retained Preview loader; its actual identity and lifecycle need separate admission.
 
 The [0.38 status check](artwork-startup-capability-038.md) established ordinary
 native access to HBC's read-only Root-status method. It did not qualify `/exec`,
