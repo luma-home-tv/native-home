@@ -1665,6 +1665,9 @@ impl Shell {
             "Pointer speed could not be confirmed • use LG Settings"
         });
     }
+    pub fn input_launches_enabled(&self) -> bool {
+        self.input_launches_enabled
+    }
     pub fn enable_input_launches(&mut self, enabled: bool) {
         self.input_launches_enabled = enabled;
         self.rebuild(self.surface.page);

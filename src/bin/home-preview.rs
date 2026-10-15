@@ -957,6 +957,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["source_switching_enabled"] = shell.input_launches_enabled().into();
     report["pointer_proof"] = serde_json::json!(pointer_proof_receipt);
     report["pointer_ui_proof"] = serde_json::json!(pointer_ui_receipt);
     report["pointer_actions"] = serde_json::json!(pointer_actions);
