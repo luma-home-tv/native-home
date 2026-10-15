@@ -205,6 +205,7 @@ fn live_update(ms: u32) -> crate::live::Update {
     Update {
         observed_ms: ms,
         simulated: true,
+        controls: BTreeMap::new(),
         catalogue: Reading::Value(CatalogueReading {
             apps: data.applications,
             launch_ids: data.launch_ids,
@@ -308,6 +309,7 @@ fn changed_picture_context_and_failed_audio_never_reuse_fresh_control_values() {
     data.settings.insert(
         "sound".into(),
         vec![Setting {
+            constraint: None,
             id: "volume".into(),
             focus_key: 20,
             label: "Volume".into(),
@@ -331,6 +333,7 @@ fn changed_picture_context_and_failed_audio_never_reuse_fresh_control_values() {
     };
     picture.context.dynamic_range = "hdr".into();
     picture.settings = vec![Setting {
+        constraint: None,
         id: "brightness".into(),
         focus_key: 1,
         label: "Brightness".into(),
@@ -804,6 +807,7 @@ fn controls_fixture() -> Snapshot {
             domain.into(),
             keys.into_iter()
                 .map(|(id, key)| Setting {
+                    constraint: None,
                     id: id.into(),
                     focus_key: key,
                     label: id.into(),
@@ -1111,4 +1115,34 @@ fn armed_lg_home_return_is_cancelled_by_navigation_and_hidden_behind_search_or_m
     s.activate(key, false);
     assert!(s.take_requests().is_empty());
     assert!(s.menu_application().is_some());
+}
+
+#[test]
+fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_setting_write() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let data = crate::live::tests::global_raw();
+    s.apply_live(
+        &crate::live::parse(&data, "com.example.self", 100, false),
+        100,
+    );
+    for page in [Page::Accessibility, Page::General, Page::PanelCare] {
+        s.open(page);
+        let first = s.surface.table.table.sections[0].rows[0].value.clone();
+        assert_eq!(first.as_deref(), Some("On"));
+        assert!(s.surface.table.activate(0).is_none());
+        let owner = InputOwner::Entry(entry(s.page()));
+        let before = s.input.engine.current(owner);
+        s.age_live(15_101);
+        assert_eq!(
+            s.surface.table.table.sections[0].rows[0].value.as_deref(),
+            Some("Unavailable")
+        );
+        assert_eq!(s.input.engine.current(owner), before);
+        assert!(s.take_requests().is_empty());
+        s.apply_live(
+            &crate::live::parse(&data, "com.example.self", 15_200, false),
+            15_200,
+        );
+    }
 }

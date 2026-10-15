@@ -1310,6 +1310,27 @@ impl Shell {
                 ("picture", fresh.picture),
                 ("sound", fresh.sound),
                 ("network", fresh.network),
+                (
+                    "accessibility",
+                    fresh
+                        .controls
+                        .get(&crate::control_reads::Section::Accessibility)
+                        .copied(),
+                ),
+                (
+                    "general",
+                    fresh
+                        .controls
+                        .get(&crate::control_reads::Section::General)
+                        .copied(),
+                ),
+                (
+                    "panel_care",
+                    fresh
+                        .controls
+                        .get(&crate::control_reads::Section::PanelCare)
+                        .copied(),
+                ),
             ]
             .into_iter()
             .any(|(section, stamp)| {
@@ -1359,7 +1380,8 @@ impl Shell {
             Some(Page::Sound) => cstr("Sound readings • view only"),
             Some(Page::Network) => cstr("Connection status • view only"),
             Some(Page::PanelCare) => cstr("OLED protections stay managed by LG"),
-            Some(_) => cstr("Managed by LG • use the TV Settings app"),
+            Some(Page::Accessibility) => cstr("Accessibility readings • LG-managed controls"),
+            Some(_) => cstr("General readings • LG-managed controls"),
             None => cstr(""),
         };
         self.control_caption_page = page;
@@ -1449,6 +1471,19 @@ impl Shell {
         self.app_launches_enabled = enabled;
         self.rebuild(self.surface.page);
     }
+    /// Diagnostic-only readout receipt; the normal interactive package does not persist this.
+    pub fn control_readout_proof(&self) -> serde_json::Value {
+        ["picture", "accessibility", "general", "panel_care"]
+            .into_iter()
+            .map(|name| {
+                (
+                    name.to_owned(),
+                    serde_json::json!(self.snapshot.settings.get(name)),
+                )
+            })
+            .collect::<serde_json::Map<_, _>>()
+            .into()
+    }
     pub fn live_updates(&self) -> u32 {
         self.live_updates
     }
@@ -1462,9 +1497,6 @@ impl Shell {
     }
     fn reading_label(&self) -> String {
         let shown = self.surface.control_page.unwrap_or(self.surface.page);
-        if matches!(shown, Page::Accessibility | Page::General | Page::PanelCare) {
-            return "Managed by LG".into();
-        }
         let Some(fresh) = &self.live_state else {
             return "Updating TV state…".into();
         };
@@ -1474,6 +1506,18 @@ impl Shell {
             Page::Sound => fresh.sound,
             Page::Network => fresh.network,
             Page::Picture => fresh.picture,
+            Page::Accessibility => fresh
+                .controls
+                .get(&crate::control_reads::Section::Accessibility)
+                .copied(),
+            Page::General => fresh
+                .controls
+                .get(&crate::control_reads::Section::General)
+                .copied(),
+            Page::PanelCare => fresh
+                .controls
+                .get(&crate::control_reads::Section::PanelCare)
+                .copied(),
             _ => fresh.picture,
         };
         if !Freshness::current(stamp, self.live_now) {

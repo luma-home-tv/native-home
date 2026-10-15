@@ -1,5 +1,6 @@
 //! Typed, bounded read-only updates. Raw service replies do not become fresh state merely
 //! because a call was admitted. Independent domains can fail without inventing replacement values.
+use crate::control_reads::{self, Section as ControlSection};
 use crate::{
     model::{valid_app_id, Application, Context, Setting},
     shell::{Input, Snapshot},
@@ -35,6 +36,7 @@ pub struct Update {
     pub picture: Reading<PictureReading>,
     pub sound: Reading<Vec<(String, String)>>,
     pub network: Reading<Vec<(String, String)>>,
+    pub controls: BTreeMap<ControlSection, Reading<Vec<Setting>>>,
 }
 fn checked<'a>(replies: &'a Value, name: &str) -> Result<&'a Value, String> {
     let value = replies
@@ -78,6 +80,21 @@ fn reading<T>(result: Result<T, String>) -> Reading<T> {
         Ok(value) => Reading::Value(value),
         Err(error) => Reading::Failed(error),
     }
+}
+fn unavailable(specs: &[control_reads::Spec], context: &Context) -> Vec<Setting> {
+    specs
+        .iter()
+        .map(|s| Setting {
+            constraint: None,
+            id: s.id.into(),
+            label: s.label.into(),
+            focus_key: s.key,
+            value: "Unavailable".into(),
+            context: context.clone(),
+            protected: true,
+            available: false,
+        })
+        .collect()
 }
 pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Update {
     let replies = &raw["replies"];
@@ -211,6 +228,7 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
                 value = number.to_string();
             }
             settings.push(Setting {
+                constraint: None,
                 id: id.into(),
                 focus_key: i as u32 + 1,
                 label: label.into(),
@@ -219,6 +237,21 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
                 protected: false,
                 available: true,
             });
+        }
+        if replies.get("picture_extra_values").is_some() {
+            let after = checked(replies, "picture_after")?;
+            if after["dimension"] != data["dimension"] || after["settings"] != data["settings"] {
+                return Err("Picture changed during control reads".into());
+            }
+            let extra = control_reads::read(
+                replies,
+                "picture_extra",
+                "picture",
+                control_reads::PICTURE,
+                Some(&context),
+            )
+            .unwrap_or_else(|_| unavailable(control_reads::PICTURE, &context));
+            settings.extend(extra);
         }
         Ok(PictureReading { context, settings })
     })());
@@ -293,7 +326,59 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         }
         Ok(values)
     })());
+    let global = Context {
+        input: "global".into(),
+        dynamic_range: "global".into(),
+        picture_mode: "global".into(),
+    };
+    let option = control_reads::read(
+        replies,
+        "general_option",
+        "option",
+        control_reads::GENERAL_OPTION,
+        None,
+    );
+    let home = control_reads::read(
+        replies,
+        "general_home",
+        "general",
+        control_reads::GENERAL_HOME,
+        None,
+    );
+    let general = match (option, home) {
+        (Err(a), Err(_)) => Reading::Failed(a),
+        (a, b) => {
+            let mut rows =
+                a.unwrap_or_else(|_| unavailable(control_reads::GENERAL_OPTION, &global));
+            rows.extend(b.unwrap_or_else(|_| unavailable(control_reads::GENERAL_HOME, &global)));
+            Reading::Value(rows)
+        }
+    };
+    let controls = BTreeMap::from([
+        (
+            ControlSection::Accessibility,
+            reading(control_reads::read(
+                replies,
+                "accessibility",
+                "option",
+                control_reads::ACCESSIBILITY,
+                None,
+            )),
+        ),
+        (ControlSection::General, general),
+        (
+            ControlSection::PanelCare,
+            reading(control_reads::read(
+                replies,
+                "panel_care",
+                "picture",
+                control_reads::PANEL_CARE,
+                None,
+            )),
+        ),
+    ]);
     Update {
+        controls,
         observed_ms,
         simulated,
         catalogue,
@@ -311,6 +396,7 @@ pub struct Freshness {
     pub sound: Option<u32>,
     pub network: Option<u32>,
     pub simulated: bool,
+    pub controls: BTreeMap<ControlSection, u32>,
 }
 impl Freshness {
     pub fn current(stamp: Option<u32>, now: u32) -> bool {
@@ -385,10 +471,11 @@ impl Worker {
                     if reader.is_none() {
                         reader = ls2::register().ok();
                     }
+                    let observed_ms = origin.elapsed().as_millis() as u32;
                     let raw = reader
                         .as_ref()
                         .map_or_else(|| json!({}), crate::native_probe::read);
-                    parse(&raw, &own_id, origin.elapsed().as_millis() as u32, false)
+                    parse(&raw, &own_id, observed_ms, false)
                 }
             },
             Duration::from_secs(2),
@@ -467,6 +554,7 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
                     .find(|(key, _)| key == id)
                     .map(|(_, v)| v.clone());
                 Setting {
+                    constraint: None,
                     id: id.into(),
                     focus_key: 20 + i as u32,
                     label: label.into(),
@@ -500,6 +588,7 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
                     .find(|(key, _)| key == id)
                     .map(|(_, v)| v.clone());
                 Setting {
+                    constraint: None,
                     id: id.into(),
                     focus_key: 60 + i as u32,
                     label: label.into(),
@@ -515,6 +604,26 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
         }
         Reading::Failed(_) => fresh.network = None,
     }
+    for section in [
+        ControlSection::Accessibility,
+        ControlSection::General,
+        ControlSection::PanelCare,
+    ] {
+        match update.controls.get(&section) {
+            Some(Reading::Value(rows)) => {
+                let mut rows = rows.clone();
+                for row in &mut rows {
+                    row.context = snapshot.context.clone();
+                    row.protected = true;
+                }
+                snapshot.settings.insert(section.name().into(), rows);
+                fresh.controls.insert(section, update.observed_ms);
+            }
+            _ => {
+                fresh.controls.remove(&section);
+            }
+        }
+    }
     expire(snapshot, fresh, update.observed_ms);
 }
 pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
@@ -527,6 +636,18 @@ pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
         ("picture", fresh.picture),
         ("sound", fresh.sound),
         ("network", fresh.network),
+        (
+            "accessibility",
+            fresh.controls.get(&ControlSection::Accessibility).copied(),
+        ),
+        (
+            "general",
+            fresh.controls.get(&ControlSection::General).copied(),
+        ),
+        (
+            "panel_care",
+            fresh.controls.get(&ControlSection::PanelCare).copied(),
+        ),
     ] {
         if !Freshness::current(stamp, now) {
             if let Some(rows) = snapshot.settings.get_mut(section) {
@@ -539,7 +660,7 @@ pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use serde_json::json;
     pub(crate) fn raw() -> Value {
@@ -550,6 +671,85 @@ mod tests {
             "inputs":{"returnValue":true,"devices":devices},
             "picture":{"returnValue":true,"dimension":{"input":"default","dynamicRange":"sdr","pictureMode":"game"},"settings":{"pictureMode":"game","backlight":90,"contrast":85,"brightness":50}},
             "audio":{"returnValue":false,"errorText":"Unavailable"}}})
+    }
+    pub(crate) fn global_raw() -> Value {
+        let mut data = raw();
+        for (name, category, specs) in [
+            ("accessibility", "option", control_reads::ACCESSIBILITY),
+            ("general_option", "option", control_reads::GENERAL_OPTION),
+            ("general_home", "general", control_reads::GENERAL_HOME),
+            ("panel_care", "picture", control_reads::PANEL_CARE),
+        ] {
+            let mut values = serde_json::Map::new();
+            let mut results = Vec::new();
+            for spec in specs {
+                values.insert(spec.id.into(), json!("on"));
+                results.push(json!({"key":spec.id,"category":category,"dimension":[],"vtype":"ArrayExt","ui":{"visible":true,"active":true},"values":{"arrayExt":[{"value":"on","visible":true,"active":true},{"value":"off","visible":true,"active":true}]}}));
+            }
+            data["replies"][format!("{name}_values")] =
+                json!({"returnValue":true,"category":category,"settings":values});
+            data["replies"][format!("{name}_desc")] = json!({"returnValue":true,"results":results});
+        }
+        data
+    }
+    #[test]
+    fn global_controls_fail_independently_expire_and_keep_protected_focus_identity() {
+        let mut data = global_raw();
+        let first = parse(&data, "com.example.self", 100, false);
+        assert!(matches!(
+            first.controls[&ControlSection::Accessibility],
+            Reading::Value(_)
+        ));
+        let mut snapshot = Snapshot {
+            captured_at: "fixture".into(),
+            applications: Vec::new(),
+            launch_ids: BTreeSet::new(),
+            inputs: Vec::new(),
+            context: Context {
+                input: "previous".into(),
+                dynamic_range: "sdr".into(),
+                picture_mode: "cinema".into(),
+            },
+            settings: BTreeMap::new(),
+        };
+        let mut fresh = Freshness::default();
+        merge(&mut snapshot, &first, &mut fresh);
+        assert_eq!(snapshot.settings["general"].len(), 5);
+        assert!(snapshot.settings["panel_care"]
+            .iter()
+            .all(|r| r.protected && r.available));
+        data["replies"]["picture"]["returnValue"] = false.into();
+        data["replies"]["accessibility_desc"]["returnValue"] = false.into();
+        data["replies"]["general_option_values"]["returnValue"] = false.into();
+        merge(
+            &mut snapshot,
+            &parse(&data, "com.example.self", 200, false),
+            &mut fresh,
+        );
+        assert!(snapshot.settings["accessibility"]
+            .iter()
+            .all(|r| !r.available));
+        assert!(snapshot.settings["general"][..3]
+            .iter()
+            .all(|r| !r.available));
+        assert!(snapshot.settings["general"][3..]
+            .iter()
+            .all(|r| r.available && r.still_current(&snapshot.context)));
+        assert!(snapshot.settings["panel_care"].iter().all(|r| r.available));
+        expire(&mut snapshot, &fresh, 15_201);
+        assert!(snapshot.settings["panel_care"].iter().all(|r| !r.available));
+        assert_eq!(snapshot.settings["panel_care"][0].focus_key, 180);
+    }
+    #[test]
+    fn picture_profile_change_during_expanded_read_withdraws_the_whole_context() {
+        let mut data = raw();
+        data["replies"]["picture_extra_values"] = json!({"returnValue":true});
+        data["replies"]["picture_after"] = data["replies"]["picture"].clone();
+        data["replies"]["picture_after"]["dimension"]["pictureMode"] = "cinema".into();
+        assert!(matches!(
+            parse(&data, "com.example.self", 10, false).picture,
+            Reading::Failed(_)
+        ));
     }
     #[test]
     fn provider_requires_success_and_shape_and_never_promotes_own_app_or_stubs() {

@@ -144,14 +144,17 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
         ),
     ];
     let mut replies = serde_json::Map::new();
-    for (name, uri, payload) in operations {
+    for (name, uri, payload) in operations.into_iter().map(|(name,uri,payload)|(name.to_owned(),uri,payload))
+        .chain(crate::control_reads::operations())
+        .chain(std::iter::once(("picture_after".into(),"luna://com.webos.service.settings/getSystemSettings",json!({"category":"picture","keys":["pictureMode","backlight","contrast","brightness"]})))) {
         let response = bus.call(
             uri,
             &payload.to_string(),
             std::time::Duration::from_millis(700),
         );
         let result = match response {
-            Ok(raw) => serde_json::from_str(&raw).unwrap_or_else(|_| json!({"parse_error":true})),
+            Ok(raw) if raw.len() <= 2 * 1024 * 1024 => serde_json::from_str(&raw).unwrap_or_else(|_| json!({"parse_error":true})),
+            Ok(_) => json!({"oversize":true}),
             Err(ls2::Fail::Timeout) => json!({"timeout":true}),
             Err(ls2::Fail::Setup {
                 stage,

@@ -25,3 +25,5 @@ pub mod identity;
 pub mod clock;
 
 pub mod performance;
+
+pub mod control_reads;

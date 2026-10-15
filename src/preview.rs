@@ -48,6 +48,7 @@ impl ControlPreview {
             ("contrast", "Contrast", "85"),
             ("brightness", "Black level", "50"),
         ].into_iter().enumerate().map(|(index, (id, label, value))| Setting {
+                    constraint: None,
             id: id.to_owned(), focus_key: index as u32 + 1, label: label.to_owned(), value: value.to_owned(),
             context: ctx.clone(), protected: false, available: true,
         }).collect::<Vec<_>>();

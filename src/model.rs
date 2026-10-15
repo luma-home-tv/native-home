@@ -86,10 +86,20 @@ impl SettingsSection {
     pub fn target(self) -> &'static str { match self {Self::Picture => "picture", Self::Sound => "sound", Self::Network | Self::General => "general", Self::Accessibility => "accessibility", Self::PanelCare => "OledCare"} }
 }
 
+/// Validated readout bounds/options, never a write capability.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub enum ControlConstraint {
+    Range { minimum: i64, maximum: i64, step: i64, active: bool },
+    Choices { values: Vec<String>, active: bool },
+}
+
 /// No setting-write action exists in this pilot. A future broker cannot acquire write authority
 /// merely because a settings descriptor was returned successfully.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Setting {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub constraint: Option<ControlConstraint>,
     pub id: String,
     /// A registry-assigned identity key, independent of row order or current value.
     pub focus_key: u32,
@@ -125,6 +135,31 @@ pub(crate) fn display_value(setting: &Setting) -> &str {
         ("soundOutput", "external_optical") => "Optical",
         ("soundOutput", "external_arc") => "HDMI ARC",
         ("soundOutput", "tv_speaker") => "TV speaker",
+        (_, "on") => "On",
+        (_, "off") => "Off",
+        ("pointerSpeed", "normal") => "Normal",
+        ("pointerSpeed", "slow") => "Slow",
+        ("pointerSpeed", "fast") => "Fast",
+        ("pointerSize", "small") => "Small",
+        ("pointerSize", "medium") => "Medium",
+        ("pointerSize", "large") => "Large",
+        ("colorGamut", "auto") => "Auto",
+        ("colorGamut", "native") => "Native",
+        ("colorGamut", "dynamic") => "Dynamic",
+        ("colorGamut", "adobeRGB") => "Adobe RGB",
+        ("gamma", "low") => "Low",
+        ("gamma", "medium") => "Medium",
+        ("gamma", "high1") => "High 1",
+        ("gamma", "high2") => "High 2",
+        ("dynamicContrast" | "peakBrightness", "low") => "Low",
+        ("dynamicContrast" | "peakBrightness", "medium") => "Medium",
+        ("dynamicContrast" | "peakBrightness", "high") => "High",
+        ("logoLuminanceAdjust", "light") => "Light",
+        ("logoLuminanceAdjust", "strong") => "Strong",
+        ("energySaving", "auto") => "Auto",
+        ("energySaving", "min") => "Minimum",
+        ("energySaving", "med") => "Medium",
+        ("energySaving", "max") => "Maximum",
         ("muteStatus", "false" | "False") => "Off",
         ("muteStatus", "true" | "True") => "On",
         ("pictureMode", "game") => "Game",
@@ -150,10 +185,14 @@ pub fn controls_form_for_section(settings: &[Setting], current: &Context, sectio
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
         let unavailable = !setting.available || !setting.still_current(current);
-        let detail = if setting.protected { Message::ManagedByLg.text() }
-            else if !setting.available { "Reading unavailable" }
-            else if unavailable { Message::UnavailableContext.text() }
-            else { "" };
+        let detail = if !setting.available { "Reading unavailable".into() }
+            else if unavailable { Message::UnavailableContext.text().into() }
+            else if setting.protected { match &setting.constraint {
+                Some(ControlConstraint::Range {minimum, maximum, active, ..}) if *active => format!("Range {minimum} to {maximum} • LG-managed"),
+                Some(ControlConstraint::Range {active: false, ..} | ControlConstraint::Choices {active: false, ..}) => "Inactive in this mode • LG-managed".into(),
+                _ => Message::ManagedByLg.text().into()
+            } }
+            else { String::new() };
         let value = if unavailable { "Unavailable" } else { display_value(setting) };
         section = section.item_keyed(setting.id.clone(), RowKey(setting.focus_key), RowKind::Button,
             Action::Inspect(setting.id.clone()), Row::new(&setting.label).detail(detail).value(value).server_value())
@@ -180,7 +219,7 @@ mod tests {
         Context { input: "HDMI_1".into(), dynamic_range: "sdr".into(), picture_mode: "cinema".into() }
     }
     fn setting(id: &str, protected: bool) -> Setting {
-        Setting { id: id.into(), focus_key: if protected { 1 } else { 2 }, label: id.into(), value: "50".into(), context: context(), protected, available: true }
+        Setting { constraint: None, id: id.into(), focus_key: if protected { 1 } else { 2 }, label: id.into(), value: "50".into(), context: context(), protected, available: true }
     }
 
     #[test]
