@@ -64,7 +64,22 @@ group returned `EPERM`; the implementation correctly declines that cleanup
 result. Host tests preserve this observed refusal. Positive Linux cleanup and
 native execution remain device qualifications, not conclusions from macOS tests.
 
-Final ARM artifacts, package admission, native helper context reads, the
-cross-jail Identify exchange and full isolated removal/state checks are pending.
+Both ARM release builds pass from source
+`b1bebb59f5e55338fbe142e927ad544a319b4998`, with matching snapshots of 74 selected
+inputs and the same verified framework. The existing ARM target-feature warning
+remains. Dashboard ELF:
+`eb6785cc9ab4d711cc18af2e225ab7a89e5758ad5e10a0c8b7df69ecc88913fa`;
+helper ELF:
+`d63195053b74a6b17e7850cf9b05810fcaac33bd1df5dd6ccc11ccbf45efd4af`.
+Ten actual local package cases pass, including marker separation and refusal to
+package the helper as an application. Fourteen build/provenance guard and
+13 framework-verifier tests pass. The isolated driver adds 22 child/context
+checks to 67 unchanged legacy checks; the coordinator independently reran all 89.
+Its actual frozen-candidate admission prefix passed with all processes except
+two pinned read-only framework verifiers forbidden and no agent/device lane
+created. Those are local admission checks, not a TV run.
+
+Native helper context reads, the cross-jail Identify exchange and full isolated
+removal/state checks are pending.
 No icon operation, production startup or normal-preview update is part of this
 candidate. Live artwork worker/cache integration follows resource qualification.
