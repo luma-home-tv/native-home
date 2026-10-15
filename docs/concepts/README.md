@@ -66,8 +66,11 @@ compares implementation with these concepts. Version 0.11.0 adds a native
 management menu and persisted favourite ordering. Version 0.12.0 brings the
 native six-category Controls/detail composition closer to this render. Validated
 native choice/range controls and further visual polish remain. Version 0.13.0
-verifies all six LG-managed section entries and return on both TVs. Source switching, native setting writes,
-physical remote/pointer coverage and dashboard performance remain unverified.
+verifies all six LG-managed section entries and return on both TVs. Later records track verified G2 HDMI selection and native pointer-speed edits.
+Version 0.20.0 adds the Home View all routes, bounded drawer/menu context and
+opt-in whole-tile grid admission; the [navigation record](../home-navigation-milestone.json)
+scopes native captures and motion/settling evidence. Physical input, live HDMI
+video/format and sustained performance remain incomplete.
 The render watermark stays visible in every exported concept so these images
 cannot be mistaken for that device evidence.
 

@@ -66,7 +66,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.19.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.20.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -107,6 +107,12 @@ dashboard ownership. The C2 remains gated: its idle current-source baseline was
 not exactly reproduced, although its recorded last physical preference, Home,
 checked persistent settings and retained preview were recovered. HDMI video, HDR
 and format remain unverified.
+
+The [Home navigation milestone](docs/home-navigation-milestone.json) adds native
+View all apps/inputs shortcuts with Back returning to the invoking button. The
+drawer reveals the whole focused caption, keeps its menu context visible and
+clamps scrolling at the content end. An attributed opt-in PlxNative grid policy
+omits incomplete unfocused tiles from both painting and pointer targets.
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching is enabled on the verified G2 and gated on the C2;

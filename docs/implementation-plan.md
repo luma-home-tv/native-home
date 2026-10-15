@@ -12,8 +12,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.19.0 is installed on both devices; the
-[HDMI selection record](hdmi-selection-milestone.json) is the latest scoped proof;
+current native interface. Version 0.20.0 is installed on both devices; the
+[Home navigation record](home-navigation-milestone.json) is the latest scoped proof;
+the [HDMI selection record](hdmi-selection-milestone.json) covers source control and its C2 boundary;
 the [pointer-control record](pointer-control-milestone.json) covers the first native editable setting;
 the [expanded control-readout record](control-readouts-milestone.json) covers the twenty added readings;
 the [LG Home return record](lg-home-return-milestone.json) covers the explicit rail shortcut;
@@ -42,7 +43,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 
 | Area | Intended behaviour | Current evidence |
 | --- | --- | --- |
-| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves and an explicit LG Home return verified on both TVs; view-all shortcuts remain |
+| Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves, explicit LG Home return and native View all shortcuts; Back restores the invoking local route |
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; all four G2 ports now have independent selection/restoration trials and production selection in 0.19.0; C2 exact idle restoration and live format/playback remain unverified, so C2 selection stays gated |
@@ -93,7 +94,10 @@ request. Physical input and full text/IME coverage remain to verify.
    local helper only for operations that actually need privilege, with caller,
    executable and session validation and a fixed operation allowlist.
 4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source
-   status on every tile. Clock/status and app ordering are now implemented. Expand the verified choice pattern to appropriate controls, add native range
+   status on every tile. Clock/status, app ordering and View all shortcuts are now implemented. The
+   bounded drawer uses shared external grid geometry/springs, whole-tile
+   admission and content-end clamping; native motion/settling proof is scoped in
+   the current milestone. Expand the verified choice pattern to appropriate controls, add native range
    widgets only after per-operation tests, and complete broader read coverage. Verify physical
    remote, pointer, wheel and Back behaviour on both TVs.
    Measure the actual dashboard's frame pacing, input response, memory and idle

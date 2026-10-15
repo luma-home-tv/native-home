@@ -1,0 +1,494 @@
+{
+  "package_version": "0.20.0",
+  "client_tests": {
+    "passed": 104,
+    "failed": 0,
+    "ignored": 0
+  },
+  "framework_ui_tests": {
+    "passed": 1017,
+    "failed": 0,
+    "ignored": 0
+  },
+  "framework_shipping_check": "plx_ui --lib --no-default-features passed",
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "change": [
+    "Native Home View all apps and View all inputs actions composed with PlxNative TabPill/focus/hit handling",
+    "View all apps clears local hidden search/filter state and opens the complete installed-app drawer",
+    "Back closes keyboard/menu first, then restores the invoking Home shortcut; these actions never emit a TV request or change favourites",
+    "Drawer uses PlxNative external Grid placement, shared Spring and actual bounded viewport to reveal the whole focused caption",
+    "Menu context remains visible across three/four-column layout changes; document-end clamp prevents empty overscroll on menu return",
+    "Opt-in generic whole-tile Grid admission is shared by draw and hit stops, uses the same screen conversion under translated painters and preserves existing default behaviour"
+  ],
+  "framework": {
+    "upstream": "PlxNative by Gleb Linnik and contributors",
+    "revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+    "integration_patch_sha256": "b57965221228d6df410729f8831107810ddf33c07cd9cec894cc8126df8ea739",
+    "upstream_candidate": "Whole-tile bounded-grid admission; no upstream PR is claimed",
+    "regression_scope": "Initial intersection-admission red test was a simulated legacy predicate; translated-painter and app menu-return regressions were observed failing against their preceding implementations. Receipts are in docs/verification/grid-viewport-red.txt."
+  },
+  "host": {
+    "synthetic_apps": 70,
+    "navigation_and_geometry": true,
+    "renderer": "Apple M2 Max",
+    "scope": "Layout/focus evidence only; not TV text rasterization, GPU or panel timing"
+  },
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6583,
+      "navigation_proof": {
+        "back_restores_shortcut": true,
+        "favourites_unchanged": true,
+        "menu_restores_app": true,
+        "tv_requests": 0,
+        "view_all_apps": true,
+        "view_all_inputs": true
+      },
+      "capture_layouts": [
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": null,
+            "drawer_scroll": 1.0856032371520996,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Home",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 0
+          },
+          "name": "home-view-all"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                469.6499938964844,
+                329.6499938964844,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 0.0,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-from-home"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": null,
+            "drawer_scroll": 0.0,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Inputs",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 2
+          },
+          "name": "inputs-local-navigation"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                469.6499938964844,
+                614.1158447265625,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 1335.5341796875,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-last"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                884.0,
+                652.0
+              ],
+              "rect": [
+                480.0,
+                634.0013427734375,
+                230.0,
+                322.0
+              ]
+            },
+            "drawer_scroll": 1865.9986572265625,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-menu-last"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                469.6499938964844,
+                612.9766845703125,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 1336.67333984375,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-last-return"
+        }
+      ],
+      "native_home_menu_return_frames_inspected": true,
+      "retained_files_byte_identical": true,
+      "cleanup": {
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_update": {
+        "version": "0.20.0",
+        "ordinary_uid": 5724,
+        "favourites_loaded": true,
+        "state": {
+          "last_input_cache_unchanged": true,
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false,
+        "source_switching_enabled": true
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6432,
+      "navigation_proof": {
+        "back_restores_shortcut": true,
+        "favourites_unchanged": true,
+        "menu_restores_app": true,
+        "tv_requests": 0,
+        "view_all_apps": true,
+        "view_all_inputs": true
+      },
+      "capture_layouts": [
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": null,
+            "drawer_scroll": 1.0856032371520996,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Home",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 0
+          },
+          "name": "home-view-all"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                469.6499938964844,
+                329.6499938964844,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 0.0,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-from-home"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": null,
+            "drawer_scroll": 0.0,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Inputs",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 2
+          },
+          "name": "inputs-local-navigation"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                1025.6500244140625,
+                614.4456787109375,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 1875.204345703125,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-last"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                884.0,
+                652.0
+              ],
+              "rect": [
+                758.0,
+                634.002197265625,
+                230.0,
+                322.0
+              ]
+            },
+            "drawer_scroll": 2675.997802734375,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-menu-last"
+        },
+        {
+          "layout": {
+            "branding_loaded": true,
+            "category_rows": 0,
+            "control_category": null,
+            "detail_scroll": 0.0,
+            "drawer_anchor": {
+              "clip": [
+                438.0,
+                312.0,
+                1386.0,
+                652.0
+              ],
+              "rect": [
+                1025.6500244140625,
+                612.81201171875,
+                250.70001220703125,
+                342.70001220703125
+              ]
+            },
+            "drawer_scroll": 1876.8380126953125,
+            "logical_clip_clear": true,
+            "navigation_icons_loaded": true,
+            "page": "Applications",
+            "rail_focused": false,
+            "rail_rows": 5,
+            "rail_scroll": 0.0,
+            "rail_selection": 1
+          },
+          "name": "apps-last-return"
+        }
+      ],
+      "native_home_menu_return_frames_inspected": true,
+      "retained_files_byte_identical": true,
+      "cleanup": {
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_update": {
+        "version": "0.20.0",
+        "ordinary_uid": 6249,
+        "favourites_loaded": true,
+        "state": {
+          "last_input_cache_unchanged": true,
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false,
+        "source_switching_enabled": false
+      }
+    }
+  },
+  "limits": [
+    "Scripted native focus/press and injected SDL keys are not full physical remote/pointer/wheel coverage",
+    "Long focused labels use the attributed framework marquee; full text/IME input and remaining typography/empty-state polish are incomplete",
+    "G2 source selection scope and C2 source gate from 0.19.0 remain unchanged",
+    "Native numeric sliders, broader verified edits, live HDMI video/format, reboot and sustained stress/memory checks remain incomplete"
+  ],
+  "privacy": "Household inventories/icons, app IDs, favourites, raw settings, native captures, device addresses and detailed receipts remain private.",
+  "code_revision": "010cdb90a1b724b49d909d67b012729b0f48daba",
+  "binary_sha256": "ca1054b00d02f8a2dbdc3a52a224b3023619507483e041b018438f80f2092cf0",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "g2_motion": {
+    "result": {
+      "native_sdl_shortcut_opened": true,
+      "scroll_motion_frames": 45,
+      "settled_window_seconds": 10.789741290995153,
+      "settled_frames": 10,
+      "scope": "App swap submission counts with same live workers/keepalive, not physical FPS, GPU completion or panel timing"
+    },
+    "cleanup": {
+      "source_unchanged": true,
+      "last_input_unchanged": true,
+      "paths_mounts_absent": true,
+      "state_absent": true,
+      "catalogue_absent": true,
+      "launchpoint_absent": true,
+      "retained_unchanged": true,
+      "core_unchanged": true,
+      "picture_unchanged": true,
+      "audio_unchanged": true,
+      "home_verified": true,
+      "previous_restored": true
+    },
+    "scope": "Ordinary isolated interactive app; native networkinput -> SDL -> shared focus, bounded app submission counts, no captures or viewing-account actions during workload. Not physical remote/IR, GPU completion or panel timing."
+  }
+}

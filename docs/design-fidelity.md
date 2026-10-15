@@ -6,15 +6,15 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.19.0 moves the running interface closer to those concepts. This is a
+Version 0.20.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
 | --- | --- | --- |
 | Identity | Luma icon and wordmark in the persistent header; own SVG rail icons cached as native textures. | Refine secondary page/status text as the information architecture settles. |
 | Canvas and focus | OLED-black canvas, graphite surfaces, white card outline, separate quiet current-route fill. | Measure contrast and focus animation with physical remote/pointer use. |
-| Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail. | View-all shortcuts and long-title/empty-state polish. |
-| Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs. | Improve partially visible grid rows, long text and full text input; validate physical hold/pointer use. |
+| Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail; native View all apps/inputs with shortcut-origin Back. | Long-title and empty-state polish; source artwork. |
+| Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Full text/IME input, further typography polish and physical hold/pointer/wheel proof. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs; all four G2 source selections have independent readback/restoration proof and are enabled. | Live video/format, exact C2 idle-state restoration and C2 production switching; source artwork. |
 | Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Native numeric sliders, broader verified edits/setting coverage and physical input proof. |
@@ -70,6 +70,12 @@ trial selected the requested port, but the default tuner return selected DTV
 instead of the original idle ATV readout. The recorded last physical preference
 and LG Home were recovered with the checked persistent state preserved; exact
 idle-state reproduction is unproven. No service reset is part of this change.
+
+The [Home navigation record](home-navigation-milestone.json) adds the concept's
+View all actions and a bounded native drawer viewport. Focused captions remain
+inside the panel, menu context stays visible, and closing the menu clamps to the
+content end. Whole-tile admission is an opt-in attributed framework change, shared
+by paint and pointer stops; it is a candidate for upstream contribution.
 
 Next design work should complete source/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on

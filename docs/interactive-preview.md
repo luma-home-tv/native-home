@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.19.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.20.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -12,8 +12,21 @@ It cannot be activated through a stale hit behind an app menu or search keyboard
 The [return record](lg-home-return-milestone.json) describes the isolated native
 proof and state checks. The remote's Home button keeps its original behaviour.
 
-Directions move between the rail, favourites and app
-drawer. OK opens a validated app. Holding OK on Home adds/removes a favourite;
+Home has **View all apps** and **View all inputs** buttons beside the shelf
+headings. Up from favourites reaches View all apps; Up from the source shelf
+reaches View all inputs. View all apps opens the complete drawer and clears any
+previous local search/filter. Back closes a keyboard or app menu first, then
+returns to the invoking Home button. These routes never select a TV source or
+open a household app by themselves.
+
+The drawer keeps the focused card/caption inside its actual viewport. Its menu
+preserves the selected app as context across three/four-column layouts, and Back
+returns to that app. Whole-tile clipping keeps partial unfocused cards out of both
+the picture and pointer targets. Long focused labels retain the shared marquee.
+The [navigation record](home-navigation-milestone.json) separates host, native
+layout and bounded motion/settling evidence.
+
+Directions move between the rail, favourites and app drawer. OK opens a validated app. Holding OK on Home adds/removes a favourite;
 in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
 or Open app. Back closes the panel and restores the app; an app removed from
 the filtered view lands on a valid neighbour. The panel traps focus and pointer
@@ -124,7 +137,7 @@ and the selected device's private snapshot/icons through the documented
 distribute a household package as a generic release.
 
 Normal interactive packages have no capture markers or scripted navigation,
-hold, launch, capability or pointer-write proof actions. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
+hold, launch, capability, viewport or pointer-write proof actions. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
 explicit development captures of initial Home, idle black and wake. It must be
 used only in a scoped device test and removed afterward. Without interactive
 mode, the existing diagnostic package keeps its captures and 30-second lifetime.
