@@ -51,6 +51,7 @@ pub mod app_artwork;
 
 pub mod artwork_cache;
 pub mod artwork_gl;
+pub mod artwork_installed_proof;
 pub mod artwork_installed_provider;
 pub mod artwork_live_proof;
 pub mod artwork_probe;

@@ -112,8 +112,9 @@ actual worker/cache/native textures, then broader live artwork
 coverage and a separately admitted retained integration. The
 [0.42 provider candidate](artwork-installed-provider-042.md) adds the finite
 installed transfer/provider and explicit worker budget in source; host checks
-and both ARM builds pass. Its ordinary renderer activation/device qualification
-remain pending. The
+and both ARM builds pass. The [0.43 renderer candidate](artwork-installed-renderer-043.md)
+adds isolated Home/Apps activation, raw captures and bounded joined-fetch
+observations; host checks pass, with its combined native run still pending. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent

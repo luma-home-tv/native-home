@@ -1,4 +1,4 @@
-//! Controlled host receipts/packets only. No HBC, filesystem reader or device.
+//! Controlled host receipts/packets and own temporary observation files only. No HBC or device.
 use super::*;
 use crate::{
     app_artwork::{self, FileIdentity},
@@ -232,6 +232,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
         InstalledProvider {
             marker,
             quarantined: false,
+            observation: None,
         },
         source,
         exchange,
@@ -470,4 +471,237 @@ fn refused_record_cannot_also_claim_a_completed_transfer() {
     )
     .is_err());
     assert!(provider.quarantined);
+}
+
+struct ObservationDirectory(std::path::PathBuf);
+impl ObservationDirectory {
+    fn new() -> Self {
+        use std::os::unix::fs::DirBuilderExt;
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let path = std::env::temp_dir().join(format!(
+            "luma-provider-observation-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&path)
+            .unwrap();
+        Self(path)
+    }
+    fn observer(&self) -> ProofObservation {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = std::fs::symlink_metadata(&self.0).unwrap();
+        ProofObservation::open_exact(self.0.clone(), &self.0, metadata.uid(), metadata.gid())
+            .unwrap()
+    }
+}
+impl Drop for ObservationDirectory {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+#[test]
+fn proof_observation_names_are_fixed_and_bounded() {
+    assert!(ProofObservation::filename(0, true).is_err());
+    assert!(ProofObservation::filename(17, false).is_err());
+    assert_eq!(
+        ProofObservation::filename(1, true).unwrap(),
+        "installed-artwork-1-connected.json"
+    );
+    assert_eq!(
+        ProofObservation::filename(16, false).unwrap(),
+        "installed-artwork-16-result.json"
+    );
+    let directory = ObservationDirectory::new();
+    let observer = directory.observer();
+    assert!(observer.write("../arbitrary.json", &json!({})).is_err());
+    assert!(observer
+        .write("installed-artwork-17-result.json", &json!({}))
+        .is_err());
+    assert_eq!(std::fs::read_dir(&directory.0).unwrap().count(), 0);
+}
+#[test]
+fn proof_observation_directory_requires_exact_path_owner_mode_and_no_symlink() {
+    use std::os::unix::fs::{symlink, MetadataExt, PermissionsExt};
+    let directory = ObservationDirectory::new();
+    let metadata = std::fs::symlink_metadata(&directory.0).unwrap();
+    let open = |path: PathBuf, expected: &std::path::Path, uid: u32| {
+        ProofObservation::open_exact(path, expected, uid, metadata.gid())
+    };
+    assert!(open(
+        directory.0.clone(),
+        &directory.0.join("different"),
+        metadata.uid()
+    )
+    .is_err());
+    assert!(open(
+        directory.0.clone(),
+        &directory.0,
+        metadata.uid().wrapping_add(1)
+    )
+    .is_err());
+    std::fs::set_permissions(&directory.0, std::fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(open(directory.0.clone(), &directory.0, metadata.uid()).is_err());
+    std::fs::set_permissions(&directory.0, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let alias = directory.0.join("alias");
+    symlink(&directory.0, &alias).unwrap();
+    assert!(open(alias.clone(), &alias, metadata.uid()).is_err());
+}
+#[test]
+fn proof_observation_receipts_are_private_create_new_and_do_not_follow_links() {
+    use std::os::unix::fs::{symlink, MetadataExt};
+    let directory = ObservationDirectory::new();
+    let mut observer = directory.observer();
+    let ticket = observer.begin().unwrap();
+    let source = source();
+    let progress = json!({"own":{"pid":123,"ui_sha256":"b".repeat(64)},"root_peer":{"pid":456,"uid":0,"gid":0}});
+    observer.connected(ticket, source.key(), &progress).unwrap();
+    let path = directory.0.join("installed-artwork-1-connected.json");
+    let first = std::fs::read(&path).unwrap();
+    let metadata = std::fs::symlink_metadata(&path).unwrap();
+    assert_eq!(metadata.mode() & 0o7777, 0o600);
+    assert_eq!(metadata.nlink(), 1);
+    let receipt: Value = serde_json::from_slice(&first).unwrap();
+    assert_eq!(receipt["source_key"], json!(source.key()));
+    assert_eq!(receipt["own"], progress["own"]);
+    assert_eq!(receipt["root_peer"], progress["root_peer"]);
+    assert!(observer
+        .connected(ticket, source.key(), &json!({}))
+        .is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), first);
+    let target = directory.0.join("unchanged");
+    std::fs::write(&target, b"preserved").unwrap();
+    symlink(&target, directory.0.join("installed-artwork-1-result.json")).unwrap();
+    assert!(observer
+        .result(ticket, &json!({"outcome":"invalid"}))
+        .is_err());
+    assert_eq!(std::fs::read(target).unwrap(), b"preserved");
+}
+#[test]
+fn proof_observation_replacement_of_output_directory_is_rejected() {
+    use std::os::unix::fs::DirBuilderExt;
+    let directory = ObservationDirectory::new();
+    let observer = directory.observer();
+    let displaced = directory.0.with_extension("displaced");
+    std::fs::rename(&directory.0, &displaced).unwrap();
+    std::fs::DirBuilder::new()
+        .mode(0o700)
+        .create(&directory.0)
+        .unwrap();
+    assert!(observer
+        .write("installed-artwork-1-result.json", &json!({}))
+        .is_err());
+    assert_eq!(std::fs::read_dir(&directory.0).unwrap().count(), 0);
+    assert_eq!(std::fs::read_dir(&displaced).unwrap().count(), 0);
+    std::fs::remove_dir(displaced).unwrap();
+}
+#[test]
+fn proof_only_first_fetch_holds_and_seventeenth_denial_records_no_root_dispatch() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, _, _, _) = fixture();
+    provider.observation = Some(directory.observer());
+    for index in 1..=16 {
+        let ticket = proof_ticket(&mut provider).unwrap().unwrap();
+        assert_eq!(ticket.index, index);
+        assert_eq!(ticket.hold, index == 1);
+    }
+    assert!(matches!(
+        proof_ticket(&mut provider),
+        Err(ProviderError::Unavailable)
+    ));
+    assert!(!provider.quarantined);
+    let path = directory.0.join("installed-artwork-cap.json");
+    let bytes = std::fs::read(&path).unwrap();
+    let receipt: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(receipt["started_fetches"], 16);
+    assert_eq!(receipt["cap_reached"], true);
+    assert_eq!(receipt["root_dispatch_requested"], false);
+    assert_eq!(receipt["unknown_startup_claimed"], false);
+    assert!(matches!(
+        proof_ticket(&mut provider),
+        Err(ProviderError::Unavailable)
+    ));
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+    assert_eq!(std::fs::read_dir(&directory.0).unwrap().count(), 1);
+    let (mut regular, _, _, _) = fixture();
+    assert!(proof_ticket(&mut regular).unwrap().is_none());
+    assert!(!regular.quarantined);
+}
+#[test]
+fn observation_result_write_failure_quarantines_without_overwriting_original() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, _, _, _) = fixture();
+    provider.observation = Some(directory.observer());
+    let ticket = proof_ticket(&mut provider).unwrap().unwrap();
+    let first = json!({"schema":1,"outcome":"source_changed","exec_worker_joined":true,"encoded_image_bytes_logged":false});
+    write_observed_result(&mut provider, ticket, &first).unwrap();
+    assert!(write_observed_result(
+        &mut provider,
+        ticket,
+        &json!({"outcome":"encoded_accepted"})
+    )
+    .is_err());
+    assert!(provider.quarantined);
+    let actual: Value = serde_json::from_slice(
+        &std::fs::read(directory.0.join("installed-artwork-1-result.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(actual, first);
+}
+#[test]
+fn observation_outcomes_preserve_cancel_expiry_and_known_refusal_classes() {
+    for (error, name) in [
+        (ProviderError::Unavailable, "unavailable"),
+        (ProviderError::Denied, "denied"),
+        (ProviderError::Changed, "source_changed"),
+        (ProviderError::Invalid, "invalid"),
+        (ProviderError::Cancelled, "cancelled"),
+        (ProviderError::Expired, "expired"),
+    ] {
+        assert_eq!(observed_outcome(&Err(error)), name);
+    }
+    let (mut provider, source, exchange, hbc) = fixture();
+    let result = session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false,
+    );
+    assert_eq!(observed_outcome(&result), "encoded_accepted");
+}
+
+#[test]
+fn framework_runtime_parent_is_sticky_shared_while_observation_leaf_stays_private() {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    let directory = ObservationDirectory::new();
+    let metadata = std::fs::symlink_metadata(&directory.0).unwrap();
+    assert!(!ProofObservation::runtime_parent_valid(
+        &metadata,
+        metadata.uid(),
+        metadata.gid()
+    ));
+    std::fs::set_permissions(&directory.0, std::fs::Permissions::from_mode(0o1777)).unwrap();
+    let shared = std::fs::symlink_metadata(&directory.0).unwrap();
+    assert!(ProofObservation::runtime_parent_valid(
+        &shared,
+        shared.uid(),
+        shared.gid()
+    ));
+    assert!(ProofObservation::open_exact(
+        directory.0.clone(),
+        &directory.0,
+        shared.uid(),
+        shared.gid()
+    )
+    .is_err());
+    std::fs::set_permissions(&directory.0, std::fs::Permissions::from_mode(0o777)).unwrap();
+    let not_sticky = std::fs::symlink_metadata(&directory.0).unwrap();
+    assert!(!ProofObservation::runtime_parent_valid(
+        &not_sticky,
+        not_sticky.uid(),
+        not_sticky.gid()
+    ));
 }

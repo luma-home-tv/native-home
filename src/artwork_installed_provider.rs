@@ -6,11 +6,16 @@ use crate::{
     artwork_worker::{Cancellation, Provider, ProviderError},
     broker_protocol::Marker,
 };
-use std::time::{Duration, Instant};
+use std::{
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 pub struct InstalledProvider {
     marker: Marker,
     quarantined: bool,
+    #[cfg(any(target_arch = "arm", test))]
+    observation: Option<ProofObservation>,
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
@@ -30,6 +35,29 @@ impl InstalledProvider {
     pub fn start_worker(marker: Marker) -> std::io::Result<crate::artwork_worker::Worker> {
         crate::artwork_worker::Worker::start(move || Init(Self::new(marker)))
     }
+    pub fn start_proof_worker(
+        marker: Marker,
+        output: PathBuf,
+    ) -> std::io::Result<crate::artwork_worker::Worker> {
+        #[cfg(target_arch = "arm")]
+        {
+            crate::artwork_worker::Worker::start(move || {
+                Init(Self::new(marker).and_then(|mut provider| {
+                    provider.observation =
+                        Some(ProofObservation::open(output).map_err(|_| ProviderError::Denied)?);
+                    Ok(provider)
+                }))
+            })
+        }
+        #[cfg(not(target_arch = "arm"))]
+        {
+            let _ = (marker, output);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "Proof observation requires native ARM Proof",
+            ))
+        }
+    }
     pub fn new(marker: Marker) -> Result<Self, ProviderError> {
         marker.validate().map_err(|_| ProviderError::Invalid)?;
         #[cfg(target_arch = "arm")]
@@ -41,6 +69,7 @@ impl InstalledProvider {
             Ok(Self {
                 marker,
                 quarantined: false,
+                observation: None,
             })
         }
         #[cfg(not(target_arch = "arm"))]
@@ -76,6 +105,275 @@ impl Provider for InstalledProvider {
             let _ = (&self.marker, source, deadline);
             Err(ProviderError::Unavailable)
         }
+    }
+}
+
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy)]
+struct ProofTicket {
+    index: u8,
+    hold: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Debug)]
+enum ObservationError {
+    Limit,
+    Io,
+}
+#[cfg(any(target_arch = "arm", test))]
+struct ProofObservation {
+    path: PathBuf,
+    directory: std::fs::File,
+    stamp: (u64, u64, u32, u32, u32),
+    started: u8,
+    cap_written: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl ProofObservation {
+    fn stamp(meta: &std::fs::Metadata) -> (u64, u64, u32, u32, u32) {
+        use std::os::unix::fs::MetadataExt;
+        (meta.dev(), meta.ino(), meta.uid(), meta.gid(), meta.mode())
+    }
+    #[cfg(target_arch = "arm")]
+    fn open(path: PathBuf) -> std::io::Result<Self> {
+        let expected = PathBuf::from(format!(
+            "/tmp/{}/shell-{}",
+            crate::identity::PROOF,
+            std::process::id()
+        ));
+        let uid = unsafe { libc::geteuid() };
+        let gid = unsafe { libc::getegid() };
+        let parent = std::fs::symlink_metadata(
+            expected
+                .parent()
+                .ok_or_else(|| std::io::Error::other("Missing own Proof parent"))?,
+        )?;
+        if !Self::runtime_parent_valid(&parent, uid, gid) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Invalid sticky Proof runtime parent",
+            ));
+        }
+        Self::open_exact(path, &expected, uid, gid)
+    }
+    // The framework runtime root is shared sticky1777; only the held shell-PID leaf is private0700.
+    fn runtime_parent_valid(metadata: &std::fs::Metadata, uid: u32, gid: u32) -> bool {
+        use std::os::unix::fs::MetadataExt;
+        metadata.is_dir()
+            && !metadata.file_type().is_symlink()
+            && metadata.mode() & 0o7777 == 0o1777
+            && ((metadata.uid() == uid && metadata.gid() == gid)
+                || (metadata.uid() == 0 && metadata.gid() == 0))
+    }
+    fn open_exact(
+        path: PathBuf,
+        expected: &std::path::Path,
+        uid: u32,
+        gid: u32,
+    ) -> std::io::Result<Self> {
+        use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
+        let denied = || {
+            std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Invalid own Proof observation directory",
+            )
+        };
+        if path.as_os_str() != expected.as_os_str() {
+            return Err(denied());
+        }
+        let named = std::fs::symlink_metadata(&path)?;
+        if !named.is_dir()
+            || named.file_type().is_symlink()
+            || named.uid() != uid
+            || named.gid() != gid
+            || named.mode() & 0o7777 != 0o700
+        {
+            return Err(denied());
+        }
+        let directory = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&path)?;
+        let stamp = Self::stamp(&directory.metadata()?);
+        if stamp != Self::stamp(&named) {
+            return Err(denied());
+        }
+        Ok(Self {
+            path,
+            directory,
+            stamp,
+            started: 0,
+            cap_written: false,
+        })
+    }
+    fn verify(&self) -> std::io::Result<()> {
+        let named = std::fs::symlink_metadata(&self.path)?;
+        if named.file_type().is_symlink()
+            || Self::stamp(&named) != self.stamp
+            || Self::stamp(&self.directory.metadata()?) != self.stamp
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Proof observation directory changed",
+            ));
+        }
+        Ok(())
+    }
+    fn filename(index: u8, connected: bool) -> std::io::Result<String> {
+        if !(1..=16).contains(&index) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Proof observation index exceeds16",
+            ));
+        }
+        Ok(format!(
+            "installed-artwork-{index}-{}.json",
+            if connected { "connected" } else { "result" }
+        ))
+    }
+    fn write(&self, name: &str, value: &serde_json::Value) -> std::io::Result<()> {
+        use std::{
+            io::Write,
+            os::{
+                fd::{AsRawFd, FromRawFd},
+                unix::fs::MetadataExt,
+            },
+        };
+        if name != "installed-artwork-cap.json"
+            && !(1..=16).any(|index| {
+                Self::filename(index, true).is_ok_and(|v| v == name)
+                    || Self::filename(index, false).is_ok_and(|v| v == name)
+            })
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Only fixed Proof observation filenames",
+            ));
+        }
+        self.verify()?;
+        let bytes = serde_json::to_vec(value).map_err(std::io::Error::other)?;
+        if bytes.len() > 2 * 1024 * 1024 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Proof result metadata exceeds bound",
+            ));
+        }
+        let named_path = self.path.join(name);
+        let name = std::ffi::CString::new(name).map_err(|_| {
+            std::io::Error::new(std::io::ErrorKind::InvalidInput, "Invalid Proof filename")
+        })?;
+        let fd = unsafe {
+            libc::openat(
+                self.directory.as_raw_fd(),
+                name.as_ptr(),
+                libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+                0o600,
+            )
+        };
+        if fd < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        let mut file = unsafe { std::fs::File::from_raw_fd(fd) };
+        let meta = file.metadata()?;
+        if !meta.is_file()
+            || meta.uid() != self.stamp.2
+            || meta.gid() != self.stamp.3
+            || meta.mode() & 0o7777 != 0o600
+            || meta.nlink() != 1
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Proof receipt metadata differs",
+            ));
+        }
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+        let named = std::fs::symlink_metadata(named_path)?;
+        let actual = file.metadata()?;
+        if named.file_type().is_symlink()
+            || Self::stamp(&named) != Self::stamp(&actual)
+            || named.nlink() != 1
+            || actual.nlink() != 1
+            || actual.len() != bytes.len() as u64
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::PermissionDenied,
+                "Proof receipt changed after write",
+            ));
+        }
+        self.verify()
+    }
+    fn begin(&mut self) -> Result<ProofTicket, ObservationError> {
+        if self.started == 16 {
+            if !self.cap_written {
+                self.write("installed-artwork-cap.json",&serde_json::json!({"schema":1,"maximum_started_fetches":16,"started_fetches":16,"cap_reached":true,"further_dispatch_denied":true,"root_dispatch_requested":false,"unknown_startup_claimed":false})).map_err(|_|ObservationError::Io)?;
+                self.cap_written = true;
+            }
+            return Err(ObservationError::Limit);
+        }
+        self.verify().map_err(|_| ObservationError::Io)?;
+        self.started += 1;
+        Ok(ProofTicket {
+            index: self.started,
+            hold: self.started == 1,
+        })
+    }
+    fn connected(
+        &self,
+        ticket: ProofTicket,
+        source: &crate::app_artwork::SourceKey,
+        progress: &serde_json::Value,
+    ) -> std::io::Result<()> {
+        self.write(&Self::filename(ticket.index,true)?,&serde_json::json!({"schema":1,"index":ticket.index,"source_key":source,"own":progress["own"],"root_peer":progress["root_peer"]}))
+    }
+    fn result(&self, ticket: ProofTicket, value: &serde_json::Value) -> std::io::Result<()> {
+        self.write(&Self::filename(ticket.index, false)?, value)
+    }
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn proof_ticket(provider: &mut InstalledProvider) -> Result<Option<ProofTicket>, ProviderError> {
+    match provider.observation.as_mut() {
+        None => Ok(None),
+        Some(observer) => match observer.begin() {
+            Ok(ticket) => Ok(Some(ticket)),
+            Err(ObservationError::Limit) => Err(ProviderError::Unavailable),
+            Err(ObservationError::Io) => {
+                provider.quarantined = true;
+                Err(ProviderError::Invalid)
+            }
+        },
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn observed_outcome(result: &Result<EncodedFile, ProviderError>) -> &'static str {
+    match result {
+        Ok(_) => "encoded_accepted",
+        Err(error) => match error {
+            ProviderError::Unavailable => "unavailable",
+            ProviderError::Denied => "denied",
+            ProviderError::Changed => "source_changed",
+            ProviderError::Invalid => "invalid",
+            ProviderError::Cancelled => "cancelled",
+            ProviderError::Expired => "expired",
+        },
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn write_observed_result(
+    provider: &mut InstalledProvider,
+    ticket: ProofTicket,
+    value: &serde_json::Value,
+) -> Result<(), ProviderError> {
+    if provider
+        .observation
+        .as_ref()
+        .is_none_or(|observer| observer.result(ticket, value).is_err())
+    {
+        provider.quarantined = true;
+        Err(ProviderError::Invalid)
+    } else {
+        Ok(())
     }
 }
 
@@ -650,6 +948,26 @@ mod native {
             Ok(())
         }
     }
+    struct Observation<'a> {
+        writer: Option<&'a ProofObservation>,
+        ticket: Option<ProofTicket>,
+        protocol: serde_json::Value,
+    }
+    impl Observation<'_> {
+        fn set(&mut self, key: &str, value: serde_json::Value) {
+            if self.writer.is_some() {
+                self.protocol[key] = value;
+            }
+        }
+        fn connected(&self, source: &Source) -> Result<(), ProviderError> {
+            if let (Some(writer), Some(ticket)) = (self.writer, self.ticket) {
+                writer
+                    .connected(ticket, source.key(), &self.protocol)
+                    .map_err(|_| ProviderError::Invalid)?;
+            }
+            Ok(())
+        }
+    }
     fn exchange(
         marker: &Marker,
         source: &Source,
@@ -657,6 +975,7 @@ mod native {
         cancellation: &Cancellation,
         stop: &AtomicBool,
         started: mpsc::Receiver<()>,
+        observation: &mut Observation<'_>,
     ) -> Result<session::Exchange, ProviderError> {
         loop {
             check(deadline, cancellation, stop)?;
@@ -667,13 +986,36 @@ mod native {
             }
         }
         let own = probe::own_identity().map_err(|_| ProviderError::Denied)?;
+        observation.set("stage", serde_json::json!("connecting"));
+        observation.set("own", serde_json::json!(own));
+        observation.set("client_credentials",serde_json::json!({"pid":std::process::id(),"uid":unsafe{libc::geteuid()},"gid":unsafe{libc::getegid()}}));
         let connection = Connection::connect_until(&marker.nonce, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
         let root = connection
             .peer_credentials()
             .map_err(|_| ProviderError::Denied)?;
+        observation.set(
+            "root_peer",
+            serde_json::json!({"pid":root.pid,"uid":root.uid,"gid":root.gid}),
+        );
         if root.uid != 0 || root.pid <= 1 {
             return Err(ProviderError::Denied);
+        }
+        if probe::own_identity().map_err(|_| ProviderError::Denied)? != own {
+            return Err(ProviderError::Denied);
+        }
+        observation.set("stage", serde_json::json!("connected_before_identify"));
+        observation.connected(source)?;
+        if observation.ticket.is_some_and(|ticket| ticket.hold) {
+            let began = Instant::now();
+            while began.elapsed() < Duration::from_secs(8) {
+                check(deadline, cancellation, stop)?;
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            observation.set(
+                "proof_binding_hold_ms",
+                serde_json::json!(began.elapsed().as_millis()),
+            );
         }
         check(deadline, cancellation, stop)?;
         let request = protocol::Request {
@@ -681,6 +1023,8 @@ mod native {
             op: protocol::Operation::Identify,
             nonce: marker.nonce.clone(),
         };
+        observation.set("identify_request", serde_json::json!(request));
+        observation.set("stage", serde_json::json!("identify"));
         connection
             .send_until(
                 &serde_json::to_vec(&request).map_err(|_| ProviderError::Invalid)?,
@@ -690,8 +1034,10 @@ mod native {
         let packet = connection
             .recv_until(protocol::RESPONSE_LIMIT, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
+        observation.set("root_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
         let identity =
             protocol::parse_response(&packet.bytes).map_err(|_| ProviderError::Invalid)?;
+        observation.set("identify_response", serde_json::json!(identity));
         probe::bind_response(
             marker,
             &own,
@@ -701,28 +1047,55 @@ mod native {
             &identity,
         )
         .map_err(|_| ProviderError::Denied)?;
+        observation.set("identity", serde_json::json!(identity));
+        observation.set("identify_bound", serde_json::json!(true));
         check(deadline, cancellation, stop)?;
         let read = wire::Request::new(1, &marker.nonce, source.app_id(), wire::Variant::Preferred)
             .map_err(|_| ProviderError::Invalid)?;
+        observation.set("request", serde_json::json!(read));
+        observation.set("stage", serde_json::json!("read_artwork"));
         wire::send_request(&connection, &read, deadline).map_err(|_| ProviderError::Unavailable)?;
         let mut receiver =
             wire::Receiver::new(&read, &identity, root).map_err(|_| ProviderError::Invalid)?;
         let mut header_matches = true;
+        let mut resource_packets = 0u32;
         loop {
             let packet = connection
                 .recv_until(wire::MESSAGE_LIMIT, deadline)
                 .map_err(|_| ProviderError::Unavailable)?;
+            resource_packets += 1;
+            observation.set(
+                "resource_packets_received",
+                serde_json::json!(resource_packets),
+            );
+            observation.set("last_resource_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
             if let Ok(header) = wire::parse_header(&packet.bytes) {
                 header_matches = session::header_matches(&header, source.key());
+                observation.set("header", serde_json::json!(header));
+                observation.set("header_matches", serde_json::json!(header_matches));
             }
-            if receiver
+            if let Ok(complete) = wire::parse_complete(&packet.bytes) {
+                observation.set("complete", serde_json::json!(complete));
+            }
+            if let Ok(refusal) = wire::parse_refusal(&packet.bytes) {
+                observation.set("refusal", serde_json::json!(refusal));
+            }
+            let ended = receiver
                 .push_packet(&packet.bytes, packet.credentials)
-                .map_err(|_| ProviderError::Invalid)?
-            {
+                .map_err(|_| ProviderError::Invalid)?;
+            observation.set(
+                "resource_packets_validated",
+                serde_json::json!(resource_packets),
+            );
+            if ended {
                 break;
             }
         }
         let outcome = receiver.finish().map_err(|_| ProviderError::Invalid)?;
+        observation.set(
+            "resource_complete_validated",
+            serde_json::json!(matches!(&outcome, wire::Outcome::Artwork(_))),
+        );
         // Once a bounded transaction ended, Finish is cleanup even if the job
         // was cancelled. Its bytes can still never be returned after cancellation.
         if Instant::now() >= deadline {
@@ -730,19 +1103,26 @@ mod native {
         }
         let finish =
             wire::FinishRequest::new(2, &marker.nonce).map_err(|_| ProviderError::Invalid)?;
+        observation.set("finish_request", serde_json::json!(finish));
+        observation.set("stage", serde_json::json!("finish"));
         wire::send_finish_request(&connection, &finish, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
         let finished = wire::receive_finished(&connection, &finish, &identity, root, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
+        let own_after = probe::own_identity().map_err(|_| ProviderError::Denied)?;
         probe::bind_response(
             marker,
             &own,
-            &probe::own_identity().map_err(|_| ProviderError::Denied)?,
+            &own_after,
             root,
             packet.credentials,
             &identity,
         )
         .map_err(|_| ProviderError::Denied)?;
+        observation.set("own_after", serde_json::json!(own_after));
+        observation.set("finished", serde_json::json!(finished));
+        observation.set("clean_eof", serde_json::json!(true));
+        observation.set("stage", serde_json::json!("closed"));
         Ok(session::Exchange {
             own,
             root,
@@ -766,6 +1146,7 @@ mod native {
         deadline: Instant,
         cancellation: &Cancellation,
     ) -> Result<EncodedFile, ProviderError> {
+        let ticket = proof_ticket(provider)?;
         let stop = Arc::new(AtomicBool::new(false));
         let invoke_stop = stop.clone();
         let marker = provider.marker.clone();
@@ -784,23 +1165,65 @@ mod native {
             Ok(handle) => handle,
             Err(_) => {
                 provider.quarantined = false;
+                if let Some(ticket) = ticket {
+                    write_observed_result(
+                        provider,
+                        ticket,
+                        &serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":{"stage":"exec_worker_not_started","clean_eof":false},"hbc":null,"root_helper":null,"outcome":"unavailable","quarantined":false,"exec_worker_started":false,"exec_worker_joined":false,"root_dispatch_requested":false,"known_no_start":true,"performance_qualified":false,"encoded_image_bytes_logged":false}),
+                    )?;
+                }
                 return Err(ProviderError::Unavailable);
             }
         };
         let worker = session::ExecWorker::new(handle, stop.clone());
-        let result = exchange(&provider.marker, source, deadline, cancellation, &stop, rx);
+        let marker = provider.marker.clone();
+        let (result, protocol) = {
+            let mut observation = Observation {
+                writer: provider.observation.as_ref(),
+                ticket,
+                protocol: serde_json::json!({"stage":"await_startup","clean_eof":false,"proof_binding_hold_ms":0}),
+            };
+            let result = exchange(
+                &marker,
+                source,
+                deadline,
+                cancellation,
+                &stop,
+                rx,
+                &mut observation,
+            );
+            (result, observation.protocol)
+        };
         if result.is_err() {
             stop.store(true, Ordering::Release);
         }
         let completion = worker.join();
-        session::settle(
+        let worker_panicked = completion.is_err();
+        let hbc = if ticket.is_some() {
+            completion.as_ref().ok().cloned()
+        } else {
+            None
+        };
+        let cancelled = cancellation.is_cancelled();
+        let expired = Instant::now() >= deadline;
+        let result = session::settle(
             provider,
             source.key(),
             result,
             completion,
-            cancellation.is_cancelled(),
-            Instant::now() >= deadline,
-        )
+            cancelled,
+            expired,
+        );
+        if let Some(ticket) = ticket {
+            let helper = hbc
+                .as_ref()
+                .map(|value| value["parsed"]["helper_report"].clone())
+                .unwrap_or(serde_json::Value::Null);
+            let record = &helper["artwork_reads"][0];
+            let value = serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":protocol,"hbc":hbc,"root_helper":helper,"source_key_before":record["source_key"],"source_key_after":record["source_key_after"],"outcome":observed_outcome(&result),"encoded_release_eligible":result.is_ok(),"result_requires_successful_observation_write":true,"quarantined":provider.quarantined,"cancelled":cancelled,"expired":expired,"exec_worker_started":true,"exec_worker_joined":true,"exec_worker_panicked":worker_panicked,"proof_first_fetch_hold":ticket.hold,"performance_qualified":false,"encoded_image_bytes_logged":false});
+            write_observed_result(provider, ticket, &value)?;
+        }
+        result
     }
 }
 
