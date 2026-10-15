@@ -1,14 +1,18 @@
-# Installed startup refusal candidate, 0.41
+# Installed startup nonce refusals, 0.41
 
-The next isolated candidate checks two existing session-nonce guards before
-adding resource access to the installed artwork helper. It does not change the
-helper's admission policy, add an operation or enable the normal dashboard's
-live-artwork loader. G2's retained preview remains 0.37.0; C2 is outside this work.
+Both isolated G2 nonce-refusal cases are now observed and independently audited.
+Each device carrier exited **0** while the Root helper deliberately reported
+**refused** and HBC reported a failed command, exactly as required for that case.
+These are expected-refusal results, not positive startup or resource access.
+G2's retained preview remains **0.37.0**; C2 was untouched.
 
-The positive [0.40 result](artwork-startup-040.md) has two serial native exchanges
-with fresh app/helper identities. This candidate asks a different question:
-whether a correctly connected ordinary Proof client observes the exact expected
-refusal when its Identify or Finish packet contains the wrong nonce.
+The positive [0.40 result](artwork-startup-040.md) remains separate: it has two
+serial native exchanges with fresh app/helper identities. Version 0.41 changes
+neither the helper admission policy nor its operations and does not enable the
+normal dashboard's live-artwork loader. The
+[device milestone](artwork-startup-refusal-041-milestone.json) records the actual
+case results. The earlier [local candidate record](artwork-startup-refusal-041-candidate.json)
+remains unchanged as a snapshot from before native execution.
 
 ## Two fixed cases
 
@@ -48,12 +52,15 @@ Before device admission, source, host checks, ARM builds and package isolation
 must pass. Each native case then needs its own live ordinary/Root process
 binding, complete preserved normal bundle/favourites and selected TV/Core
 readbacks, exact protected-helper removal, supported Proof uninstall, and
-upload/lease/private-agent cleanup. Duplicate/concurrent startup, stale/foreign
-callers, broader protocol rejection, resource reads and retained integration
-remain separate requirements. The dashboard continues to build on the
+upload/lease/private-agent cleanup. These cases do not cover duplicate/concurrent
+startup, stale/foreign callers or broader protocol rejection. Resource reads and
+retained integration remain subsequent work. The dashboard continues to build on the
 explicitly attributed [PlxNative framework](../README.md#plxnative-framework-dependency).
 
-## Current validation
+## Local-only candidate stage (historical)
+
+The following describes the completed pre-device stage. Its statements about
+no native execution apply to that historical snapshot, not the results below.
 
 Host checks pass 374 library tests and five dashboard tests, Clippy with warnings
 denied, and 35 build/provenance/framework/package tests. The new checks include
@@ -83,6 +90,60 @@ record. It grades expected refusal separately from positive startup and requires
 the ordinary effective GID from independent process records. A saved-only host
 grade still supplies no native process or refusal evidence.
 
-The independent device carrier still needs validation before either case can
-run. No 0.41 package has been installed, and the Root helper/server policy is
-unchanged. Full native preservation and clean removal remain required.
+At that stage the independent device carrier still needed validation, no 0.41
+package had been installed, and full native preservation/removal remained to be
+shown. The candidate JSON keeps those original local-only fields unchanged.
+
+
+## Actual native results
+
+| Case | Operator exit | Helper refusal | Helper context / children / Core measurements | Independent audit |
+| --- | --- | --- | --- | --- |
+| Wrong Identify nonce | 0 | `Identify nonce mismatch` | 0 / 0 / 0 | 29,324 assertions |
+| Wrong Finish nonce | 0 | `Only first Finish request is admitted after Identify` | 1 / 3 / 8 | 29,316 assertions |
+
+Both sessions bound six raw ordinary-process records, including effective GID,
+and seven raw Root-process records. The actual running executables and process
+identities matched the protected installation and the connected kernel peers.
+Each session made one fixed HBC exec request, joined both ordinary workers,
+received the exact complete refusal report and observed clean client EOF without
+Finished. Wrong Finish also completed and bound its preceding valid Identify.
+Wrong Identify reached no helper Core GET; Wrong Finish reconciled all three
+prior context children and independently confirmed their PID/process-group
+absence before removal.
+
+The helper's refusal-path `connection_closed` field stayed false in both cases.
+Independent client EOF, complete process/namespace scans and guarded removal
+established cleanup separately. No rejected-packet SCM or server request record
+was invented. Sent packet bytes/digests remain client/source-bound, distinct
+from the actual helper error and live process evidence.
+
+All **24 preservation/removal gates** passed for each case. The full retained
+0.37 bundle and saved state preserved bytes, ownership and modes; five Core file
+hashes and 20 sampled read-only domains matched. The protected helper/configuration
+directory, Proof registration/launchpoint, runtime, jail, state, mounts, upload,
+lease and private agent were removed, and LG Home was current. No external Root
+PID was signaled. The normal dashboard was not updated.
+
+The saved-only audits independently replayed both actual ARM receipts, all 92
+committed inputs, package/policy bindings, raw process records, HBC String/base64
+and exact refusal stages, case-specific child accounting, full retained bytes
+and cleanup/preservation. Their SHA-256 results are:
+
+- Wrong Identify: `62c7236af53c8eaf27732ae1a9519fcf1f200137a9a551662c332ecc74d77275`.
+- Wrong Finish: `88c48ffc694a7f353b21296c79c71c829cdd4ec488462e0d11df7eea2baec5dc`.
+
+Both saved Home frames are byte-identical to the previously inspected frame;
+no raw capture or household artifact is published. Exact sanitized artifact
+bindings and audit-code hashes are in the
+[milestone](artwork-startup-refusal-041-milestone.json).
+
+These two cases qualify only the declared nonce refusals and their cleanup.
+They do not establish exhaustive malformed-packet, foreign/stale caller,
+duplicate/concurrent, interruption or denial-of-service coverage. Core child
+stdout digests and some guarded removal facts remain source/receipt-bound;
+samples are sequential and HBC's existing loader/environment remain trusted.
+No resource transfer, normal loader, production startup, physical-input,
+performance or C2 compatibility is qualified by these results. The next delivery
+slice connects the existing bounded resource protocol to the artwork worker and
+native texture pipeline.

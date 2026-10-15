@@ -105,7 +105,9 @@ isolated removal/preservation checks; it did not launch a broker. The
 completed two serial protected Root Identify/Finish exchanges with fresh process
 identities. The first harness observation failed and separate recovery completed;
 the second corrected driver passed with complete cleanup/preservation. It adds no
-resource access or retained loader. G2 now
+resource access or retained loader. The [0.41 nonce-refusal results](docs/artwork-startup-refusal-041.md)
+verify two exact refusal guards and complete temporary removal on G2; they add
+no resource or production capability. G2 now
 retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and

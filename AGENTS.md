@@ -40,15 +40,17 @@ driver exited 1 on a terminal-receipt observation race; native evidence complete
 and separate recovery exited 0. The second used the same frozen binaries with
 fresh app/helper PID and start identities; its corrected driver exited 0 with
 full temporary removal and preservation. Keep the original failure/recovery
-history distinct. Normal 0.37 is unchanged; resources, concurrent/duplicate or
-negative startup, normal enrollment and production delivery remain unqualified.
+history distinct. Normal 0.37 is unchanged; resources, concurrent/duplicate
+startup, normal enrollment and production delivery remain unqualified.
 
-The 0.41 nonce-refusal candidate in `docs/artwork-startup-refusal-041.md` passes
-host checks and both ARM builds, with separate local packages for wrong Identify
-and wrong Finish nonces. Neither native refusal case has run. Keep its separate
-expected-refusal grade distinct from positive startup and require a freshly
-admitted carrier, live process binding and complete cleanup for each case.
-Historical 0.40 carriers remain pinned to their original source and package.
+The 0.41 result in `docs/artwork-startup-refusal-041.md` verifies the declared
+wrong-Identify and wrong-Finish nonce refusals on G2. Both carriers exited 0;
+each helper/HBC result remained an actual refusal. Independent saved evidence
+replays the zero/three known Core children, raw process/GID bindings, full normal
+0.37 preservation and all 24 cleanup gates per case. Keep this separate from
+positive startup and other rejection/reliability coverage. Historical 0.40/0.41
+carriers and artifacts remain pinned to their source and package. Resource and
+normal loader integration still need their own native qualification.
 
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
