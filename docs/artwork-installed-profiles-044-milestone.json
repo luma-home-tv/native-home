@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "version": "0.44.0",
+  "status": "Three isolated device carriers and final saved-evidence audits completed successfully; normal installations unchanged",
+  "functional_source_revision": "67d4df9fcd52f9c27de71124fef6b6adf61a219e",
+  "selected_source_inputs": 98,
+  "artifacts": {
+    "ui": {
+      "sha256": "54bb9e04eb35ebec4809718d07b5c8c52b7248b40d2656213d994bc2f9253824",
+      "bytes": 3796284
+    },
+    "proof_helper": {
+      "sha256": "b76b2fa6d22fd569b0a23c8bb308eea0d370240daf1cdd93ff8abb29d76c0b52",
+      "bytes": 847828,
+      "native_proof_exercised": true
+    },
+    "preview_helper": {
+      "sha256": "d604bdb5f1ae7a44d35c39effa9c0c694f7b050ed785592e5c94ec000391a3b1",
+      "bytes": 847792,
+      "compiled_only": true,
+      "native_preview_qualified": false
+    }
+  },
+  "host_checks": {
+    "library_tests": 440,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "python_provenance_framework_build_package_tests": 46
+  },
+  "g2_guard_relaunch": {
+    "device_carrier_exit": 0,
+    "candidate_sha256": "418c70d8dbaf7c0b7f709aa89337b2e3dc5c335cde87a0a91396c60da8437c21",
+    "ipk_sha256": "13ccc1271793f800e3063bff593a4b3d702d494694da6ad61afaab1697fc1cc4",
+    "phase_count": 2,
+    "fresh_ordinary_processes": true,
+    "raw_process_records": 12,
+    "pending_snapshots": 5,
+    "minimum_phase_hold_ms": 8000,
+    "first_record_retained_across_relaunch": true,
+    "new_provider_constructor": "Unavailable",
+    "worker_or_hbc_dispatch": false,
+    "root_helper_staged": false,
+    "matching_pending_file_only_removed_after_process_helper_and_namespace_absence": true,
+    "generic_unknown_remote_recovery_qualified": false,
+    "remote_closure_qualified": false,
+    "audit": {
+      "version": 2,
+      "execution_exit": 0,
+      "assertions_passed": 66296,
+      "script_sha256": "c777e5abf2eac30fdf31cde720d7cd35d28681585e04bda369c1f6ffe62ce022",
+      "result_sha256": "8ce7b8ce3dbe1e75c2cd45c5360c39ebd08e27b9f6429e9802ce741df14701a9"
+    }
+  },
+  "g2_positive_installed_artwork": {
+    "device_carrier_exit": 0,
+    "candidate_sha256": "230d691bbb42866663ada1e92c932816b5875dfe16971c6331d824d774ef1438",
+    "ipk_sha256": "cf89faf5b6d3da9ec51e923511255bf6c1247b30f1a67875a1a448f64d1ec2f4",
+    "provider_results": 6,
+    "completed_accepted_transfers": 6,
+    "known_helpers": 6,
+    "known_core_children": 96,
+    "independent_external_process_records": 13,
+    "externally_bound_helpers": 1,
+    "later_helpers_kernel_self_and_hbc_bound": 5,
+    "pages": [
+      "Home",
+      "Applications"
+    ],
+    "fully_visible_targets_per_page": [
+      3,
+      3
+    ],
+    "distinct_visible_targets": 3,
+    "visible_targets_shared_between_pages": true,
+    "first_pending_record_captured_before_external_root_measurement": true,
+    "pending_absent_before_supported_uninstall": true,
+    "root_visual_review_bound": true,
+    "raw_frame_shape_hash_and_inset_rgb_checked": true,
+    "raw_header_equal_between_pages": true,
+    "independent_encoded_image_pixel_identity_qualified": false,
+    "normal_clock_qualified": false,
+    "audit": {
+      "version": 4,
+      "execution_exit": 0,
+      "assertions_passed": 28194,
+      "script_sha256": "f2854df720ff0063a85581e85b9f6448c4c0271a7c9e2e85f349f3a9ec8ebf35",
+      "result_sha256": "1842efd372269820df83d703df3a15fe68a5827e699c64c306b7ff9f75566c72"
+    }
+  },
+  "c2_static_icon_presentation": {
+    "device_carrier_exit": 0,
+    "candidate_sha256": "633509c25fd63e10f7d8d5c2350ab61a9bb3711a186688e1fbaf2c7f163ffe44",
+    "ipk_sha256": "0774e00bde42bb66d33a112c52dae74c2a127a6554f3e5887d6a5bb4fc3973db",
+    "synthetic_fixtures": 4,
+    "available_image_dimensions": [
+      [
+        128,
+        128
+      ],
+      [
+        128,
+        64
+      ],
+      [
+        64,
+        128
+      ]
+    ],
+    "missing_artwork_fixtures": 1,
+    "icon_views": 6,
+    "standard_page_views": 10,
+    "saved_framebuffers": 16,
+    "independent_pattern_alpha_black_containment_and_ink_replay": true,
+    "initials_only_for_missing_fixture": true,
+    "root_artwork_route_exercised": false,
+    "retained_bundle_files_replayed_before_and_after": 40,
+    "retained_state_files_replayed_before_and_after": 1,
+    "audit": {
+      "version": 3,
+      "execution_exit": 0,
+      "assertions_passed": 1448,
+      "script_sha256": "95e07544ec26ce13490b1d86cbfe9cfce6ebeb99bf43ba76e75a8168787e0534",
+      "result_sha256": "c39b9f6066f9f7ee0ba75ffdbd91f6316085a0d4fe84e1dc20153b909f0052ac"
+    }
+  },
+  "preservation_each_run": {
+    "positive_gates": 24,
+    "selected_state_domains": 20,
+    "selected_core_hashes": 5,
+    "full_retained_bytes_and_checked_metadata_unchanged": true,
+    "lg_home_current_at_closeout": true,
+    "proof_registration_runtime_jail_state_removed": true,
+    "upload_device_lease_and_private_host_agent_removed": true,
+    "reboot_required": false
+  },
+  "retained_installations": {
+    "G2": "0.37.0",
+    "C2": "0.20.0",
+    "normal_updated": false
+  },
+  "audit_history": {
+    "failed_auditor_versions_preserved": true,
+    "corrections": [
+      "Use actual saved manifests and receipt filenames.",
+      "Require original C2 metadata equality rather than G2-specific modes."
+    ],
+    "same_device_evidence_replayed": true,
+    "device_retry_for_auditor_corrections": false,
+    "settings_or_permission_rewrites_for_auditor_corrections": false,
+    "all_device_carriers_exited_zero": true
+  },
+  "boundaries": {
+    "preview_native_permissions_or_loader_qualified": false,
+    "production_startup_qualified": false,
+    "all_apps_or_installation_classes_qualified": false,
+    "physical_input_or_panel_observation_qualified": false,
+    "full_text_ocr_or_independent_focus_ring_pixels_qualified": false,
+    "performance_idle_power_or_hard_lifetime_qualified": false,
+    "future_045_admission_qualified_by_this_record": false
+  },
+  "framework_attribution": "README.md#plxnative-framework-dependency"
+}

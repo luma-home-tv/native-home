@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.44.0' if main == 'home-preview' else '0.1.0'
+version = '0.45.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -45,7 +45,8 @@ broker_startup_proof = os.environ.get('NATIVE_HOME_BROKER_STARTUP_PROOF') == '1'
 broker_negative_proof = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_PROOF') == '1'
 installed_artwork_proof = os.environ.get('NATIVE_HOME_INSTALLED_ARTWORK_PROOF') == '1'
 artwork_guard_relaunch_proof = os.environ.get('NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF') == '1'
-if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof)) > 1:
+preview_artwork_admission = os.environ.get('NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION') == '1'
+if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof, preview_artwork_admission)) > 1:
     raise ValueError('Only one installed helper proof mode is allowed')
 broker_negative_case = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_CASE', '')
 if broker_negative_proof:
@@ -57,16 +58,28 @@ broker_startup_marker = None
 broker_negative_marker = None
 installed_artwork_marker = None
 artwork_guard_marker = None
+preview_artwork_marker = None
 broker_startup_helper = None
 broker_startup_pins_sha256 = None
-if broker_startup_proof or broker_negative_proof or installed_artwork_proof or artwork_guard_relaunch_proof:
+if broker_startup_proof or broker_negative_proof or installed_artwork_proof or artwork_guard_relaunch_proof or preview_artwork_admission:
     allowed = {'NATIVE_HOME_BROKER_STARTUP_PINS',
+               'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION' if preview_artwork_admission else
                'NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF' if artwork_guard_relaunch_proof else
                'NATIVE_HOME_INSTALLED_ARTWORK_PROOF' if installed_artwork_proof else
                'NATIVE_HOME_BROKER_NEGATIVE_PROOF' if broker_negative_proof else 'NATIVE_HOME_BROKER_STARTUP_PROOF'}
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
               (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and k not in allowed]
-    if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
+    if preview_artwork_admission:
+        # Closed configuration surface: no current or future trial/action
+        # parameter may silently coexist with actual Preview-ID admission.
+        preview_environment = {'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION',
+            'NATIVE_HOME_BROKER_STARTUP_PINS', 'NATIVE_HOME_STARTUP_BROKER_BINARY',
+            'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
+            'NATIVE_HOME_SNAPSHOT_ASSETS', 'NATIVE_HOME_PREVIEW_ICON', 'NATIVE_HOME_CARGO'}
+        others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and k not in preview_environment]
+        if main != 'home-preview' or build_receipt['target'] != 'arm' or app_id != 'com.ash.nativehome.preview' or test_identity or interactive or others or artwork_target_fixture:
+            raise ValueError('Preview artwork admission requires only actual non-interactive Preview and no trial/action parameters')
+    elif main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
         raise ValueError('Broker startup requires only the isolated non-interactive proof')
     def startup_pairs(pairs):
         value={}
@@ -79,20 +92,23 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof or a
     pins_raw=read_pinned_input(pins_path,private=True,limit=4096)
     pins=json.loads(pins_raw,object_pairs_hook=startup_pairs)
     if (type(pins) is not dict or set(pins)!={'schema','profile','rendezvous_nonce','ui_sha256','broker_sha256','context_reader_sha256'} or
-        type(pins['schema']) is not int or pins['schema']!=1 or pins['profile']!='proof' or
+        type(pins['schema']) is not int or pins['schema']!=1 or pins['profile']!=('preview' if preview_artwork_admission else 'proof') or
         any(type(pins[k]) is not str or len(pins[k])!=length or any(c not in '0123456789abcdef' for c in pins[k])
             for k,length in [('rendezvous_nonce',32),('ui_sha256',64),('broker_sha256',64),('context_reader_sha256',64)]) or
         pins['ui_sha256']!=build_receipt['binary']['sha256']):
         raise ValueError('Closed Root installation pins required; UI must match actual build')
     helper_binary=Path(os.environ['NATIVE_HOME_STARTUP_BROKER_BINARY']).absolute()
-    if helper_binary.name!='artwork-broker-startup-proof': raise ValueError('Fixed startup helper binary required')
+    if helper_binary.name!=('artwork-broker' if preview_artwork_admission else 'artwork-broker-startup-proof'): raise ValueError('Fixed startup helper binary required')
     helper_receipt=helper_binary.with_name(helper_binary.name+'.build.json')
     helper_build=validate_build_receipt(here,helper_binary,helper_receipt)
     if (helper_build['target']!='arm' or helper_build['git_revision']!=build_receipt['git_revision'] or
         helper_build['binary']['sha256']!=pins['broker_sha256'] or helper_build['snapshot']!=build_receipt['snapshot']):
         raise ValueError('Root helper must share actual UI source/framework build context')
     broker_startup_marker={'schema':1,'nonce':pins['rendezvous_nonce'],'ui_sha256':pins['ui_sha256'],'broker_sha256':pins['broker_sha256']}
-    if broker_negative_proof:
+    if preview_artwork_admission:
+        preview_artwork_marker=broker_startup_marker
+        broker_startup_marker=None
+    elif broker_negative_proof:
         broker_negative_marker={'schema':1,'scenario':broker_negative_case,'marker':broker_startup_marker}
         broker_startup_marker=None
     elif artwork_guard_relaunch_proof:
@@ -214,6 +230,10 @@ if main == 'home-preview':
     if installed_artwork_marker is not None:
         marker_path=stage/'installed-artwork-proof.json'
         marker_path.write_text(json.dumps(installed_artwork_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
+    if preview_artwork_marker is not None:
+        marker_path=stage/'preview-artwork-admission.json'
+        marker_path.write_text(json.dumps(preview_artwork_marker,separators=(',',':'))+'\n')
         marker_path.chmod(0o644)
     if artwork_guard_marker is not None:
         marker_path=stage/'artwork-guard-relaunch-proof.json'
@@ -362,6 +382,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'broker_negative_case': broker_negative_case or None,
            'installed_artwork_proof': installed_artwork_proof,
            'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
+           'preview_artwork_admission': preview_artwork_admission,
            'broker_startup_helper': broker_startup_helper,
            'broker_startup_root_pins_sha256': broker_startup_pins_sha256,
            'artwork_target_fixture': artwork_target_fixture or None,

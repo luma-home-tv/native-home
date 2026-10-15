@@ -62,6 +62,13 @@ pub struct Store {
 }
 impl Store {
     pub fn open(path: &Path) -> io::Result<Self> {
+        Self::open_directory(path, true)
+    }
+    /// Reads an existing own private state directory without creating it.
+    pub fn open_existing(path: &Path) -> io::Result<Self> {
+        Self::open_directory(path, false)
+    }
+    fn open_directory(path: &Path, create: bool) -> io::Result<Self> {
         if unsafe { libc::geteuid() } == 0 {
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
@@ -70,9 +77,11 @@ impl Store {
         }
         let path = CString::new(path.as_os_str().as_encoded_bytes())
             .map_err(|_| invalid("Invalid state path"))?;
-        let made = unsafe { libc::mkdir(path.as_ptr(), 0o700) };
-        if made < 0 && io::Error::last_os_error().raw_os_error() != Some(libc::EEXIST) {
-            return Err(io::Error::last_os_error());
+        if create {
+            let made = unsafe { libc::mkdir(path.as_ptr(), 0o700) };
+            if made < 0 && io::Error::last_os_error().raw_os_error() != Some(libc::EEXIST) {
+                return Err(io::Error::last_os_error());
+            }
         }
         let fd = unsafe {
             libc::open(
@@ -205,6 +214,31 @@ mod tests {
             favourites: BTreeSet::from(["com.example.video".into()]),
             favourite_order: Vec::new(),
         }
+    }
+    #[test]
+    fn admission_read_never_creates_or_follows_a_state_directory() {
+        let tmp = Scratch::new();
+        let path = tmp.0.join("missing");
+        assert!(Store::open_existing(&path).is_err());
+        assert!(!path.exists());
+        Store::open(&path).unwrap().save(&prefs()).unwrap();
+        let before = std::fs::read(path.join("preferences.json")).unwrap();
+        assert_eq!(
+            Store::open_existing(&path)
+                .unwrap()
+                .load()
+                .unwrap()
+                .unwrap(),
+            prefs()
+        );
+        assert_eq!(
+            std::fs::read(path.join("preferences.json")).unwrap(),
+            before
+        );
+        let alias = tmp.0.join("alias");
+        symlink(&path, &alias).unwrap();
+        assert!(Store::open_existing(&alias).is_err());
+        assert_eq!(std::fs::read_dir(&path).unwrap().count(), 1);
     }
     #[test]
     fn saved_favourites_survive_closing_and_reopening_and_keep_explicit_empty_state() {

@@ -6,9 +6,12 @@ and application changes through one integration owner. This extends the
 [implementation plan](implementation-plan.md) and uses the
 [controls coverage audit](controls-coverage-next.md) as the control-centre backlog.
 It does not change device authorisation or the protections in `AGENTS.md`.
-G2 remains primary. C2 was reopened for isolated tests on 15 October 2026 until
-20:30 Europe/London, with no new test after 20:15; after that window it requires
-renewed authorisation. All TV access stays with the coordinator. G2 now retains
+G2 remains primary. The latest user authorization reopens both TVs for autonomous
+isolated tests from 00:00 Europe/London on 16 October 2026, superseding the earlier
+C2 cutoff. Start no new test after 08:45 and complete cleanup before the expected
+09:00 return. All TV access stays with the coordinator, with distinct leases and
+private agents. The fresh C2 baseline and its isolated 0.44 static icon test keep
+its retained 0.20 bundle/state unchanged; G2 results never establish C2 permissions. G2 now retains
 [0.37.0](retained-preview-037.md) after a backed-up update, two normal sessions,
 bounded idle/wake and same-install relaunch, with saved state preserved.
 The next product slice is [live app artwork](live-app-artwork.md). Its ordinary-jail

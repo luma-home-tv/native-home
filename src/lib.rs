@@ -73,3 +73,5 @@ pub mod broker_transport;
 pub mod startup_capability_proof;
 
 pub mod artwork_guard_relaunch_proof;
+
+pub mod preview_artwork_admission;

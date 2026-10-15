@@ -78,15 +78,27 @@ native regression, Preview Root/helper/provider wiring and actual Preview-ID
 qualification remain pending. Do not clear old pending records on age, restart,
 caller death or HBC false, or treat a parsed Preview response as Root authority.
 
-The 0.44 source in `docs/artwork-installed-profiles-044.md` adds the fixed Preview
-helper entry, closed profile wiring through resource/provider validation and an
-exclusive no-dispatch guard-relaunch recipe. Host checks pass 440 library/five
-dashboard tests, Clippy and 46 Python checks. ARM compilation and native guard/
-positive regressions are pending; the ordinary Preview renderer stays disabled.
-The guard recipe intentionally leaves its own pending record. Only the host
-coordinator may remove the exact recorded file after this controlled no-helper
-experiment's complete process/namespace checks. This is not generic recovery
-from an uncertain real Root/helper/child outcome.
+The 0.44 result in `docs/artwork-installed-profiles-044.md` qualifies the controlled
+G2 no-dispatch restart guard, a fresh six-transfer resource regression and C2's
+separate static icon presentation. All three carriers exited zero with full
+retained app/state preservation and 24 cleanup gates each. Independent saved
+replays passed. The guard's exact own-record cleanup follows a no-helper-ever-
+staged experiment; it is not recovery from an unknown real Root outcome. Only
+first positive helper has independent live external process binding. Normal G2
+0.37 and C2 0.20 remain unchanged; no C2 Root artwork permission is established.
+
+The 0.45 candidate adds an explicit actual-Preview diagnostic, not normal artwork
+activation. It requires existing initialized private preferences and does not
+create state, start a persistence/action/setter worker or queue preference writes.
+A joined inert Preview capability check and eight-second no-input hold precede
+any resource worker. A declined preflight records zero Root exec/submitted jobs;
+a created worker requires full known Root/child/Finished/HBC and pending closure.
+The coordinator must back up and verify the actual G2 normal 0.37 installation,
+preserve preferences, then restore and verify it through the supported installer
+after a qualified diagnostic. Unknown installer or Root closure retains barriers;
+never uninstall/reset the retained Preview or clear an old pending record. Actual
+Preview permissions, retained promotion and keyboard/departure recovery remain
+unqualified until their separate evidence is complete.
 
 The G2 is primary. The user's latest instruction reopens both TVs for autonomous
 isolated testing from 00:00 Europe/London on 2026-10-16 (23:00 UTC on 15 October).

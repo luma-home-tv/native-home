@@ -65,6 +65,42 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let preview_artwork_marker = if assets.join("preview-artwork-admission.json").exists() {
+        if !device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PREVIEW
+            || unsafe { libc::geteuid() } < 1000
+            || args.iter().skip(1).any(|arg| arg.starts_with("--"))
+        {
+            return Err(
+                "Preview artwork admission requires ordinary noninteractive native Preview".into(),
+            );
+        }
+        const ADMISSION_FILES: &[&str] = &[
+            "appinfo.json",
+            "home-preview",
+            "icon.png",
+            "appfont.ttf",
+            "appfont-bold.ttf",
+            "OFL.txt",
+            "snapshot.json",
+            "icons",
+            "preview-artwork-admission.json",
+        ];
+        for entry in std::fs::read_dir(&assets)? {
+            let name = entry?.file_name();
+            if !ADMISSION_FILES.contains(&name.to_str().unwrap_or("")) {
+                return Err(
+                    "Preview artwork admission cannot mix with another asset or trial".into(),
+                );
+            }
+        }
+        Some(native_home::broker_startup_proof::read_marker(
+            &assets.join("preview-artwork-admission.json"),
+        )?)
+    } else {
+        None
+    };
     let broker_startup_marker = if assets.join("broker-startup-proof.json").exists() {
         if !device
             || interactive
@@ -592,6 +628,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         && broker_startup_marker.is_none()
         && broker_negative_marker.is_none()
         && installed_artwork_marker.is_none()
+        && preview_artwork_marker.is_none()
         && artwork_guard_marker.is_none()
     {
         app_launches_enabled = native_home::identity::app_launches(
@@ -622,7 +659,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[allow(unused_mut)]
     let mut pointer_worker: Option<native_home::pointer_speed::Worker> = None;
     #[cfg(target_arch = "arm")]
-    if device && (plx_base::paths::app_id() == native_home::identity::PREVIEW || pointer_ui_proof) {
+    if device
+        && preview_artwork_marker.is_none()
+        && (plx_base::paths::app_id() == native_home::identity::PREVIEW || pointer_ui_proof)
+    {
         pointer_worker = Some(native_home::pointer_speed::Worker::native(
             plx_base::paths::app_id().into(),
         )?);
@@ -632,6 +672,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut description_worker: Option<native_home::description_level::Worker> = None;
     #[cfg(target_arch = "arm")]
     if device
+        && preview_artwork_marker.is_none()
         && (plx_base::paths::app_id() == native_home::identity::PREVIEW || description_ui_proof)
     {
         description_worker = Some(native_home::description_level::Worker::native(
@@ -653,9 +694,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .join("home-preferences")
     };
     let (mut persistence, loaded_preferences, mut storage_error) =
-        match Persistence::start(&state_path) {
-            Ok((writer, loaded)) => (Some(writer), loaded, None),
-            Err(error) => (None, None, Some(error.to_string())),
+        if preview_artwork_marker.is_some() {
+            let loaded = native_home::preferences::Store::open_existing(&state_path)?
+                .load()?
+                .ok_or("Preview admission requires existing private preferences")?;
+            if !loaded.initialized {
+                return Err("Preview admission requires initialized preferences".into());
+            }
+            (None, Some(loaded), None)
+        } else {
+            match Persistence::start(&state_path) {
+                Ok((writer, loaded)) => (Some(writer), loaded, None),
+                Err(error) => (None, None, Some(error.to_string())),
+            }
         };
     let mut committed_preferences = None;
     let initial_preferences = if icon_presentation_marker.is_some() {
@@ -673,16 +724,41 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let mut shell = Shell::new(snapshot, initial_preferences);
     let mut preference_write_attempts = 0_u64;
-    queue_preferences(
-        &mut shell,
-        &mut persistence,
-        &mut storage_error,
-        &mut preference_write_attempts,
-    );
+    if preview_artwork_marker.is_none() {
+        queue_preferences(
+            &mut shell,
+            &mut persistence,
+            &mut storage_error,
+            &mut preference_write_attempts,
+        );
+    }
     let preferences_at_boot = shell.preferences().clone();
     shell.enable_app_launches(app_launches_enabled);
     shell.enable_home_launches(home_launches_enabled);
     shell.load_icons(&assets);
+    let preview_artwork_preflight = if preview_artwork_marker.is_some() {
+        Some(native_home::preview_artwork_admission::preflight(
+            &mut shell, &window, &output,
+        )?)
+    } else {
+        None
+    };
+    let mut preview_resource_worker_created = false;
+    if let (Some(marker), Some(preflight)) = (&preview_artwork_marker, &preview_artwork_preflight) {
+        if native_home::preview_artwork_admission::admitted(preflight) {
+            let worker = native_home::artwork_installed_provider::InstalledProvider::start_preview_observation_worker(
+                marker.clone(), output.clone(),
+            )?;
+            let runtime = native_home::artwork_runtime::Runtime::with_fetch_budget(
+                worker,
+                native_home::artwork_cache::Config::default(),
+                Duration::from_secs(30),
+            )
+            .map_err(|error| format!("Preview admission runtime: {error:?}"))?;
+            shell.enable_live_artwork(runtime, None);
+            preview_resource_worker_created = true;
+        }
+    }
     if let Some(marker) = &installed_artwork_marker {
         if loaded_preferences.is_some() || storage_error.is_some() {
             return Err("Installed artwork requires fresh own Proof preferences".into());
@@ -738,6 +814,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         && broker_startup_marker.is_none()
         && broker_negative_marker.is_none()
         && installed_artwork_marker.is_none()
+        && preview_artwork_marker.is_none()
         && artwork_guard_marker.is_none()
     {
         for (page, name) in [
@@ -798,6 +875,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         && broker_startup_marker.is_none()
         && broker_negative_marker.is_none()
         && installed_artwork_marker.is_none()
+        && preview_artwork_marker.is_none()
         && artwork_guard_marker.is_none()
     {
         if assets.join("native-read-probe.json").exists() {
@@ -1458,6 +1536,27 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    let preview_artwork_admission = if let Some(preflight) = preview_artwork_preflight {
+        let observation = if preview_resource_worker_created {
+            Some(native_home::artwork_installed_proof::run(
+                &mut shell,
+                &window,
+                &output,
+                &mut now,
+                |shell| poll_live(&live_worker, shell, live_origin, &mut live_history),
+            )?)
+        } else {
+            None
+        };
+        Some(native_home::preview_artwork_admission::complete(
+            &output,
+            preflight,
+            preview_resource_worker_created,
+            observation,
+        )?)
+    } else {
+        None
+    };
     let installed_artwork_receipt = if installed_artwork_marker.is_some() {
         Some(native_home::artwork_installed_proof::run(
             &mut shell,
@@ -1516,7 +1615,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
-    if artwork_guard_receipt.is_some() {
+    if preview_artwork_admission.is_some() {
+        reason = "preview_artwork_admission_complete";
+    } else if artwork_guard_receipt.is_some() {
         reason = "artwork_guard_relaunch_complete";
     } else if installed_artwork_receipt.is_some() {
         reason = "installed_artwork_complete";
@@ -2104,10 +2205,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
-        "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof && broker_startup_marker.is_none() && broker_negative_marker.is_none() && installed_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+        "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof && broker_startup_marker.is_none() && broker_negative_marker.is_none() && installed_artwork_marker.is_none()
+        && preview_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
     report["broker_negative_proof"] = serde_json::json!(broker_negative_receipt);
     report["installed_artwork_proof"] = serde_json::json!(installed_artwork_receipt);
+    report["preview_artwork_admission"] = serde_json::json!(preview_artwork_admission);
     report["artwork_guard_relaunch_proof"] = serde_json::json!(artwork_guard_receipt);
     report["artwork_startup_probe"] = serde_json::json!(artwork_startup_receipt);
     report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
