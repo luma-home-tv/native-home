@@ -65,10 +65,12 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.11.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.12.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
-records native branding, live sound/network reads, isolated removal and retained
-updates with favourites preserved. Earlier native idle/wake and owned-app launch
+records native branding and live sound/network reads. The
+[Controls layout milestone](docs/controls-layout-milestone.json) records the
+category/detail composition, native navigation, G2 Settings-return regression
+and 0.12.0 updates with favourites preserved. Earlier native idle/wake and owned-app launch
 checks are recorded in the [deployment milestone](docs/deployment-milestone.json).
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
@@ -87,7 +89,7 @@ pinning and durable favourite ordering on both devices; full text entry remains 
 validated and installed as version 0.8.0 on the G2 with saved favourites preserved.
 The [concept fidelity map](docs/design-fidelity.md) records the implemented Luma
 logo/rail, larger Home shelves and status readings alongside the remaining
-Controls layout, input details and long text. The original concepts remain
+input details, broader controls and long text. The original concepts remain
 the target for the finished interface.
 
 Historical [milestone records](docs/implementation-plan.md) describe the earlier

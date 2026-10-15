@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.11.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.12.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -26,7 +26,13 @@ This is an app-local measure: physical panel power, burn-in prevention and LG's
 own protections have not been validated by a framebuffer capture.
 
 Inputs show status. HDMI switching remains gated, and native controls are read-only
-or LG-managed. On the tested G2 firmware, **Controls → Picture → Open LG Settings**
+or LG-managed. Controls now shows a persistent six-category column beside the
+selected detail panel. Arrows preview categories; Right or OK enters the rows.
+Back returns through the category column to Home. The cached Picture breadcrumb
+uses the TV settings profile context and becomes unavailable when stale.
+Scrolling keeps the detail heading fixed, including when reading the final
+LG-managed row. Unverified categories direct you to LG Settings from LG Home;
+they cannot invoke the Picture-only shortcut. On the tested G2 firmware, **Controls → Picture → Open LG Settings**
 opens LG's Picture interface above Luma. Back closes the LG overlay and returns
 to Luma. Luma keeps only its own underlying window alive behind a verified
 Settings overlay and stops painting while covered; LG continues to own its controls.
@@ -46,7 +52,10 @@ settings. The [clock milestone](clock-milestone.json) records the earlier G2
 proof; the [branding/status milestone](branding-status-milestone.json) records
 the branding checks on both devices. The [app-menu milestone](app-menu-milestone.json)
 records two native management runs per TV, exact order reload and the 0.11.0
-retained updates. These are scripted shared-focus tests, not physical remote proof.
+retained updates. The [Controls layout milestone](controls-layout-milestone.json) records the
+latest six-category, pointer, stale-click, scrolling and Back tests plus a G2
+Settings-return regression on 0.12.0. These are scripted native tests, not
+physical remote/pointer proof.
 Sound and Network now show read-only ordinary-app readings. LG Settings handoff
 remains firmware-gated to the separately tested G2 Picture route; the C2 route
 has not yet received that proof. The [fidelity map](design-fidelity.md) tracks the

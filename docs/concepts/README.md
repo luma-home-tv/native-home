@@ -63,8 +63,9 @@ identity, favourite save/readback and clean removal. Version 0.10.0 added the Lu
 header/rail branding and live sound/network readings to the existing native
 clock, drawer filters and search. The [fidelity map](../design-fidelity.md)
 compares implementation with these concepts. Version 0.11.0 adds a native
-management menu and persisted favourite ordering; Controls composition and
-further visual polish remain. Source switching, native setting writes,
+management menu and persisted favourite ordering. Version 0.12.0 brings the
+native six-category Controls/detail composition closer to this render. Validated
+choice/range controls, broader LG-managed routes and further visual polish remain. Source switching, native setting writes,
 physical remote/pointer coverage and dashboard performance remain unverified.
 The render watermark stays visible in every exported concept so these images
 cannot be mistaken for that device evidence.

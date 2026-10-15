@@ -1,0 +1,186 @@
+{
+  "code_revision": "dc106df4bdada25a5ad0efc9b765f806d63699c1",
+  "package_version": "0.12.0",
+  "binary_sha256": "79e006e3da68bcab367ef5ff5d700c9b9dc3b366ac8256b97d0c107a56360614",
+  "client_tests": {
+    "passed": 72,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "implementation": [
+    "Persistent six-category column beside a graphite native detail panel, composed with PlxNative labels/forms/focus and shared hit map",
+    "Arrows preview a category; Right/OK enters rows; Back returns through categories to Home",
+    "Fixed header and context breadcrumb remain above independently scrolling rows",
+    "Category labels and context breadcrumb are cached; Picture context expires even when no row can trigger a rebuild",
+    "Only Picture can emit the existing Picture-only LG Settings request; other categories present a disabled LG-managed row",
+    "Pointer targets from an older frame are rejected when absent from the current surface, including immediately after modal opening"
+  ],
+  "meaningful_unit_coverage": [
+    "Category identity, lateral focus links and Back hierarchy",
+    "Category movement cancels an armed Settings request",
+    "Unsupported categories retain navigation and emit no operation",
+    "Root Controls view refreshes its selected detail and withdraws stale readings",
+    "Picture breadcrumb expires with empty settings rows",
+    "Stale previous-frame row cannot replace valid focus; previous-frame app card cannot escape a newly opened menu"
+  ],
+  "host_layout_proof": {
+    "scope": "Synthetic 20-row long-form fixture, host execution; not TV capability evidence",
+    "captured_revision_scope": "Final pointer fix, before source commit; final UI binary rebuilt from the revision above",
+    "independent_scroll_observed": true,
+    "scripted_pointer_and_navigation_passed": true,
+    "text_fit_scope": "Visual review of host and native frames; no claim of automated all-locale typography validation"
+  },
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "native_read_cycles": 5,
+      "six_categories_rendered": [
+        "Picture",
+        "Sound",
+        "Network",
+        "Accessibility",
+        "General",
+        "PanelCare"
+      ],
+      "scripted_controls": {
+        "stale_pointer_ignored": true,
+        "right_enters_detail": true,
+        "back_restores_category": true,
+        "pointer_selects_sound": true,
+        "armed_picture_route_cancelled_on_category_change": true,
+        "back_returns_home": true,
+        "preferences_unchanged": true
+      },
+      "network_detail_scroll": 139.9993896484375,
+      "picture_and_panel_care_frames_visually_reviewed": true,
+      "injected_back_exit": true,
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_app_and_preferences_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.12.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "no_household_captures": true,
+        "no_setting_writes": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "native_read_cycles": 5,
+      "six_categories_rendered": [
+        "Picture",
+        "Sound",
+        "Network",
+        "Accessibility",
+        "General",
+        "PanelCare"
+      ],
+      "scripted_controls": {
+        "stale_pointer_ignored": true,
+        "right_enters_detail": true,
+        "back_restores_category": true,
+        "pointer_selects_sound": true,
+        "armed_picture_route_cancelled_on_category_change": true,
+        "back_returns_home": true,
+        "preferences_unchanged": true
+      },
+      "network_detail_scroll": 171.999267578125,
+      "picture_and_panel_care_frames_visually_reviewed": true,
+      "injected_back_exit": true,
+      "test_cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_app_and_preferences_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.12.0",
+        "ordinary_app_identity": true,
+        "favourites_loaded": true,
+        "no_household_captures": true,
+        "no_setting_writes": true,
+        "checked_state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    }
+  },
+  "g2_settings_regression": {
+    "fixed_launch_payload": {
+      "id": "com.palm.app.settings",
+      "params": {
+        "target": "picture"
+      }
+    },
+    "independent_observer_started_before_launch": true,
+    "independent_samples": 147,
+    "overlay_seen": true,
+    "underlying_dashboard_survived_overlay": true,
+    "injected_settings_back_return_frame_seen": true,
+    "returned_native_controls_frame_visually_reviewed": true,
+    "settings_returns": 1,
+    "own_back_hierarchy_exit": "back_from_home",
+    "no_setting_writes": true,
+    "cleanup": {
+      "test_paths_mounts_absent": true,
+      "test_preferences_absent": true,
+      "test_catalogue_absent": true,
+      "test_launchpoint_absent": true,
+      "new_settings_surface_absent": true,
+      "core_hashes_unchanged": true,
+      "picture_values_unchanged": true,
+      "audio_values_unchanged": true,
+      "retained_app_favourites_unchanged": true,
+      "home_verified": true,
+      "previous_foreground_restored": true
+    }
+  },
+  "remaining": [
+    "C2 Picture Settings handoff and broader verified LG-managed routes",
+    "Validated native choice/range controls after per-operation capability/context/readback/restore proof",
+    "Explicit LG Home shortcut and Home view-all shortcuts",
+    "Authoritative source-format/active-source details and verified HDMI switching",
+    "Long text/full text input, physical remote/pointer/wheel verification",
+    "Sustained frame pacing, latency, idle resources, memory stress and reboot persistence"
+  ],
+  "privacy": "Native/compositor frames, device inventories, raw service replies, saved-favourite backups and per-device packages remain outside Git."
+}
