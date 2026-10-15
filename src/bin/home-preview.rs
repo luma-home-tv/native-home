@@ -562,6 +562,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut pointer_actions,
             &mut now,
         )?);
+        shell.open(Page::Home);
     }
     let mut proof_request = None;
     if let Some(request) = launch_proof {

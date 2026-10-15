@@ -1105,6 +1105,9 @@ impl Shell {
             Page::General if self.pointer_enabled => {
                 "Pointer speed can be adjusted here • more controls in LG Settings"
             }
+            Page::Controls if self.control_category == Page::General && self.pointer_enabled => {
+                "Pointer speed can be adjusted here • more controls in LG Settings"
+            }
             _ => "View only • setting changes remain available in LG Settings",
         });
         match page {
