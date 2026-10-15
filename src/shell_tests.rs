@@ -1711,3 +1711,32 @@ fn typed_text_cancels_an_armed_native_key_instead_of_appending_that_key_on_relea
     assert_eq!(s.drawer_state().query(), "Écran");
     assert!(s.take_requests().is_empty());
 }
+
+#[test]
+fn system_keyboard_owns_search_and_leaving_ends_editing_without_another_keypad() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    s.use_system_keyboard(true);
+    assert!(s.drawer_state().system_keyboard());
+    assert!(!s.focus_search_key(0));
+    s.press(true, PressFrom::Key);
+    s.press(false, PressFrom::Key);
+    assert!(s.drawer_state().query().is_empty());
+    assert!(s.text_input("luma", false));
+    assert!(s.drawer_state().system_keyboard()); // a live drawer rebuild must retain ownership
+    s.back();
+    assert!(!s.drawer_state().editing);
+    assert!(!s.drawer_state().system_keyboard());
+    assert_eq!(s.drawer_state().query(), "luma");
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    s.use_system_keyboard(true);
+    s.open(Page::Home);
+    s.open(Page::Applications);
+    assert!(!s.drawer_state().editing);
+    assert!(!s.drawer_state().system_keyboard());
+    assert!(s.take_requests().is_empty());
+}

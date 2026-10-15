@@ -8,6 +8,7 @@ pub const MAX_QUERY_BYTES: usize = 256;
 pub struct Drawer {
     pub favourites_only: bool,
     pub editing: bool,
+    system_keyboard: bool,
     text: TextBuffer,
     tokens: Vec<String>,
     composition: String,
@@ -28,6 +29,12 @@ fn admitted(text: &str) -> bool {
     !text.chars().any(char::is_control)
 }
 impl Drawer {
+    pub fn system_keyboard(&self) -> bool {
+        self.editing && self.system_keyboard
+    }
+    pub fn use_system_keyboard(&mut self, active: bool) {
+        self.system_keyboard = active && self.editing;
+    }
     pub fn query(&self) -> &str {
         self.text.text()
     }
@@ -121,6 +128,7 @@ impl Drawer {
     }
     pub fn finish_editing(&mut self) {
         self.editing = false;
+        self.system_keyboard = false;
         self.composition.clear();
     }
     pub fn key(&mut self, index: usize) -> bool {

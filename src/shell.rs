@@ -1220,6 +1220,7 @@ impl Shell {
 
         plx_machine::idle::invalidate();
         if page != Page::Applications {
+            self.drawer.finish_editing();
             self.menu = None;
         }
         if page != Page::PointerSpeed {
@@ -2040,6 +2041,10 @@ impl Shell {
         }
     }
     pub fn direction(&mut self, dir: Dir) {
+        if self.drawer.system_keyboard() {
+            self.input.cancel_press();
+            return;
+        }
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
@@ -2175,6 +2180,10 @@ impl Shell {
         self.input.note_alive(self.now);
     }
     pub fn press(&mut self, down: bool, from: PressFrom) {
+        if self.drawer.system_keyboard() {
+            self.input.cancel_press();
+            return;
+        }
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
@@ -2266,6 +2275,10 @@ impl Shell {
         }
     }
     pub fn pointer(&mut self, x: f32, y: f32, click: bool) {
+        if self.drawer.system_keyboard() {
+            self.input.cancel_press();
+            return;
+        }
         if self.surface.page == Page::RangeEditor
             && click
             && self.range.as_ref().is_some_and(|r| !r.pending)
@@ -3371,7 +3384,7 @@ impl Shell {
                 )
                 .draw(p, Rect::new(480.0, 390.0, 1344.0, 120.0));
             }
-            if self.drawer.editing {
+            if self.drawer.editing && !self.drawer.system_keyboard() {
                 for (i, label) in KEYS.iter().enumerate() {
                     TabPill::new(cstr(label).as_ptr(), theme::size::CAPTION, keyboard_rect(i))
                         .focused(focused == Some(KEYBOARD_BASE + i as u32))
@@ -3438,13 +3451,17 @@ impl Shell {
         if self.surface.menu.is_some() {
             stops.retain(|stop| (MENU_BASE..MENU_BASE + 5).contains(&stop.key.elem));
         }
-        if self.surface.editing {
+        if self.drawer.system_keyboard() {
+            stops.clear();
+        } else if self.surface.editing {
             stops.retain(|stop| keyboard_key(stop.key.elem).is_some());
         }
         self.input.hit.fill(stops);
         self.input.hit.swap();
         let status = if self.menu.is_some() {
             c"App options • ordering affects Luma favourites only • Back to close"
+        } else if self.drawer.system_keyboard() {
+            c"Use the TV keyboard • Back to finish search"
         } else if self.drawer.editing && self.surface.page == Page::Applications {
             c"OK to type • Back to finish search"
         } else {
@@ -3512,7 +3529,11 @@ impl Shell {
         true
     }
     pub fn focus_search_key(&mut self, index: usize) -> bool {
-        if self.surface.page != Page::Applications || !self.drawer.editing || index >= KEYS.len() {
+        if self.surface.page != Page::Applications
+            || !self.drawer.editing
+            || self.drawer.system_keyboard()
+            || index >= KEYS.len()
+        {
             return false;
         }
         self.focus_special(KEYBOARD_BASE + index as u32, GroupId(4));
@@ -3536,6 +3557,12 @@ impl Shell {
     }
     pub fn application_count(&self) -> usize {
         self.surface.cards.len()
+    }
+    pub fn use_system_keyboard(&mut self, active: bool) {
+        self.input.cancel_press();
+        self.drawer
+            .use_system_keyboard(active && self.surface.page == Page::Applications);
+        plx_machine::idle::invalidate();
     }
     pub fn text_input(&mut self, text: &str, prediction: bool) -> bool {
         if self.surface.page != Page::Applications || !self.drawer.editing || self.menu.is_some() {

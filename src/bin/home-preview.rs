@@ -73,6 +73,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Navigation proof requires isolated diagnostic identity".into());
     }
     let text_probe = assets.join("text-input-proof.json").exists();
+    let manual_text = assets.join("manual-text-proof.json").exists();
+    if manual_text && !text_probe {
+        return Err("Manual keyboard trial requires the isolated text proof".into());
+    }
     if text_probe
         && (!device
             || interactive
@@ -770,6 +774,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_arch = "arm")]
     if text_probe {
         let result = text_input_trial(
+            manual_text,
             &mut shell,
             &window,
             &output,
@@ -864,7 +869,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
-    if !capture_only {
+    if text_probe {
+        reason = "text_proof_complete";
+    } else if !capture_only {
         plx_machine::idle::set_enabled(true);
         plx_machine::idle::wake();
         reason = "timeout";
@@ -2125,6 +2132,7 @@ fn description_ui_trial(
 #[cfg(target_arch = "arm")]
 #[allow(clippy::too_many_arguments)]
 fn text_input_trial(
+    manual: bool,
     shell: &mut Shell,
     window: &Window,
     output: &std::path::Path,
@@ -2144,6 +2152,7 @@ fn text_input_trial(
     let mut statuses = Vec::new();
     let mut kinds = Vec::new();
     let mut commits = 0;
+    let mut manual_results = Vec::new();
     let phase = |name: &str| -> Result<(), Box<dyn std::error::Error>> {
         let tmp = output.join("text-input-next.json");
         let f = std::fs::OpenOptions::new()
@@ -2199,72 +2208,145 @@ fn text_input_trial(
             phase("unavailable")?;
             return Err("SDL text input could not acquire the app window".into());
         }
+        shell.use_system_keyboard(true);
         statuses.push(serde_json::json!({"cycle":cycle,"started":window.keyboard_status()}));
         std::fs::write(
             output.join("text-input-runtime.json"),
             serde_json::to_vec(&statuses)?,
         )?;
         phase(&format!("started-{cycle}"))?;
-        for text in ["É", "cran"] {
-            if !window.diagnostic_text(text) {
-                return Err("Native-only text injection refused".into());
-            }
-        }
-        let deadline = Instant::now() + Duration::from_secs(3);
-        while shell.drawer_state().query() != "Écran" && Instant::now() < deadline {
-            while let Some(e) = poll() {
-                if kinds.len() < 64 {
-                    kinds.push(e.kind);
-                }
-                if e.kind == 10 {
-                    if let Some(text) = e.text() {
-                        shell.text_input(text, false);
-                        commits += 1;
-                    }
-                } else if e.kind == 11 {
-                    if let Some(text) = e.text() {
-                        shell.text_preedit(text);
-                    }
+        if !manual {
+            for text in ["É", "cran"] {
+                if !window.diagnostic_text(text) {
+                    return Err("Native-only text injection refused".into());
                 }
             }
-            *now += 17;
-            shell.tick(*now, 0.017);
-            shell.draw();
-            window.swap();
-            std::thread::sleep(Duration::from_millis(10));
+            let deadline = Instant::now() + Duration::from_secs(3);
+            while shell.drawer_state().query() != "Écran" && Instant::now() < deadline {
+                while let Some(e) = poll() {
+                    if kinds.len() < 64 {
+                        kinds.push(e.kind);
+                    }
+                    if e.kind == 10 {
+                        if let Some(text) = e.text() {
+                            shell.text_input(text, false);
+                            commits += 1;
+                        }
+                    } else if e.kind == 11 {
+                        if let Some(text) = e.text() {
+                            shell.text_preedit(text);
+                        }
+                    }
+                }
+                *now += 17;
+                shell.tick(*now, 0.017);
+                shell.draw();
+                window.swap();
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            std::fs::write(
+                output.join("text-input-decode.json"),
+                serde_json::to_vec(
+                    &serde_json::json!({"commits":commits,"kinds":kinds,"editing":shell.drawer_state().editing,"query_bytes":shell.drawer_state().query().len()}),
+                )?,
+            )?;
+            if shell.drawer_state().query() != "Écran" {
+                return Err("Native SDL commit boundary did not reach the owned draft".into());
+            }
         }
-        std::fs::write(
-            output.join("text-input-decode.json"),
-            serde_json::to_vec(
-                &serde_json::json!({"commits":commits,"kinds":kinds,"editing":shell.drawer_state().editing,"query_bytes":shell.drawer_state().query().len()}),
-            )?,
+        drawer_capture(
+            shell,
+            window,
+            output,
+            &format!("text-keyboard-{cycle}"),
+            now,
         )?;
-        if shell.drawer_state().query() != "Écran" {
-            return Err("Native SDL commit boundary did not reach the owned draft".into());
-        }
         phase(&format!("open-{cycle}"))?;
-        let until = Instant::now() + Duration::from_secs(5);
+        let until = Instant::now() + Duration::from_secs(if manual { 90 } else { 10 });
+        let mut finished_by = None;
+        let mut panel = native_home::keyboard::PanelSession::default();
+        panel.observe(window.keyboard_status().panel_flag != 0);
+        let mut last_panel_poll = Instant::now();
+        let mut sources = std::collections::BTreeMap::<u32, usize>::new();
+        let mut keys = Vec::new();
         while Instant::now() < until {
             poll_live(live, shell, origin, history);
             while let Some(e) = poll() {
                 if kinds.len() < 64 {
                     kinds.push(e.kind);
                 }
-                if e.kind == 10 {
-                    if let Some(text) = e.text() {
-                        shell.text_input(text, false);
+                match e.kind {
+                    10 => {
+                        if let Some(text) = e.text() {
+                            shell.text_input(text, false);
+                            *sources.entry(e.source).or_default() += 1;
+                            if manual {
+                                commits += 1;
+                            }
+                        }
                     }
+                    11 => {
+                        if let Some(text) = e.text() {
+                            shell.text_preedit(text);
+                        }
+                    }
+                    2 if e.repeat == 0 => {
+                        if keys.len() < 32 {
+                            keys.push(
+                                serde_json::json!({"key":e.key,"scan":e.scan,"source":e.source}),
+                            );
+                        }
+                        match e.key {
+                            5 | 6 => {
+                                finished_by = Some(e.key);
+                            }
+                            7 => {
+                                shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
+                            }
+                            8 => {
+                                shell.text_delete_forward();
+                            }
+                            _ => {}
+                        }
+                    }
+                    1 | 7 | 8 if manual => {
+                        return Err("Manual keyboard trial lost its own foreground window".into());
+                    }
+                    _ => {}
                 }
             }
             *now += 17;
             shell.tick(*now, 0.017);
             shell.draw();
             window.swap();
+            if last_panel_poll.elapsed() >= Duration::from_millis(100) {
+                if panel.observe(window.keyboard_status().panel_flag != 0) {
+                    finished_by.get_or_insert(0);
+                }
+                last_panel_poll = Instant::now();
+            }
+            if finished_by.is_some() {
+                break;
+            }
             std::thread::sleep(Duration::from_millis(10));
+        }
+        statuses
+            .push(serde_json::json!({"cycle":cycle,"finished_by_key_or_panel_zero":finished_by}));
+        if manual {
+            if finished_by.is_none() {
+                return Err("Manual keyboard cycle timed out".into());
+            }
+            manual_results.push(serde_json::json!({"cycle":cycle,"finished_by_key":finished_by,"query_bytes":shell.drawer_state().query().len(),"matches_requested_query":shell.drawer_state().query()==if cycle==1 {"luma"} else {"tv"},"commit_sources":sources,"keys":keys}));
+            std::fs::write(
+                output.join("manual-text-results.json"),
+                serde_json::to_vec(&manual_results)?,
+            )?;
         }
         drawer_capture(shell, window, output, &format!("text-open-{cycle}"), now)?;
         statuses.push(serde_json::json!({"cycle":cycle,"open_flag_not_visibility_proof":window.keyboard_status()}));
         window.text_stop();
+        shell.back();
+        drawer_capture(shell, window, output, &format!("text-closed-{cycle}"), now)?;
         phase(&format!("closed-{cycle}"))?;
         let until = Instant::now() + Duration::from_secs(5);
         while Instant::now() < until {
@@ -2279,8 +2361,7 @@ fn text_input_trial(
             window.swap();
             std::thread::sleep(Duration::from_millis(10));
         }
-        statuses.push(serde_json::json!({"cycle":cycle,"closed":window.keyboard_status()}));
-        shell.back();
+        statuses.push(serde_json::json!({"cycle":cycle,"closed":window.keyboard_status(),"editing":shell.drawer_state().editing,"system_keyboard":shell.drawer_state().system_keyboard()}));
     }
     shell.open(Page::Home);
     if shell.preferences() != &before || !shell.take_requests().is_empty() {
@@ -2288,6 +2369,6 @@ fn text_input_trial(
     }
     phase("complete")?;
     Ok(
-        serde_json::json!({"native_sdl_commits":commits,"query_match_each_cycle":true,"cycles":2,"injection":"native diagnostic SDL queue, not human typing","statuses":statuses,"window_event_kinds":kinds,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
+        serde_json::json!({"native_sdl_commits":commits,"query_match_each_cycle":!manual || manual_results.iter().all(|r|r["matches_requested_query"]==true),"cycles":2,"injection":if manual {"human keyboard trial, no injected text"} else {"native diagnostic SDL queue, not human typing"},"manual":manual,"manual_results":manual_results,"statuses":statuses,"window_event_kinds":kinds,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
     )
 }
