@@ -17,7 +17,7 @@ progress map, not a claim that the complete concept is implemented.
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Isolated G2 system-keyboard typing/Done/Back and corrected dismissal now have evidence; normal integration, broader IME/script/font coverage, typography polish and physical hold/pointer/wheel proof remain. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs; all four G2 source selections have independent readback/restoration proof and are enabled. | Live video/format, exact C2 idle-state restoration and C2 production switching; source artwork. |
-| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs; G2 audio-description range entry/Apply/endpoints/restoration now proved with description off. | Broader verified edits/setting coverage and physical input proof. |
+| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings, with six further guidance/Sound readings qualified in isolated builds; native Back/pointer and all six LG-managed section/entry routes proved on both TVs; G2 audio-description range entry/Apply/endpoints/restoration now proved with description off. | Broader verified edits/setting coverage and physical input proof. |
 
 The sound output, TV volume/mute and sound profile are distinct readings. TV
 volume is not a measurement of an external amplifier's volume. Wired and Wi-Fi
@@ -134,4 +134,6 @@ The [G2 human check](manual-keyboard-milestone.json) now confirms the intended
 single-keyboard Done/reopen/Back flow on the 0.25.0 actual main loop. The
 [OK-wake record](ok-wake-milestone.json) adds intentional wake suppression on
 both models. Neither supplies new concept frames or performance measurements;
-the separate optional Sound rows remain host-only pending native layout review.
+the [Sound milestone](sound-read-milestone.json) separately qualifies its three
+read-only rows and native focus/scroll layout on both models. Retained previews
+remain unchanged, and native stale/error-state review remains open.

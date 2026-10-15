@@ -1,0 +1,180 @@
+{
+  "schema": 1,
+  "status": "Three optional global Sound readings independently qualified in isolated ordinary-app native component builds on both models; retained previews unchanged",
+  "source": {
+    "functional_revision": "7f29884be4c5a0c48794e71110744676c78bb371",
+    "proof_version": "0.26.0",
+    "binary_sha256": "d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf"
+  },
+  "interface": {
+    "new_readouts": [
+      "audioBalance",
+      "audioDescription",
+      "audioDescriptionVolume"
+    ],
+    "focus_keys": [
+      30,
+      31,
+      32
+    ],
+    "schemas": {
+      "audioBalance": "Signed LG scale -50..50, step 1",
+      "audioDescription": "Closed on/off string enum",
+      "audioDescriptionVolume": "Signed LG scale -15..15, step 1"
+    },
+    "scope": "Global Sound preferences, separate from audioInput-dimensional soundMode",
+    "core_rows_preserved": [
+      "soundOutput",
+      "volume",
+      "muteStatus",
+      "soundMode",
+      "audioInput"
+    ],
+    "policy": "Protected native readouts with LG-managed actions only; no new setter or write capability",
+    "freshness": "Optional Sound has its own freshness domain, separate from core routed audio; failure/expiry/recovery behavior is host-tested",
+    "rendering": "Shared native forms/focus/scroll on an OLED-black canvas with graphite surfaces"
+  },
+  "checks": {
+    "library_tests_passed": 176,
+    "keyboard_handler_regressions_passed": 2,
+    "all_target_hostsim_clippy": "Passed with warnings denied",
+    "arm_release": "Passed; existing neon target-feature warning",
+    "independent_saved_native_evidence_audit": "Passed on both models; raw schemas/typed values, actual package bytes, snapshots/geometry/GL/scroll and preservation/cleanup receipts were rechecked locally"
+  },
+  "devices": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "ec8475365fec0631837c275986b94dd3a577401d8ff15c32980c5d9738288933",
+      "ordinary_uid_and_running_executable_verified": true,
+      "validation": {
+        "ordinary_app_three_values_and_wire_types_match": true,
+        "global_sound_exact_schemas": true,
+        "numeric_wire_encoding_observed": "Canonical decimal strings for both numeric readings in this sample",
+        "all_eight_sound_rows_preserved": true,
+        "core_output_volume_mute_and_profile_match": true,
+        "three_protected_available": true,
+        "focused_disabled_contained_rows": 3,
+        "return_up_contained": true,
+        "actual_scroll_down_and_up": true,
+        "scrolls": [
+          107.9965591430664,
+          199.99705505371094,
+          291.9970703125
+        ],
+        "return_up_scroll": 248.00140380859375,
+        "gl_state_and_native_assets": true,
+        "back_restores_category": true,
+        "all_read_only": true,
+        "existing_guidance_component_revalidated": true,
+        "component_capture_only": true,
+        "stage_snapshot_freshness_transition_proved": false
+      },
+      "private_sound_frame_count": 5,
+      "frame_review": "The coordinator reviewed complete original native Sound frames. Branding, navigation and category pixel regions remain byte-identical across the four focused captures. Raw frames remain private.",
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "all_proof_uid_processes_absent": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "guidance_values_and_types_unchanged": true,
+        "guidance_descriptors_unchanged": true,
+        "keyboard_absent": true,
+        "sound_values_and_wire_types_unchanged": true,
+        "sound_descriptors_unchanged": true,
+        "core_output_volume_mute_profile_unchanged": true
+      },
+      "device_lease_released": true,
+      "private_agent_removed": true,
+      "verified_own_upload_removed": true,
+      "retained_version": "0.21.0",
+      "retained_modified": false
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "b1b8bd4667de359dfa4db35125a183d3c1e9b05870573218e1c7bc1c544aaa08",
+      "ordinary_uid_and_running_executable_verified": true,
+      "validation": {
+        "ordinary_app_three_values_and_wire_types_match": true,
+        "global_sound_exact_schemas": true,
+        "numeric_wire_encoding_observed": "Canonical decimal strings for both numeric readings in this sample",
+        "all_eight_sound_rows_preserved": true,
+        "core_output_volume_mute_and_profile_match": true,
+        "three_protected_available": true,
+        "focused_disabled_contained_rows": 3,
+        "return_up_contained": true,
+        "actual_scroll_down_and_up": true,
+        "scrolls": [
+          107.9965591430664,
+          199.99705505371094,
+          291.9970703125
+        ],
+        "return_up_scroll": 248.00140380859375,
+        "gl_state_and_native_assets": true,
+        "back_restores_category": true,
+        "all_read_only": true,
+        "existing_guidance_component_revalidated": true,
+        "component_capture_only": true,
+        "stage_snapshot_freshness_transition_proved": false
+      },
+      "private_sound_frame_count": 5,
+      "frame_review": "The coordinator reviewed complete original native Sound frames. Branding, navigation and category pixel regions remain byte-identical across the four focused captures. Raw frames remain private.",
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "all_proof_uid_processes_absent": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "guidance_values_and_types_unchanged": true,
+        "guidance_descriptors_unchanged": true,
+        "keyboard_absent": true,
+        "sound_values_and_wire_types_unchanged": true,
+        "sound_descriptors_unchanged": true,
+        "core_output_volume_mute_profile_unchanged": true
+      },
+      "device_lease_released": true,
+      "private_agent_removed": true,
+      "verified_own_upload_removed": true,
+      "retained_version": "0.20.0",
+      "retained_modified": false
+    }
+  },
+  "limits": [
+    "Component read/layout qualification only; scripted shared arrows and Back, without OK activation or a new physical remote test.",
+    "Ordinary-app raw replies and captured UI readouts agree with independent baselines; stage captures are snapshots and do not establish per-stage service freshness.",
+    "Independent core/optional expiry, partial failure, recovery and fully unavailable status are host-tested, not yet native transition-qualified.",
+    "These global preferences do not prove active audio-pipeline behavior, audible description mixing, balance effect or external amplifier settings.",
+    "No new setter admission, setting change, source switch, performance benchmark or retained preview promotion is claimed.",
+    "The independent follow-up audit reads saved files and receipts; it does not requery current TV state.",
+    "Historical 0.25.0 guidance artifacts retain their original source and binary identities."
+  ],
+  "retained_promotion": false
+}

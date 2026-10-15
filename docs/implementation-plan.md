@@ -49,7 +49,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; all four G2 ports now have independent selection/restoration trials and production selection in 0.19.0; C2 exact idle restoration and live format/playback remain unverified, so C2 selection stays gated |
-| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; 20 descriptor-validated readouts added in 0.17.0 across Picture, Accessibility, General and Panel Care; native pointer-speed choice/commit/restoration proved on both in 0.18.0; G2 native audio-description range entry/Apply/endpoints/restoration proved in 0.21.0, with description off; broader verified edits and setting coverage remain |
+| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; 20 descriptor-validated readouts added in 0.17.0 across Picture, Accessibility, General and Panel Care; six more guidance/Sound readouts have isolated 0.25.0/0.26.0 ordinary-app/native proof on both; native pointer-speed choice/commit/restoration proved on both in 0.18.0; G2 native audio-description range entry/Apply/endpoints/restoration proved in 0.21.0, with description off; broader verified edits and setting coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; Native injected SDL navigation and bounded submission/CPU/RSS/idle-paint measurements now exist on both; physical latency, GPU/panel timing and stress memory remain unverified |
 
@@ -129,8 +129,10 @@ They add no setter; physical input, freshness transitions and retained promotion
 remain separate.
 The [optional global Sound group](sound-read-design.md) now has fixed GETs,
 strict schemas and three protected rows integrated behind independent freshness.
-This is host-only work; ordinary-app permission and native focus/scroll/layout
-must be qualified separately on each TV before claiming coverage.
+Its [0.26.0 milestone](sound-read-milestone.json) independently qualifies ordinary
+getter/descriptor access, typed readback matching and native focus/scroll/layout
+on both TVs, with complete removal and retained/core/settings preservation.
+Native stale/partial transitions, audible effects and retained updates remain open.
 The [capability presentation model](control-capability-design.md) keeps reading
 freshness, edit eligibility, pending operations and LG routes separate; it has
 no normal UI caller yet.

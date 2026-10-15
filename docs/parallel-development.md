@@ -126,7 +126,12 @@ incomplete attempts remain recorded, including early startup focus loss and a
 corrected host assertion. C2 physical input, later-batch/pointer drain races,
 cold-entry reliability and performance remain open. A separate host lane has
 integrated the [optional Sound readings](sound-read-design.md), with independent
-review and freshness/error fixtures; no Sound candidate has reached either TV.
+review and freshness/error fixtures. The same frozen 0.26.0 binary now has
+[independent ordinary-app/native Sound qualification](sound-read-milestone.json)
+on both TVs. A second agent prepared the C2 driver while the coordinator ran G2;
+both device jobs then overlapped under separate leases, followed by independent
+receipt review. Both proof packages were removed and retained previews preserved.
+Native stale/error transitions and retained integration remain separate gates.
 
 The next waves are:
 

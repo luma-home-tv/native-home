@@ -105,7 +105,10 @@ The [guidance-read milestone](docs/guidance-read-milestone.json) adds isolated
 ordinary-app and native focus/scroll proof for guidance volume, pitch and speed
 on both TVs. These are read-only choices; retained previews are unchanged.
 The next [optional Sound read group](docs/sound-read-design.md) is integrated
-and host-tested only; ordinary-app access and native layout remain unqualified.
+and has [independent 0.26.0 native qualification](docs/sound-read-milestone.json)
+on both TVs. Balance, description enablement and description level are read-only;
+their ordinary-app wire values/schemas, focus/scroll and removal are verified.
+Native freshness transitions, audible effects and retained promotion remain open.
 
 The [Inputs detail milestone](docs/inputs-detail-milestone.json) adds a native
 two-column source grid and graphite detail pane, matched to the concept. Both TVs

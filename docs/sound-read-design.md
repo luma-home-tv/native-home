@@ -1,11 +1,12 @@
 # Optional global Sound read group
 
-Status: integrated host-only candidate, not deployed or ordinarily admitted on
-either TV. `src/sound_reads.rs` defines the pure parser and two fixed GETs;
+Status: [isolated 0.26.0 ordinary-app/native component qualification](sound-read-milestone.json)
+on both TVs; the retained previews are unchanged. `src/sound_reads.rs` defines
+the pure parser and two fixed GETs;
 `native_probe` appends those GETs, `live` merges the three protected rows and the
 existing Sound form renders them. No setter, writable UI action or write
 capability is added. The separately guarded audio-description editor is
-unchanged. Current frozen native lifecycle tests do not exercise this candidate.
+unchanged. Earlier frozen keyboard/lifecycle tests do not exercise this candidate.
 
 ## Evidence and scope
 
@@ -34,7 +35,8 @@ its stored level, and no enablement or audible mixing change is requested.
 These are global preferences. `soundMode` has an `audioInput` dimension in the
 ordinary-app survey and is explicitly outside this group. No selected-input,
 HDR, sound-route or active audio-pipeline inference is made from these values.
-Root read success does not establish ordinary-app permission or C2 behaviour.
+Root read success alone does not establish ordinary-app permission or C2 behaviour;
+the later milestone records each model's separate ordinary-app trial.
 
 ## Integration interface
 
@@ -106,15 +108,17 @@ The candidate uses a **separate optional namespace and freshness stamp**:
    gates. Neither balance nor description enablement gets a native action.
    Sound's existing validated LG Settings route remains available.
 
-Ordinary-app getter/descriptor admission remains to be validated independently
-on each intended model with an isolated immutable candidate. Require three typed
-values and schemas matching independent readbacks, without changing preferences,
-audio routing, source, playback or accessibility enablement. An unavailable
-model stays unavailable; do not substitute root reads into the ordinary UI.
-Inspect actual native Sound layout, partial-error/stale states, focus and scroll,
-then verify exact proof removal and preservation of retained app/favourites,
-settings/core, source and foreground. Native layout, ordinary permission, C2
-support and retained integration remain pending.
+The [native milestone](sound-read-milestone.json) now records independent G2 and
+C2 trials of an immutable isolated candidate. All three typed values and exact
+schemas matched independent readbacks, and each protected row was focused,
+disabled and fully inside the native viewport. Recorded positions establish
+down/up scrolling and Back return. Core output/volume/mute/profile readings also
+matched their independent baseline. No preference, audio route, source or
+accessibility setting was changed. Complete removal and retained app/favourites,
+settings/core/source/foreground preservation were verified on each model.
+Native partial-error/stale transitions, audible effect and retained integration
+remain pending. An unavailable model stays unavailable; root replies never
+substitute for ordinary reads in the UI.
 
 ## Host verification boundary
 

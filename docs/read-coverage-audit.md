@@ -8,6 +8,9 @@ independent ordinary-app/native component proof on both models. The initial
 schema audit used saved receipts; the later milestone identifies the actual
 device work. Neither expands the earlier `8121333` lifecycle receipt or updates
 the retained previews.
+The later [0.26.0 Sound milestone](sound-read-milestone.json) independently adds
+the three global Sound readings and focused/scrolled native component proof on
+both models, preserving the existing routed-audio/profile readings.
 
 ## Evidence scope
 
@@ -130,11 +133,13 @@ non-interactive native dashboard identity.
 
 The next **separate global Sound read group** for `audioBalance`,
 `audioDescription` and `audioDescriptionVolume` is now
-[integrated as a host-only candidate](sound-read-design.md), using two fixed
+[integrated](sound-read-design.md), using two fixed
 read-only calls. It validates global dimensions and signed range/string types,
 with independent freshness and failure handling beside output/volume/mute/profile
-rows. It does not extend the profile-dimensional getter. Independent ordinary-app
-matching and native layout proof remain required on each TV. Reading a level
+rows. It does not extend the profile-dimensional getter. The separate
+[0.26.0 milestone](sound-read-milestone.json) now provides independent ordinary-app
+matching and native layout proof on each TV. Native stale/error transitions and
+normal retained updates remain unqualified. Reading a level
 does not change description enablement or promote a numeric editor.
 
 ## Rejected shortcuts and remaining unknowns
