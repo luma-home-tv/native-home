@@ -1,0 +1,42 @@
+# Language and region readings (0.30.0 candidate)
+
+General now includes five fixed, protected readings: menu language, preferred
+and secondary audio languages, TV country, and LG services country. Language
+and country codes are displayed as returned, after bounded string/type checks.
+They are not a complete locale registry or a list of supported choices. The
+existing LG General overview remains the route for changes.
+
+The value requests use LG's documented retail-TV API:
+[Settings Service](https://webostv.developer.lge.com/develop/references/settings-service).
+`localeInfo` must be requested without a category. `country` and
+`smartServiceCountryCode2` require the `option` category. These are four fixed,
+non-subscribing GET operations: two public value calls and two optional descriptor
+calls through the previously used service alias. No arbitrary key/URI API or
+setter is added.
+
+A G2 root-side survey on webOS 24 accepted both value aliases. Its descriptors
+contained an empty choice list or a country-file reference, not an admitted enum.
+Luma neither fetches that file nor infers editing authority. Valid current values
+remain visible if optional descriptors are absent, refused or unsuitable.
+Ordinary application access requires its own isolated native qualification;
+root-side reads do not establish that permission.
+
+Each refresh supplies all five rows. Failed groups and invalid individual leaves
+become unavailable without hiding valid siblings. Existing General groups cannot
+make old locale values fresh. Expiry withdraws availability; every row keeps its
+fixed focus identity, protected policy and disabled activation. No clock/timezone,
+network, account, LG Home or OLED setting is changed.
+
+Host checks: 207 library tests and 5 home-preview binary tests pass, including
+partial-failure/expiry transitions and real FormTable disabled/route bindings.
+All-target host clippy with warnings denied and the ARM release build pass (the
+existing target-feature warning remains). These checks do not establish TV
+rendering, ordinary UID access, physical navigation or comprehensive settings
+coverage. Normal G2 remains on 0.28.0; no retained update is part of this slice.
+
+The isolated diagnostic adds seven General captures using the existing shared
+arrows and Back: each of the five new rows, the enabled LG General route without
+activating it, and return to the first new row. It requires visible focused rows,
+read-only bindings, unchanged preferences and zero TV action requests. Native
+results are recorded separately when completed; the comprehensive control centre
+remains incomplete.

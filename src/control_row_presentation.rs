@@ -44,7 +44,9 @@ pub fn policy(section: Option<SettingsSection>, setting_id: &str) -> Policy {
         (Some(S::General), "pointerSpeed")
         | (Some(S::Accessibility), "audioDescriptionVolume") => Policy::NativeCandidate,
         (Some(S::PanelCare | S::Network), _)
-        | (Some(S::General), "quickStartMode" | "homeAutoLaunch") => Policy::Protected,
+        | (Some(S::General), "quickStartMode" | "homeAutoLaunch"
+            | "localeInfo.locales.UI" | "localeInfo.locales.AUD" | "localeInfo.locales.AUD2"
+            | "country" | "smartServiceCountryCode2") => Policy::Protected,
         (
             Some(S::Picture),
             "pictureMode" | "backlight" | "contrast" | "brightness" | "color" | "sharpness"
@@ -204,6 +206,11 @@ mod tests {
             (SettingsSection::Network, "wired"),
             (SettingsSection::General, "quickStartMode"),
             (SettingsSection::General, "homeAutoLaunch"),
+            (SettingsSection::General, "localeInfo.locales.UI"),
+            (SettingsSection::General, "localeInfo.locales.AUD"),
+            (SettingsSection::General, "localeInfo.locales.AUD2"),
+            (SettingsSection::General, "country"),
+            (SettingsSection::General, "smartServiceCountryCode2"),
         ] {
             let mut row = input(section, id);
             row.write = Some(WriteCapability {

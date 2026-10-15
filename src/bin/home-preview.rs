@@ -472,6 +472,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut controls_proof = None;
     let mut guidance_layout_proof = None;
     let mut sound_layout_proof = None;
+    let mut locale_layout_proof = None;
     let mut navigation = Vec::new();
     let mut navigation_page = None;
     let mut scripted_requests = Vec::new();
@@ -581,6 +582,99 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 || !no_requests
             {
                 return Err("Guidance navigation did not return to its row/category".into());
+            }
+
+            shell.open(Page::General);
+            shell.direction(Dir::Right);
+            let locale_preferences = shell.preferences().clone();
+            let mut stages = Vec::new();
+            for (offset, (key, frame)) in [
+                (native_home::locale_reads::Key::MenuLanguage, "locale-menu-language"),
+                (native_home::locale_reads::Key::AudioLanguage, "locale-audio-language"),
+                (
+                    native_home::locale_reads::Key::SecondaryAudioLanguage,
+                    "locale-secondary-audio-language",
+                ),
+                (native_home::locale_reads::Key::Country, "locale-tv-country"),
+                (
+                    native_home::locale_reads::Key::ServiceCountry,
+                    "locale-services-country",
+                ),
+            ]
+            .into_iter()
+            .enumerate()
+            {
+                let index = offset + 5;
+                for _ in 0..12 {
+                    if shell.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+                        break;
+                    }
+                    shell.direction(Dir::Down);
+                }
+                drawer_capture(&mut shell, &window, &output, frame, &mut now)?;
+                let row = shell
+                    .control_row_layout(key.id())
+                    .ok_or("Missing language/region row layout")?;
+                let readouts = shell.control_readout_proof()["general"].clone();
+                let matching = readouts
+                    .as_array()
+                    .ok_or("Missing General readouts")?
+                    .iter()
+                    .filter(|reading| reading["id"].as_str() == Some(key.id()))
+                    .collect::<Vec<_>>();
+                if row["key"] != key.focus_key()
+                    || row["index"] != index
+                    || row["focused"] != true
+                    || row["disabled"] != true
+                    || row["fully_visible"] != true
+                    || matching.len() != 1
+                    || matching[0]["focus_key"] != key.focus_key()
+                    || matching[0]["available"] != true
+                    || matching[0]["protected"] != true
+                {
+                    return Err("Language/region row was unavailable or lacked visible read-only focus".into());
+                }
+                stages.push(serde_json::json!({"frame":frame,"layout":row,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":readouts}));
+            }
+            shell.direction(Dir::Down);
+            drawer_capture(&mut shell, &window, &output, "locale-lg-settings", &mut now)?;
+            let route = shell
+                .control_row_layout("lg-settings")
+                .ok_or("Missing General LG Settings row")?;
+            if route["key"] != 1040
+                || route["index"] != 10
+                || route["focused"] != true
+                || route["disabled"] != false
+                || route["fully_visible"] != true
+            {
+                return Err("General LG Settings row did not settle into visible enabled focus".into());
+            }
+            let lg_settings = serde_json::json!({"frame":"locale-lg-settings","layout":route,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["general"]});
+            for _ in 0..5 {
+                shell.direction(Dir::Up);
+            }
+            drawer_capture(&mut shell, &window, &output, "locale-return-up", &mut now)?;
+            let up = shell
+                .control_row_layout(native_home::locale_reads::Key::MenuLanguage.id())
+                .ok_or("Missing language/region return row")?;
+            let return_up = serde_json::json!({"frame":"locale-return-up","layout":up,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["general"]});
+            shell.back();
+            let back = shell.focused_item().as_deref() == Some("category-General");
+            let preferences_unchanged = shell.preferences() == &locale_preferences;
+            let no_requests = shell.take_requests().is_empty();
+            locale_layout_proof = Some(
+                serde_json::json!({"schema":1,"stages":stages,"lg_settings":lg_settings,"return_up":return_up,"back_restores_category":back,"preferences_unchanged":preferences_unchanged,"no_tv_requests":no_requests,"input":"scripted shared arrows/Back; no OK activation"}),
+            );
+            if up["key"] != 145
+                || up["index"] != 5
+                || up["focused"] != true
+                || up["disabled"] != true
+                || up["fully_visible"] != true
+                || !back
+                || !preferences_unchanged
+                || !no_requests
+            {
+                return Err("Language/region navigation did not return to its row/category".into());
             }
         }
         if sound_read_proof {
@@ -1650,6 +1744,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
     report["sound_layout_proof"] = serde_json::json!(sound_layout_proof);
+    report["locale_layout_proof"] = serde_json::json!(locale_layout_proof);
     report["text_input_proof"] = serde_json::json!(text_receipt);
     report["keyboard_session"] = serde_json::json!(keyboard);
     report["keyboard_main_observation"] = observer_requested.into();

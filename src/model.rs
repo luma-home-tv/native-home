@@ -341,6 +341,61 @@ mod tests {
     }
 
     #[test]
+    fn locale_readings_stay_visible_and_protected_in_the_actual_general_form() {
+        let _serial = plx_base::testlock::serial();
+        let replies = serde_json::json!({
+            "locale_values": {"returnValue":true,"settings":{"localeInfo":{"locales":{
+                "UI":"en-GB","AUD":"fr-FR","AUD2":"de_DE"
+            }}}},
+            "region_values": {"returnValue":true,"category":"option","settings":{
+                "country":"GBR","smartServiceCountryCode2":"GB"
+            }},
+            "locale_desc": {"returnValue":false,"errorText":"Optional descriptor unavailable"},
+            "region_desc": {"returnValue":false,"errorText":"Optional descriptor unavailable"}
+        });
+        let current = context();
+        let mut settings = crate::locale_reads::parse(&replies);
+        assert_eq!(settings.len(), 5);
+        // Live integration binds these globally validated readings to the current
+        // presentation snapshot before building the same General form.
+        for setting in &mut settings { setting.context = current.clone(); }
+        let expected = [
+            ("localeInfo.locales.UI", 145, "en-GB"),
+            ("localeInfo.locales.AUD", 146, "fr-FR"),
+            ("localeInfo.locales.AUD2", 147, "de_DE"),
+            ("country", 148, "GBR"),
+            ("smartServiceCountryCode2", 149, "GB"),
+        ];
+        for pointer_enabled in [false, true] {
+            let mut table = FormTable::new(2000);
+            table.set(controls_form_with_numeric(
+                &settings, &current, Some(SettingsSection::General), pointer_enabled, None
+            ), None);
+            for (index, (id, key, value)) in expected.iter().enumerate() {
+                assert!(settings[index].available && settings[index].protected);
+                assert!(settings[index].constraint.is_none());
+                let binding = table.binding_at(index).unwrap();
+                assert_eq!(binding.id, *id);
+                assert_eq!(binding.key, RowKey(*key));
+                assert!(binding.disabled);
+                assert_eq!(binding.action, Action::Inspect((*id).into()));
+                let row = &table.table.sections[0].rows[index];
+                assert_eq!(row.value.as_deref(), Some(*value));
+                assert_eq!(row.detail, "Protected • view only");
+                assert!(row.ticon.is_none(), "readings must not advertise a drill-in editor");
+                assert_eq!(table.activate(index), None);
+            }
+            let route = table.binding_at(5).unwrap();
+            assert_eq!(route.id, "lg-settings");
+            assert_eq!(route.key, RowKey(1040));
+            assert!(!route.disabled);
+            assert_eq!(table.activate(5), Some(Activation::Action(
+                Action::OpenLgSettingsSection(SettingsSection::General)
+            )));
+        }
+    }
+
+    #[test]
     fn application_activation_is_bound_to_registered_identity() {
         let apps = [app("com.example.video", "native", true)];
         let ids = BTreeSet::from([apps[0].id.clone()]);

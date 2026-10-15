@@ -12,7 +12,7 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 runs 0.21.0 and C2 remains on 0.20.0. The
+current native interface. G2 retains 0.28.0 and C2 remains on 0.20.0. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -52,6 +52,11 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; 20 descriptor-validated readouts added in 0.17.0 across Picture, Accessibility, General and Panel Care; six more guidance/Sound readouts have isolated 0.25.0/0.26.0 ordinary-app/native proof on both; native pointer-speed choice/commit/restoration proved on both in 0.18.0; G2 native audio-description range entry/Apply/endpoints/restoration proved in 0.21.0, with description off; broader verified edits and setting coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; Native injected SDL navigation and bounded submission/CPU/RSS/idle-paint measurements now exist on both; physical latency, GPU/panel timing and stress memory remain unverified |
+
+The [input-batch candidate](input-batch-ordering-milestone.json) records the 0.29.0
+queued-cancellation and duplicate-activation fixes. Its physical workflow remains
+incomplete. The [0.30.0 language/region candidate](language-region-reads.md) adds
+five protected General readings; native qualification is recorded separately.
 
 The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects

@@ -43,3 +43,5 @@ pub mod keyboard;
 pub mod keyboard_observer;
 
 pub mod sound_reads;
+
+pub mod locale_reads;

@@ -152,6 +152,7 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
     for (name, uri, payload) in operations.into_iter().map(|(name,uri,payload)|(name.to_owned(),uri,payload))
         .chain(crate::control_reads::operations())
         .chain(crate::sound_reads::operations().into_iter().map(|(name, uri, payload)| (name.to_owned(), uri, payload)))
+        .chain(crate::locale_reads::operations().into_iter().map(|(name, uri, payload)| (name.to_owned(), uri, payload)))
         .chain(std::iter::once(("picture_after".into(),"luna://com.webos.service.settings/getSystemSettings",json!({"category":"picture","keys":["pictureMode","backlight","contrast","brightness"]})))) {
         let response = bus.call(
             uri,

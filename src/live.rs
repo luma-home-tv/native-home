@@ -346,12 +346,16 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         control_reads::GENERAL_HOME,
         None,
     );
+    let locale = crate::locale_reads::parse(replies);
     let general = match (option, home) {
-        (Err(a), Err(_)) => Reading::Failed(a),
+        (Err(a), Err(_)) if !locale.iter().any(|row| row.available) => Reading::Failed(a),
         (a, b) => {
             let mut rows =
                 a.unwrap_or_else(|_| unavailable(control_reads::GENERAL_OPTION, &global));
             rows.extend(b.unwrap_or_else(|_| unavailable(control_reads::GENERAL_HOME, &global)));
+            // Each cycle supplies all five rows, including per-group failures.
+            // Old locale values cannot inherit another General group's freshness.
+            rows.extend(locale);
             Reading::Value(rows)
         }
     };
@@ -748,6 +752,135 @@ pub(crate) mod tests {
         }
         data
     }
+    // Synthetic locale fixtures intentionally exercise the real parse/merge path.
+    fn locale_data() -> Value {
+        let mut data = global_raw();
+        data["replies"][crate::locale_reads::LOCALE_VALUES_REPLY] = json!({
+            "returnValue":true,"settings":{"localeInfo":{"locales":{
+                "UI":"fr-CA","AUD":"en-CA","AUD2":"de_DE"
+            }}}
+        });
+        data["replies"][crate::locale_reads::REGION_VALUES_REPLY] = json!({
+            "returnValue":true,"category":"option",
+            "settings":{"country":"CAN","smartServiceCountryCode2":"CA"}
+        });
+        data
+    }
+    fn locale_snapshot() -> Snapshot {
+        Snapshot {
+            captured_at: "synthetic locale transitions".into(),
+            applications: Vec::new(),
+            launch_ids: BTreeSet::new(),
+            inputs: Vec::new(),
+            context: Context {
+                input: "old-input".into(),
+                dynamic_range: "old-range".into(),
+                picture_mode: "old-mode".into(),
+            },
+            settings: BTreeMap::new(),
+        }
+    }
+    fn assert_general_locale_identity(snapshot: &Snapshot) {
+        let rows = &snapshot.settings["general"];
+        assert_eq!(rows.len(), 10);
+        let legacy = control_reads::GENERAL_OPTION.iter()
+            .chain(control_reads::GENERAL_HOME.iter());
+        for (row, spec) in rows[..5].iter().zip(legacy) {
+            assert_eq!((&row.id, row.focus_key), (&spec.id.to_string(), spec.key));
+        }
+        for (row, key) in rows[5..].iter().zip(crate::locale_reads::Key::ALL) {
+            assert_eq!(row.id, key.id());
+            assert_eq!(row.focus_key, key.focus_key());
+            assert!(row.constraint.is_none());
+        }
+        assert!(rows.iter().all(|row| row.protected && row.context == snapshot.context));
+    }
+    #[test]
+    fn locale_failure_with_current_legacy_general_withdraws_all_five_locale_values() {
+        let mut snapshot = locale_snapshot();
+        let mut fresh = Freshness::default();
+        merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"].iter().all(|row| row.available));
+        let mut failed = locale_data();
+        for name in [crate::locale_reads::LOCALE_VALUES_REPLY, crate::locale_reads::REGION_VALUES_REPLY] {
+            failed["replies"][name] = json!({"returnValue":false});
+        }
+        merge(&mut snapshot, &parse(&failed, "self", 200, false), &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"][..5].iter().all(|row| row.available));
+        assert!(snapshot.settings["general"][5..].iter().all(|row| !row.available && row.value == "Unavailable"));
+        assert_eq!(fresh.controls.get(&ControlSection::General), Some(&200));
+    }
+    #[test]
+    fn locale_values_remain_current_when_both_legacy_general_groups_fail() {
+        let mut data = locale_data();
+        for name in ["general_option_values", "general_home_values"] {
+            data["replies"][name] = json!({"returnValue":false});
+        }
+        let mut snapshot = locale_snapshot();
+        let mut fresh = Freshness::default();
+        merge(&mut snapshot, &parse(&data, "self", 300, false), &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"][..5].iter().all(|row| !row.available));
+        assert!(snapshot.settings["general"][5..].iter().all(|row| row.available));
+        assert_eq!(snapshot.settings["general"][5..].iter().map(|row| row.value.as_str()).collect::<Vec<_>>(),
+            ["fr-CA", "en-CA", "de_DE", "CAN", "CA"]);
+        assert_eq!(fresh.controls.get(&ControlSection::General), Some(&300));
+    }
+    #[test]
+    fn locale_and_region_groups_fail_independently_in_the_general_merge() {
+        for locale_failed in [true, false] {
+            let mut snapshot = locale_snapshot();
+            let mut fresh = Freshness::default();
+            merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
+            let mut data = locale_data();
+            let denied = if locale_failed { crate::locale_reads::LOCALE_VALUES_REPLY }
+                else { crate::locale_reads::REGION_VALUES_REPLY };
+            data["replies"][denied] = json!({"returnValue":false});
+            merge(&mut snapshot, &parse(&data, "self", 400, false), &mut fresh);
+            assert_general_locale_identity(&snapshot);
+            let rows = &snapshot.settings["general"];
+            assert!(rows[..5].iter().all(|row| row.available));
+            assert!(rows[5..8].iter().all(|row| row.available != locale_failed));
+            assert!(rows[8..].iter().all(|row| row.available == locale_failed));
+        }
+    }
+    #[test]
+    fn expired_locale_values_do_not_resurrect_on_unrelated_or_legacy_general_refresh() {
+        let mut snapshot = locale_snapshot();
+        let mut fresh = Freshness::default();
+        merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
+        assert!(!needs_expiry(&snapshot, &fresh, 15_100));
+        assert!(needs_expiry(&snapshot, &fresh, 15_101));
+        expire(&mut snapshot, &fresh, 15_101);
+        assert!(!needs_expiry(&snapshot, &fresh, 15_101));
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"].iter().all(|row| !row.available));
+        let mut unrelated = parse(&global_raw(), "self", 15_200, false);
+        unrelated.controls.remove(&ControlSection::General);
+        merge(&mut snapshot, &unrelated, &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"].iter().all(|row| !row.available));
+        assert!(!fresh.controls.contains_key(&ControlSection::General));
+        assert!(!needs_expiry(&snapshot, &fresh, 15_200));
+        // A fresh legacy General clock must not restore the old locale strings.
+        merge(&mut snapshot, &parse(&global_raw(), "self", 15_300, false), &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"][..5].iter().all(|row| row.available));
+        assert!(snapshot.settings["general"][5..].iter().all(|row| !row.available && row.value == "Unavailable"));
+        assert_eq!(fresh.controls.get(&ControlSection::General), Some(&15_300));
+        // A wholly refused General update withdraws its shared clock immediately.
+        let mut refused = global_raw();
+        for name in ["general_option_values", "general_home_values"] {
+            refused["replies"][name] = json!({"returnValue":false});
+        }
+        merge(&mut snapshot, &parse(&refused, "self", 15_400, false), &mut fresh);
+        assert_general_locale_identity(&snapshot);
+        assert!(snapshot.settings["general"].iter().all(|row| !row.available));
+        assert!(!fresh.controls.contains_key(&ControlSection::General));
+        assert!(!needs_expiry(&snapshot, &fresh, 15_400));
+    }
     #[test]
     fn keyboard_capability_requires_unsimulated_known_platform_info() {
         let mut raw = serde_json::json!({"replies":{"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"}}});
@@ -779,7 +912,7 @@ pub(crate) mod tests {
         };
         let mut fresh = Freshness::default();
         merge(&mut snapshot, &first, &mut fresh);
-        assert_eq!(snapshot.settings["general"].len(), 5);
+        assert_eq!(snapshot.settings["general"].len(), 10);
         assert!(snapshot.settings["panel_care"]
             .iter()
             .all(|r| r.protected && r.available));
@@ -797,7 +930,7 @@ pub(crate) mod tests {
         assert!(snapshot.settings["general"][..3]
             .iter()
             .all(|r| !r.available));
-        assert!(snapshot.settings["general"][3..]
+        assert!(snapshot.settings["general"][3..5]
             .iter()
             .all(|r| r.available && r.still_current(&snapshot.context)));
         assert!(snapshot.settings["panel_care"].iter().all(|r| r.available));
