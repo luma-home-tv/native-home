@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "status": "G2 isolated system-keyboard lifecycle and native draft proved; retained previews unchanged",
+  "source": {
+    "functional_revision": "bdf2ff87fbb15de5f99ecf2f6510311d61621354",
+    "proof_version": "0.22.0",
+    "binary_sha256": "834ab7957b1b5502fb75f6edf8389666a27f9e36c9b5ad15ed6cfdab06eed706",
+    "framework_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+    "framework_patch_sha256": "242695ad63fbafdaed2b67349593727a1f35c3c41a064141c64231aed8390eee"
+  },
+  "platform": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "webos": "24",
+    "sdk_version": "9.2.2",
+    "actual_sdl_version": "2.0.14"
+  },
+  "design": {
+    "one_keyboard_at_a_time": true,
+    "preferred": "LG system keyboard for language/input integration; Luma owns and natively renders the field, filtering and drawer",
+    "fallback": "Luma alphanumeric keypad when the system keyboard is unavailable or explicitly selected; never revealed just because LG dismissed its panel",
+    "dismissal": "Done or Back finishes editing, retains the committed query and restores focus to Search",
+    "delivery_boundary": "The normal G2 0.21.0 and C2 0.20.0 previews still use the existing Luma keypad. This milestone does not promote system-keyboard mode into the retained preview."
+  },
+  "implementation": {
+    "shared_framework": [
+      "grapheme-aware TextBuffer navigation/deletion and transactional bounded commits",
+      "clipped TextEntry with native caret and separate preedit run"
+    ],
+    "luma": [
+      "256-byte owned draft; NFC-normalized matching with lowercase tokens",
+      "typed C SDL event adapter; complete commit boundaries; text payload excluded from event serialization",
+      "system-keyboard ownership suppresses fallback drawing and its input targets",
+      "panel state is observed only after activation; an initial absent flag does not cancel opening",
+      "leaving Apps ends editing; late text cannot alter a hidden drawer"
+    ],
+    "attribution": "Framework modifications stay in the explicitly attributed PlxNative integration patch; no Plex client or player features are included."
+  },
+  "verification": {
+    "luma_tests": {
+      "passed": 124,
+      "failed": 0
+    },
+    "framework_ui_tests": {
+      "passed": 1023,
+      "failed": 0
+    },
+    "hostsim_clippy": "warnings denied; passed",
+    "arm_release": "passed; existing neon target-feature warning",
+    "firmware_symbol_inventory": "all 14 inventories pass loader resolution; releases >=9.2.0 are the release gate, not behavioural qualification",
+    "automated_g2": {
+      "ordinary_uid": 6583,
+      "synthetic_native_sdl_commits": 4,
+      "query_match_each_cycle": true,
+      "cycles": 2,
+      "independent_keyboard_windows": {
+        "open_1": true,
+        "closed_1_absent": true,
+        "open_2": true,
+        "closed_2_absent": true
+      },
+      "dismissal_input": "Two test-harness Back presses, each guarded by own foreground card and independently observed LG keyboard window",
+      "both_lg_panel_hides_observed": true,
+      "both_sdl_sessions_stopped": true,
+      "editing_and_fallback_absent_after_close": true,
+      "native_frame_review": "Accented query, native field, logo/rail and closed second-cycle frame reviewed; closed frame has Search focused and no keypad",
+      "setting_writes": false,
+      "household_app_launches": false,
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "reboot_required": false
+      }
+    },
+    "physical_g2": {
+      "human_report": "Both worked: Magic Remote typing, Done, reopening, typing and Back",
+      "sdk_trace_native_text_events": 6,
+      "done_return_scancode": 40,
+      "back_observation": "LG hid its keyboard and did not forward a Back key to the app. The initial build consequently revealed the still-active Luma keypad; this prompted the ownership/dismissal fix.",
+      "manual_harness_limit": "The first manual run completed its two editing stages but failed to produce its terminal exit/storage receipt. An additional harness Back was sent only after LG keyboard absence was verified; the isolated package was then removed and independent state checks passed. Do not count that run as a complete automatic lifecycle pass.",
+      "corrected_followup": "The corrected lifecycle was verified by the separate two-cycle automated G2 trial above; no second human test is claimed."
+    }
+  },
+  "compatibility_findings": [
+    "A focused window flag does not establish that SDL startup/Wayland events have been pumped. Activation succeeded after draining startup events before SDL_StartTextInput.",
+    "The webOS text-event layout differs from desktop SDL. SDK-typed decoding and actual device export/layout inspection were used; host synthetic SDL text pushes are not used.",
+    "LG panel dismissal can leave SDL text input active until the app calls SDL_StopTextInput. The corrected trial observes the hide and stops its own request.",
+    "An SDL panel flag alone is not visibility proof; the separate surface-manager window audit establishes panel presence/absence in this trial."
+  ],
+  "retained": {
+    "g2_version": "0.21.0",
+    "c2_version": "0.20.0",
+    "g2_saved_state_and_installation_unchanged": true,
+    "c2_modified_this_milestone": false
+  },
+  "remaining": [
+    "Integrate the validated system-keyboard request into normal search with explicit fallback selection and compatibility gates.",
+    "Verify prediction semantics, preedit/caret positioning, hardware keyboard, deletion and long-query rendering under actual workloads.",
+    "Qualify additional languages/fonts and RTL shaping separately; NFC matching is not full Unicode case folding.",
+    "Independently qualify C2 system-keyboard behaviour and normal lifecycle, then measure performance; these G2 results do not establish either."
+  ]
+}

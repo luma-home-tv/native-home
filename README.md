@@ -26,7 +26,8 @@ session, data or application-screen crates. A separately identified
 [integration patch](patches/plxnative-framework-integration.patch) adds local
 texture artwork, an opt-in OLED-black surface role and bounded-grid whole-tile
 admission shared by painting and pointer stops, plus a shared staged numeric
-range widget. These generic changes are
+range widget, clipped native text-entry widget and grapheme-aware bounded text
+buffer. These generic changes are
 candidates for upstream contribution; their presence does not turn the upstream
 framework into Luma Home-authored code.
 
@@ -36,6 +37,10 @@ keeps that support material intact. Its full repository cache contains upstream
 application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
+
+The [text-input milestone](docs/text-input-milestone.json) records isolated G2
+system-keyboard typing/lifecycle work and the single-keyboard design. The retained
+previews remain on their existing keypad until normal integration is qualified.
 
 ## Layout
 

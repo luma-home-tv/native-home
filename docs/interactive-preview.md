@@ -31,7 +31,12 @@ in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
 or Open app. Back closes the panel and restores the app; an app removed from
 the filtered view lands on a valid neighbour. The panel traps focus and pointer
 hit targets until closed. Apps has
-All/Favourites filters and a native on-screen search keyboard. Back closes the
+All/Favourites filters and a native on-screen search keyboard. The retained
+versions still use Luma's alphanumeric keypad. The isolated
+[system-keyboard proof](text-input-milestone.json) is not enabled here yet.
+Its intended replacement uses LG's keyboard with the Luma keypad available as
+an explicit/unavailable fallback, one at a time. Closing LG's keyboard ends
+editing and returns focus to Search without revealing a second keypad. Back closes the
 keyboard, returns toward Home, then exits from Home. Favourites persist across
 Luma launches. Explicit ordering affects Home and the Favourites filter; All
 Apps retains its alphabetical order. Existing records load without a preference

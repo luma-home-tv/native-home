@@ -66,6 +66,21 @@ filtering and a shared-focus alphanumeric keyboard. The scripted G2 path typed
 a query, filtered results, closed the keyboard and restored All without a TV
 request. Physical input and full text/IME coverage remain to verify.
 
+The [text-input record](text-input-milestone.json) adds a native bounded Unicode
+field, grapheme-aware edits and isolated G2 LG-keyboard activation/reopening.
+The user confirmed Magic Remote typing and Done/Back. LG consumes Back when
+hiding its own panel; Luma now detects that dismissal, stops its request and
+returns focus to Search without revealing its fallback keypad. Two corrected
+native cycles and independent window/removal checks pass. This remains a proof
+build; the retained versions above are unchanged.
+
+The intended search flow uses **one keyboard at a time**. Prefer LG's keyboard
+for its language and input integration, and offer Luma's keypad when unavailable
+or explicitly selected. Keep the field, filtering and drawer natively rendered.
+Done/Back retains the query and ends editing. Never switch to a second keyboard
+merely because the first one closed. Normal request/fallback integration,
+prediction and broader script/font qualification remain before deployment.
+
 ## Next implementation stages
 
 1. **Expand live data.** The typed normal-app provider now refreshes catalogue,

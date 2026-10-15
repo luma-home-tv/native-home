@@ -14,7 +14,7 @@ progress map, not a claim that the complete concept is implemented.
 | Identity | Luma icon and wordmark in the persistent header; own SVG rail icons cached as native textures. | Refine secondary page/status text as the information architecture settles. |
 | Canvas and focus | OLED-black canvas, graphite surfaces, white card outline, separate quiet current-route fill. | Measure contrast and focus animation with physical remote/pointer use. |
 | Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail; native View all apps/inputs with shortcut-origin Back. | Long-title and empty-state polish; source artwork. |
-| Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Full text/IME input, further typography polish and physical hold/pointer/wheel proof. |
+| Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Isolated G2 system-keyboard typing/Done/Back and corrected dismissal now have evidence; normal integration, broader IME/script/font coverage, typography polish and physical hold/pointer/wheel proof remain. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs; all four G2 source selections have independent readback/restoration proof and are enabled. | Live video/format, exact C2 idle-state restoration and C2 production switching; source artwork. |
 | Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs; G2 audio-description range entry/Apply/endpoints/restoration now proved with description off. | Broader verified edits/setting coverage and physical input proof. |
@@ -108,3 +108,9 @@ long-run performance each need separate evidence. The
 submission pacing, input handling, CPU/RSS and idle painting on both TVs. Those
 measurements do not prove physical input latency, GPU completion or panel response. LG Home, boot behaviour and core TV
 services remain the working default throughout.
+
+The [text-input record](text-input-milestone.json) defines a single-keyboard flow:
+LG system keyboard preferred, Luma keypad available as a fallback. The native
+field and drawer remain Luma-rendered. Closing the LG panel ends editing and
+returns to Search; it must not expose an active second keypad. Corrected G2
+proof frames show that transition. The retained previews are unchanged.
