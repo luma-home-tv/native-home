@@ -6,7 +6,7 @@ The roughly 199-second run collected 73 process/native samples. The old
 [0.14 record](responsiveness-milestone.json) remains historical evidence, not
 current dashboard performance proof. G2 retains the normal 0.26.0 preview.
 
-The planned measurement uses functional source
+The measurement uses functional source
 `7f29884be4c5a0c48794e71110744676c78bb371`, executable SHA256
 `d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf`,
 and an isolated ordinary-app package with only interactive and performance
@@ -72,3 +72,18 @@ Package removal and retained favourites/core/settings/source preservation remain
 required after measurement. Preserve failed observations and unknown outcomes;
 neither a local installer timeout nor transport EOF authorises a conflicting
 rollback/removal. Keep household inventories, raw samples and frames private.
+
+## Next investigation
+
+Source inspection gives one plausible explanation for the early Apps paints.
+Luma steps its external drawer-scroll spring each tick, then passes its position
+to PlxNative's `Grid::set_page`. That calls the framework's `Spring::jump`, whose
+exact float-change check reports damage. Small numerical scroll changes could
+therefore keep invalidating after Luma's visible-motion threshold is crossed.
+The finite paint burst is consistent with that path; this run did not record
+scroll position, velocity or dirty reasons, so it does not prove the cause.
+
+Replay the same arrows on host while inspecting those fields and the real
+presentation gate, then compare a matched window after settling. Preserve the
+shared framework's change-reporting contract and the intended smooth scrolling;
+do not suppress damage or alter the framework solely from this hypothesis.
