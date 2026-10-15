@@ -3568,6 +3568,29 @@ impl Shell {
     pub fn application_count(&self) -> usize {
         self.surface.cards.len()
     }
+    /// Effective targets in the actual front hit map, with current input-owner/mode gates.
+    /// This is registration/admission evidence, not a claim about panel presentation.
+    pub fn effective_fallback_targets(&self) -> usize {
+        if self.page() != Page::Applications
+            || !self.drawer.editing
+            || self.drawer.system_keyboard()
+            || self.input.hit.suppressed
+        {
+            return 0;
+        }
+        self.input
+            .hit
+            .front()
+            .iter()
+            .filter(|stop| {
+                let visible = stop.rect.intersect(stop.clip);
+                stop.key.entry == entry(Page::Applications)
+                    && keyboard_key(stop.key.elem).is_some()
+                    && visible.w > 0.0
+                    && visible.h > 0.0
+            })
+            .count()
+    }
     pub fn system_keyboard_available(&self) -> bool {
         self.system_keyboard_available
     }

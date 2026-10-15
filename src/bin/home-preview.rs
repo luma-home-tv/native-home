@@ -1,4 +1,5 @@
 //! Native interactive shell or bounded proof, with ordinary-app reads and gated launches.
+use native_home::keyboard_observer as observation;
 use native_home::{
     model::Page,
     preferences::Persistence,
@@ -8,7 +9,7 @@ use native_home::{
 use plx_machine::machine::PressFrom;
 use plx_ui::screen::Dir;
 use std::{
-    io::Write,
+    io::{Read, Write},
     os::unix::fs::OpenOptionsExt,
     path::PathBuf,
     time::{Duration, Instant},
@@ -183,6 +184,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if performance_proof && device && plx_base::paths::app_id() != native_home::identity::PROOF {
         return Err("Performance diagnostics require the isolated identity".into());
     }
+    let observer_requested = assets.join("keyboard-observer.json").exists();
+    let recipe_requested = assets.join("keyboard-recipe.json").exists();
+    if observer_requested
+        && (!device
+            || !interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || session_capture
+            || performance_proof)
+    {
+        return Err("Keyboard observation requires an isolated native interactive package and no other instrumentation".into());
+    }
+    if recipe_requested && !observer_requested {
+        return Err("Keyboard recipe requires the explicit interactive observer".into());
+    }
     let mut performance = performance_proof.then(native_home::performance::Monitor::default);
     if interactive
         && [
@@ -230,6 +245,22 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut builder = std::fs::DirBuilder::new();
         builder.mode(0o700).create(&output)?;
     }
+    let mut keyboard_observer = if observer_requested {
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(assets.join("keyboard-observer.json"))?;
+        let mut bytes = Vec::new();
+        file.take(513).read_to_end(&mut bytes)?;
+        Some(observation::Observer::open(
+            &output,
+            plx_base::paths::app_id(),
+            interactive,
+            &bytes,
+        )?)
+    } else {
+        None
+    };
     let native_probe = if device && assets.join("native-read-probe.json").exists() {
         Some(
             std::thread::Builder::new()
@@ -374,7 +405,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         };
     let mut committed_preferences = None;
     let mut shell = Shell::new(snapshot, loaded_preferences.clone().unwrap_or_default());
-    queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+    let mut preference_write_attempts = 0_u64;
+    queue_preferences(
+        &mut shell,
+        &mut persistence,
+        &mut storage_error,
+        &mut preference_write_attempts,
+    );
     let preferences_at_boot = shell.preferences().clone();
     shell.enable_app_launches(app_launches_enabled);
     shell.enable_home_launches(home_launches_enabled);
@@ -541,7 +578,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             shell.open(Page::Home);
             let no_requests = shell.take_requests().is_empty();
             drawer_capture(&mut shell, &window, &output, "ordered-home", &mut now)?;
-            queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+            queue_preferences(
+                &mut shell,
+                &mut persistence,
+                &mut storage_error,
+                &mut preference_write_attempts,
+            );
             management_proof = Some(
                 serde_json::json!({"hold_opens_menu":hold_opened,"hold_release_does_not_write":hold_no_write,"modal_focus":modal,"order_changed":moved,"unpin_repinned":unpinned && repinned,"back_restores_identity":restored,"no_tv_requests":no_requests,"input":"scripted shared focus/hold/OK"}),
             );
@@ -725,7 +767,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     .preferences()
                     .favourites
                     .contains(&probe.application_id);
-            queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+            queue_preferences(
+                &mut shell,
+                &mut persistence,
+                &mut storage_error,
+                &mut preference_write_attempts,
+            );
         }
     }
     shell.open(Page::Home);
@@ -851,7 +898,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut keyboard = native_home::keyboard::Controller::default();
     let mut settings_handoff = native_home::session::SettingsHandoff::default();
-    dispatch_requests(
+    let mut external_action_attempts = dispatch_requests(
         &mut shell,
         &action_worker,
         &pointer_worker,
@@ -873,6 +920,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut settings_returns = 0_u32;
     let mut capture_settings_return = false;
 
+    let mut loop_counters = observation::LoopCounters::default();
+    let mut observation_event_seq = 0_u64;
+    let mut observation_batch_seq = 0_u64;
+    #[cfg(target_arch = "arm")]
+    let mut recipe_open = 0_u32;
     let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
     if text_probe {
@@ -914,7 +966,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             shell.set_clock(clock.view(live_origin.elapsed()));
             shell.tick(now, dt);
+            observation_batch_seq = observation_batch_seq.saturating_add(1);
             while let Some(e) = poll() {
+                observation_event_seq = observation_event_seq.saturating_add(1);
+                let mut decision = observation::Decision::Ignored;
                 if e.kind == 2 {
                     if let Some(m) = &mut performance {
                         m.input(e.key, start.elapsed());
@@ -932,25 +987,86 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 {
                     shell.cancel_press();
                     if !matches!(e.kind, 10 | 11) {
+                        record_keyboard_observer(
+                            &mut keyboard_observer,
+                            &shell,
+                            &window,
+                            &keyboard,
+                            ObservedFrame {
+                                stamp: observation_stamp(
+                                    start,
+                                    now,
+                                    observation_event_seq,
+                                    observation_batch_seq,
+                                ),
+                                hidden: hidden_at.is_some(),
+                                idle: idle_blanked,
+                                counters: observation_counters(
+                                    loop_counters,
+                                    &shell,
+                                    preference_write_attempts,
+                                    external_action_attempts,
+                                    idle_presentations,
+                                ),
+                            },
+                            Some(observation::EventDecision {
+                                class: observation_class(e.kind),
+                                decision,
+                                origin: observation::Origin::NativeUnclassified,
+                            }),
+                        )?;
                         continue;
                     }
                 }
-                if matches!(e.kind, 2..=6) && !keyboard.accepts_input(now) {
-                    continue;
-                }
-                if hidden_at.is_none() && handle_system_text_event(&mut shell, &e) {
-                    continue;
+                if hidden_at.is_none() {
+                    if let Some(result) =
+                        handle_system_text_event(&mut shell, &mut keyboard, &e, now)
+                    {
+                        decision = result;
+                        record_keyboard_observer(
+                            &mut keyboard_observer,
+                            &shell,
+                            &window,
+                            &keyboard,
+                            ObservedFrame {
+                                stamp: observation_stamp(
+                                    start,
+                                    now,
+                                    observation_event_seq,
+                                    observation_batch_seq,
+                                ),
+                                hidden: hidden_at.is_some(),
+                                idle: idle_blanked,
+                                counters: observation_counters(
+                                    loop_counters,
+                                    &shell,
+                                    preference_write_attempts,
+                                    external_action_attempts,
+                                    idle_presentations,
+                                ),
+                            },
+                            Some(observation::EventDecision {
+                                class: observation_class(e.kind),
+                                decision,
+                                origin: observation::Origin::NativeUnclassified,
+                            }),
+                        )?;
+                        continue;
+                    }
                 }
                 match e.kind {
                     1 => {
+                        decision = observation::Decision::Accepted;
                         reason = "window_closed";
                         shell.cancel_press();
                     }
                     7 | 8 => {
+                        decision = observation::Decision::Accepted;
                         shell.cancel_press();
                         hidden_at.get_or_insert(current);
                     }
                     9 => {
+                        decision = observation::Decision::Accepted;
                         if hidden_at.is_some() && settings_handoff.pending() {
                             settings_returns = settings_returns.saturating_add(1);
                             capture_settings_return = true;
@@ -960,6 +1076,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         hidden_at = None;
                     }
                     2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
+                        decision = observation::Decision::Accepted;
                         match e.key {
                             1 => shell.direction(Dir::Up),
                             2 => shell.direction(Dir::Down),
@@ -982,27 +1099,73 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             _ => {}
                         }
                     }
-                    10 if hidden_at.is_none() => {
-                        if let Some(text) = e.text() {
-                            shell.text_input(text, false);
-                        }
+                    10 | 11 if hidden_at.is_none() => {
+                        decision = if !shell.drawer_state().editing
+                            || shell.page() != Page::Applications
+                        {
+                            observation::Decision::NotEditing
+                        } else if let Some(text) = e.text() {
+                            let changed = if e.kind == 10 {
+                                shell.text_input(text, false)
+                            } else {
+                                shell.text_preedit(text)
+                            };
+                            if changed {
+                                observation::Decision::Accepted
+                            } else {
+                                observation::Decision::Ignored
+                            }
+                        } else {
+                            observation::Decision::Malformed
+                        };
                     }
-                    11 if hidden_at.is_none() => {
-                        if let Some(text) = e.text() {
-                            shell.text_preedit(text);
-                        }
+                    3 if e.key == 5 => {
+                        decision = observation::Decision::Accepted;
+                        shell.press(false, PressFrom::Key);
                     }
-                    3 if e.key == 5 => shell.press(false, PressFrom::Key),
                     4 | 5 if hidden_at.is_none() => {
+                        decision = observation::Decision::Accepted;
                         shell.pointer(e.x as f32, e.y as f32, e.kind == 5)
                     }
                     6 if hidden_at.is_none() => {
+                        decision = observation::Decision::Accepted;
                         for _ in 0..e.wheel.unsigned_abs().min(3) {
                             shell.direction(if e.wheel > 0 { Dir::Up } else { Dir::Down });
                         }
                     }
+                    _ if hidden_at.is_some() && matches!(e.kind, 2..=6 | 10 | 11) => {
+                        decision = observation::Decision::Hidden;
+                    }
                     _ => {}
                 }
+                record_keyboard_observer(
+                    &mut keyboard_observer,
+                    &shell,
+                    &window,
+                    &keyboard,
+                    ObservedFrame {
+                        stamp: observation_stamp(
+                            start,
+                            now,
+                            observation_event_seq,
+                            observation_batch_seq,
+                        ),
+                        hidden: hidden_at.is_some(),
+                        idle: idle_blanked,
+                        counters: observation_counters(
+                            loop_counters,
+                            &shell,
+                            preference_write_attempts,
+                            external_action_attempts,
+                            idle_presentations,
+                        ),
+                    },
+                    Some(observation::EventDecision {
+                        class: observation_class(e.kind),
+                        decision,
+                        origin: observation::Origin::NativeUnclassified,
+                    }),
+                )?;
                 if event_log.len() < 32 {
                     event_log.push(e);
                 }
@@ -1016,9 +1179,29 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 shell.back();
             }
             sync_text_keyboard(&mut shell, &window, &mut keyboard, hidden_at.is_none(), now);
+            #[cfg(target_arch = "arm")]
+            if recipe_requested
+                && hidden_at.is_none()
+                && keyboard.active()
+                && keyboard.opens > recipe_open
+                && keyboard.opens <= 2
+            {
+                let text = if keyboard.opens == 1 { "lu" } else { "ma" };
+                if !window.diagnostic_text(text) {
+                    return Err("Fixed native keyboard recipe refused".into());
+                }
+                loop_counters.synthetic_recipe_queued =
+                    loop_counters.synthetic_recipe_queued.saturating_add(1);
+                recipe_open = keyboard.opens;
+            }
             // Hidden windows never draw. A fresh, verified Settings overlay can retain only
             // our own underlying card; other departures retain the normal brief Back drain.
-            queue_preferences(&mut shell, &mut persistence, &mut storage_error);
+            queue_preferences(
+                &mut shell,
+                &mut persistence,
+                &mut storage_error,
+                &mut preference_write_attempts,
+            );
             if let Some(writer) = &mut persistence {
                 accept_replies(
                     writer.poll(),
@@ -1074,7 +1257,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     action_receipts.drain(..action_receipts.len() - 32);
                 }
             }
-            dispatch_requests(
+            external_action_attempts += dispatch_requests(
                 &mut shell,
                 &action_worker,
                 &pointer_worker,
@@ -1099,6 +1282,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             window.capture(&output.join("session-idle.ppm"))?;
                         }
                         window.swap();
+                        loop_counters.swaps += 1;
+                        loop_counters.hidden_presentations += u64::from(hidden_at.is_some());
                         if let Some(m) = &mut performance {
                             m.idle_blanks += 1;
                             m.suspended();
@@ -1109,6 +1294,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 } else if plx_machine::idle::should_present(now) {
                     let draw_start = Instant::now();
                     shell.draw();
+                    loop_counters.draws += 1;
                     let draw_elapsed = draw_start.elapsed();
                     if capture_settings_return
                         && matches!(
@@ -1130,6 +1316,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     }
                     let swap_start = Instant::now();
                     window.swap();
+                    loop_counters.swaps += 1;
+                    loop_counters.hidden_presentations += u64::from(hidden_at.is_some());
                     if let Some(m) = &mut performance {
                         m.presented(start.elapsed(), draw_elapsed, swap_start.elapsed());
                     }
@@ -1171,6 +1359,33 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 serde_json::to_writer(file, &sample)?;
                 std::fs::rename(temporary, path)?;
             }
+            record_keyboard_observer(
+                &mut keyboard_observer,
+                &shell,
+                &window,
+                &keyboard,
+                ObservedFrame {
+                    stamp: observation_stamp(
+                        start,
+                        now,
+                        observation_event_seq,
+                        observation_batch_seq,
+                    ),
+                    hidden: hidden_at.is_some(),
+                    idle: idle_blanked,
+                    counters: observation_counters(
+                        loop_counters,
+                        &shell,
+                        preference_write_attempts,
+                        external_action_attempts,
+                        idle_presentations,
+                    ),
+                },
+                None,
+            )?;
+            if let Some(observer) = &mut keyboard_observer {
+                observer.flush_current(start.elapsed().as_millis() as u64)?;
+            }
             // Bounded 60 Hz host cap also handles compositors whose swap does not block.
             let elapsed = current.elapsed();
             let period = if idle_blanked || hidden_at.is_some() {
@@ -1185,6 +1400,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         if shell.should_exit() {
             reason = "back_from_home";
         }
+    }
+    if shell.page() == Page::Applications && shell.drawer_state().editing {
+        shell.back();
     }
     window.text_stop();
     keyboard.stopped(now);
@@ -1237,6 +1455,33 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         Some(worker) => Some(worker.join().map_err(|_| "Numeric proof worker panicked")?),
         None => None,
     };
+    if let Some(observer) = &mut keyboard_observer {
+        let state = observation_snapshot(
+            &shell,
+            &window,
+            &keyboard,
+            hidden_at.is_some(),
+            idle_blanked,
+            observation_counters(
+                loop_counters,
+                &shell,
+                preference_write_attempts,
+                external_action_attempts,
+                idle_presentations,
+            ),
+        );
+        let exit = match reason {
+            "back_from_home" => observation::ExitReason::BackFromHome,
+            "window_closed" => observation::ExitReason::WindowClosed,
+            "window_hidden" => observation::ExitReason::WindowHidden,
+            _ => observation::ExitReason::Other,
+        };
+        observer.finish(
+            observation_stamp(start, now, observation_event_seq, observation_batch_seq),
+            state,
+            exit,
+        )?;
+    }
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
@@ -1251,6 +1496,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["text_input_proof"] = serde_json::json!(text_receipt);
     report["keyboard_session"] = serde_json::json!(keyboard);
+    report["keyboard_main_observation"] = observer_requested.into();
+    report["keyboard_recipe_queued"] = loop_counters.synthetic_recipe_queued.into();
+    report["preference_queue_attempts"] = preference_write_attempts.into();
     report["numeric_control_available_at_last_poll"] = shell.description_value().is_some().into();
     report["description_ui_proof"] = serde_json::json!(description_ui_receipt);
     report["description_actions"] = serde_json::json!(description_actions);
@@ -1290,15 +1538,175 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[derive(Clone, Copy)]
+struct ObservedFrame {
+    stamp: observation::Stamp,
+    hidden: bool,
+    idle: bool,
+    counters: observation::LoopCounters,
+}
+fn observation_stamp(
+    start: Instant,
+    now: u32,
+    event_seq: u64,
+    batch_seq: u64,
+) -> observation::Stamp {
+    observation::Stamp {
+        elapsed_ms: start.elapsed().as_millis() as u64,
+        controller_ms: u64::from(now),
+        event_seq,
+        batch_seq,
+    }
+}
+fn observation_class(kind: u32) -> observation::EventClass {
+    use observation::EventClass::*;
+    match kind {
+        1 => Quit,
+        2 => KeyDown,
+        3 => KeyUp,
+        4 => PointerMotion,
+        5 => PointerClick,
+        6 => Wheel,
+        7..=9 => Window,
+        10 => TextCommit,
+        11 => Preedit,
+        _ => Other,
+    }
+}
+fn observation_counters(
+    mut counters: observation::LoopCounters,
+    shell: &Shell,
+    prefs: u64,
+    actions: u64,
+    idle: u32,
+) -> observation::LoopCounters {
+    counters.live_cycles = u64::from(shell.live_updates());
+    counters.preference_write_attempts = prefs;
+    counters.external_action_attempts = actions;
+    counters.idle_presentations = u64::from(idle);
+    counters
+}
+fn observation_snapshot(
+    shell: &Shell,
+    window: &Window,
+    keyboard: &native_home::keyboard::Controller,
+    hidden: bool,
+    idle: bool,
+    counters: observation::LoopCounters,
+) -> observation::Snapshot {
+    use observation::{EditMode, FocusRole, PageRole};
+    let draft = shell.drawer_state();
+    let page = match shell.page() {
+        Page::Home => PageRole::Home,
+        Page::Applications => PageRole::Apps,
+        Page::Inputs => PageRole::Inputs,
+        Page::Controls
+        | Page::Picture
+        | Page::Sound
+        | Page::Network
+        | Page::Accessibility
+        | Page::General
+        | Page::PanelCare
+        | Page::PointerSpeed
+        | Page::RangeEditor => PageRole::Controls,
+    };
+    let mode = if draft.system_keyboard() {
+        EditMode::System
+    } else if draft.editing {
+        EditMode::Keypad
+    } else {
+        EditMode::None
+    };
+    // Never expose app identities, titles, key letters or free-form status text.
+    let focus = if draft.system_keyboard() {
+        FocusRole::Field
+    } else {
+        match shell.focused_item().as_deref() {
+            None => FocusRole::None,
+            Some("Home") => FocusRole::Home,
+            Some("Apps" | "View all apps") => FocusRole::Apps,
+            Some("Search apps") => FocusRole::Search,
+            Some("Search keypad") => FocusRole::Keypad,
+            Some("All apps" | "Favourites") => FocusRole::Toolbar,
+            Some("Inputs" | "Controls" | "LG Home") => FocusRole::Rail,
+            Some(s) if s.starts_with("search-key-") => FocusRole::KeypadKey,
+            Some(s) if s.starts_with("app-option-") => FocusRole::Menu,
+            Some(s) if s.starts_with("control-row-") || s.starts_with("category-") => {
+                FocusRole::SettingsControl
+            }
+            Some(_) => FocusRole::DrawerItem,
+        }
+    };
+    let status = window.keyboard_status();
+    observation::Snapshot {
+        page,
+        focus,
+        mode,
+        hidden,
+        idle,
+        editing: draft.editing,
+        requested: draft.system_keyboard(),
+        owned: keyboard.active(),
+        compatibility_admitted: shell.system_keyboard_available()
+            && status.support != 0
+            && (status.major, status.minor, status.patch) == (2, 0, 14),
+        sdk_active: status.active != 0,
+        sdk_panel_flag: status.panel_flag != 0,
+        sdk_focused: status.focused != 0,
+        keyboard: observation::KeyboardCounters {
+            opens: u64::from(keyboard.opens),
+            stops: u64::from(keyboard.stops),
+            dismissals: u64::from(keyboard.dismissals),
+            failures: u64::from(keyboard.failures),
+        },
+        draft: observation::DraftMetrics {
+            bytes: draft.query().len() as u16,
+            caret: draft.caret() as u16,
+            preedit_bytes: draft.composition().len() as u16,
+            fixture: observation::FixtureMatch::classify(draft.query()),
+        },
+        filtered_count: shell.application_count() as u32,
+        fallback_targets: shell.effective_fallback_targets() as u32,
+        counters,
+    }
+}
+#[allow(clippy::too_many_arguments)]
+fn record_keyboard_observer(
+    observer: &mut Option<observation::Observer>,
+    shell: &Shell,
+    window: &Window,
+    keyboard: &native_home::keyboard::Controller,
+    frame: ObservedFrame,
+    event: Option<observation::EventDecision>,
+) -> std::io::Result<()> {
+    if let Some(observer) = observer {
+        observer.record(
+            frame.stamp,
+            observation_snapshot(
+                shell,
+                window,
+                keyboard,
+                frame.hidden,
+                frame.idle,
+                frame.counters,
+            ),
+            event,
+        )?;
+    }
+    Ok(())
+}
+
 fn queue_preferences(
     shell: &mut Shell,
     writer: &mut Option<Persistence>,
     error: &mut Option<String>,
+    attempts: &mut u64,
 ) {
     if !shell.take_preferences_changed() {
         return;
     }
     if let Some(writer) = writer {
+        *attempts = attempts.saturating_add(1);
         if let Err(failure) = writer.queue(shell.preferences()) {
             *error = Some(failure);
         }
@@ -1317,36 +1725,47 @@ fn accept_replies(
     }
 }
 
-fn handle_system_text_event(shell: &mut Shell, event: &native_home::runtime::Event) -> bool {
+fn handle_system_text_event(
+    shell: &mut Shell,
+    keyboard: &mut native_home::keyboard::Controller,
+    event: &native_home::runtime::Event,
+    now: u32,
+) -> Option<observation::Decision> {
+    use observation::Decision;
+    if matches!(event.kind, 2..=6) && !keyboard.accepts_input(now) {
+        return Some(Decision::Drain);
+    }
     if !shell.drawer_state().system_keyboard() {
-        return false;
+        return None;
     }
     match event.kind {
-        2 => {
-            if event.repeat == 0 {
-                match event.key {
-                    5 | 6 => shell.back(),
-                    3 => {
-                        shell.text_edit(&plx_machine::machine::TextEdit::Left);
-                    }
-                    4 => {
-                        shell.text_edit(&plx_machine::machine::TextEdit::Right);
-                    }
-                    7 => {
-                        shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
-                    }
-                    8 => {
-                        shell.text_delete_forward();
-                    }
-                    _ => {}
+        2 if event.repeat == 0 => {
+            match event.key {
+                5 | 6 => {
+                    shell.back();
+                    keyboard.begin_input_drain(now);
                 }
+                3 => {
+                    shell.text_edit(&plx_machine::machine::TextEdit::Left);
+                }
+                4 => {
+                    shell.text_edit(&plx_machine::machine::TextEdit::Right);
+                }
+                7 => {
+                    shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
+                }
+                8 => {
+                    shell.text_delete_forward();
+                }
+                _ => return Some(Decision::Ignored),
             }
+            Some(Decision::Accepted)
         }
-        3..=6 => {} // LG owns pointer/focus while its text panel is requested.
-        _ => return false,
+        2..=6 => Some(Decision::Ignored), // consumed by LG ownership, not applied by Luma
+        _ => None,
     }
-    true
 }
+
 fn sync_text_keyboard(
     shell: &mut Shell,
     window: &Window,
@@ -1419,9 +1838,11 @@ fn dispatch_requests(
     unexecuted: &mut Vec<String>,
     handoff: &mut native_home::session::SettingsHandoff,
     now: Duration,
-) {
+) -> u64 {
+    let mut attempts = 0_u64;
     for action in shell.take_requests() {
         if let native_home::model::Action::SetPointerSpeed(change) = action {
+            attempts += 1;
             if let Some(worker) = pointer_worker {
                 if let Err(message) = worker.queue(change) {
                     shell.pointer_reply(
@@ -1453,6 +1874,7 @@ fn dispatch_requests(
             unexecuted.push(format!("{action:?}"));
             continue;
         };
+        attempts += 1;
         let allowed = match proof_request {
             Some(proof) => &request == proof,
             None => matches!(
@@ -1489,6 +1911,7 @@ fn dispatch_requests(
         }
         unexecuted.push(format!("{action:?}"));
     }
+    attempts
 }
 
 fn drawer_tap(shell: &mut Shell, now: &mut u32) {
@@ -2522,7 +2945,7 @@ fn integrated_keyboard_trial(
         let until = Instant::now() + Duration::from_secs(3);
         while shell.drawer_state().query() != "Écran" && Instant::now() < until {
             while let Some(e) = poll() {
-                if handle_system_text_event(shell, &e) {
+                if handle_system_text_event(shell, &mut keyboard, &e, *now).is_some() {
                     continue;
                 }
                 match e.kind {
@@ -2600,7 +3023,7 @@ fn integrated_keyboard_trial(
         while keyboard.active() && Instant::now() < until {
             poll_live(live, shell, origin, history);
             while let Some(e) = poll() {
-                if handle_system_text_event(shell, &e) {
+                if handle_system_text_event(shell, &mut keyboard, &e, *now).is_some() {
                     continue;
                 }
                 if matches!(e.kind, 1 | 7 | 8) {
@@ -2695,4 +3118,101 @@ fn integrated_keyboard_trial(
     Ok(
         serde_json::json!({"normal_controller":true,"native_preedit_roundtrips":preedits,"preedit_query_unchanged":true,"native_sdl_commits":commits,"query_match_each_cycle":true,"cycles":2,"injection":"native diagnostic SDL queue, not human typing","controller":keyboard,"explicit_fallback_without_system_request":true,"long_query_bytes":long_bytes,"long_caret_positions":3,"long_native_gl_errors":0,"statuses":statuses,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
     )
+}
+
+#[cfg(test)]
+mod interactive_keyboard_tests {
+    use super::*;
+    fn editing_shell() -> Shell {
+        let snapshot = serde_json::from_value(serde_json::json!({
+            "captured_at":"fixture","applications":[],"launch_ids":[],"inputs":[],
+            "context":{"input":"HDMI_1","dynamic_range":"sdr","picture_mode":"cinema"},"settings":{}
+        }))
+        .unwrap();
+        let mut shell = Shell::new(snapshot, Preferences::default());
+        let update = native_home::live::parse(
+            &serde_json::json!({"replies":{"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"}}}),
+            "own",
+            0,
+            false,
+        );
+        shell.apply_live(&update, 0);
+        shell.open(Page::Applications);
+        assert!(shell.focus_drawer_control(2));
+        shell.press(true, PressFrom::Key);
+        shell.tick(50, 0.05);
+        shell.press(false, PressFrom::Key);
+        for ms in (66..500).step_by(16) {
+            shell.tick(ms, 0.016);
+        }
+        assert!(shell.drawer_state().system_keyboard());
+        shell
+    }
+    #[test]
+    fn done_consumes_a_following_pointer_release_in_the_same_input_batch() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = editing_shell();
+        let mut keyboard = native_home::keyboard::Controller::default();
+        keyboard.started(true, 0);
+        let done = native_home::runtime::Event {
+            kind: 2,
+            key: 5,
+            ..Default::default()
+        };
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &done, 100),
+            Some(observation::Decision::Accepted)
+        );
+        assert!(!shell.drawer_state().editing);
+        let release = native_home::runtime::Event {
+            kind: 5,
+            x: 800,
+            y: 900,
+            ..Default::default()
+        };
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &release, 100),
+            Some(observation::Decision::Drain)
+        );
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &release, 299),
+            Some(observation::Decision::Drain)
+        );
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &release, 300),
+            None
+        );
+        assert!(shell.take_requests().is_empty());
+    }
+    #[test]
+    fn back_consumes_a_following_ok_release_in_the_same_input_batch() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = editing_shell();
+        let mut keyboard = native_home::keyboard::Controller::default();
+        keyboard.started(true, 0);
+        let release = native_home::runtime::Event {
+            kind: 3,
+            key: 5,
+            ..Default::default()
+        };
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &release, 99),
+            Some(observation::Decision::Ignored)
+        );
+        let back = native_home::runtime::Event {
+            kind: 2,
+            key: 6,
+            ..Default::default()
+        };
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &back, 100),
+            Some(observation::Decision::Accepted)
+        );
+        assert_eq!(
+            handle_system_text_event(&mut shell, &mut keyboard, &release, 100),
+            Some(observation::Decision::Drain)
+        );
+        assert_eq!(shell.focused_item().as_deref(), Some("Search apps"));
+        assert!(shell.take_requests().is_empty());
+    }
 }

@@ -61,8 +61,11 @@ impl Controller {
     pub fn accepts_input(&self, now: u32) -> bool {
         self.settled_at.is_none_or(|at| now.wrapping_sub(at) >= 200)
     }
-    pub fn stopped(&mut self, now: u32) {
+    pub fn begin_input_drain(&mut self, now: u32) {
         self.settled_at = Some(now);
+    }
+    pub fn stopped(&mut self, now: u32) {
+        self.begin_input_drain(now);
         if self.opened_at.take().is_some() {
             self.stops += 1;
         }

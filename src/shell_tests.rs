@@ -1775,3 +1775,35 @@ fn qualified_search_and_explicit_keypad_are_separate_routes_with_no_implicit_swi
     assert!(!s.drawer_state().system_keyboard());
     assert!(s.take_requests().is_empty());
 }
+
+#[test]
+fn fallback_observation_counts_effective_registered_targets_not_an_editing_constant() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Applications);
+    s.focus_drawer_control(3);
+    tap(&mut s);
+    assert_eq!(s.effective_fallback_targets(), 0);
+    let target = |index, clip| Stop {
+        key: FocusKey {
+            entry: entry(Page::Applications),
+            elem: KEYBOARD_BASE + index,
+        },
+        rect: keyboard_rect(index as usize),
+        rest_rect: keyboard_rect(index as usize),
+        clip,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    };
+    s.input.hit.fill(vec![
+        target(0, KEYBOARD),
+        target(37, KEYBOARD),
+        target(1, Rect::new(0.0, 0.0, 0.0, 0.0)),
+    ]);
+    s.input.hit.swap();
+    assert_eq!(s.effective_fallback_targets(), 2);
+    s.use_system_keyboard(true);
+    assert_eq!(s.effective_fallback_targets(), 0);
+    s.back();
+    assert_eq!(s.effective_fallback_targets(), 0);
+}

@@ -22,16 +22,22 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.23.0' if main == 'home-preview' else '0.1.0'
+version = '0.24.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
+keyboard_observer = os.environ.get('NATIVE_HOME_KEYBOARD_OBSERVER_PROOF') == '1'
+keyboard_recipe = os.environ.get('NATIVE_HOME_KEYBOARD_RECIPE_PROOF') == '1'
+if keyboard_recipe and not keyboard_observer: raise ValueError('Keyboard recipe requires explicit observer')
+if keyboard_observer and (main != 'home-preview' or not test_identity or not interactive or any(os.environ.get(k) for k in ('NATIVE_HOME_SESSION_CAPTURE_PROOF','NATIVE_HOME_PERFORMANCE_PROOF'))):
+    raise ValueError('Keyboard observer requires isolated native interactive identity and no other instrumentation')
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
     'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_RANGE_LAYOUT_PROOF', 'NATIVE_HOME_DESCRIPTION_UI_PROOF', 'NATIVE_HOME_TEXT_INPUT_PROOF'))):
     raise ValueError('Interactive package must not include scripted proof actions')
 shutil.copy2(binary, stage / main)
 (stage / main).chmod(0o755)
+staged_binary_sha256 = hashlib.sha256((stage / main).read_bytes()).hexdigest()
 for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
     shutil.copy2(repo / 'resources/fonts' / name, stage / name)
 # Independent Luma Home branding; no PlxNative mark is used as this client's identity.
@@ -49,6 +55,12 @@ if main == 'home-preview':
     if os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1':
         if not test_identity or not interactive: raise ValueError('Performance proof requires isolated interactive identity')
         (stage / 'performance-proof.json').write_text('{}\n')
+    if keyboard_observer:
+        source_revision=os.environ.get('NATIVE_HOME_OBSERVER_SOURCE_REVISION') or subprocess.check_output(['git','-C',str(repo),'rev-parse','HEAD'],text=True).strip()
+        if len(source_revision)!=40 or any(c not in '0123456789abcdef' for c in source_revision): raise ValueError('Observer source declaration must be a full lowercase Git revision')
+        marker={'schema':1,'source_revision':source_revision,'binary_sha256':staged_binary_sha256}
+        (stage / 'keyboard-observer.json').write_text(json.dumps(marker)+'\n')
+        if keyboard_recipe: (stage / 'keyboard-recipe.json').write_text('{}\n')
     if interactive:
         (stage / 'interactive-session.json').write_text('{}\n')
         if os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF') == '1':
@@ -142,12 +154,14 @@ subprocess.run([str(ar), 'rc', str(ipk), 'debian-binary', 'control.tar.gz', 'dat
 members = subprocess.check_output([str(ar), 't', str(ipk)], text=True).splitlines()
 if members != ['debian-binary', 'control.tar.gz', 'data.tar.gz']: raise RuntimeError('Invalid IPK members')
 receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_bytes()).hexdigest(),
-           'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(), 'bytes': ipk.stat().st_size,
+           'binary_sha256': staged_binary_sha256, 'bytes': ipk.stat().st_size,
            'performance_proof': os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1',
            'controls_probe': os.environ.get('NATIVE_HOME_CONTROLS_PROBE') == '1',
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
+           'keyboard_observer_proof': keyboard_observer,
+           'keyboard_recipe_proof': keyboard_recipe,
            'keyboard_flow_proof': os.environ.get('NATIVE_HOME_KEYBOARD_FLOW_PROOF') == '1',
            'text_input_proof': os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') == '1',
            'description_ui_proof': os.environ.get('NATIVE_HOME_DESCRIPTION_UI_PROOF') == '1',
