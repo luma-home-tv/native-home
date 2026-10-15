@@ -115,6 +115,10 @@ Home/Apps renderer on G2. Six transfers completed; three shared live targets
 were visible on both pages. Full temporary removal and normal 0.37 preservation
 passed, with an independent saved-evidence replay. Actual Preview-role startup,
 all-app compatibility and normal delivery remain separate gates.
+The [Preview admission foundation](docs/preview-artwork-admission.md) adds closed
+profile identity/codecs and a pending-operation guard before Proof helper
+dispatch. Host checks and ARM builds pass; its new native guard regression,
+Preview helper/provider wiring and actual Preview-ID admission remain pending.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from

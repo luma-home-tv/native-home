@@ -72,7 +72,8 @@ all-app coverage and a backed-up retained promotion remain pending.
 The source foundation in `docs/preview-artwork-admission.md` adds explicit closed
 profile protocol/self/capability APIs while default APIs remain Proof-only. The
 Proof provider now uses an own-state pending latch before HBC dispatch, retained
-on unknown completion across new instances. Host checks pass; the new guard's
+on unknown completion across new instances. Host checks and both ARM builds pass;
+the new guard's
 native regression, Preview Root/helper/provider wiring and actual Preview-ID
 qualification remain pending. Do not clear old pending records on age, restart,
 caller death or HBC false, or treat a parsed Preview response as Root authority.

@@ -92,6 +92,13 @@ pending-record concurrency/recreation, known closure/no-start and discarded
 results when marker clearing fails. These are host observations; the new guard
 integration and Preview role have not been exercised on a TV.
 
+Both ARM binaries compile from functional source
+`dd409441d1c6f864edd920bf749f604ea69c6cb4`, with matching snapshots of 96 selected
+inputs and the pinned framework. The [compiled foundation record](preview-artwork-foundation-candidate.json)
+binds the actual executables and build receipts. The existing target-feature
+stability warning remains. No new package was created or installed, and these
+builds do not qualify the new dispatch guard or actual Preview capability.
+
 The current source foundation does not activate the Preview provider, add a
 Preview Root entry or update the retained TV app. Those are remaining
 implementation and native-validation steps, along with the new Proof dispatch

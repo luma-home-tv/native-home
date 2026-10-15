@@ -1,0 +1,51 @@
+{
+  "actual_helper_build_receipt_sha256": "672a1a1e25280e3b9d7e09865e1672a9f50aa2bc801502fdfe931d899506d5bc",
+  "actual_ui_build_receipt_sha256": "3eea0517450e75281d1f45c334bca7358c67abf8d94ce74059d52b2a25a71f2e",
+  "functional_source_revision": "dd409441d1c6f864edd920bf749f604ea69c6cb4",
+  "host_checks": {
+    "build_provenance_framework_package_tests": 41,
+    "clippy_warnings_denied": true,
+    "dashboard_tests": 5,
+    "library_tests": 425,
+    "new_capability_tests": 3,
+    "new_guard_storage_tests": 10,
+    "new_protocol_tests": 4,
+    "new_provider_guard_tests": 4,
+    "new_self_identity_tests": 2,
+    "new_transfer_tests": 4
+  },
+  "native_scope": {
+    "actual_preview_identity_or_capability_qualified": false,
+    "c2_contacted": false,
+    "last_verified_normal_version": "0.37.0",
+    "new_device_run_performed": false,
+    "new_test_package_created_or_installed": false,
+    "normal_updated": false,
+    "performance_qualified": false,
+    "proof_dispatch_guard_qualified": false
+  },
+  "proof_helper": {
+    "bytes": 848252,
+    "name": "artwork-broker-startup-proof",
+    "sha256": "09e96bd136b858aacda044ee3e975eb999f24c2fca582dae4028f1fd5ef431df"
+  },
+  "schema": 1,
+  "selected_source_inputs": 96,
+  "source_scope": {
+    "explicit_inert_capability_api": true,
+    "explicit_profile_codecs": true,
+    "guard_grants_root_authority": false,
+    "old_pending_record_clear_api": false,
+    "preview_provider_activated": false,
+    "preview_root_entry_added": false,
+    "proof_pending_guard_integrated": true,
+    "strict_proof_default_apis": true
+  },
+  "status": "Closed profile and pending-guard source foundation, host checks and ARM builds; native guard and actual Preview identity still unqualified",
+  "two_arm_receipts_same_snapshot": true,
+  "ui": {
+    "bytes": 3774608,
+    "name": "home-preview",
+    "sha256": "161283dfc5d96b6083b9b35af5864af4ccb08e5fb6b6ecb6175c67a7066d83b6"
+  }
+}
