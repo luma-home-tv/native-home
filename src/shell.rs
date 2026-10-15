@@ -341,6 +341,16 @@ struct Card {
     context_selected: bool,
     compact_labels: bool,
 }
+impl Card {
+    fn has_icon(&self) -> bool {
+        input_key(&self.id).is_none()
+            && self.texture.0 != 0
+            && self.texture.1.is_finite()
+            && self.texture.2.is_finite()
+            && self.texture.1 > 0.0
+            && self.texture.2 > 0.0
+    }
+}
 struct Cards {
     items: Vec<Card>,
 }
@@ -356,11 +366,21 @@ impl CardSource<HomeHost> for Cards {
     }
     fn art(&self, i: usize) -> Art<'_> {
         let c = &self.items[i];
-        Art::Texture {
-            id: 0, // Caller artwork is contained inside the shared card rather than cropped.
-            width: c.texture.1,
-            height: c.texture.2,
-            identity: c.key as u64,
+        if c.has_icon() {
+            Art::Icon {
+                id: c.texture.0,
+                width: c.texture.1,
+                height: c.texture.2,
+                identity: c.key as u64,
+            }
+        } else {
+            // Only missing artwork and source/status cards use the shared matte.
+            Art::Texture {
+                id: 0,
+                width: c.texture.1,
+                height: c.texture.2,
+                identity: c.key as u64,
+            }
         }
     }
     fn label(&self, i: usize) -> TileLabel {
@@ -432,7 +452,7 @@ impl CardSource<HomeHost> for Cards {
                     ),
                 );
             }
-        } else if c.texture.0 == 0 {
+        } else if !c.has_icon() {
             Label::new(
                 c.initials.as_ptr(),
                 theme::size::DISPLAY,
@@ -441,15 +461,6 @@ impl CardSource<HomeHost> for Cards {
             .bold()
             .h(HAlign::Center)
             .draw(p, tile.rect);
-        } else {
-            let scale = (tile.rect.w * 0.92 / c.texture.1).min(tile.rect.h * 0.92 / c.texture.2);
-            let (w, h) = (c.texture.1 * scale, c.texture.2 * scale);
-            p.tex(
-                c.texture.0,
-                Rect::new(tile.rect.cx() - w / 2.0, tile.rect.cy() - h / 2.0, w, h),
-                12.0,
-                [1.0; 4],
-            );
         }
         if input_key(&c.id).is_none() && !tile.focused {
             let text = cstr(&plx_gfx::text::elide(
@@ -474,7 +485,7 @@ impl CardSource<HomeHost> for Cards {
         if c.context_selected && !tile.focused {
             p.rring(tile.rect, tile.radius, 2.0, theme::TEXT_SECONDARY);
         }
-        if tile.focused {
+        if tile.focused && !c.has_icon() {
             p.rring(tile.rect, tile.radius, 3.0, theme::TEXT_PRIMARY);
         }
     }

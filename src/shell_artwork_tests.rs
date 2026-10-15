@@ -477,3 +477,38 @@ fn finish_cancels_and_joins_actual_worker_before_releasing_only_live_texture_own
     assert!(shell.finish_live_artwork().is_none());
     assert_eq!(value(&shell, "/gl/deletes"), 1);
 }
+
+#[test]
+fn app_artwork_uses_unmatted_icons_and_missing_or_input_cards_keep_fallbacks() {
+    let mut cards = Cards {
+        items: vec![Card {
+            key: 42,
+            id: A.into(),
+            title: cstr("Fixture"),
+            caption: cstr(""),
+            initials: cstr("F"),
+            texture: (77, 160.0, 90.0),
+            context_selected: false,
+            compact_labels: false,
+        }],
+    };
+    assert!(matches!(
+        cards.art(0),
+        Art::Icon {
+            id: 77,
+            width: 160.0,
+            height: 90.0,
+            identity: 42
+        }
+    ));
+    for texture in [(0, 160.0, 90.0), (77, 0.0, 90.0), (77, 160.0, f32::NAN)] {
+        cards.items[0].texture = texture;
+        assert!(matches!(cards.art(0), Art::Texture { id: 0, .. }));
+    }
+    cards.items[0].texture = (77, 160.0, 90.0);
+    cards.items[0].id = "HDMI_1".into();
+    assert!(
+        matches!(cards.art(0), Art::Texture { id: 0, .. }),
+        "source/status cards keep their own presentation"
+    );
+}

@@ -89,7 +89,7 @@
   },
   "style": {
     "basis": "PlxNative shared tokens and components",
-    "background": "True black OLED canvas; graphite tiles and control surfaces",
+    "background": "True black OLED canvas; unboxed app icons preserve source shape and transparency; graphite for missing-art fallbacks and controls",
     "animations": "Short transform/opacity transitions with bounded render caches",
     "idle": "Render only on meaningful changes; hidden app suspends activity",
     "reference": "Apple TV / tvOS feel, following the native PlxNative interpretation",

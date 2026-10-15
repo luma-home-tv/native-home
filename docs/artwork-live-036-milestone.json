@@ -1,0 +1,142 @@
+{
+  "schema": 1,
+  "version": "0.36.0",
+  "source_revision": "9192ef2769167f9b5cbb5405bf5afd342c6e9787",
+  "scope": "Isolated C2 ordinary owned-fixture artwork worker/decode/cache/GL lifecycle and cleanup",
+  "ui_sha256": "f35c70e70e17d5691f6dd59e2407ef94f67feb1e4bb288621bf8d37e251c7c3c",
+  "ui_bytes": 3383988,
+  "target_sha256": "6c686f7c20986a45cdddf53a065cbb3d931362313178aebea97d93cbe424f81a",
+  "target_bytes": 736980,
+  "candidate_sha256": "b76a9acc600b206cdd8aea47d00fced4250d4b02316ef083e48c7dc630b1696b",
+  "ipk_sha256": "d0fde92f39faaca34354a2ede721dac37a93cc631ad31ba518522d7ba634a108",
+  "compile_inputs": 84,
+  "host_tests": {
+    "library": 335,
+    "dashboard_binary": 5,
+    "clippy_warnings_denied": true,
+    "build_provenance": 14,
+    "framework_verifier": 13,
+    "actual_package_cases": 21,
+    "private_v2_harness": 22
+  },
+  "device": {
+    "model": "OLED65C26LD",
+    "webos_generation": 24,
+    "root_actual_terminal_exit": 0,
+    "owned_synthetic_targets": 1,
+    "captured_stages": 4,
+    "stages": [
+      "initial",
+      "same_path_same_version_bytes_changed",
+      "package_version_changed",
+      "removed"
+    ],
+    "fixture_dimensions": [
+      128,
+      128
+    ],
+    "frame_interior_rgb_means": [
+      [
+        224,
+        36,
+        36
+      ],
+      [
+        36,
+        224,
+        36
+      ],
+      [
+        36,
+        36,
+        224
+      ]
+    ],
+    "expected_colour_pixel_fractions": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "frame_interiors_distinct": true,
+    "focus_and_preferences_preserved": true,
+    "gl_uploads": 4,
+    "gl_deletes": 4,
+    "gl_upload_failures": 0,
+    "gl_deletion_failures": 0,
+    "observed_gl_errors": 0,
+    "worker_joined": true,
+    "worker_panicked": false,
+    "outstanding_work_resolved": true,
+    "remaining_live_textures": 0,
+    "remaining_resident_pixels": 0,
+    "remaining_pending_results": 0,
+    "remaining_queued_work": 0,
+    "remaining_in_flight_work": 0,
+    "raw_process_identity_records": 6,
+    "positive_preservation_gates": 24,
+    "preservation_domains": 20,
+    "protected_core_hashes": 5,
+    "target_never_launched": true,
+    "target_assigned_uid_observed": false,
+    "both_owned_app_registrations_removed": true,
+    "proof_process_runtime_jail_state_removed": true,
+    "owned_uploads_removed": true,
+    "device_lease_private_agent_removed": true,
+    "home_current": true,
+    "reboot_required": false,
+    "native_reported_elapsed_ms": 18579,
+    "dated_cutoff_guards_verified_in_source": true,
+    "independent_per_contact_utc_telemetry": false,
+    "full_frame_visual_review": {
+      "frames_reviewed": 4,
+      "initial_and_removed_header_and_labels_present": true,
+      "refresh_frames_missing_some_header_and_app_label_text": true,
+      "expected_green_and_blue_fixture_regions_present": true,
+      "missing_text_cause_known": false
+    }
+  },
+  "independent_audit": {
+    "assertions": 912,
+    "script_sha256": "99a4711a4ca93fa54420141b77513ccb6287745c9eb2a6152e2144a8a67deac6",
+    "result_sha256": "8c62ae2157f41b3c550422b1055ac46f92e241ab0cd6718fd0777406c85f3094"
+  },
+  "first_attempt": {
+    "terminal_exit": 1,
+    "failure": "first_frame_colour_predicate",
+    "failed_frame_retained": false,
+    "gpu_vs_capture_cause_known": false,
+    "native_lifecycle_qualified": false,
+    "worker_graceful_end_qualified": false,
+    "failure_audit_assertions": 539,
+    "failure_cleanup_checks_passed": 30,
+    "raw_preservation_domain_pairs": 19,
+    "critical_final_observations_partly_driver_receipt_bound": true,
+    "failure_audit_result_sha256": "740b17f8b253c5a812a7bf1e74eb58334cac92efdd4aa445bd910b926ec3a7be",
+    "subsequent_capture": "fresh draw then capture before buffer swap; exact stage/frame saved before classification",
+    "roi_or_colour_predicates_relaxed": false
+  },
+  "boundaries": {
+    "runtime_filtered_to_owned_fixture": true,
+    "ordinary_direct_io_qualified_for_owned_fixture": true,
+    "independent_fixture_rgba_and_saved_frame_regions_recomputed": true,
+    "native_decoded_hashes_and_gl_counters_source_bound": true,
+    "retained_final_bytes_and_metadata_partly_driver_receipt_bound": true,
+    "physical_screen_camera_observation": false,
+    "class_wide_or_all_app_icon_access_qualified": false,
+    "root_resource_route_used": false,
+    "production_startup_qualified": false,
+    "normal_loader_qualified": false,
+    "physical_remote_input_qualified": false,
+    "performance_or_idle_power_qualified": false,
+    "full_release_qualified": false,
+    "complete_view_visual_correctness_qualified": false
+  },
+  "retained_c2_version": "0.20.0",
+  "retained_c2_binary_sha256": "ca1054b00d02f8a2dbdc3a52a224b3023619507483e041b018438f80f2092cf0",
+  "retained_updated": false,
+  "next": [
+    "Real artwork without a graphite backing plate; initials only when artwork is missing",
+    "Broader icon integration and separately qualified resource/startup path",
+    "Separate backed-up retained rollout"
+  ]
+}

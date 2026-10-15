@@ -1,8 +1,9 @@
 # Luma Home implementation plan
 
 The current delivery target is a responsive native Home dashboard for the
-OLED55G26LA G2 on webOS24. Earlier OLED65C26LD C2 work remains separate historical
-evidence; the active goal excludes contacting or modifying the C2.
+OLED55G26LA G2 on webOS24. The user reopened isolated OLED65C26LD C2 testing
+on 15 October 2026 until 20:30 Europe/London, with no new test after 20:15.
+After that dated window, C2 needs renewed authorisation. Results stay device-specific.
 It remains a separate application: LG Home, Home/power/volume handling, firmware,
 system libraries, boot configuration, media services and OLED protections stay
 under LG's control. Retained installations and each TV's saved favourites must
@@ -38,8 +39,11 @@ widget system. Generic improvements can be proposed upstream separately after
 verification; the Home client does not change the Plex application or player.
 The shipping architecture uses native rendering, with no WebView.
 
-The canvas is true black for OLED. Graphite remains available for tiles and
-controls, with bright focus/ink limited to useful areas. Idle behaviour must
+The canvas is true black for OLED. Show available app icons directly on black,
+preserving their aspect ratio, transparency and source shape. Add no graphite
+plate or forced rounding; show a focus outline only on selection. Missing artwork
+uses a graphite initials/name fallback. Graphite remains available for controls,
+with bright focus/ink limited to useful areas. Idle behaviour must
 minimise static bright elements without changing LG's panel protections. The
 [branding masters](../assets/luma-home/README.md) record the icon, wordmark
 and palette; a black background is not treated as proof of burn-in prevention.
@@ -81,11 +85,16 @@ restricted native G2 exchange and clean removal with checked state preserved.
 The [0.35 isolated resource test](artwork-transfer-035.md) now qualifies a real
 icon transfer and ordinary-process bounded decode from each of five observed
 installation classes, with complete removal and preserved checked state. Its
-pure cache state has separate ownership/invalidation tests. Next, connect that
-state to one bounded I/O/decode worker and main-thread texture updates, then
-exercise owned app installation, same-path icon replacement, removal, stale
-results and focus/favourites preservation. The operator-started helper is still
-separate from production enrollment/startup and retained rollout.
+pure cache state has separate ownership/invalidation tests. The
+[0.36 isolated C2 lifecycle](artwork-live-036.md) now connects a bounded worker,
+cache and main-thread textures for an owned fixture, covering initial artwork,
+same-path replacement, package revision, removal and joined shutdown. Other apps
+were deliberately excluded; initials in that test are not a C2 capability failure.
+Missing text in two refresh captures leaves complete-view correctness open.
+Next, qualify icon-only presentation and the production resource startup route,
+then broader artwork coverage and a backed-up retained rollout. The
+[production startup design](artwork-startup-design.md) separates the
+operator-started helper from an independently qualified bootstrap.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent
 bounded, read-only inventory work. Existing verified source selection and LG
 routes remain available throughout.

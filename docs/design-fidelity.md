@@ -1,8 +1,10 @@
 # Concept fidelity
 
 The [original concepts](concepts/README.md) remain the intended interface. Their
-Apple TV-style composition is the visual target: quiet black canvas, graphite
-cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
+Apple TV-style composition is the visual target: quiet black canvas, generous
+spacing and a clear focus cue. The latest direction shows available app icons
+directly on black, preserving their shape and alpha; graphite is for missing-art
+fallbacks and controls. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
@@ -12,7 +14,7 @@ progress map, not a claim that the complete concept is implemented.
 | Element | Native implementation | Remaining gap |
 | --- | --- | --- |
 | Identity | Luma icon and wordmark in the persistent header; own SVG rail icons cached as native textures. | Refine secondary page/status text as the information architecture settles. |
-| Canvas and focus | OLED-black canvas, graphite surfaces, white card outline, separate quiet current-route fill. | Measure contrast and focus animation with physical remote/pointer use. |
+| Canvas and focus | OLED-black canvas, graphite control/fallback surfaces, selected-icon outline, separate quiet current-route fill. | Measure contrast and focus animation with physical remote/pointer use. |
 | Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail; native View all apps/inputs with shortcut-origin Back. | Long-title and empty-state polish; source artwork. |
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs; bounded focus/caption viewport, menu anchoring and whole-tile clipping. | Isolated G2 system-keyboard typing/Done/Back and corrected dismissal now have evidence; normal integration, broader IME/script/font coverage, typography polish and physical hold/pointer/wheel proof remain. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |

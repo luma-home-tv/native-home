@@ -580,10 +580,10 @@ index 0b445f3..604e58e 100644
 +pub const RANGE_FILL: [f32;4] = TEXT_PRIMARY;
 +pub const RANGE_SAVED: [f32;4] = TEXT_SECONDARY;
 diff --git a/rust-modules/ui/src/widgets.rs b/rust-modules/ui/src/widgets.rs
-index e92ccee..dbab54e 100644
+index e92ccee..0d58255 100644
 --- a/rust-modules/ui/src/widgets.rs
 +++ b/rust-modules/ui/src/widgets.rs
-@@ -297,6 +297,10 @@ pub fn warm_tex_on(
+@@ -297,6 +297,16 @@ pub fn warm_tex_on(
  /// keyed thumbnail at an explicit resolution (flat placeholder skeleton), or a person's headshot
  /// (the same thumbnail, but its EMPTY case draws a person glyph rather than a blank tile).
  pub enum Art<'a> {
@@ -591,46 +591,96 @@ index e92ccee..dbab54e 100644
 +    /// owns upload/deletion and supplies a content identity independent of a recycled GL name.
 +    /// No server request, watch state or loading placeholder is associated with this variant.
 +    Texture { id: u32, width: f32, height: f32, identity: u64 },
++    /// Caller-owned icon, centred and contained with its full aspect and alpha.
++    /// No matte, resting outline or forced image rounding; focus adds a hollow
++    /// outline around the contained artwork. The caller owns upload/deletion and gives
++    /// a content identity independent of a recycled GL name. Missing icons use
++    /// the caller's absence/fallback presentation instead of this variant.
++    Icon { id: u32, width: f32, height: f32, identity: u64 },
      /// The facts a poster tile reads of its catalog row — see [`TileFacts`], which the caller (a
      /// screen) fills from the row; the library never names the row's own type.
      Poster(Option<TileFacts<'a>>),
-@@ -333,6 +337,7 @@ impl Art<'_> {
+@@ -333,6 +343,8 @@ impl Art<'_> {
      fn motion_identity(&self) -> Option<crate::card_motion::Identity> {
          use std::hash::{Hash, Hasher};
          let (owner, sid, key, kind) = match self {
 +            Self::Texture { id, identity, .. } => return Some(crate::card_motion::Identity { owner: *id as usize, asset: *identity }),
++            Self::Icon { identity, .. } => return Some(crate::card_motion::Identity { owner: *identity as usize, asset: *identity }),
              Self::Poster(Some(m)) => (m.owner, m.src, m.thumb, 0u8),
              Self::Still(Some(m)) => (m.owner, m.src, still_key(m), 1),
              Self::Thumb { sid, key, .. } => (key.as_ptr() as usize, *sid, *key, 2),
-@@ -644,7 +649,7 @@ pub fn art_uv(art: &Art, tw: f32, th: f32, r: Rect) -> [f32; 4] {
+@@ -632,19 +644,49 @@ pub const STILL_LINE_GAP: f32 = 8.0;
+ /// their height. The crop's placement is the art's ([`art_crop`]); an undecoded texture is
+ /// [`plx_gfx::gfx::UV_FULL`], as `Rect::cover_uv` documents.
+ ///
++/// `Art::Icon` instead keeps the full UV window; `icon_contain_frame` fits its
++/// geometry without cropping, preserving the source aspect and alpha.
++///
+ /// Pure, and the seam every art tile goes through — the shelf, the Library grid, Search, the
+ /// person page's portrait, the profile picker, extras, cast — so no one of them can draw a picture
+ /// at the wrong aspect by forgetting to ask.
+ pub fn art_uv(art: &Art, tw: f32, th: f32, r: Rect) -> [f32; 4] {
++    if matches!(art, Art::Icon { .. }) { return plx_gfx::gfx::UV_FULL; }
+     r.cover_uv(tw, th, art_crop(art))
+ }
+ 
++/// Full-aspect icon placement, with no cropping, matte or corner mask. Invalid
++/// source/frame geometry paints nothing rather than submitting NaNs to GL.
++pub fn icon_contain_frame(width: f32, height: f32, frame: Rect) -> Option<Rect> {
++    if ![width, height, frame.x, frame.y, frame.w, frame.h].into_iter().all(f32::is_finite)
++        || width <= 0.0 || height <= 0.0 || frame.w <= 0.0 || frame.h <= 0.0
++        || !(frame.x + frame.w).is_finite() || !(frame.y + frame.h).is_finite() { return None; }
++    // Intermediate f64 ratios avoid overflow for finite, extreme source aspects.
++    let scale = (f64::from(frame.w) / f64::from(width)).min(f64::from(frame.h) / f64::from(height));
++    let w = (f64::from(width) * scale) as f32;
++    let h = (f64::from(height) * scale) as f32;
++    let x = (f64::from(frame.x) + (f64::from(frame.w) - f64::from(w)) * 0.5) as f32;
++    let y = (f64::from(frame.y) + (f64::from(frame.h) - f64::from(h)) * 0.5) as f32;
++    if ![x, y, w, h, x + w, y + h].into_iter().all(f32::is_finite) || w <= 0.0 || h <= 0.0 { return None; }
++    Some(Rect::new(x, y, w, h))
++}
++
++fn icon_tile(p: Painter, frame: Rect, image: (u32, f32, f32), focused: bool, focus: f32) {
++    let (id, width, height) = image;
++    if id == 0 { return; }
++    let Some(icon) = icon_contain_frame(width, height, frame) else { return; };
++    p.tex(id, icon, 0.0, theme::TINT_WHITE);
++    if focused && focus.is_finite() && focus > 0.0 {
++        p.alpha(focus.min(1.0)).rring(icon, theme::CARD_RING_RAD, theme::CARD_SHEEN_W, theme::TEXT_PRIMARY);
++    }
++}
++
+ /// Where [`art_uv`]'s crop keeps the picture: a person's photo rides high so the face survives a
+ /// portrait source going into a circle; every other variant is even.
  pub fn art_crop(art: &Art) -> crate::Crop {
      match art {
          Art::Person { .. } => crate::Crop::Headshot,
 -        Art::Poster(_) | Art::Still(_) | Art::Thumb { .. } => crate::Crop::Centre,
-+        Art::Poster(_) | Art::Still(_) | Art::Thumb { .. } | Art::Texture { .. } => crate::Crop::Centre,
++        Art::Poster(_) | Art::Still(_) | Art::Thumb { .. } | Art::Texture { .. } | Art::Icon { .. } => crate::Crop::Centre,
      }
  }
  
-@@ -656,6 +661,7 @@ pub fn resolve_card_art(p: Painter, rect: Rect, art: &Art<'_>) -> (u32, f32, f32
+@@ -656,6 +698,7 @@ pub fn resolve_card_art(p: Painter, rect: Rect, art: &Art<'_>) -> (u32, f32, f32
      if p.is_recording() { return (0, 0.0, 0.0); }
      let _admission = art.motion_identity()
          .map(|id| crate::card_motion::Scope::card(id, p.to_screen(rect).0));
-+    if let Art::Texture { id, width, height, .. } = art { return (*id, *width, *height); }
++    if let Art::Texture { id, width, height, .. } | Art::Icon { id, width, height, .. } = art { return (*id, *width, *height); }
      let image = card_art_request(art).map_or((0, 0.0, 0.0), |(srv, path, w, h)| resolve_tex_wh_on(srv, path, w, h, 0));
      #[cfg(feature = "devtriggers")]
      {
-@@ -672,6 +678,7 @@ pub fn resolve_card_art(p: Painter, rect: Rect, art: &Art<'_>) -> (u32, f32, f32
+@@ -672,6 +715,7 @@ pub fn resolve_card_art(p: Painter, rect: Rect, art: &Art<'_>) -> (u32, f32, f32
  /// through this, so the two cannot name different keys; `screens/src/library/lookahead_tests.rs::the_lookahead_asks_for_the_key_the_card_draw_resolves` pins it. `None` for an empty slot.
  pub fn card_art_request<'a>(art: &Art<'a>) -> Option<(u16, &'a str, c_int, c_int)> {
      Some(match art {
-+        Art::Texture { .. } => return None,
++        Art::Texture { .. } | Art::Icon { .. } => return None,
          Art::Poster(m) => { let m = (*m)?; (m.src, m.thumb, POSTER_RES.0, POSTER_RES.1) }
          Art::Still(m) => { let m = (*m)?; (m.src, still_key(&m), STILL_RES.0, STILL_RES.1) }
          Art::Thumb { sid, key, res } | Art::Person { sid, key, res } => (*sid, *key, res.0, res.1),
-@@ -708,6 +715,15 @@ pub fn card_named(p: Painter, frame: Rect, art: Art, fan_name: Option<&str>, rad
+@@ -708,6 +752,16 @@ pub fn card_named(p: Painter, frame: Rect, art: Art, fan_name: Option<&str>, rad
      // screen nor its springs can forget to report a new positional expression.
      let image = resolve_card_art(p, r, &art);
      match art {
++        Art::Icon { .. } => icon_tile(p, r, image, focused, f),
 +        Art::Texture { .. } => {
 +            let (t, tw, th) = image;
 +            if t != 0 && tw > 0.0 && th > 0.0 {
@@ -643,7 +693,7 @@ index e92ccee..dbab54e 100644
          Art::Poster(m) => {
              // **The ROW's server, not the current one.** A `thumb` path is a key on the server that
              // issued it — image-transcode paths embed a server-local ratingKey — so a bare
-@@ -8113,3 +8129,648 @@ mod hero_scrim_tests;
+@@ -8113,3 +8167,648 @@ mod hero_scrim_tests;
  #[cfg(test)]
  #[path = "widgets_art_crop_tests.rs"]
  mod art_crop_tests;
@@ -1293,10 +1343,10 @@ index e92ccee..dbab54e 100644
 +    }
 +}
 diff --git a/rust-modules/ui/src/widgets_art_crop_tests.rs b/rust-modules/ui/src/widgets_art_crop_tests.rs
-index 803e2c3..647ddb7 100644
+index 803e2c3..c975c50 100644
 --- a/rust-modules/ui/src/widgets_art_crop_tests.rs
 +++ b/rust-modules/ui/src/widgets_art_crop_tests.rs
-@@ -6,6 +6,23 @@ use crate::card_row::RowStyle;
+@@ -6,6 +6,110 @@ use crate::card_row::RowStyle;
  /// The crop never reads which server a picture came from, so any raw id will do.
  const SRC: u16 = 0;
  
@@ -1315,6 +1365,93 @@ index 803e2c3..647ddb7 100644
 +fn local_texture_recording_walk_does_not_resolve_or_request_art() {
 +    let art = Art::Texture { id: 42, width: 160.0, height: 90.0, identity: 77 };
 +    assert_eq!(resolve_card_art(Painter::recording(), Rect::FULL, &art), (0, 0.0, 0.0));
++}
++
++fn icon(id: u32, identity: u64, width: f32, height: f32) -> Art<'static> {
++    Art::Icon { id, identity, width, height }
++}
++
++#[test]
++fn local_icon_identity_never_depends_on_the_gl_name_or_requests_server_art() {
++    let art = icon(42, 77, 160.0, 90.0);
++    assert_eq!(card_art_request(&art), None);
++    assert_eq!(art.motion_identity(), icon(99, 77, 160.0, 90.0).motion_identity());
++    assert_ne!(art.motion_identity(), icon(42, 78, 160.0, 90.0).motion_identity());
++    assert_eq!(art_crop(&art), crate::Crop::Centre);
++    assert_eq!(art_uv(&art, 160.0, 90.0, Rect::new(0.0, 0.0, 200.0, 200.0)), plx_gfx::gfx::UV_FULL);
++}
++
++#[test]
++fn square_wide_and_tall_icons_keep_all_texels_centred_at_rest_and_focus_pop() {
++    let frame = Rect::new(100.0, 200.0, 240.0, 180.0);
++    for scale in [1.0, 1.07] {
++        let frame = frame.scaled(scale);
++        for (width, height) in [(80.0, 80.0), (160.0, 90.0), (90.0, 160.0)] {
++            let placed = icon_contain_frame(width, height, frame).unwrap();
++            assert!(placed.x >= frame.x - 1e-4 && placed.y >= frame.y - 1e-4);
++            assert!(placed.x + placed.w <= frame.x + frame.w + 1e-4);
++            assert!(placed.y + placed.h <= frame.y + frame.h + 1e-4);
++            assert!((placed.w / placed.h - width / height).abs() < 1e-4);
++            assert!((placed.cx() - frame.cx()).abs() < 1e-4 && (placed.cy() - frame.cy()).abs() < 1e-4);
++            assert!((placed.w - frame.w).abs() < 1e-4 || (placed.h - frame.h).abs() < 1e-4);
++        }
++    }
++    let square = icon_contain_frame(80.0, 80.0, frame).unwrap();
++    assert_eq!((square.x, square.y, square.w, square.h), (130.0, 200.0, 180.0, 180.0));
++    let wide = icon_contain_frame(160.0, 90.0, frame).unwrap();
++    assert_eq!((wide.x, wide.y, wide.w, wide.h), (100.0, 222.5, 240.0, 135.0));
++}
++
++#[test]
++fn icon_containment_refuses_invalid_or_unrepresentable_geometry() {
++    let frame = Rect::new(100.0, 200.0, 240.0, 180.0);
++    for bad in [0.0, -1.0, f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
++        assert!(icon_contain_frame(bad, 80.0, frame).is_none());
++        assert!(icon_contain_frame(80.0, bad, frame).is_none());
++    }
++    for bad in [Rect::new(f32::NAN, 0.0, 1.0, 1.0), Rect::new(0.0, f32::INFINITY, 1.0, 1.0),
++        Rect::new(0.0, 0.0, 0.0, 1.0), Rect::new(0.0, 0.0, 1.0, -1.0),
++        Rect::new(f32::MAX, 0.0, f32::MAX, 1.0), Rect::new(0.0, 0.0, f32::INFINITY, 1.0)] {
++        assert!(icon_contain_frame(80.0, 80.0, bad).is_none());
++    }
++    assert!(icon_contain_frame(f32::MAX, f32::MIN_POSITIVE, frame).is_none(), "an aspect that rounds a drawn axis to zero is not drawable");
++    let tiny = icon_contain_frame(f32::MIN_POSITIVE, f32::MIN_POSITIVE, frame).unwrap();
++    assert_eq!((tiny.w, tiny.h), (180.0, 180.0));
++}
++
++#[test]
++fn icon_paint_is_one_alpha_preserving_quad_and_a_focus_only_hollow_ring() {
++    let frame = Rect::new(100.0, 200.0, 240.0, 180.0);
++    let mut tex = Vec::new();
++    let rest = crate::draw_census::capture(|| {
++        tex = crate::draw_census::capture_tex(|| icon_tile(Painter::recording().alpha(0.5), frame, (42, 160.0, 90.0), false, 1.0));
++    });
++    assert_eq!(rest.len(), 1, "no resting matte, sheen, mask or outline");
++    assert_eq!(rest[0].0, 12, "plain full-UV texture primitive");
++    assert_eq!(tex.len(), 1); assert_eq!(tex[0].0, 42); assert_eq!(tex[0].2, 0.5);
++    assert_eq!((tex[0].1.x, tex[0].1.y, tex[0].1.w, tex[0].1.h), (100.0, 222.5, 240.0, 135.0));
++    let focused = crate::draw_census::capture(|| icon_tile(Painter::recording(), frame, (42, 160.0, 90.0), true, 1.0));
++    assert_eq!(focused.iter().map(|(tag, _)| *tag).collect::<Vec<_>>(), vec![12, 3]);
++    assert_eq!((focused[1].1.x, focused[1].1.y, focused[1].1.w, focused[1].1.h), (100.0, 222.5, 240.0, 135.0), "focus outlines the actual contained artwork, not the wider cell");
++    for amount in [0.0, -1.0, f32::NAN, f32::INFINITY] {
++        let draw = crate::draw_census::capture(|| icon_tile(Painter::recording(), frame, (42, 80.0, 80.0), true, amount));
++        assert_eq!(draw.iter().map(|(tag, _)| *tag).collect::<Vec<_>>(), vec![12]);
++    }
++    for image in [(0, 80.0, 80.0), (42, 0.0, 80.0), (42, f32::NAN, 80.0)] {
++        assert!(crate::draw_census::capture(|| icon_tile(Painter::recording(), frame, image, true, 1.0)).is_empty());
++    }
++}
++
++#[test]
++fn local_icon_prewarm_and_record_walk_do_not_resolve_request_or_paint_images() {
++    let art = icon(42, 77, 160.0, 90.0);
++    assert_eq!(resolve_card_art(Painter::recording(), Rect::FULL, &art), (0, 0.0, 0.0));
++    let commands = crate::draw_census::capture(|| {
++        card(Painter::recording(), Rect::FULL, icon(42, 77, 160.0, 90.0), 999.0, true, 1.07, 1.0);
++        crate::record_walk(|| card(Painter::root(), Rect::FULL, icon(42, 77, 160.0, 90.0), 999.0, true, 1.07, 1.0));
++    });
++    assert!(commands.is_empty());
++    assert_eq!(card_art_request(&icon(0, 77, 0.0, 0.0)), None);
 +}
 +
  /// The cast row's circle, at rest and popped. The shape is what matters; the position is not.

@@ -1,10 +1,22 @@
-# Live app artwork: next implementation slice
+# Live app artwork: implementation and remaining integration
 
-The current live catalogue deliberately discards incoming icon paths in
-`live::parse`. `live::merge` restores only previously packaged paths by app ID,
-and `Shell::load_icons` loads the first 64 initial applications once. New apps
-therefore lack artwork; updated apps can keep an old image. This falls short of
-the intended complete native drawer and concept fidelity.
+The retained preview still uses packaged artwork: `live::merge` restores those
+paths by app ID and `Shell::load_icons` loads the first 64 initial applications.
+The newer source adds a separate sealed artwork map, bounded worker/cache and
+main-thread textures, deliberately enabled only in an isolated proof. It does
+not yet provide all-app live artwork to the retained preview.
+
+The [0.35 resource proof](artwork-transfer-035.md) transferred and decoded one
+real icon from each of five observed installation classes. The
+[0.36 lifecycle proof](artwork-live-036.md) then exercised one owned fixture on
+C2 through same-path replacement, package update, removal and joined shutdown.
+It did not use the root broker. Missing text in two captured refresh frames
+leaves complete-view rendering open. The [startup design](artwork-startup-design.md)
+records the remaining production bootstrap boundary.
+
+Available icons should preserve their aspect ratio, alpha and source shape on
+black, without an added graphite plate. Only missing artwork uses the labelled
+initials fallback. A focus-only outline communicates selection.
 
 Existing G2 ordinary-app `listApps` evidence includes `folderPath`, relative PNG
 `icon` and often `largeIcon`. Catalogue admission already joins registered launch
@@ -16,8 +28,8 @@ change was assumed.
 The subsequent [0.32.0 passive survey](artwork-access-032.md) established one
 developer-app read, while four sampled locations were absent inside the native
 jail. Direct filesystem access is therefore insufficient as the demonstrated
-complete solution. Resource-route qualification comes before the worker/texture
-integration below; no developer-only substitute is admitted as completion.
+complete solution. The separate broker proof addresses those reads; the owned-fixture worker
+proof does not establish class-wide production access.
 
 The next [Identify-only broker candidate](artwork-broker-identify.md) tests a
 temporary operator-started native connection with kernel/process/context binding.
@@ -63,11 +75,11 @@ Reject absolute/escaping paths, URLs, control bytes and unexpected symlinks.
 Use component-wise file access and verify regular-file identity around reads.
 Unreadable artwork keeps its packaged image or initials.
 
-Add one bounded I/O/decode worker in `app_artwork.rs`; keep every GL upload,
-replacement and deletion on the main thread. The existing shared decoder can
-allocate beyond the shell's post-decode 512px check. Add a generic bounded decoder
-entry point to the attributed framework patch, enforcing dimensions/allocation
-before decoding while leaving its existing default unchanged.
+The source now implements the worker in `artwork_worker.rs`, controller/cache
+in `artwork_runtime.rs` and `artwork_cache.rs`, and main-thread ownership in
+`artwork_textures.rs`/`artwork_gl.rs`. The attributed framework patch adds a
+bounded decoder that enforces dimensions/pixel allocation before decoding.
+The root provider and production startup still need separate integration.
 
 Initial proposed limits are 1 MiB encoded bytes, 512px per axis, a small latest-work
 queue and two pending results. Use a byte-limited artwork cache and visible/favourite
@@ -82,7 +94,8 @@ on each catalogue refresh. Include file identity/content digest so unchanged pat
 can change. Removed apps cancel pending work and evict their textures; stale
 results cannot resurrect a removed card. Expired catalogues pause new reads and
 retain their existing launch-admission withdrawal. Bound negative retries and
-shutdown work; never make the UI wait indefinitely for the worker.
+shutdown work. Current joining is cooperative: a blocked kernel read is not
+hard-cancellable; do not claim a guaranteed shutdown bound.
 
 ## Parallel work and acceptance
 
@@ -95,7 +108,8 @@ shutdown work; never make the UI wait indefinitely for the worker.
 - Review lane: path/allocation/stale-result/focus review and fixture analysis.
 
 Agree the map/result interface first. Give each source file one owner and use
-separate host build targets. Only the coordinator contacts G2; C2 stays excluded.
+separate host build targets. Only the coordinator contacts TVs. The dated C2
+window in `AGENTS.md` applies; it is not ongoing access after that cutoff.
 Do not mutate code or patch pins while an admitted device candidate is running.
 
 Host regressions must cover a newly installed app, same-ID version/path changes,

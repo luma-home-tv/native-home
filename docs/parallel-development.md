@@ -6,8 +6,9 @@ and application changes through one integration owner. This extends the
 [implementation plan](implementation-plan.md) and uses the
 [controls coverage audit](controls-coverage-next.md) as the control-centre backlog.
 It does not change device authorisation or the protections in `AGENTS.md`.
-The current goal permits G2 device work only. C2 results below are historical;
-do not contact or modify that TV. G2 now retains [0.31.0](retained-preview-031-milestone.json)
+G2 remains primary. C2 was reopened for isolated tests on 15 October 2026 until
+20:30 Europe/London, with no new test after 20:15; after that window it requires
+renewed authorisation. All TV access stays with the coordinator. G2 now retains [0.31.0](retained-preview-031-milestone.json)
 after a backed-up update, normal UI smoke and preserved favourites.
 The next product slice is [live app artwork](live-app-artwork.md). Its ordinary-jail
 access survey comes before implementation admission, with worker, shared decoder,
@@ -76,8 +77,8 @@ more independent outputs; shared shell/input integration remains one owner's wor
 
 Use waves rather than keeping every agent on a permanent role. During device
 validation, the coordinator owns G2, a reviewer audits evidence and host-only
-workers prepare independent modules or adversarial fixtures. C2 has no active
-device lane under the current goal. During
+workers prepare independent modules or adversarial fixtures. The coordinator
+may also use C2 within its explicit dated window; agents never compete for a TV. During
 implementation, reassign the device validator to a bounded UI or test module.
 This keeps hardware tests running alongside development without asking two
 agents to integrate the same event loop. Give each assignment one deliverable,
@@ -100,7 +101,8 @@ proposals need not invalidate the artifact already under test.
 | Background 2: cache and integration review | Implement pure scheduling, ownership, invalidation and memory-capacity tests. After handoff, independently review the resource flow, context/refusal handling and candidate harness. | Owns a new isolated cache module during implementation; shared worker, GL and focus code stays read-only. Findings go to the integration owner. |
 | Background 3: adversarial fixtures and saved-evidence audit | Prepare package-mode tests, synthetic transfer/decoder receipt regressions and an independent saved-result audit alongside the driver work. | Owns new private test/audit files. No TV calls, shared source edits or build-target competition. Distinguishes reported digests from independently rehashed saved bytes. |
 
-The [0.35 artwork candidate](artwork-transfer-035.md) uses this division. Cache,
+The [0.35 artwork candidate](artwork-transfer-035.md) and
+[0.36 C2 lifecycle](artwork-live-036.md) use this division. Cache,
 transport and fixed catalogue readers were implemented independently, then handed
 to one integration owner. Harness fixtures and the saved-evidence audit proceed
 alongside the final ARM builds and package checks. Device qualification stays on

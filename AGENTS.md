@@ -5,8 +5,9 @@ framework dependency. Do not add Plex client, playback, authentication or server
 features. Retain upstream package names, copyright and licences. Record generic
 framework changes in the integration patch and propose them upstream separately.
 
-Use shared UI/focus components. Preserve an OLED-black canvas with graphite
-surfaces. Build and verify the standalone dependency graph; host checks do not
+Use shared UI/focus components. Preserve an OLED-black canvas. Available app icons keep their own shape and
+transparency without a graphite backing plate; missing-art fallbacks and controls
+may use graphite surfaces. Build and verify the standalone dependency graph; host checks do not
 prove TV rendering, physical input or performance.
 
 TV details, credentials, actual app inventories/icons and household captures

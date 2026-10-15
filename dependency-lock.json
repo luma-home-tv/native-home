@@ -15,7 +15,7 @@
   ],
   "integration_patch": "patches/plxnative-framework-integration.patch",
   "patch_purpose": [
-    "Generic local texture artwork support",
+    "Generic local texture and aspect-preserving transparent icon artwork support with focus-only outlines",
     "Opt-in true-black surface role",
     "Opt-in whole-tile grid viewport admission shared by paint and pointer stops",
     "Shared staged signed range state and native editor geometry",
@@ -43,8 +43,8 @@
     "rust-modules/ui/src/form_tests.rs": "dd1ca1c1f441046b47c87554c320f74144863399aaed2046eac68955b0e59b66",
     "rust-modules/ui/src/text_buffer.rs": "636f2701fbd8b81688c000c5803fa9ce9e172a5733d2109df3ef7a0176f39425",
     "rust-modules/ui/src/theme.rs": "4ac3845a3da2dbea1115c32cb7ecda76c17333e9509e04d6ae0f56569348923e",
-    "rust-modules/ui/src/widgets.rs": "fc01db2b1f1b6f723dd0807f2561267f27327c5df9b9f7e3585383aeeb56000b",
-    "rust-modules/ui/src/widgets_art_crop_tests.rs": "4e72f1ae2eb9adf335d1845923d5f00594ba77e02476c1a85e7befbc7a895b26"
+    "rust-modules/ui/src/widgets.rs": "ea45c467a72b4398010d640a12caf79503d8496c6f78903620517780017af631",
+    "rust-modules/ui/src/widgets_art_crop_tests.rs": "596eae78a70f5e5ec8182440557a429095c5aa2a7b422b3b674bcbb5b91cf78c"
   },
-  "integration_patch_sha256": "e214db30238d135a23fb1e856c59601434214e885d083cf77d94859486718cf0"
+  "integration_patch_sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf"
 }
