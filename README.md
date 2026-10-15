@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.14.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.15.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -75,6 +75,12 @@ and 0.12.0 updates with favourites preserved. The
 verified Picture, Sound, Accessibility, General and OLED Care routes on both
 TVs, plus a focused Network entry in LG General. Earlier native idle/wake and owned-app launch
 checks are recorded in the [deployment milestone](docs/deployment-milestone.json).
+
+The [Inputs detail milestone](docs/inputs-detail-milestone.json) adds a native
+two-column source grid and graphite detail pane, matched to the concept. Both TVs
+render the Luma mark/name and independently read source status. A separate G2
+trial confirmed HDMI selection and restoration; C2 tuner restoration and live
+video-format/playback remain unverified.
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching remains gated and

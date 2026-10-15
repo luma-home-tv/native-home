@@ -53,9 +53,9 @@
     "Inputs": {
       "purpose": "Choose and inspect TV sources",
       "composition": [
-        "Four HDMI tiles",
-        "Plug, signal and active-input states",
-        "Input name and format when available"
+        "Two-column grid of four HDMI tiles beside a graphite detail panel",
+        "Distinct cable, signal and independently read selected-source states",
+        "Focused input name and format when available"
       ],
       "activation": "Typed source-selection request through LG application manager; no decoder replacement"
     },

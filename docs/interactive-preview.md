@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.14.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.15.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -30,7 +30,13 @@ repainting its UI. The first app input wakes it without activating a hidden tile
 This is an app-local measure: physical panel power, burn-in prevention and LG's
 own protections have not been validated by a framebuffer capture.
 
-Inputs show status. HDMI switching remains gated, and native controls are read-only
+The Inputs page now uses two columns of HDMI cards beside a graphite detail pane. Cable,
+signal and selected source are separate readings. The selected source comes from
+EIM's independent getter and can persist while another app is foreground. Missing,
+stale or unregistered source IDs are unavailable. Video format remains unavailable.
+The [Inputs detail record](inputs-detail-milestone.json) records native screens on
+both TVs and a separate, restored G2 switch trial. Production HDMI switching
+remains gated, and native controls are read-only
 or LG-managed. Controls now shows a persistent six-category column beside the
 selected detail panel. Arrows preview categories; Right or OK enters the rows.
 Back returns through the category column to Home. The cached Picture breadcrumb

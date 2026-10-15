@@ -1,0 +1,134 @@
+{
+  "code_revision": "c3bbb3431dae97b672bc73e5a4ed220e18b7e209",
+  "package_version": "0.15.0",
+  "binary_sha256": "09c666e4727d3066a48121a6f5bff05fbdcb04fd1b9980f2a2498381ddf619dd",
+  "client_tests": {
+    "passed": 81,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "implementation": [
+    "Native two-column HDMI card grid beside a graphite detail panel, using attributed PlxNative Grid/focus/labels",
+    "Luma icon/name and own navigation icons remain visible on the OLED-black canvas",
+    "Detail panel follows focused source; cable, signal and selected source have distinct meanings",
+    "Selection comes from independent EIM getCurrentInput, not device activate flags or foreground app alone",
+    "Stale, denied, malformed or unregistered selected-source reads withdraw selection; cable/signal reads remain independent",
+    "Video format is unavailable; production HDMI switching remains gated"
+  ],
+  "getter": {
+    "uri": "com.webos.service.eim/getCurrentInput",
+    "field": "mainInputSourceId",
+    "semantics": "Selected TV source can persist while LG Home or Luma is foreground; this does not establish visible playback."
+  },
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_app_identity": true,
+      "native_read_cycles": 4,
+      "seven_pages_captured": true,
+      "branding_loaded": true,
+      "inputs_frame_inspected": true,
+      "settings_writes": false,
+      "cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_preview_and_favourites_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.15.0",
+        "ordinary_uid": 5724,
+        "favourites_loaded": true,
+        "state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_app_identity": true,
+      "native_read_cycles": 4,
+      "seven_pages_captured": true,
+      "branding_loaded": true,
+      "inputs_frame_inspected": true,
+      "settings_writes": false,
+      "cleanup": {
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_preview_and_favourites_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.15.0",
+        "ordinary_uid": 6249,
+        "favourites_loaded": true,
+        "state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    }
+  },
+  "g2_controlled_switch": {
+    "ordinary_app_identity": true,
+    "adapter_verified": true,
+    "independent_selected_source_changed": true,
+    "original_source_restored": true,
+    "no_setting_writes": true,
+    "scope": "HDMI 4 to HDMI 1 with no cable/signal on either port; fixed normal LG application-manager target plus independent selected-source and foreground readback. This does not prove live HDMI playback or C2 tuner restoration.",
+    "cleanup": {
+      "test_paths_mounts_absent": true,
+      "test_state_absent": true,
+      "catalogue_absent": true,
+      "launchpoint_absent": true,
+      "retained_unchanged": true,
+      "core_unchanged": true,
+      "picture_unchanged": true,
+      "audio_unchanged": true,
+      "selected_source_restored": true,
+      "home_verified": true,
+      "previous_foreground_restored": true
+    }
+  },
+  "production_switching_enabled": false,
+  "limits": [
+    "C2 getCurrentInput returned ATV, which was not in its EIM HDMI devices list; selected-input detail is unavailable rather than inferred from activate flags",
+    "First C2 passive test had an HDMI-only test assertion; guarded cleanup and full original-state verification completed before a corrected passive test",
+    "No C2 switch trial: tuner source restoration needs separate validation",
+    "No video-format or HDMI playback proof; native video-format field remains unavailable",
+    "Scripted native captures and injected Back are not physical remote/pointer/wheel coverage",
+    "Explicit LG Home and view-all shortcuts, source artwork, broader native controls and long-run/reboot checks remain"
+  ],
+  "privacy": "Raw TV inventories, labels, icons, account favourites, captures, proprietary service files and detailed receipts remain private."
+}
