@@ -1,0 +1,86 @@
+{
+  "schema": 1,
+  "status": "G2 retained normal Preview updated from 0.21.0 to 0.26.0; normal navigation and LG keyboard smoke passed",
+  "source": {
+    "functional_revision": "7f29884be4c5a0c48794e71110744676c78bb371",
+    "version": "0.26.0",
+    "binary_sha256": "d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf",
+    "normal_ipk_sha256": "4637a557cb2c226ce5042e2a7938469a972212a08cc4dcef4af56efff02890e1",
+    "candidate_manifest_sha256": "a761a140cd6c588f3e09f0fa3017377c875e54ff8cc01ec43f25b8633aaf74c9"
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "identity": "com.ash.nativehome.preview",
+    "ordinary_application_uid_preserved": true,
+    "c2_updated_in_this_run": false,
+    "c2_retained_version": "0.20.0"
+  },
+  "rollback_admission": {
+    "identity": "Separate Proof application, never requested to launch",
+    "installed_versions_verified": ["0.26.0", "0.25.0"],
+    "installer_terminals_and_installed_binary_hashes_verified": true,
+    "application_launches_requested": 0,
+    "keys_sent": 0,
+    "settings_writes_requested": 0,
+    "unexpected_execution_observed": false,
+    "qualified_removal_preservation_and_transport_gates": 20,
+    "supplemental_audit_receipt_sha256": "fcfd043674fa4b4326b400b6e2c0f1a9ec1beadfdc0f284d4766a2120f9c5011",
+    "history": [
+      "First host profile refused an unresolved proc observation before upload or installation; cleanup completed. Its failed record is retained.",
+      "The replacement positively classified kernel threads on the observed kernel. Both installations and removal completed, but the original host exit remained failed because it compared changing audio request callerId metadata.",
+      "A separate same-run audit verified successful typed audio replies equal after excluding only callerId, checked the other nineteen gates and bound the raw artifacts. It did not change the failed record or repeat TV mutations."
+    ],
+    "limit": "Sampled absence checks are not continuous execution tracing. Proof 0.26-to-0.25 downgrade admission does not establish exact normal Preview 0.26-to-0.21 rollback or old-code execution."
+  },
+  "normal_update": {
+    "host_exit_code": 0,
+    "independent_saved_artifact_assertions_passed": 79,
+    "previous_version": "0.21.0",
+    "fresh_complete_bundle_and_saved_state_backups": true,
+    "full_bundle_entries_verified_before_after_install_and_after_smoke": 32,
+    "verified_old_package_retained_privately": true,
+    "uninstall_or_state_reset_requested": false,
+    "full_installed_new_bundle_matches_package": true,
+    "saved_state_bytes_ownership_and_modes_equal_at_all_three_stages": true,
+    "live_normal_process_start_uid_and_executable_verified": true,
+    "proof_observer_recipe_or_capture_helpers_enabled": false,
+    "verification_receipt_sha256": "f4c43ade2cef0b11f0c8385d3ce7734a9337bf1d64d345761d5357ea2ce3cd12",
+    "cleanup_receipt_sha256": "cd2b056d4a3e4de9a5222590b08871bec742cec90178e818e60f66b794628a45"
+  },
+  "smoke": {
+    "input": "Ten guarded network key commands, each bound to a fresh compositor frame reviewed by the coordinator",
+    "sequence": "Home to Apps rail, drawer to Search toolbar, LG keyboard, Back to Search, Back to Home, Back to exit",
+    "private_compositor_frames_reviewed": 10,
+    "branding_and_saved_favourites_visible": true,
+    "keyboard": {"opens": 1, "stops": 1, "dismissals": 1, "failures": 0},
+    "no_second_keypad_after_dismissal": true,
+    "synthetic_text_recipe_queued": 0,
+    "preferences_loaded_and_readback_confirmed": true,
+    "application_action_receipts": 0,
+    "settings_writes": 0,
+    "exit_reason": "back_from_home",
+    "lg_home_returned_naturally": true
+  },
+  "preservation_and_closeout": {
+    "typed_preservation_domains_checked": 18,
+    "checked_core_hashes_unchanged": true,
+    "typed_picture_sound_accessibility_general_panel_care_readings_unchanged": true,
+    "master_audio_and_source_last_input_unchanged": true,
+    "temporary_uploads_and_remote_captures_removed": true,
+    "lease_released_and_absence_verified": true,
+    "private_host_agent_and_socket_directory_removed": true,
+    "rollback_needed": false,
+    "normal_preview_intentionally_retained": true,
+    "reboot_required": false
+  },
+  "scope_limits": [
+    "No physical typing or Done test in this normal-build smoke. The human-confirmed 0.25.0 check remains separately versioned evidence for unchanged input code paths.",
+    "No C2 deployment or current C2 physical input claim follows from this G2 update.",
+    "Pointer, hold, wheel, later-batch dismissal races, composing-language behaviour, broader startup reliability and matched performance remain open.",
+    "Live HDMI/media/HDR behaviour, reboot persistence and complete TV functionality were not exercised. Checked preservation domains are not a universal system-integrity proof.",
+    "Normal packages contain no screenshot helper. Private captures came from the external compositor service under sequential foreground guards."
+  ],
+  "whole_dashboard_goal_complete": false
+}

@@ -14,7 +14,8 @@ It does not change device authorisation or the protections in `AGENTS.md`.
    and delayed input after dismissal, pointer/wheel/hold, idle/wake and foreground
    departure. Keep one keyboard active. Qualify composing-language, deletion and
    hardware-keyboard semantics separately; the available G2 mode offered no word
-   predictions. This is the immediate gate before a retained keyboard update; the
+   predictions. G2 now has the backed-up normal update described below; remaining
+   scenarios are broader qualification work. The
    [interactive acceptance contract](interactive-keyboard-acceptance.md) names
    the required scenarios and evidence.
 2. **Complete the control-centre inventory and useful native controls.** Map
@@ -39,8 +40,9 @@ It does not change device authorisation or the protections in `AGENTS.md`.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. The retained G2 0.21.0
-   and C2 0.20.0 are not replaced merely because a candidate's component tests pass.
+   framework changes for possible upstream contribution. G2 now retains 0.26.0
+   after its separate normal-build qualification; C2 remains on 0.20.0. Component
+   tests alone do not admit a retained update.
 
 ## How the parallel work shortens delivery
 
@@ -142,11 +144,22 @@ recorded; its corrected successor changes only host window classification.
 No native focus-loss policy or OLED protection changed. General startup
 reliability and the equivalent C2 profile remain open.
 
+The [backed-up G2 update](preview-update-milestone.json) now delivers 0.26.0 as
+the retained normal app. Host implementation, independent review and saved-run
+audits ran alongside one coordinator-owned TV lane. The installer rehearsal
+verified isolated lower-version admission and complete removal; a separate
+same-run audit corrected only a request-metadata comparison while preserving the
+original failed host record. The normal update then exited successfully, with
+complete old/new bundles, saved-state ownership/modes, ten visually reviewed
+Apps/Search/keyboard/Back frames and eighteen preservation domains checked.
+This moves the G2 delivery milestone forward without turning its network smoke
+into physical typing, broad reliability, performance or C2 evidence.
+
 The next waves are:
 
 | Wave | Coordinator / G2 | C2 validator | Independent review | Host-only implementation |
 | --- | --- | --- | --- | --- |
-| Finish input acceptance | Retain the startup investigation; qualify remaining dismissal-order gaps and prepare backed-up G2 preview promotion. | Qualify physical typing when available and repeat startup/relaunch independently with separate teardown. | Audit changed paths, rollback admission and actual-loop receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
+| Finish input acceptance | Retain the startup investigation and completed G2 update; qualify remaining dismissal-order and normal-use gaps. | Qualify physical typing when available and repeat startup/relaunch independently with separate teardown. | Audit changed paths, rollback admission and actual-loop receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
 | Deliver useful controls and visual improvements | Integrate the next reviewed adapter/UI slice and freeze a new candidate. | Prepare independent regression recipes while host work proceeds; validate only after handoff. | Review fixed operation admission, failure/recovery and visual acceptance. | Implement disjoint operation modules or visual components under explicit ownership; central shell/live wiring has one owner. |
 | Qualify normal use and release | Validate app/Settings/HDMI handoffs and matched performance; perform backed-up rollout after acceptance. | Repeat relevant C2 workloads and preserve its independent source-restoration boundary. | Audit release evidence, limitations, privacy and generic upstream patch separation. | Prepare release documentation and upstream-ready generic framework changes while hardware tests run. |
 

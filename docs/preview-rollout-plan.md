@@ -1,7 +1,9 @@
 # Backed-up G2 preview rollout
 
-Status: 0.26.0 normal Preview package prepared privately; not deployed. G2 retains
-0.21.0. The [startup/relaunch](startup-relaunch-milestone.json),
+Status: G2 normal Preview 0.26.0 is deployed and retained. The
+[update record](preview-update-milestone.json) covers the installer rehearsal,
+fresh backups, complete installed bundle/state verification, normal keyboard
+smoke and cleanup. C2 remains on 0.20.0. The [startup/relaunch](startup-relaunch-milestone.json),
 [Sound](sound-read-milestone.json) and earlier input records establish their
 listed isolated results. This rollout delivers those changes to the installed
 preview while preserving LG Home and the user's saved dashboard state. Full

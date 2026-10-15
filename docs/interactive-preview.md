@@ -1,7 +1,9 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.21.0 on G2 and 0.20.0 on C2**.
+`com.ash.nativehome.preview`, version **0.26.0 on G2 and 0.20.0 on C2**.
+The [G2 update record](preview-update-milestone.json) verifies the complete normal
+bundle, preserved favourites and a guarded Apps/Search/LG-keyboard/Back smoke.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -31,13 +33,11 @@ in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
 or Open app. Back closes the panel and restores the app; an app removed from
 the filtered view lands on a valid neighbour. The panel traps focus and pointer
 hit targets until closed. Apps has
-All/Favourites filters and a native on-screen search keyboard. The retained
-versions still use Luma's alphanumeric keypad. The isolated
-[system-keyboard proof](text-input-milestone.json) is not enabled here yet.
-Its intended replacement uses LG's keyboard with the Luma keypad available as
-an explicit/unavailable fallback, one at a time. Closing LG's keyboard ends
-editing and returns focus to Search without revealing a second keypad. Back closes the
-keyboard, returns toward Home, then exits from Home. Favourites persist across
+All/Favourites filters and native search. G2 0.26.0 uses LG's keyboard for Search;
+the separate Keypad button selects Luma's fallback explicitly. C2 0.20.0 still
+uses the earlier Luma keypad. Only one keyboard is active at a time. Closing LG's
+keyboard ends editing and returns focus to Search without revealing a second
+keypad. Back closes the keyboard, returns toward Home, then exits from Home. Favourites persist across
 Luma launches. Explicit ordering affects Home and the Favourites filter; All
 Apps retains its alphabetical order. Existing records load without a preference
 rewrite; order is saved after an explicit change. Older clients cannot read the

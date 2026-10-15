@@ -40,7 +40,9 @@ and build-script coupling.
 
 The [text-input milestone](docs/text-input-milestone.json) records isolated G2
 system-keyboard typing/lifecycle work and the single-keyboard design. The retained
-previews remain on their existing keypad until normal integration is qualified.
+G2 preview now includes that integration; C2 retains its earlier keypad. The
+[backed-up G2 update](docs/preview-update-milestone.json) records normal-build
+Apps/Search/LG-keyboard/Back verification and preserved favourites.
 The newer [shared-controller record](docs/keyboard-integration-milestone.json)
 adds independent G2/C2 isolated flow, preedit and long-query evidence. See the
 [parallel-development plan](docs/parallel-development.md),
@@ -77,7 +79,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.21.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
+package modes and removal. Version 0.26.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
 remains on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -96,8 +98,9 @@ qualifies first-OK suppression and a distinct second-OK action on both models.
 The [G2 human check](docs/manual-keyboard-milestone.json) confirms `lu` + Done,
 reopen, then `ma` + Back retains `luma` with no second keypad. Its native trace
 also records one safely drained same-batch closing-key release. Broader dismissal
-races, C2 physical typing, performance and retained updates remain separate
-acceptance gates. One G2 attempt exited on early focus loss before readiness;
+races, C2 physical typing, performance and C2 promotion remain separate
+acceptance gates. The G2 normal update is recorded separately from the earlier
+human check. One G2 attempt exited on early focus loss before readiness;
 cold-entry reliability remains under investigation. The
 [G2 startup/relaunch record](docs/startup-relaunch-milestone.json) now adds two
 planned 0.26.0 sessions: programmatic LG Home departure with the keyboard open,
