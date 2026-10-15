@@ -10,7 +10,14 @@ Existing G2 ordinary-app `listApps` evidence includes `folderPath`, relative PNG
 `icon` and often `largeIcon`. Catalogue admission already joins registered launch
 points and filters hidden/stub/own/invalid applications. Metadata access is
 proved; reading other applications' image files inside the ordinary native jail
-is **not**. No HTTP/icon service or permission change is assumed.
+had not been measured at that planning point. No HTTP/icon service or permission
+change was assumed.
+
+The subsequent [0.32.0 passive survey](artwork-access-032.md) established one
+developer-app read, while four sampled locations were absent inside the native
+jail. Direct filesystem access is therefore insufficient as the demonstrated
+complete solution. Resource-route qualification comes before the worker/texture
+integration below; no developer-only substitute is admitted as completion.
 
 ## Admission experiment
 

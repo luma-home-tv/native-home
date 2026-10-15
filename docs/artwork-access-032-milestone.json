@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "status": "passive_ordinary_access_survey_complete_full_live_artwork_unqualified",
+  "source_revision": "41a24b101a66b856af0601323df2014158d02209",
+  "candidate_version": "0.32.0",
+  "binary_sha256": "5b8a632c805bf5cf186c49c36618a1499cbb9fedc68e0f867b35eafad594cc5c",
+  "isolated_ipk_sha256": "87b3abd2627c84596e3ff8ec10c63742e21bea932964995294286b71eb09a043",
+  "host": {
+    "application_tests": 220,
+    "home_preview_binary_tests": 5,
+    "dependency_bounded_decoder_tests": 8,
+    "device_harness_tests": 27,
+    "all_target_host_clippy_warnings_denied": true,
+    "arm_release_compiled": true,
+    "existing_target_feature_warning": true
+  },
+  "boundaries": {
+    "fixed_registered_visible_catalogue_only": true,
+    "exact_app_folder_and_bounded_relative_components": true,
+    "no_follow_ordinary_regular_file_reads": true,
+    "max_encoded_bytes_per_sample": 1048576,
+    "max_samples": 5,
+    "before_after_file_identity_checks": true,
+    "normal_recurring_collector_does_not_survey": true,
+    "strict_bounded_decoder_dimensions_and_per_image_buffers": true,
+    "decoder_default_unchanged": true,
+    "codec_memory_budget_is_not_total_heap_or_oom_guarantee": true
+  },
+  "native": {
+    "platform": "G2 webOS24",
+    "ordinary_uid_bound_by_six_raw_process_records": true,
+    "read_attempts": 5,
+    "read_successes": 1,
+    "png_headers_observed": 1,
+    "sample_observations": [
+      {
+        "class": "lg_system",
+        "attempted": true,
+        "read_succeeded": false,
+        "reason": "io",
+        "errno": 2
+      },
+      {
+        "class": "encrypted_apps",
+        "attempted": true,
+        "read_succeeded": false,
+        "reason": "io",
+        "errno": 2
+      },
+      {
+        "class": "developer_apps",
+        "attempted": true,
+        "read_succeeded": true,
+        "encoded_bytes": 3518,
+        "png_header_observed": true
+      },
+      {
+        "class": "system_apps",
+        "attempted": true,
+        "read_succeeded": false,
+        "reason": "io",
+        "errno": 2
+      },
+      {
+        "class": "optional_content",
+        "attempted": true,
+        "read_succeeded": false,
+        "reason": "io",
+        "errno": 2
+      }
+    ],
+    "successful_developer_sample_png_header": [
+      160,
+      160
+    ],
+    "reported_developer_hash_size_header_match_saved_normal_icon": true,
+    "elapsed_seconds": 30.22558108,
+    "exit_reason": "expected_bounded_timeout",
+    "image_decoding_in_survey": false,
+    "texture_upload_in_survey": false,
+    "new_marker_or_service_request": false,
+    "root_fallback_or_policy_change": false,
+    "setting_writes": false,
+    "household_app_launches": false
+  },
+  "preservation": {
+    "all_24_checks_passed": true,
+    "proof_removed": true,
+    "normal_g2_version": "0.31.0",
+    "normal_g2_elf_sha256": "2d0ea502971f5888adcc3e7501c6c970b89c1e1db7be06edcef6392af78d1d36",
+    "normal_appinfo_executable_favourites_bytes_and_metadata_unchanged": true,
+    "lg_home_and_checked_core_settings_input_audio_locale_unchanged": true,
+    "proof_uid_runtime_jail_state_catalogue_launchpoint_absent": true,
+    "upload_lease_private_agent_removed": true,
+    "normal_update_attempted": false,
+    "C2_contacted": false
+  },
+  "independent_saved_replay": {
+    "assertions": 731,
+    "committed_source_inputs_verified": 68,
+    "framework_patched_file_pins": 10,
+    "raw_process_files_replayed": 6
+  },
+  "qualification": {
+    "class_wide_access": false,
+    "valid_decoded_image_from_native_survey": false,
+    "native_live_artwork_rendering": false,
+    "normal_loader": false,
+    "full_feature": false,
+    "remaining": "Qualify a bounded resource route for missing locations, then implement worker/cache and prove new/replaced app artwork and focus/favourites preservation."
+  },
+  "private_evidence_sha256": {
+    "candidate": "9844ff5e3095416f0b3e7a7e5b241a9277b8cef4cfafd49ce4c304a1f405f2b6",
+    "build_receipt": "f4721f3b0eb271536bcb2928aee4c849387d1243852e38e3595c2b9fed5087dd",
+    "driver": "18b2ad76ddd9835c7637690dbf2f9e657f5662e5f433acbbf321eae381b75095",
+    "validator": "0fef14b938036edbd4994567e31b5561d85217c384c1bebb82e0c54a63f89b7b",
+    "package_receipt": "27867092890a915f1b9012b59bffb7c4c2659d628d1452787a664e07d4815a72",
+    "artwork_validation": "79bf136faef5125fe7cb21144cd32c5537833e76f9aa1d1f1765da8a111cdf24",
+    "cleanup": "d322ec3dd0b2124057d067a8b3ae9072717cc2570febb074de2ffd73d20ca3d3",
+    "independent_audit": "ab90cb151714fb2b59a3592cb7647a7426c0b23ab7736fb70aab9fa6d14696c2",
+    "independent_audit_helper": "d731724595ae6d88b974728a788be1a10cd4f0f3fcccbcadc4942233bf8c3e16"
+  },
+  "limits": [
+    "One selected preferred source per root class; four ENOENT observations do not enumerate every possible resource access route.",
+    "PNG header observations and reported digest are not decoding/render proof; developer sample is independently corroborated only against the saved known normal package member.",
+    "Byte caps are not filesystem wall-clock bounds; decoder output caps are not total process/GPU memory measurements.",
+    "Read/layout diagnostics and preservation are separate from physical input, full TV-functionality, performance or release acceptance.",
+    "Raw metadata, image files, app inventories, paths, addresses, backups and credentials remain private."
+  ]
+}

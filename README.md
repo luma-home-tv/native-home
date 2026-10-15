@@ -74,6 +74,10 @@ with activation still blocked and unavailable/inactive styling preserved.
 Its [isolated G2 qualification](docs/read-only-values-031-milestone.json) verifies
 focused native text contrast and clean removal; its subsequent normal G2 delivery
 is recorded separately above.
+The [0.32 passive artwork-access survey](docs/artwork-access-032.md) adds a bounded
+reader and decoder groundwork. One developer-app sample was readable; four other
+locations were absent in the ordinary jail. Full live artwork remains unfinished,
+and normal G2 stays on 0.31.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
