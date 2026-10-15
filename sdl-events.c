@@ -95,8 +95,9 @@ int native_home_text_start(void *window) {
 #ifdef NATIVE_HOME_WEBOS
     if(!SDL_HasScreenKeyboardSupport())return 0;
 #endif
-    SDL_FlushEvents(SDL_TEXTEDITING,SDL_TEXTINPUT);SDL_StartTextInput();return 1;
+    SDL_StartTextInput();return 1;
 }
+void native_home_text_flush(void) {SDL_FlushEvents(SDL_TEXTEDITING,SDL_TEXTINPUT);}
 void native_home_text_stop(void) {SDL_StopTextInput();SDL_FlushEvents(SDL_TEXTEDITING,SDL_TEXTINPUT);}
 /* Both platforms test the actual typed decoder. Never push synthetic host text through sdl2-compat. */
 int native_home_test_text_decode(int composition,const char *text,size_t length,HomeEvent *out) {

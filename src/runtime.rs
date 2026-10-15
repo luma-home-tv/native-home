@@ -40,6 +40,7 @@ extern "C" {
     fn native_home_keyboard_status(window: *mut c_void, status: *mut KeyboardStatus);
     fn native_home_text_start(window: *mut c_void) -> c_int;
     fn native_home_text_stop();
+    fn native_home_text_flush();
     #[cfg(test)]
     fn native_home_test_text_decode(
         composition: c_int,
@@ -226,6 +227,26 @@ impl Window {
     pub fn text_start(&self) -> bool {
         if self.text_owned.get() {
             return true;
+        }
+        unsafe {
+            native_home_text_flush();
+        }
+        let started = unsafe { native_home_text_start(self.window) } != 0;
+        self.text_owned.set(started);
+        started
+    }
+    #[cfg(target_arch = "arm")]
+    pub fn diagnostic_text_flush(&self) {
+        if plx_base::paths::app_id() == crate::identity::PROOF {
+            unsafe {
+                native_home_text_flush();
+            }
+        }
+    }
+    #[cfg(target_arch = "arm")]
+    pub fn diagnostic_text_start_prepared(&self) -> bool {
+        if plx_base::paths::app_id() != crate::identity::PROOF {
+            return false;
         }
         let started = unsafe { native_home_text_start(self.window) } != 0;
         self.text_owned.set(started);

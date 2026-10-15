@@ -2181,7 +2181,10 @@ fn text_input_trial(
             serde_json::to_vec(&statuses)?,
         )?;
         phase(&format!("focused-{cycle}"))?;
-        if !window.text_start() {
+        phase(&format!("flush-{cycle}"))?;
+        window.diagnostic_text_flush();
+        phase(&format!("activate-{cycle}"))?;
+        if !window.diagnostic_text_start_prepared() {
             phase("unavailable")?;
             return Err("SDL text input could not acquire the app window".into());
         }
