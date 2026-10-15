@@ -7,6 +7,64 @@ and application changes through one integration owner. This extends the
 [controls coverage audit](controls-coverage-next.md) as the control-centre backlog.
 It does not change device authorisation or the protections in `AGENTS.md`.
 
+## Broad remaining delivery steps
+
+1. **Finish interactive input and lifecycle.** Validate the actual normal event
+   loop, not only its shared helpers: remote entry/reopening, Done/Back, same-batch
+   and delayed input after dismissal, pointer/wheel/hold, idle/wake and foreground
+   departure. Keep one keyboard active. Qualify composing-language, deletion and
+   hardware-keyboard semantics separately; the available G2 mode offered no word
+   predictions. This is the immediate gate before a retained keyboard update; the
+   [interactive acceptance contract](interactive-keyboard-acceptance.md) names
+   the required scenarios and evidence.
+2. **Complete the control-centre inventory and useful native controls.** Map
+   every intended category to verified readings, native choices/ranges or an
+   explicit LG-managed route. Start the next fixed adapter with pointer size;
+   expand missing Sound, Accessibility and General readings. Each setter needs
+   its own capability/context/readback/restoration proof. Network reconfiguration,
+   boot/Home policy, firmware and panel protections remain protected/delegated.
+3. **Validate real TV integration.** Finish live HDMI video/format/HDR evidence,
+   the C2 source-restoration boundary, app-launch/return and LG Settings handoff
+   regressions under actual use. Do not transfer G2 evidence to C2 or interpret
+   an idle selected-source getter as live video proof.
+4. **Close the visual and usability gaps.** Match the agreed Apple TV-inspired
+   concepts with Luma branding, OLED-black space and graphite surfaces. Review
+   long/localized labels, dynamic/new app icons, empty/stale/error states, focus
+   hierarchy and remote legibility on real panels.
+5. **Prove performance and reliability.** Measure matched idle/motion/input
+   workloads, CPU/RSS/frame submission and settling on both TVs; panel latency
+   and physical smoothness require separate evidence. Check repeated app and
+   keyboard sessions, memory growth, service failure/recovery, durable favourites
+   and controlled restart/reboot persistence without changing boot configuration.
+6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
+   retained updates, verify favourites/metadata and normal behaviour, exercise
+   clean removal, publish scoped release/test documentation and separate generic
+   framework changes for possible upstream contribution. The retained G2 0.21.0
+   and C2 0.20.0 are not replaced merely because a candidate's component tests pass.
+
+## How the parallel work shortens delivery
+
+Run three background lanes alongside the coordinator, with small owned outputs
+and explicit interfaces. Framework review and control-adapter development do not
+wait for a TV. G2 and C2 validators can run the same immutable candidate at the
+same time under different leases. While those tests run, host/review workers can
+prepare the next independent change. This overlaps work that was previously
+serial without making two sessions compete for a file, build target or TV.
+
+The critical path remains central integration, a frozen source/binary pair,
+affected host checks, independent per-device acceptance and retained rollout.
+Do not publish or deploy a moving checkout. Merge module contracts and review
+findings in small batches; request changes from a file's owner instead of editing
+across assignments. More simultaneous sessions are useful only when there are
+more independent outputs; shared shell/input integration remains one owner's work.
+
+The current wave assigns the coordinator interactive-loop integration/G2, an
+input/framework reviewer the acceptance and performance contract, a controls
+agent the pointer-size design/proof-only module, and the C2 validator a prepared
+main-loop harness. The next wave can test a frozen keyboard candidate on both
+TVs while controls work continues. A new controls candidate gets its own later
+integration and restoration gate.
+
 ## Four working lanes
 
 | Owner | Immediate work | Owned outputs and boundary |

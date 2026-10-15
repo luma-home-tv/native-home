@@ -91,7 +91,9 @@ composing languages and retained updates remain separate gates. The user saw no
 word predictions in the available G2 keyboard mode; no prediction-replacement
 contract is inferred. See [ABI notes](webos24-text-compatibility.md).
 
-The [parallel plan](parallel-development.md) assigns independent firmware/text,
+The [parallel plan](parallel-development.md) now lists the six broad remaining
+delivery stages, the immediate interactive-loop gate and the next parallel wave.
+It assigns independent firmware/text,
 controls and C2-validation lanes around one integration owner and one live owner
 per TV. The [coverage audit](controls-coverage-next.md) preserves the comprehensive
 control-centre backlog; existing category routes do not establish every-setting
