@@ -3829,6 +3829,69 @@ impl Shell {
             self.surface.grid_area(),
         ))
     }
+    /// Current shared card placement for isolated native presentation receipts.
+    /// No layout, focus, image ownership or activation is changed by this read.
+    pub fn icon_presentation_cards(&self) -> Vec<serde_json::Value> {
+        if !matches!(self.surface.page, Page::Home | Page::Applications) {
+            return Vec::new();
+        }
+        let cx = self.context(&LegacyMeasure);
+        let focus = self
+            .input
+            .engine
+            .current(InputOwner::Entry(entry(self.surface.page)));
+        let rect = |r: Rect| [r.x, r.y, r.w, r.h];
+        self.surface
+            .cards
+            .items
+            .iter()
+            .filter_map(|card| {
+                let (placed, clip) = if self.surface.page == Page::Home {
+                    (
+                        self.surface.home_favourites.place(
+                            &cx,
+                            &self.surface.cards,
+                            &card.key,
+                            HOME_FAVOURITES,
+                            At::Drawn,
+                        )?,
+                        HOME_FAVOURITES.clip,
+                    )
+                } else {
+                    (
+                        self.surface
+                            .grid
+                            .place(&cx, &self.surface.cards, &card.key, At::Drawn)?,
+                        self.surface.grid_area(),
+                    )
+                };
+                let (handle, width, height) = if card.has_icon() {
+                    card.texture
+                } else {
+                    (0, 0.0, 0.0)
+                };
+                Some(
+                    serde_json::json!({"id":card.id,"title":card.title.to_string_lossy(),
+                "rect":rect(placed.rect),"clip":rect(clip),
+                "focused":focus.is_some_and(|key| key.elem == card.key),
+                "width":width as u32,"height":height as u32,"texture_handle":handle}),
+                )
+            })
+            .collect()
+    }
+    pub fn icon_presentation_resources(&self) -> Vec<u32> {
+        std::iter::once(self.brand_texture)
+            .chain(self.navigation_textures)
+            .chain(
+                self.surface
+                    .cards
+                    .items
+                    .iter()
+                    .filter(|card| card.has_icon())
+                    .map(|card| card.texture.0),
+            )
+            .collect()
+    }
     pub fn focus_drawer_control(&mut self, index: usize) -> bool {
         if self.surface.page != Page::Applications
             || self.drawer.editing

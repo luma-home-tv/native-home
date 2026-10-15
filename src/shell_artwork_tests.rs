@@ -512,3 +512,41 @@ fn app_artwork_uses_unmatted_icons_and_missing_or_input_cards_keep_fallbacks() {
         "source/status cards keep their own presentation"
     );
 }
+
+#[test]
+fn presentation_receipt_uses_drawn_shared_placement_and_integer_pixel_dimensions_without_mutation()
+{
+    let mut shell = Shell::new(snapshot(&[A, B]), Preferences::default());
+    for page in [Page::Home, Page::Applications] {
+        shell.open(page);
+        shell
+            .surface
+            .cards
+            .items
+            .iter_mut()
+            .find(|c| c.id == A)
+            .unwrap()
+            .texture = (7, 128.0, 64.0);
+        assert!(shell.focus_application(A));
+        for step in 0..60 {
+            shell.tick(1000 + step * 17, 1.0 / 60.0);
+        }
+        let preferences = shell.preferences().clone();
+        let focus = shell.focused_item();
+        let cards = shell.icon_presentation_cards();
+        let found = cards.iter().find(|c| c["id"] == A).unwrap();
+        assert_eq!(found["width"].as_u64(), Some(128));
+        assert_eq!(found["height"].as_u64(), Some(64));
+        assert_eq!(found["texture_handle"], 7);
+        assert_eq!(found["focused"], true);
+        assert!(found["rect"][2].as_f64().unwrap() > 0.0);
+        assert!(found["clip"][3].as_f64().unwrap() > 0.0);
+        let absent = cards.iter().find(|c| c["id"] == B).unwrap();
+        assert_eq!(absent["width"], 0);
+        assert_eq!(absent["texture_handle"], 0);
+        assert_eq!(shell.icon_presentation_cards(), cards);
+        assert_eq!(shell.preferences(), &preferences);
+        assert_eq!(shell.focused_item(), focus);
+        assert!(shell.take_requests().is_empty());
+    }
+}

@@ -35,3 +35,30 @@ transparent and non-square fixtures before normal promotion. Neither retained
 preview has been updated by this change. Production resource startup and
 all-app live artwork remain separate work; this style change does not supply
 otherwise inaccessible icons.
+
+
+## Isolated 0.37 capture candidate
+
+A separate fixed presentation recipe now keeps the real native Window, shared
+Shell, fonts and GL renderer, while suppressing native catalogue and action
+workers only for this diagnostic. It requires an ordinary non-interactive Proof
+identity, refuses other trial markers, validates four fixed synthetic app
+identities and packaged paths, and refuses previously loaded Proof preferences.
+The synthetic favourites use only that Proof identity's fresh persistence path.
+Normal catalogue and action behaviour is unchanged.
+
+The candidate emits the usual ten page captures plus six presentation captures:
+Home with all four favourites, Apps at rest, and Apps focused on each of the
+square, wide, tall and missing-art fixtures. It records actual shared drawn
+card geometry, resource validity and read-only GL program/unit/binding state.
+Input or departure interrupts the test; it never sends OK or activates a fixture.
+The host checks cover the fixed recipe/snapshot refusals and non-mutating
+placement receipts with integer pixel dimensions. Packaged snapshots, icons,
+branding and fonts are explicitly readable by the ordinary app even when their
+host source files are private.
+
+This candidate still requires a matching frozen ARM package, independent pixel
+checks and looked-at native frames, complete cleanup and preservation evidence.
+Its static fixtures cannot diagnose the earlier dynamic-refresh text loss alone.
+Focused Home variants, physical-panel appearance, production artwork startup
+and a retained update remain separate acceptance work.

@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.36.0' if main == 'home-preview' else '0.1.0'
+version = '0.37.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -39,6 +39,16 @@ sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
 broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '1'
 broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == '1'
 live_artwork_proof = os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PROOF') == '1'
+icon_presentation_proof = os.environ.get('NATIVE_HOME_ICON_PRESENTATION_PROOF') == '1'
+icon_presentation_marker = None
+if icon_presentation_proof:
+    others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
+              (k.endswith('_PROOF') or k.endswith('_PROBE')) and k != 'NATIVE_HOME_ICON_PRESENTATION_PROOF']
+    if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
+        raise ValueError('Icon presentation requires only the isolated non-interactive proof')
+    icon_presentation_marker = {'schema':1,
+        'fixture_ids':['synthetic.fixture.icon.'+name for name in ('square','wide','tall','missing')],
+        'dimensions':[[128,128],[128,64],[64,128],None]}
 live_artwork_marker = None
 if live_artwork_proof:
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
@@ -106,11 +116,11 @@ if (staged_binary_sha256 != build_receipt['binary']['sha256'] or
     raise RuntimeError('Staged binary differs from verified build receipt')
 for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
     shutil.copy2(repo / 'resources/fonts' / name, stage / name)
+    (stage / name).chmod(0o644)
 # Independent Luma Home branding; no PlxNative mark is used as this client's identity.
 icon = Path(os.environ.get('NATIVE_HOME_PREVIEW_ICON', repo / 'assets/luma-home/icon-160.png')).resolve()
 shutil.copy2(icon, stage / 'icon.png')
-if artwork_target_fixture:
-    (stage/'icon.png').chmod(0o644)
+(stage / 'icon.png').chmod(0o644)
 info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
         'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Test' if test_identity else 'Luma Home Preview',
         'appDescription': 'Native dashboard preview; verified pointer-speed control and LG-managed settings',
@@ -122,6 +132,10 @@ if artwork_target_fixture:
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    if icon_presentation_marker is not None:
+        marker_path = stage / 'icon-presentation-proof.json'
+        marker_path.write_text(json.dumps(icon_presentation_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
     if os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1':
         if not test_identity or not interactive: raise ValueError('Performance proof requires isolated interactive identity')
         (stage / 'performance-proof.json').write_text('{}\n')
@@ -145,6 +159,7 @@ if main == 'home-preview':
         (stage / 'drawer-proof.json').write_text('{}\n')
     snapshot = json.loads((assets / 'snapshot.json').read_text())
     shutil.copy2(assets / 'snapshot.json', stage / 'snapshot.json')
+    (stage / 'snapshot.json').chmod(0o644)
     if os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1':
         (stage / 'launch-proof.json').write_text(json.dumps({'kind':'Application','id':'com.ash.nativehome.targetproof'})+'\n')
     route = os.environ.get('NATIVE_HOME_ROUTE_PROOF')
@@ -211,6 +226,7 @@ if main == 'home-preview':
             raise ValueError('Unsafe icon asset')
         (stage / 'icons').mkdir(exist_ok=True)
         shutil.copy2(source, stage / relative)
+        (stage / relative).chmod(0o644)
 
 if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
     raise RuntimeError('Build receipt changed during packaging')
@@ -248,6 +264,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'broker_identify_proof': broker_identify_proof,
            'broker_artwork_read_proof': broker_artwork_read_proof,
            'live_artwork_proof': live_artwork_proof,
+           'icon_presentation_proof': icon_presentation_proof,
            'artwork_target_fixture': artwork_target_fixture or None,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,

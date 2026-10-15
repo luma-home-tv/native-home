@@ -36,6 +36,7 @@ extern "C" {
     fn glGetError() -> u32;
     fn glGetIntegerv(name: u32, values: *mut c_int);
     fn glIsEnabled(cap: u32) -> u8;
+    fn glIsTexture(texture: u32) -> u8;
     fn native_home_poll(event: *mut Event) -> c_int;
     fn native_home_keyboard_status(window: *mut c_void, status: *mut KeyboardStatus);
     fn native_home_text_start(window: *mut c_void) -> c_int;
@@ -144,6 +145,9 @@ pub struct GraphicsState {
     pub scissor_box: [i32; 4],
     pub viewport: [i32; 4],
     pub framebuffer: i32,
+    pub active_texture: i32,
+    pub current_program: i32,
+    pub texture_binding_2d: i32,
     pub error: u32,
 }
 pub struct Window {
@@ -328,6 +332,9 @@ impl Window {
             scissor_box: [0; 4],
             viewport: [0; 4],
             framebuffer: 0,
+            active_texture: 0,
+            current_program: 0,
+            texture_binding_2d: 0,
             error: 0,
         };
         // GLenum/GLint/GLboolean signatures and constants match the actual GLES2 SDK header.
@@ -337,9 +344,21 @@ impl Window {
             glGetIntegerv(0x0C10, state.scissor_box.as_mut_ptr());
             glGetIntegerv(0x0BA2, state.viewport.as_mut_ptr());
             glGetIntegerv(0x8CA6, &mut state.framebuffer);
+            glGetIntegerv(0x84E0, &mut state.active_texture);
+            glGetIntegerv(0x8B8D, &mut state.current_program);
+            glGetIntegerv(0x8069, &mut state.texture_binding_2d);
             state.error = glGetError();
         }
         state
+    }
+    /// Diagnostic only; queries names already owned by this renderer.
+    pub fn texture_validity(&self, handles: &[u32]) -> serde_json::Value {
+        serde_json::json!(handles
+            .iter()
+            .map(|handle| serde_json::json!({
+                "handle":handle,"valid":*handle != 0 && unsafe { glIsTexture(*handle) } != 0,
+            }))
+            .collect::<Vec<_>>())
     }
     pub fn capture(&self, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         let mut rgba = vec![0_u8; 1920 * 1080 * 4];
