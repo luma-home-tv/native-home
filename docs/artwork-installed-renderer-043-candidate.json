@@ -27,6 +27,17 @@
     "library_tests": 398
   },
   "isolated_renderer_source_activated": true,
+  "local_package": {
+    "base_resource_files": 4,
+    "bytes": 2277606,
+    "device_installed": false,
+    "name": "com.ash.nativehome.proof_0.43.0_arm.ipk",
+    "readback_files": 30,
+    "receipt_sha256": "ab738c23458294818fe9fa46788fdedd11a2269cd3697beba359db020ce483d5",
+    "root_payload_or_hooks": false,
+    "sha256": "e92fd456cad1cfeee93fa9e1558a864304c7299dcb09f686d4bfa19aa971f4f5",
+    "snapshot_and_icon_files": 23
+  },
   "new_test_package_installed": false,
   "normal_retained_version": "0.37.0",
   "normal_updated": false,

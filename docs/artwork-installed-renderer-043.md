@@ -42,6 +42,13 @@ inputs and the pinned framework. The [compiled candidate](artwork-installed-rend
 binds their actual bytes and build receipts. The existing target-feature stability
 warning remains. Compilation does not establish the combined device path.
 
+The locally built ordinary Proof IPK has 30 files: 23 private snapshot/icon
+assets, four font/branding resources, app metadata, the executable and the one
+four-field installed-artwork marker. Archive readback matches the frozen bytes
+and modes. The Root executable and its protected installation policy are separate
+artifacts, absent from this IPK. No services or install hooks are bundled. This
+is package admission evidence, with no device installation yet.
+
 The candidate has not yet passed its combined native device run. It does not
 qualify all installed artwork, production startup, normal hide/resume/relaunch,
 performance, physical input or a retained update. G2 remains the primary test

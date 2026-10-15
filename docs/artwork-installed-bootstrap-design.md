@@ -12,6 +12,13 @@ context-reader helper-name guard and was fully recovered. The 0.40 correction
 requires protected installed authority for the exact new helper and admits only
 context GETs. It does not broaden the role to catalogue/resource operations.
 
+That is the historical 0.40 boundary. The later
+[0.42 source and ARM candidate](artwork-installed-provider-042.md) adds the
+installed single-resource operation and fixed catalogue readers. The
+[0.43 renderer candidate](artwork-installed-renderer-043.md) connects it to live
+Home/Apps textures in an isolated mode; combined native qualification remains
+pending. Neither candidate enables the retained Preview loader.
+
 The [0.38 status check](artwork-startup-capability-038.md) established ordinary
 native access to HBC's read-only Root-status method. It did not qualify `/exec`,
 a Root child, installed authorization or automatic resource access.
