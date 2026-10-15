@@ -80,7 +80,9 @@ locations were absent in the ordinary jail. Full live artwork remains unfinished
 and normal G2 stays on 0.31.0.
 The [0.33 Identify-only candidate](docs/artwork-broker-identify.md) adds a separate
 temporary native helper and restricted caller-binding proof. Host checks pass;
-G2 communication/removal and all privileged artwork operations remain unqualified.
+the isolated G2 app/helper were cleanly removed with checked state preserved.
+The helper's anonymous bus registration was refused; the cross-jail exchange
+and privileged artwork operations remain unqualified.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from

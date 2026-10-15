@@ -82,8 +82,7 @@ unit tests.
 
 Both final ARM release builds pass from source
 `e098ac2d51ff1837ae5b75e8ef3beef0e193c113`, with equal snapshots of 73 selected
-inputs and the same verified framework. The ARM-only signal configuration is
-cross-compiled; it has not yet run on G2. Ten actual local packaging cases pass:
+inputs and the same verified framework. Ten actual local packaging cases pass:
 Identify has exactly its two diagnostic markers; ordinary passive and normal
 interactive packages omit the broker marker; retained identity, interactive
 Identify, mixed trials, invalid nonce/hash, stray marker values and packaging
@@ -97,24 +96,62 @@ contact. The existing ARM target-feature warning remains.
 
 A fresh separate Proof IPK binds that helper hash and the new build receipt with
 a new session nonce. It remains a private test package, separate from normal G2.
-57 private host harness checks also pass, including independent policy review,
+67 private host harness checks also pass, including independent policy review,
 preservation-path invariance and an actual local child verifying the startup
-token and EOF. The coordinator reran all 57 and executed the real candidate's
+token and EOF. The coordinator reran all 67 and executed the real candidate's
 local admission prefix with every process except two pinned framework-verifier
 calls forbidden. Both ARM receipts, current source/framework and the exact
 two-marker package passed before any device access.
 
-The first G2 attempt then declined at the initial idle-window gate, before
-upload, install or app/helper launch. No TV setting, input, household app or
-retained-preview update was attempted. The helper directory and abstract endpoint
-were absent, and the own lease plus host agent/process/socket/directory cleanup
-were verified. This is a predeployment decline, not installed-app removal or a
-successful broker exchange. Retained/core bundles were not rehashed because the
-lane exited before collecting those baselines. Raw household observations remain
-private; [the scoped record](artwork-broker-033-milestone.json) contains only
-sanitized admission and cleanup facts.
+Two initial G2 attempts declined at the idle-window gate before deployment. The
+user then corroborated that Home can coexist with a built-in HDMI background
+card. A separately reviewed private harness predicate admits only Home with one
+explicitly declared built-in HDMI card and an optional exact screensaver. Ten
+new host regressions check that state, reject other cards/overlays/duplicates,
+and verify that all other driver code is unchanged. This prelaunch calibration
+does not alter the broker's sole-Proof-card authorization.
+
+The subsequent isolated run installed and launched Proof. It independently bound
+the ordinary producer and the root helper's actual proc/executable records before
+releasing the fixed startup barrier. Raw root status records corroborate that
+`SIGALRM` was unblocked and neither ignored nor caught. The helper then failed its
+own anonymous message-bus registration with **-1027, Invalid permissions for
+(null)**. It never reached its context getters or listener binding. The ordinary
+client's own exact model/foreground/sole-Proof-card context passed, but connecting
+timed out after 15,097 ms. No Identify request, reply or icon read occurred. This
+qualifies the registration refusal, not the cross-jail exchange or its socket
+authentication.
+
+The native collector completed its bounded run, saved 13 frames, and was removed.
+All 24 positive preservation checks passed: the checked retained preview files
+and favourites bytes/metadata, selected core hashes, input/last-input and checked
+settings/descriptors/audio profiles were unchanged. Proof UID processes,
+runtime/jail/state/catalogue/launchpoint were absent. The bound helper, abstract
+endpoint, exact two staged files, empty directory, upload, lease and private SSH
+agent were also removed and verified; no external root PID signal was sent.
+LG Home was current. Normal preview remains 0.31.0; C2 was not contacted.
+An independent saved-evidence audit passed 976 assertions across the pinned
+source/artifacts, raw process records, signal-mask observations, 20 explicit
+preservation domains and removal/cleanup. Its result hash is
+`f549aa0c36425dc3c8ad5bd9fdd48dbf1f8488365db0221e7856255984aa5bd0`.
+It confirms the refusal and cleanup; it does not qualify an Identify exchange.
+
+Raw household observations remain private; [the scoped record](artwork-broker-033-milestone.json)
+contains sanitized admission, refusal and preservation/removal facts. These
+checks do not establish playback/DRM/HDMI-format behaviour, a normal update or
+full release readiness.
 
 The host is macOS: Linux transport tests are compiled conditionally and have not
-been executed there. Isolated G2 communication and complete removal remain
-pending. No device capability, artwork, normal-preview promotion or full-release
-claim follows from these tests/builds.
+been executed there. The attempted native client did not establish a connection,
+so packet credentials and cross-jail communication remain unqualified. The
+30-second own-process alarm was configured; a stalled-process termination test
+was not performed.
+
+## Next qualification
+
+Qualify an independent context reader for the temporary helper using the installed
+system client's three fixed read-only getter invocations. Keep immutable arguments,
+bounded output/deadlines and owned-child cleanup, then retain the same strict
+model/foreground/window checks. The normal dashboard still uses its qualified
+ordinary native bus registration. The proposed experiment preserves the existing
+permission policy; no resource operation is admitted by this plan.
