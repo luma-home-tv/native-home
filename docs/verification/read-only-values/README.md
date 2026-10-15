@@ -46,3 +46,26 @@ PLXNATIVE_APP_DIR="$PWD/.dependencies/plx-native/pkg" \
 The [build-input record](../../build-inputs.md) explains the restored dependency
 pins, new per-build/package checks and historical formatting caveat. This host
 record does not establish a G2 normal update or full dashboard release.
+
+## Isolated G2 qualification
+
+The subsequent [0.31.0 native record](../../read-only-values-031-milestone.json)
+checks five General language/region values under an ordinary app UID on webOS24.
+All five focused values and return-up measure 5.66:1 in the native PPM captures,
+versus 2.56:1 in the corresponding frozen 0.30 captures. Labels and details retain
+their previous colour families. Root inspected seven frames, including the
+LG-managed route without activating it; Luma branding, black canvas and focused
+row visibility remain intact. The native row observer has no `dim` field: raster
+evidence establishes appearance, and binding metadata establishes disabled state.
+
+The bounded read/layout run passed all 24 preservation/removal checks and removed
+its separate Proof package. Retained normal G2 remains 0.30.0, with appinfo,
+executable and favourites bytes/owners/modes preserved. LG Home and checked core,
+settings, input, audio and locale state are unchanged. An independent saved audit
+passed 533 assertions, with a byte-identical second replay; six raw process files
+bind the actual UID, start time and executable. The separate pixel audit passed
+174 assertions. Raw household frames and values remain private.
+
+This is an isolated G2 read/layout and captured-contrast result. No normal update,
+C2 contact, physical input, freshness-transition, calibrated panel or full-release
+claim follows. The historical dependency-input caveat for 0.30 remains explicit.

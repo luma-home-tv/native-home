@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "status": "isolated_g2_read_only_legibility_qualified_retained_030_unchanged",
+  "source_revision": "fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848",
+  "candidate_version": "0.31.0",
+  "binary_sha256": "2d0ea502971f5888adcc3e7501c6c970b89c1e1db7be06edcef6392af78d1d36",
+  "isolated_ipk_sha256": "bc56d3205cf1ab45fa9cd7c6f70298962f5f9b90c9af6e0c32a1f466f7f14366",
+  "framework": {
+    "name": "PlxNative",
+    "upstream_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+    "integration_patch_sha256": "4d3a3a70f92dac9579242929a6e34824119c479ae60919e112a08dceb807349f",
+    "patched_files": 9
+  },
+  "host": {
+    "library_tests": 208,
+    "binary_tests": 5,
+    "upstream_form_regression_passed": true,
+    "framework_verifier_tests": 13,
+    "build_provenance_and_entrypoint_tests": 14,
+    "device_harness_host_tests": 17,
+    "all_target_host_clippy_warnings_denied": true,
+    "arm_release_passed_with_existing_target_feature_warning": true,
+    "synthetic_raster_record": "verification/read-only-values/summary.json"
+  },
+  "build_admission": {
+    "fresh_before_and_after_framework_source_verification": true,
+    "arm_receipt_validated_before_staging_and_tv_contact": true,
+    "staged_executable_equals_receipt": true,
+    "source_inputs_independently_equal_committed_revision": 67,
+    "scope": "Declared source/framework inputs and actual artifact bytes; not hermetic compiler/SDK/environment attestation or reproducible-build proof."
+  },
+  "native": {
+    "model": "G2",
+    "platform": "webOS24",
+    "ordinary_app_uid_bound_with_six_saved_raw_process_files": true,
+    "renderer": "Mali-G52",
+    "elapsed_seconds": 30.13141834,
+    "exit_reason": "expected_bounded_timeout",
+    "five_locale_readings_match_independent_full_value_objects": true,
+    "focused_protected_rows": 5,
+    "root_native_frames_reviewed": 7,
+    "current_value_pixel_samples": 6,
+    "current_focused_value_contrast": [
+      5.65742579495815,
+      5.65742579495815
+    ],
+    "historical_030_corresponding_focused_contrast": [
+      2.564628863377929,
+      2.564628863377929
+    ],
+    "internal_design_target": 4.5,
+    "pixel_audit_assertions": 174,
+    "label_and_detail_colour_families_preserved": true,
+    "disabled_bindings_preserved": true,
+    "native_dim_field_present": false,
+    "lg_route_focused_not_activated": true,
+    "setting_writes": false,
+    "external_app_launches": false,
+    "native_freshness_transition_proved": false
+  },
+  "preservation": {
+    "cleanup_preservation_gates_all_true": 24,
+    "proof_removed": true,
+    "proof_process_runtime_jail_state_catalogue_and_launchpoint_absent": true,
+    "retained_normal_version": "0.30.0",
+    "retained_normal_elf_sha256": "13595c926f6b4aadd9cec382fcd295d7797fb4bb5087e9bd0547a556aee1836e",
+    "retained_appinfo_executable_preferences_bytes_owners_modes_preserved": true,
+    "lg_home_foreground": true,
+    "checked_core_settings_input_audio_and_locale_state_preserved": true,
+    "temporary_upload_lease_and_private_agent_removed": true,
+    "normal_update_attempted": false,
+    "c2_contacted": false
+  },
+  "independent_saved_audit": {
+    "assertions": 533,
+    "separate_exact_code_replay_byte_identical": true
+  },
+  "private_evidence_sha256": {
+    "candidate": "b9cdf2f0a10b489d5f79cad15fe1f98298020b1bcc295b22eb6748474ad2d992",
+    "build_receipt": "eaabd37f2d22c1c9dc47c47f905cd080cc1adecc597bc43a71e2642bc54ac6b7",
+    "driver": "42398ab8d73d55cfd4f8d433df59e1f8338b1a042893b9b395e887cf57357e46",
+    "validator": "7c29da303058c419c1ba5a6dd699ee6ef6dafad5526e29e24372a0a82deb3805",
+    "read_layout_validation": "db75065adb71b252b6c95c05eda996b3da1bf603615276fbffb7a6c11d764cd2",
+    "cleanup": "d322ec3dd0b2124057d067a8b3ae9072717cc2570febb074de2ffd73d20ca3d3",
+    "independent_audit": "155146db504bab13e46ca7a6c10e96cacb509e0870fa7fdf6ffd720438795d3e",
+    "audit_helper": "8eb4c2afee53b152e778c45e10121a529e8bc266a0b2c720afd2c2b1ea80bdec",
+    "root_visual_review": "0c1ecac2395075c80d0bf7133fda1ee8915d0f24d2dafb1041241a754e07b15e",
+    "native_pixel_audit": "1a3c19404a4b135e5b840a852980a2aef17efcdefc57ae5c0c10059923c5ef9b",
+    "native_pixel_helper": "a7f4cd564b23a6e628e275f85075aeeb3557e5329a08a9cb9f6abafe7dee18d4"
+  },
+  "limits": [
+    "Captured glyph-interior sRGB contrast against paired local backgrounds; not panel calibration or physical readability certification.",
+    "Only five focused locale values and return-up quantified on G2; other pages and devices are not thereby visually qualified.",
+    "Shared scripted arrows/Back and bounded timeout; not physical remote, hold, wheel, normal-identity workflow, reboot or full release proof.",
+    "No native row.dim observer field exists; raster measurement and Root visual review establish appearance, metadata establishes disabled bindings.",
+    "Historical .30 input-formatting caveat remains in build-inputs.md; actual frozen .30 capture bytes are the comparison baseline.",
+    "Raw household values, images, inventories, backups, credentials and device addresses remain private."
+  ]
+}

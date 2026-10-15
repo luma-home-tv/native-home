@@ -68,6 +68,8 @@ formatting drift in 0.29/0.30 dependency inputs and the new verification guards.
 The frozen runtime evidence remains scoped to its actual executable hashes.
 The 0.31.0 candidate adds [legible current read-only values](docs/verification/read-only-values/README.md)
 with activation still blocked and unavailable/inactive styling preserved.
+Its [isolated G2 qualification](docs/read-only-values-031-milestone.json) verifies
+focused native text contrast and clean removal; normal G2 remains at 0.30.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
