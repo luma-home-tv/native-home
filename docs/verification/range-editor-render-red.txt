@@ -1,0 +1,7 @@
+Host range-layout capture before the custom draw-path fix:
+exit status: 101
+The range page called the empty FormTable painter after its custom range controls.
+That empty-state path required upstream locale initialization and panicked before
+the first range frame. The corrected page draws only its declared range/buttons.
+The bounded host interaction/capture then completed; native frames were reviewed
+on both TVs. Pure geometry/focus tests alone did not see this render-path error.

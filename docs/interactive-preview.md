@@ -154,6 +154,13 @@ Independent readback and complete removal checks are required. It adds no slider
 to the retained app; see the [experiment record](numeric-control-experiment.json)
 for the G2 result and C2 preflight skip.
 
+`NATIVE_HOME_RANGE_LAYOUT_PROOF=1` packages the synthetic staged range editor
+under the separate test identity. It refuses interactive mode and other action
+trials. The host equivalent is `home-preview ASSETS NEW_OUTPUT --range-layout-proof`.
+The proof captures five states, checks adjustment/cancel/pointer/proposal rules,
+and returns an unconfirmed local reply; it has no TV transport. The retained
+0.20.0 previews are unchanged. See the [range editor record](range-editor-milestone.json).
+
 ## Removal and future tests
 
 For each tested TV, the scoped proof removed the package through LG's installer,

@@ -1529,7 +1529,8 @@ fn range_apply_is_single_flight_and_only_matching_verified_readback_moves_saved_
     assert_eq!(s.range_state().unwrap().saved(), 0);
     assert!(!s.range_reply(0, 2, true));
     assert!(!s.open_range_editor("Other", RangeScale::new(0, 100, 1).unwrap(), 50));
-    s.open(Page::Home);assert_eq!(s.page(),Page::RangeEditor);
+    s.open(Page::Home);
+    assert_eq!(s.page(), Page::RangeEditor);
     assert!(s.range_reply(0, 1, true));
     assert_eq!(s.range_state().unwrap().saved(), 1);
     assert!(!s.range_reply(0, 1, true));

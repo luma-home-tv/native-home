@@ -22,10 +22,11 @@ Home's tracked application source.
 
 The application consumes `plx_ui`, `plx_gfx`, `plx_machine`, `plx_base` and
 `plx_platform`. It does not depend on PlxNative's Plex client, player, media,
-session, data or application-screen crates. A small, separately identified
+session, data or application-screen crates. A separately identified
 [integration patch](patches/plxnative-framework-integration.patch) adds local
 texture artwork, an opt-in OLED-black surface role and bounded-grid whole-tile
-admission shared by painting and pointer stops. These generic changes are
+admission shared by painting and pointer stops, plus a shared staged numeric
+range widget. These generic changes are
 candidates for upstream contribution; their presence does not turn the upstream
 framework into Luma Home-authored code.
 
@@ -133,6 +134,15 @@ The [app-menu milestone](docs/app-menu-milestone.json) adds native app options,
 pinning and durable favourite ordering on both devices; full text entry remains ongoing. The
 [clock milestone](docs/clock-milestone.json) adds a cached native TV-time header,
 validated and installed as version 0.8.0 on the G2 with saved favourites preserved.
+The [range editor proof](docs/range-editor-milestone.json) adds a shared native
+signed-range widget and modal staged-edit page. Both TVs passed synthetic
+interaction, native capture and clean-removal checks without TV setting writes.
+This remains isolated from the production controls until a validated transport is
+connected. The image below is a **host render with synthetic values**, not a TV
+capture or an enabled setting.
+
+![Native range editor, synthetic host preview](docs/range-editor-preview.png)
+
 The [concept fidelity map](docs/design-fidelity.md) records the implemented Luma
 logo/rail, larger Home shelves and status readings alongside the remaining
 input details, broader controls and long text. The original concepts remain

@@ -102,8 +102,11 @@ request. Physical input and full text/IME coverage remain to verify.
    status on every tile. Clock/status, app ordering and View all shortcuts are now implemented. The
    bounded drawer uses shared external grid geometry/springs, whole-tile
    admission and content-end clamping; native motion/settling proof is scoped in
-   the current milestone. Expand the verified choice pattern to appropriate controls, add native range
-   widgets only after per-operation tests, and complete broader read coverage. Verify physical
+   the current milestone. The [shared native range editor](range-editor-milestone.json)
+   now has synthetic staged-edit and removal proof on both TVs. Connect its proposals
+   to per-operation capability, freshness/context checks, bounded asynchronous
+   completion and verified readback before exposing a production range control.
+   Expand the verified choice pattern and complete broader read coverage. Verify physical
    remote, pointer, wheel and Back behaviour on both TVs.
    Measure the actual dashboard's frame pacing, input response, memory and idle
    behaviour; the earlier C renderer's results do not transfer to this client.

@@ -1,0 +1,9 @@
+{
+  "kind": "working host UI capture",
+  "data": "synthetic range and application fixture; unavailable host TV readings",
+  "source_revision": "24334053637781ea7e9ed059ea02b3fa7bdadbeb",
+  "image_sha256": "674daf27fbadb89967c913d01e1d3f05db7c79c1bf399829ed7490e0362ae81b",
+  "device_capture": false,
+  "performance_evidence": false,
+  "relationship": "Same range composition captured on both TVs at the later bounds-refactor revision recorded in range-editor-milestone.json; this public image is host-only."
+}

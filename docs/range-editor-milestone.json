@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "status": "native staged range editor and synthetic interaction proof; not a production TV control",
+  "source_revision": "6c65ceda3b3f94efcd16d90f9115fa52f559a323",
+  "binary_sha256": "007513ae6e000d3e19e03af7ebb93e77192c9b41ac4d000047db3c06e59b5f21",
+  "platform": {
+    "webos": "24",
+    "sdk": "9.2.2",
+    "firmware": "23.25.55"
+  },
+  "change": [
+    "Generic PlxNative RangeScale and StagedRange separate saved state, local adjustments and typed proposals. No service access belongs to these UI components.",
+    "Reusable native RangeControl paints a signed discrete scale, separate saved marker, staged value, minimum and maximum; pointer values use the same track geometry.",
+    "Luma composes the shared range leaf and existing TabPill controls in a modal Controls detail page; Luma logo, OLED-black canvas and graphite panel remain.",
+    "Left/Right adjusts only the focused range; Up/Down reaches Apply and Cancel. Back discards staging. An unchanged Apply emits no request.",
+    "Apply emits one typed proposal, with navigation and duplicate input blocked while pending. Only a matching verified owner reply may move the saved marker. Unconfirmed results leave it unchanged.",
+    "Only an isolated non-interactive range-layout marker reaches this page in the running app. The normal preview has no range control entry or numeric write capability."
+  ],
+  "framework": {
+    "upstream": {
+      "name": "PlxNative",
+      "repository": "https://github.com/GLinnik21/plx-native.git",
+      "revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+      "copyright": "Gleb Linnik and contributors",
+      "license": "GPL-3.0-or-later"
+    },
+    "integration_patch_sha256": "b7a4e2db806109892fd08fee74e58b909b3207252f0b21bcec4bb48834f112c9",
+    "authorship": "Generic widget changes are kept in the attributed framework patch; Luma owns the dashboard composition and proof driver. No Plex client features are introduced.",
+    "upstream_contribution": "candidate only; no upstream PR or merge claimed"
+  },
+  "verification": {
+    "luma_checks": {
+      "passed": 113,
+      "failed": 0
+    },
+    "framework_ui_checks": {
+      "passed": 1020,
+      "failed": 0
+    },
+    "clippy_all_targets_hostsim": "passed with warnings denied",
+    "framework_no_default_features": "passed",
+    "arm_release": "passed; existing target-feature neon warning",
+    "host_render": {
+      "result": "passed after removing an unintended empty table draw",
+      "source_revision": "2433405",
+      "data": "synthetic applications and range values",
+      "scope": "layout and scripted interaction only; not TV performance or physical text proof"
+    },
+    "negative_package_cases": [
+      "normal app identity",
+      "interactive diagnostics",
+      "mixed range/pointer action proofs"
+    ],
+    "devices": {
+      "OLED55G26LA": {
+        "ordinary_uid": 6583,
+        "interaction": {
+          "synthetic_values": true,
+          "staging_emits_no_effect": true,
+          "back_discards_staging": true,
+          "pointer_hover_is_read_only": true,
+          "pointer_endpoints_match_paint": true,
+          "apply_emits_one_proposal": true,
+          "pending_blocks_navigation_and_duplicates": true,
+          "unconfirmed_value_never_becomes_saved": true,
+          "favourites_unchanged": true
+        },
+        "setting_writes": false,
+        "tv_actions": 0,
+        "native_captures": 5,
+        "logo_and_navigation_textures_loaded": true,
+        "native_frame_review": [
+          "G2 full staged page, minimum and unconfirmed controls, identity header"
+        ],
+        "cleanup": {
+          "retained_metadata_unchanged": true,
+          "description_values_and_types_unchanged": true,
+          "retained_preview_unchanged": true,
+          "proof_process_absent": true,
+          "source_unchanged": true,
+          "last_input_unchanged": true,
+          "expanded_settings_unchanged": true,
+          "paths_and_mounts_absent": true,
+          "persistent_state_absent": true,
+          "catalogue_absent": true,
+          "launchpoint_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "home_foreground": true,
+          "original_foreground_verified": true
+        }
+      },
+      "OLED65C26LD": {
+        "ordinary_uid": 6432,
+        "interaction": {
+          "synthetic_values": true,
+          "staging_emits_no_effect": true,
+          "back_discards_staging": true,
+          "pointer_hover_is_read_only": true,
+          "pointer_endpoints_match_paint": true,
+          "apply_emits_one_proposal": true,
+          "pending_blocks_navigation_and_duplicates": true,
+          "unconfirmed_value_never_becomes_saved": true,
+          "favourites_unchanged": true
+        },
+        "setting_writes": false,
+        "tv_actions": 0,
+        "native_captures": 5,
+        "logo_and_navigation_textures_loaded": true,
+        "native_frame_review": [
+          "C2 maximum control and identity header"
+        ],
+        "cleanup": {
+          "retained_metadata_unchanged": true,
+          "description_values_and_types_unchanged": true,
+          "retained_preview_unchanged": true,
+          "proof_process_absent": true,
+          "source_unchanged": true,
+          "last_input_unchanged": true,
+          "expanded_settings_unchanged": true,
+          "paths_and_mounts_absent": true,
+          "persistent_state_absent": true,
+          "catalogue_absent": true,
+          "launchpoint_absent": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "home_foreground": true,
+          "original_foreground_verified": true
+        }
+      }
+    }
+  },
+  "render_regression": {
+    "initial_host_capture": "failed before producing a range frame; empty FormTable painter required its localization bootstrap",
+    "fix": "render only the range and action controls in the custom editor, leaving the table painter for actual table pages",
+    "native_scope": "both devices captured initial, staged, minimum, maximum and unconfirmed states after the fix"
+  },
+  "retained_previews": {
+    "version": "0.20.0",
+    "updated": false,
+    "binary_and_favourites_preserved": true
+  },
+  "remaining": [
+    "Connect a live setting readout, current metadata/context and typed native transport to the range editor before any production control is enabled.",
+    "The earlier G2 audio-description adapter experiment proves a stored numeric transition/restoration; this UI proof is synthetic and does not establish that combined end-to-end path.",
+    "Production wiring must supply freshness/context invalidation, bounded asynchronous completion and capability withdrawal; the generic editor owns no setting-specific context.",
+    "No native numeric write trial was run on C2. Its existing accessibility setting was preserved.",
+    "No audible output, live HDMI video/format, physical remote/pointer/wheel, numeric hold behaviour, reboot persistence or sustained performance claim.",
+    "Only the fixed signed preview scale was visually reviewed; wider number/text layouts and the full text/IME path remain.",
+    "Original concepts remain the finished-interface target. Broader verified controls and source detail still need work."
+  ],
+  "privacy": "Only sanitized boolean/count/model/build evidence is public. Household snapshots, inventories, current settings and captures stay private."
+}
