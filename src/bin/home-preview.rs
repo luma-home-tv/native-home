@@ -65,6 +65,33 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let startup_capability_proof = assets.join("startup-capability-proof.json").exists();
+    if startup_capability_proof {
+        if !device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || unsafe { libc::geteuid() } < 1000
+            || unsafe { libc::geteuid() } == 5724
+            || args.iter().skip(1).any(|a| a.starts_with("--"))
+        {
+            return Err("Startup capability requires an ordinary isolated native Proof".into());
+        }
+        for entry in std::fs::read_dir(&assets)? {
+            let name = entry?.file_name().to_string_lossy().into_owned();
+            if name != "startup-capability-proof.json"
+                && (name.ends_with("-proof.json")
+                    || name.ends_with("-probe.json")
+                    || name.ends_with("observer.json")
+                    || name.ends_with("recipe.json")
+                    || name.ends_with("fixture.json"))
+            {
+                return Err("Startup capability cannot mix with another trial".into());
+            }
+        }
+        native_home::startup_capability_proof::Marker::read(
+            &assets.join("startup-capability-proof.json"),
+        )?;
+    }
     let icon_presentation_marker = if assets.join("icon-presentation-proof.json").exists() {
         if !device
             || interactive
@@ -402,7 +429,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[allow(unused_mut)]
     let mut live_worker = None;
     #[cfg(target_arch = "arm")]
-    if device && icon_presentation_marker.is_none() {
+    if device && icon_presentation_marker.is_none() && !startup_capability_proof {
         live_worker = Some(native_home::live::Worker::native(
             plx_base::paths::app_id().to_owned(),
             live_origin,
@@ -441,7 +468,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[allow(unused_mut)]
     let mut home_launches_enabled = false;
     #[cfg(target_arch = "arm")]
-    if device && icon_presentation_marker.is_none() {
+    if device && icon_presentation_marker.is_none() && !startup_capability_proof {
         app_launches_enabled = native_home::identity::app_launches(
             plx_base::paths::app_id(),
             matches!(&launch_proof, Some(native_home::actions::Request::Application { id }) if id == native_home::identity::TARGET),
@@ -564,7 +591,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut scripted_requests = Vec::new();
     let mut probe_identity = None;
     let mut probe_changed = false;
-    if !interactive {
+    if !interactive && !startup_capability_proof {
         for (page, name) in [
             (Page::Home, "home"),
             (Page::Applications, "applications"),
@@ -617,7 +644,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             window.capture(&output.join(format!("{name}.ppm")))?;
         }
     }
-    if !interactive && icon_presentation_marker.is_none() {
+    if !interactive && icon_presentation_marker.is_none() && !startup_capability_proof {
         if assets.join("native-read-probe.json").exists() {
             shell.open(Page::Picture);
             if shell.focus_lg_settings() {
@@ -1269,6 +1296,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut recipe_open = 0_u32;
     let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
+    let artwork_startup_receipt = if startup_capability_proof {
+        Some(native_home::startup_capability_proof::run(
+            &mut shell, &window, &output, &mut now,
+        )?)
+    } else {
+        None
+    };
     let live_artwork_receipt = if let Some(marker) = &live_artwork_marker {
         Some(native_home::artwork_live_proof::run(
             &mut shell,
@@ -1287,7 +1321,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
-    if text_probe {
+    if artwork_startup_receipt.is_some() {
+        reason = "startup_capability_complete";
+    } else if text_probe {
         reason = "text_proof_complete";
     } else if icon_presentation_receipt.is_some() {
         reason = "icon_presentation_complete";
@@ -1865,7 +1901,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "setting_writes":false,"application_launches":action_receipts.iter().any(|r|r.admitted),"action_receipts":action_receipts,"data":if shell.live_updates()>0{if device{"ordinary app live readings"}else{"simulated live readings"}}else{"captured TV snapshot"},"live_updates":shell.live_updates(),"live_history":live_history,"preferences":shell.preferences(),
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
-        "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+        "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["artwork_startup_probe"] = serde_json::json!(artwork_startup_receipt);
     report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
     report["live_artwork_proof"] = serde_json::json!(live_artwork_receipt);
     report["icon_presentation_proof"] = serde_json::json!(icon_presentation_receipt);

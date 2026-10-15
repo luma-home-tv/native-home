@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.37.0' if main == 'home-preview' else '0.1.0'
+version = '0.38.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -40,6 +40,13 @@ broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '
 broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == '1'
 live_artwork_proof = os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PROOF') == '1'
 icon_presentation_proof = os.environ.get('NATIVE_HOME_ICON_PRESENTATION_PROOF') == '1'
+startup_capability_proof = os.environ.get('NATIVE_HOME_STARTUP_CAPABILITY_PROOF') == '1'
+if startup_capability_proof:
+    others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
+              (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and
+              k != 'NATIVE_HOME_STARTUP_CAPABILITY_PROOF']
+    if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
+        raise ValueError('Startup capability requires only the isolated non-interactive proof')
 icon_presentation_marker = None
 if icon_presentation_proof:
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
@@ -132,6 +139,10 @@ if artwork_target_fixture:
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
 if main == 'home-preview':
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    if startup_capability_proof:
+        marker_path = stage / 'startup-capability-proof.json'
+        marker_path.write_text('{"schema":1}\n')
+        marker_path.chmod(0o644)
     if icon_presentation_marker is not None:
         marker_path = stage / 'icon-presentation-proof.json'
         marker_path.write_text(json.dumps(icon_presentation_marker,separators=(',',':'))+'\n')
@@ -265,6 +276,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'broker_artwork_read_proof': broker_artwork_read_proof,
            'live_artwork_proof': live_artwork_proof,
            'icon_presentation_proof': icon_presentation_proof,
+           'startup_capability_proof': startup_capability_proof,
            'artwork_target_fixture': artwork_target_fixture or None,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
