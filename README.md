@@ -48,11 +48,13 @@ adds independent G2/C2 isolated flow, preedit and long-query evidence. See the
 [parallel-development plan](docs/parallel-development.md),
 [controls coverage audit](docs/controls-coverage-next.md) and
 [webOS24 text compatibility notes](docs/webos24-text-compatibility.md).
-The next 0.27.0 candidate adds clearer native/read-only/LG-managed control-row
+Version 0.28.0 includes clearer native/read-only/LG-managed control-row
 descriptions with existing action admission preserved. Its
 [synthetic host previews](docs/verification/control-row-presentation/README.md)
 and [isolated G2 Sound/Accessibility qualification](docs/control-row-presentation-milestone.json)
-remain separate evidence; the installed normal versions below are unchanged.
+remain separate evidence. The [latest G2 delivery](docs/apps-scroll-rest-milestone.json)
+also fixes a reproduced Apps scroll redraw tail, profiles the new build and
+verifies the backed-up normal update with favourites preserved.
 The [current G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
@@ -88,7 +90,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.26.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
+package modes and removal. Version 0.28.0 is installed on the OLED55G26LA G2; the OLED65C26LD C2
 remains on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the

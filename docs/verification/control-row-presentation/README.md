@@ -1,9 +1,10 @@
 # Control-row presentation preview
 
-These are host-rendered synthetic fixtures for the next 0.27.0 candidate, using
+These are host-rendered synthetic fixtures from the 0.27.0 candidate, using
 Luma's real shared form and rendering paths. They contain no TV inventory or
 household captures. They do not establish native TV rendering, current device
-values or deployment. G2 retains 0.26.0 and C2 retains 0.20.0.
+values or deployment. At capture time G2 retained 0.26.0 and C2 retained 0.20.0;
+the later [G2 0.28.0 delivery](../../apps-scroll-rest-milestone.json) has its own evidence.
 
 The [fixture](snapshot.json) exercises current readings without optional
 descriptors, signed ranges, unavailable/context-mismatched values, and protected

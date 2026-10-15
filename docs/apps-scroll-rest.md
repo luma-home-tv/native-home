@@ -1,8 +1,9 @@
 # Apps scroll at rest
 
-Status: the 0.28.0 candidate fixes a host-reproduced redraw tail. Native timing,
-visual regression and retained deployment remain pending. G2 retains 0.26.0;
-C2 is unchanged.
+Status: 0.28.0 fixes a host-reproduced redraw tail and is now retained on G2
+after isolated profiling and a backed-up normal update. The
+[device and delivery record](apps-scroll-rest-milestone.json) separates each
+qualification. C2 is unchanged.
 
 The [0.26.0 native profile](current-performance-milestone.json) found a paint
 burst after Apps navigation. A synthetic 70-app replay now reproduces a specific
@@ -29,8 +30,17 @@ in `src/shell_tests.rs`; run it with `cargo test --lib` and `--nocapture` to ret
 the synthetic trace. No draw or GL call is part of that replay, so its selected
 frame count is not a TV performance or pixel result.
 
-The next G2 test will keep the previous frozen workload, sampling, waits and
-cleanup procedure. The baseline's one-second diagnostic snapshots leave broad
-native-clock alignment bounds. If those bounds cannot support a matched effect,
-publish the new profile independently rather than inventing a percentage gain.
+The G2 test kept the previous frozen workload, sampling, waits and cleanup
+procedure. Its input-free Apps window submitted six frames and used about 1.89%
+of one core, compared with the earlier independent profile's 247 frames and
+4.88%. The baseline's diagnostic snapshots leave broad native-clock alignment
+bounds, so the prespecified strict comparison rejected a percentage-effect
+claim. These are independent profiles, not a claimed percentage gain.
+
+The new whole-session draw/active-interval maxima reached about 136 ms, already
+present in the first Home sample. That outlier remains recorded; its exact frame
+and cause are unproven. This fix does not establish a blanket latency improvement.
+The normal update verified all 32 bundle entries, preserved saved-state bytes/metadata and
+passed a visually reviewed Apps/Search/LG-keyboard/Back smoke. Physical input,
+full media behaviour, broader reliability and other conditional states remain open.
 No change to firmware, system libraries, Home behaviour or OLED policy is involved.

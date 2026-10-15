@@ -4,15 +4,18 @@ Status: the frozen 0.26.0 performance-only Proof profile completed on G2, with
 [current results and complete removal/preservation](current-performance-milestone.json).
 The roughly 199-second run collected 73 process/native samples. The old
 [0.14 record](responsiveness-milestone.json) remains historical evidence, not
-current dashboard performance proof. G2 retains the normal 0.26.0 preview.
+current dashboard performance proof. The later
+[0.28.0 profile and normal delivery](apps-scroll-rest-milestone.json) records the
+next independent result; G2 now retains 0.28.0. This document preserves the
+0.26.0 measurement's artifact and interpretation boundaries.
 
 The measurement uses functional source
 `7f29884be4c5a0c48794e71110744676c78bb371`, executable SHA256
 `d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf`,
 and an isolated ordinary-app package with only interactive and performance
 markers. It has no action proof, keyboard observer, synthetic text recipe or
-capture marker. The next 0.27.0 row-description candidate is a different
-artifact and will not be mixed into this measurement.
+capture marker. The 0.27.0 row-description and 0.28.0 scroll-fix candidates are
+different artifacts and are not mixed into this measurement.
 
 The sampled process CPU midpoints were 1.61% of one core for Home, 4.88% for
 Apps, 1.49% for Controls/Sound, 1.22% while blanked and 1.89% after wake. These
@@ -74,6 +77,10 @@ neither a local installer timeout nor transport EOF authorises a conflicting
 rollback/removal. Keep household inventories, raw samples and frames private.
 
 ## Next investigation
+
+The later [host replay and fix](apps-scroll-rest.md) confirmed the numerical
+tail through the real Shell/gate path. Its separate 0.28.0 device profile and
+normal update are recorded without a percentage-effect claim.
 
 Source inspection gives one plausible explanation for the early Apps paints.
 Luma steps its external drawer-scroll spring each tick, then passes its position

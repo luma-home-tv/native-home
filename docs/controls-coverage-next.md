@@ -1,8 +1,8 @@
 # Control-centre coverage and next work
 
-Current source review: `14edb5ca08e3d91f5ebcc5097613446c3df25da7` (2026-10-15).
-The [retained-update record](preview-update-milestone.json) now establishes G2
-0.26.0 after a backed-up normal-package upgrade and guarded network UI smoke;
+Current source: `754158504315b0c4314961a7f9268ddf323edcf2` (2026-10-15).
+The [latest retained-update record](apps-scroll-rest-milestone.json) establishes G2
+0.28.0 after a backed-up normal-package upgrade and guarded network UI smoke;
 C2 remains at its separately recorded 0.20.0. This document update reads source
 and saved evidence, not fresh TV state. Normal G2 Home/Apps/Search/keyboard smoke
 does not establish every control-page interaction, physical input or performance.
@@ -69,8 +69,9 @@ existence does not enable other numeric settings.
    behaviour checks and an ARM build. Existing actions/disabled bindings are
    preserved. It does not infer an expiry cause from `available: false`.
    [Isolated G2 Sound/Accessibility read/layout qualification](control-row-presentation-milestone.json)
-   now adds scoped native wording/scroll evidence; normal deployment and broader
-   native conditional-state coverage remain pending.
+   now adds scoped native wording/scroll evidence. The later
+   [normal 0.28.0 delivery](apps-scroll-rest-milestone.json) retains that wording;
+   broader native conditional-state coverage remains pending.
 2. **Finish validation of existing controls.** Prioritise physical Magic Remote
    choice/range navigation, staged-versus-saved clarity, Back/Cancel, repeat
    suppression and pointer/wheel behaviour. Prove expiry/external-change

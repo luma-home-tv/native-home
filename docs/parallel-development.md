@@ -40,12 +40,14 @@ It does not change device authorisation or the protections in `AGENTS.md`.
    The [current measurement method](current-performance-method.md) and
    [G2 0.26.0 result](current-performance-milestone.json) now add one bounded
    isolated profile with process resource/raw timing evidence and removal.
-   Apps repaints during the input-free window remain a concrete investigation;
-   normal-identity comparisons and broader reliability remain open.
+   The later [scroll-rest fix and G2 delivery](apps-scroll-rest-milestone.json)
+   adds a host reproduction and independent 0.28.0 profile. Timing uncertainty
+   prevents a percentage-effect claim. Normal-identity resource comparisons,
+   the recorded whole-session outlier and broader reliability remain open.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 now retains 0.26.0
+   framework changes for possible upstream contribution. G2 now retains 0.28.0
    after its separate normal-build qualification; C2 remains on 0.20.0. Component
    tests alone do not admit a retained update.
 

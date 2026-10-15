@@ -1,11 +1,12 @@
 # Control capability presentation model
 
-Status: the pure policy now supplies control-row descriptions through
-`control_row_presentation` and `model::controls_form_with_numeric` in the next
-0.27.0 candidate. The integration has host behaviour checks and
+Status: introduced in the 0.27.0 candidate, the pure policy supplies control-row
+descriptions through `control_row_presentation` and `model::controls_form_with_numeric`
+and is included in the retained G2 0.28.0 preview. The integration has host behaviour checks and
 [isolated G2 Sound/Accessibility read/layout evidence](control-row-presentation-milestone.json).
-Normal deployment and broader native state qualification remain pending.
-G2 retains 0.26.0 and C2 retains 0.20.0.
+The [backed-up normal delivery](apps-scroll-rest-milestone.json) adds a scoped
+Apps/Search/keyboard smoke; broader native conditional-state qualification
+remains pending. G2 retains 0.28.0 and C2 retains 0.20.0.
 Existing actions, disabled bindings, fixed adapter admission and LG routes are
 unchanged. This slice adds no setter or privileged operation.
 

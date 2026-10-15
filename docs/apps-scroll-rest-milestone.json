@@ -1,0 +1,347 @@
+{
+  "schema": 1,
+  "status": "Apps scroll rest fix host-reproduced, independently profiled on G2 and delivered in backed-up normal 0.28.0 update",
+  "source": {
+    "functional_revision": "754158504315b0c4314961a7f9268ddf323edcf2",
+    "version": "0.28.0",
+    "binary_sha256": "8abbc5907c7f20c1ce3bc8b61c1139dd44bd99389ce60522272d4c5d34f87fe0",
+    "performance_ipk_sha256": "71df6ee5bf8b56d8397c8414afcc3d8455023fda2dfddf18ec9289affd1ae5b2",
+    "normal_ipk_sha256": "635eec8fc8fe27b1f4e453334d9da28ee753da04e0515bf625adc5bf2153243d"
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "renderer": "Mali-G52",
+    "retained_g2_version": "0.28.0",
+    "c2_changed_in_this_run": false
+  },
+  "host": {
+    "library_tests_passed": 190,
+    "clippy_all_targets_hostsim_warnings_denied": true,
+    "arm_release_passed": true,
+    "actual_shell_gate_last_second_selected_frames_before": 60,
+    "actual_shell_gate_last_second_selected_frames_after": 0,
+    "replay_is_synthetic_without_draw_or_gl": true,
+    "final_damaged_frame_high_velocity_retarget_nonzero_rest_and_caption_tests": true
+  },
+  "isolated_profile": {
+    "host_exit_code": 0,
+    "native_elapsed_seconds": 199.10418348,
+    "samples": 73,
+    "independent_saved_artifact_assertions_passed": 2336,
+    "observed_clk_tck": 100,
+    "phases": [
+      {
+        "name": "settled_home",
+        "endpoint_scope_only": true,
+        "sample_count": 4,
+        "cpu": {
+          "cpu_ticks_delta": 12,
+          "clk_tck": 100,
+          "wall_seconds_midpoint": 7.569555021000269,
+          "cpu_percent_one_core_midpoint": 1.5852979424428935,
+          "cpu_percent_one_core_lower": 1.542031019012732,
+          "cpu_percent_one_core_upper": 1.6310629596939958,
+          "rss_sample_max_kib": 34364,
+          "process_hwm_kib": 36968
+        },
+        "native_integer_delta": {
+          "frames": 8,
+          "idle_blank_presentations": 0,
+          "key_down": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "histogram_sample_counts": {
+            "draw_submission": 8,
+            "swap_call": 8,
+            "foreground_swap_intervals": 0,
+            "dequeued_input_to_next_swap_submission": 0
+          }
+        }
+      },
+      {
+        "name": "settled_apps",
+        "endpoint_scope_only": true,
+        "sample_count": 4,
+        "cpu": {
+          "cpu_ticks_delta": 14,
+          "clk_tck": 100,
+          "wall_seconds_midpoint": 7.407856124998943,
+          "cpu_percent_one_core_midpoint": 1.889885516641564,
+          "cpu_percent_one_core_lower": 1.8386231991918507,
+          "cpu_percent_one_core_upper": 1.944088286931169,
+          "rss_sample_max_kib": 35584,
+          "process_hwm_kib": 36968
+        },
+        "native_integer_delta": {
+          "frames": 6,
+          "idle_blank_presentations": 0,
+          "key_down": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "histogram_sample_counts": {
+            "draw_submission": 6,
+            "swap_call": 6,
+            "foreground_swap_intervals": 0,
+            "dequeued_input_to_next_swap_submission": 0
+          }
+        }
+      },
+      {
+        "name": "settled_controls_sound",
+        "endpoint_scope_only": true,
+        "sample_count": 4,
+        "cpu": {
+          "cpu_ticks_delta": 11,
+          "clk_tck": 100,
+          "wall_seconds_midpoint": 7.4001630204948015,
+          "cpu_percent_one_core_midpoint": 1.486453740212942,
+          "cpu_percent_one_core_lower": 1.4470879367595275,
+          "cpu_percent_one_core_upper": 1.5280212089593408,
+          "rss_sample_max_kib": 37520,
+          "process_hwm_kib": 38180
+        },
+        "native_integer_delta": {
+          "frames": 7,
+          "idle_blank_presentations": 0,
+          "key_down": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "histogram_sample_counts": {
+            "draw_submission": 7,
+            "swap_call": 7,
+            "foreground_swap_intervals": 0,
+            "dequeued_input_to_next_swap_submission": 0
+          }
+        }
+      },
+      {
+        "name": "idle_blanked",
+        "endpoint_scope_only": true,
+        "sample_count": 4,
+        "cpu": {
+          "cpu_ticks_delta": 8,
+          "clk_tck": 100,
+          "wall_seconds_midpoint": 7.454878666998411,
+          "cpu_percent_one_core_midpoint": 1.0731227639444698,
+          "cpu_percent_one_core_lower": 1.0454446115028726,
+          "cpu_percent_one_core_upper": 1.1023063307485859,
+          "rss_sample_max_kib": 37936,
+          "process_hwm_kib": 38456
+        },
+        "native_integer_delta": {
+          "frames": 0,
+          "idle_blank_presentations": 0,
+          "key_down": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "histogram_sample_counts": {
+            "draw_submission": 0,
+            "swap_call": 0,
+            "foreground_swap_intervals": 0,
+            "dequeued_input_to_next_swap_submission": 0
+          }
+        }
+      },
+      {
+        "name": "post_wake",
+        "endpoint_scope_only": true,
+        "sample_count": 4,
+        "cpu": {
+          "cpu_ticks_delta": 12,
+          "clk_tck": 100,
+          "wall_seconds_midpoint": 7.421133333504258,
+          "cpu_percent_one_core_midpoint": 1.6170036921211872,
+          "cpu_percent_one_core_lower": 1.5758686359576322,
+          "cpu_percent_one_core_upper": 1.6603438122357195,
+          "rss_sample_max_kib": 37936,
+          "process_hwm_kib": 38456
+        },
+        "native_integer_delta": {
+          "frames": 6,
+          "idle_blank_presentations": 0,
+          "key_down": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "histogram_sample_counts": {
+            "draw_submission": 6,
+            "swap_call": 6,
+            "foreground_swap_intervals": 0,
+            "dequeued_input_to_next_swap_submission": 0
+          }
+        }
+      }
+    ],
+    "fixed_apps_arrow_workload": {
+      "frames": 192,
+      "idle_blank_presentations": 0,
+      "key_down": [
+        0,
+        1,
+        1,
+        2,
+        2,
+        0,
+        0
+      ],
+      "histogram_sample_counts": {
+        "draw_submission": 192,
+        "swap_call": 192,
+        "foreground_swap_intervals": 181,
+        "dequeued_input_to_next_swap_submission": 6
+      }
+    },
+    "whole_session_native_metrics": {
+      "dequeued_input_to_next_swap_submission": {
+        "max_ms": 9.093,
+        "mean_ms": 1.668,
+        "p50_upper_ms": 2,
+        "p95_upper_ms": 10,
+        "p99_upper_ms": 10,
+        "samples": 17
+      },
+      "draw_submission": {
+        "max_ms": 136.263,
+        "mean_ms": 1.648985380116959,
+        "p50_upper_ms": 1,
+        "p95_upper_ms": 4,
+        "p99_upper_ms": 24,
+        "samples": 684
+      },
+      "foreground_swap_intervals": {
+        "max_ms": 136.475,
+        "mean_ms": 17.180685436893203,
+        "p50_upper_ms": 17,
+        "p95_upper_ms": 18,
+        "p99_upper_ms": 26,
+        "samples": 515
+      },
+      "frames": 684,
+      "idle_blank_presentations": 1,
+      "key_down": [
+        0,
+        1,
+        5,
+        4,
+        2,
+        2,
+        3
+      ],
+      "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+      "swap_call": {
+        "max_ms": 3.573,
+        "mean_ms": 0.22005116959064328,
+        "p50_upper_ms": 1,
+        "p95_upper_ms": 1,
+        "p99_upper_ms": 2,
+        "samples": 684
+      }
+    },
+    "peak_sampled_rss_kib": 38456,
+    "process_lifetime_hwm_kib": 38456,
+    "initial_own_favourites_seed_writes": 1,
+    "additional_preference_writes": 0,
+    "cleanup_preservation_checks_passed": 23,
+    "verified_upload_removed": true,
+    "lease_and_private_host_agent_cleanup_verified": true,
+    "captures_during_timing": false,
+    "profile_identity": "Separate ordinary Proof application; not exact normal-identity process cost"
+  },
+  "comparison": {
+    "status": "independent_profiles_unmatched_or_ambiguous",
+    "observed_before_apps_frames": 247,
+    "observed_after_apps_frames": 6,
+    "before_apps_cpu_percent_one_core": 4.882438818112917,
+    "after_apps_cpu_percent_one_core": 1.889885516641564,
+    "source_and_packaged_asset_equivalence_audited": true,
+    "full_before_after_inventory_payloads_equal": true,
+    "workload_and_phase_endpoint_midpoint_checks_passed": true,
+    "entire_possible_time_boundary_differences_within_limit": false,
+    "percentage_improvement_claim": false,
+    "reason": "Native clock-origin and endpoint uncertainty exceeds the prespecified full-range timing limit, despite matching endpoint midpoints. Keep these as independent profiles; no rerun to obtain a favourable match.",
+    "whole_session_outliers_retained": {
+      "draw_max_ms": 136.263,
+      "active_interval_max_ms": 136.475,
+      "already_present_in_first_home_sample": true,
+      "exact_frame_and_cause_proven": false
+    }
+  },
+  "normal_delivery": {
+    "host_exit_code": 0,
+    "previous_version": "0.26.0",
+    "full_bundle_entries_verified_at_three_stages": 32,
+    "fresh_complete_bundle_and_state_backups": true,
+    "saved_favourites_bytes_ownership_and_modes_preserved": true,
+    "ordinary_uid_process_start_and_executable_verified": true,
+    "proof_observers_recipes_and_capture_helpers_enabled": false,
+    "visually_reviewed_network_command_frames": 10,
+    "sequence": "Home to Apps rail, drawer to Search toolbar, one LG keyboard, Back to Search, Back to Home, Back exit",
+    "keyboard": {
+      "opens": 1,
+      "stops": 1,
+      "dismissals": 1,
+      "failures": 0
+    },
+    "no_second_keypad_after_dismissal": true,
+    "preferences_loaded_and_readback_confirmed": true,
+    "application_action_receipts": 0,
+    "settings_writes": 0,
+    "normal_exit_reason": "back_from_home",
+    "lg_home_returned_naturally": true,
+    "typed_preservation_domains": 18,
+    "checked_core_settings_audio_and_source_preserved": true,
+    "temporary_uploads_and_remote_captures_removed": true,
+    "lease_absence_and_private_agent_cleanup_verified": true,
+    "rollback_needed": false,
+    "normal_preview_intentionally_retained": true,
+    "independent_saved_artifact_assertions_passed": 79,
+    "reboot_required": false,
+    "rollback_boundary": "Verified .26 package and state backup retained privately; the earlier isolated .26-to-.25 downgrade qualification is not exact .28-to-.26 rollback execution proof."
+  },
+  "receipt_sha256": {
+    "isolated_audit": "7f9db9b0f95f88e54edc3b88ff4bdd9b6eaf486b3654e5db7bd080d0ed8a28d2",
+    "comparison": "dbbf990f4e4d3b06d47a1f01e3c9779da688d65eeb22afdec7ccf428f63b2146",
+    "normal_audit": "340bcb2a87e81dff4b92a89796229b2053a3a5a7c31904ca68a081b211ee08ab",
+    "normal_verification": "012b9fb6bb943b0c1c87b74127f9612a3c5d7d20f6b22c4dcb0b104a8e9e429b",
+    "normal_cleanup": "cd2b056d4a3e4de9a5222590b08871bec742cec90178e818e60f66b794628a45"
+  },
+  "limits": [
+    "Native profile counters and CPU observations do not establish physical remote, GPU completion or panel latency. Active interval histograms exclude deliberately skipped iterations; latency ends after swap returns and is not sampled per key.",
+    "The normal delivery is a narrow Apps/Search/LG-keyboard/Back network smoke, not new physical typing, pointer, hold, wheel, composing-language or broad reliability proof.",
+    "The 136ms whole-session outlier is retained and needs separate investigation; no blanket latency improvement is claimed.",
+    "No full media/HDMI/HDR, reboot persistence or comprehensive new settings/adapter qualification.",
+    "Core preservation covers the checked domains, not a universal TV integrity or functionality proof."
+  ],
+  "whole_dashboard_goal_complete": false
+}

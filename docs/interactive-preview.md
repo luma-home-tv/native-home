@@ -1,8 +1,8 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.26.0 on G2 and 0.20.0 on C2**.
-The [G2 update record](preview-update-milestone.json) verifies the complete normal
+`com.ash.nativehome.preview`, version **0.28.0 on G2 and 0.20.0 on C2**.
+The [latest G2 update record](apps-scroll-rest-milestone.json) verifies the complete normal
 bundle, preserved favourites and a guarded Apps/Search/LG-keyboard/Back smoke.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
@@ -33,7 +33,7 @@ in Apps it opens the native options panel. Choose Pin/Unpin, Move earlier/later
 or Open app. Back closes the panel and restores the app; an app removed from
 the filtered view lands on a valid neighbour. The panel traps focus and pointer
 hit targets until closed. Apps has
-All/Favourites filters and native search. G2 0.26.0 uses LG's keyboard for Search;
+All/Favourites filters and native search. G2 uses LG's keyboard for Search;
 the separate Keypad button selects Luma's fallback explicitly. C2 0.20.0 still
 uses the earlier Luma keypad. Only one keyboard is active at a time. Closing LG's
 keyboard ends editing and returns focus to Search without revealing a second
