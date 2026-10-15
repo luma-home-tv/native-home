@@ -873,9 +873,15 @@ fn empty_native_categories_offer_only_the_lg_managed_route_and_keep_navigation()
     s.direction(Dir::Down);
     assert_eq!(focus(&s), CATEGORY_BASE + 5);
     s.direction(Dir::Right);
-    assert_eq!(focus(&s), TABLE_BASE + 1000);
+    assert_eq!(
+        focus(&s),
+        TABLE_BASE + SettingsSection::PanelCare.focus_key()
+    );
     tap(&mut s);
-    assert_eq!(focus(&s), TABLE_BASE + 1000);
+    assert_eq!(
+        focus(&s),
+        TABLE_BASE + SettingsSection::PanelCare.focus_key()
+    );
     assert_eq!(s.control_category(), Some(Page::PanelCare));
     assert_eq!(
         s.take_requests(),
@@ -985,5 +991,29 @@ fn stale_pointer_frame_cannot_leave_focus_on_a_removed_detail_row_or_escape_a_ne
     s.pointer(1100.0, 660.0, true);
     assert_eq!(focus(&s), MENU_BASE + 1);
     assert!(s.menu_application().is_some());
+    assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn a_previous_category_settings_button_cannot_invoke_the_new_category_route() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(controls_fixture(), Preferences::default());
+    s.open(Page::Controls);
+    let rect = Rect::new(1000.0, 650.0, 300.0, 60.0);
+    s.input.hit.fill(vec![Stop {
+        key: FocusKey {
+            entry: entry(Page::Controls),
+            elem: TABLE_BASE + 1000,
+        },
+        rect,
+        rest_rect: rect,
+        clip: DETAIL_ROWS,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    }]);
+    s.input.hit.swap();
+    s.focus_control_category(1);
+    s.pointer(1100.0, 660.0, true);
+    assert_eq!(focus(&s), CATEGORY_BASE + 1);
     assert!(s.take_requests().is_empty());
 }

@@ -2581,15 +2581,25 @@ impl Shell {
         true
     }
     pub fn focus_lg_settings(&mut self) -> bool {
-        if self.surface.control_page.is_none()
-            || self.surface.table.index_of_key(RowKey(1000)).is_none()
+        let Some(section) = self
+            .surface
+            .control_page
+            .and_then(SettingsSection::from_page)
+        else {
+            return false;
+        };
+        if self
+            .surface
+            .table
+            .index_of_key(RowKey(section.focus_key()))
+            .is_none()
         {
             return false;
         }
         let owner = InputOwner::Entry(entry(self.surface.page));
         let key = FocusKey {
             entry: entry(self.surface.page),
-            elem: TABLE_BASE + 1000,
+            elem: TABLE_BASE + section.focus_key(),
         };
         let outcome = self
             .input

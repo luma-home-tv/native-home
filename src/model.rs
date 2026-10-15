@@ -81,6 +81,7 @@ pub enum SettingsSection { Picture, Sound, Network, Accessibility, General, Pane
 impl SettingsSection {
     pub fn page(self) -> Page { match self { Self::Picture => Page::Picture, Self::Sound => Page::Sound, Self::Network => Page::Network, Self::Accessibility => Page::Accessibility, Self::General => Page::General, Self::PanelCare => Page::PanelCare } }
     pub fn from_page(page: Page) -> Option<Self> { match page { Page::Picture => Some(Self::Picture), Page::Sound => Some(Self::Sound), Page::Network => Some(Self::Network), Page::Accessibility => Some(Self::Accessibility), Page::General => Some(Self::General), Page::PanelCare => Some(Self::PanelCare), _ => None } }
+    pub fn focus_key(self) -> u32 { match self {Self::Picture=>1000,Self::Sound=>1010,Self::Network=>1020,Self::Accessibility=>1030,Self::General=>1040,Self::PanelCare=>1050} }
     pub fn target(self) -> &'static str { match self {Self::Picture => "picture", Self::Sound => "sound", Self::Network | Self::General => "general", Self::Accessibility => "accessibility", Self::PanelCare => "OledCare"} }
 }
 
@@ -157,7 +158,7 @@ pub fn controls_form_for_section(settings: &[Setting], current: &Context, sectio
             Action::Inspect(setting.id.clone()), Row::new(&setting.label).detail(detail).value(value).server_value())
             .disabled(unavailable || setting.protected);
     }
-    let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(1000),
+    let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(route.focus_key()),
         RowKind::Button, if route == SettingsSection::Picture {Action::OpenLgSettings} else {Action::OpenLgSettingsSection(route)},
         Row::new(if route == SettingsSection::Network {"Open LG Network entry"} else {Message::OpenLgSettings.text()})) }
         else { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-managed".to_owned(), RowKey(1001),
