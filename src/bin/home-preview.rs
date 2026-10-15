@@ -14,6 +14,47 @@ use std::{
     time::{Duration, Instant},
 };
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(target_arch = "arm")]
+    let trace = plx_base::paths::app_id() == native_home::identity::PROOF
+        && plx_base::paths::app_dir()
+            .join("text-input-proof.json")
+            .exists();
+    #[cfg(target_arch = "arm")]
+    if trace {
+        let path = plx_base::paths::in_runtime_dir("text-input-startup.json");
+        if let Ok(file) = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(path)
+        {
+            let _ = serde_json::to_writer(
+                file,
+                &serde_json::json!({"stage":"entered","uid":unsafe{libc::geteuid()}}),
+            );
+        }
+    }
+    let result = run();
+    #[cfg(target_arch = "arm")]
+    if trace {
+        if let Err(error) = &result {
+            let path = plx_base::paths::in_runtime_dir("text-input-startup-error.json");
+            if let Ok(file) = std::fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                .open(path)
+            {
+                let _ =
+                    serde_json::to_writer(file, &serde_json::json!({"error":error.to_string()}));
+            }
+        }
+    }
+    result
+}
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     let device = cfg!(target_arch = "arm");
     let args = std::env::args().collect::<Vec<_>>();
     let assets = if device {
