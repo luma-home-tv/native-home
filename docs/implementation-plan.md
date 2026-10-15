@@ -108,7 +108,9 @@ One closing-key release was drained in the same SDL batch. Pointer, later-batch
 and broader dismissal races remain unqualified, as do C2 physical typing,
 explicit idle stop cause, same-install relaunch, performance and retained promotion.
 One preceding G2 attempt exited on early focus loss before readiness; its cause
-and cold-entry reliability remain unresolved. The other incomplete attempts and
+and cold-entry reliability remain unresolved. The
+[startup investigation](startup-lifecycle-investigation.md) records the exact
+event/departure timing and the next bounded observation. The other incomplete attempts and
 the corrected host dismissal-counter mistake remain in the record.
 
 The [parallel plan](parallel-development.md) now lists the six broad remaining
