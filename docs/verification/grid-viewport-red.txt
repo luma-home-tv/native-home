@@ -7,3 +7,7 @@ The translated-painter regression then failed against the first implementation:
 assertion failed: !grid.viewport_admits(p, 0, 1.0, false, &[])
 test result: FAILED. 1 passed; 1 failed; 0 ignored; 1015 filtered out.
 The admission rule was corrected to use the exact local-to-screen conversion used by drawing and hit stops.
+
+Native menu-return capture exposed document-end overscroll. The new app-level bound failed before clamping:
+menu return overscrolled past the document end
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 103 filtered out.
