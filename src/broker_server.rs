@@ -513,6 +513,9 @@ mod proof {
                 if finish.nonce != enrolled.nonce || finish.request_id != expected_id {
                     return Err(invalid("Artwork finish sequence/session mismatch").into());
                 }
+                report["artwork_finish_connect_credentials"] =
+                    json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
+                report["artwork_finish_message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
                 let before = resource_peer(enrolled, &connect, &packet.credentials)?;
                 report["artwork_finish_peer_before"] = json!(before);
                 let context =
@@ -538,6 +541,9 @@ mod proof {
                 return Err(invalid("Artwork request limit/sequence/session mismatch").into());
             }
             let mut record = json!({"request":request,"request_bytes":packet.bytes,"encoded_data_released":false,"completed":false});
+            record["connect_credentials"] =
+                json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
+            record["message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
             let operation = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let before = resource_peer(enrolled, &connect, &packet.credentials)?;
                 record["peer_before"] = json!(before);
