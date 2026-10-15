@@ -18,8 +18,8 @@ A G2 root-side survey on webOS 24 accepted both value aliases. Its descriptors
 contained an empty choice list or a country-file reference, not an admitted enum.
 Luma neither fetches that file nor infers editing authority. Valid current values
 remain visible if optional descriptors are absent, refused or unsuitable.
-Ordinary application access requires its own isolated native qualification;
-root-side reads do not establish that permission.
+The later isolated native check independently accepted the public values under
+an ordinary app UID; root-side reads alone do not establish that permission.
 
 Each refresh supplies all five rows. Failed groups and invalid individual leaves
 become unavailable without hiding valid siblings. Existing General groups cannot
@@ -37,6 +37,11 @@ coverage. Normal G2 remains on 0.28.0; no retained update is part of this slice.
 The isolated diagnostic adds seven General captures using the existing shared
 arrows and Back: each of the five new rows, the enabled LG General route without
 activating it, and return to the first new row. It requires visible focused rows,
-read-only bindings, unchanged preferences and zero TV action requests. Native
-results are recorded separately when completed; the comprehensive control centre
+read-only bindings, unchanged preferences and zero TV action requests. The [native milestone](language-region-read-milestone.json) records successful
+ordinary-app reads matching independent full locale/region objects, seven
+Root-reviewed frames and all 24 preservation/removal checks. An independent
+saved-artifact audit passed 277 assertions. The driver binds live UID/start/ELF
+identity, but raw process reads were not retained for independent replay. These
+are component read/layout checks; native expiry transitions, physical General
+navigation and retained delivery remain open. The comprehensive control centre
 remains incomplete.

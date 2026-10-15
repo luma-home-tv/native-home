@@ -56,7 +56,8 @@ and palette; a black background is not treated as proof of burn-in prevention.
 The [input-batch candidate](input-batch-ordering-milestone.json) records the 0.29.0
 queued-cancellation and duplicate-activation fixes. Its physical workflow remains
 incomplete. The [0.30.0 language/region candidate](language-region-reads.md) adds
-five protected General readings; native qualification is recorded separately.
+five protected General readings; [isolated ordinary-app reads and focused native layout](language-region-read-milestone.json)
+are verified on G2, while retained delivery remains pending.
 
 The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects

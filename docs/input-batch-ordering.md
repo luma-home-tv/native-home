@@ -45,3 +45,19 @@ Wheel navigation, physical remote-key hold/menu cancellation, pointer Search and
 LG keyboard Back remain unqualified on 0.29.0. No normal update was attempted.
 The corrected publisher has 15 host harness checks; these do not substitute for
 a completed physical run.
+
+## Subsequent manual retries
+
+Two further finite 0.29.0 trials independently matched human Apps selection to
+native pointer input, the Apps page and private before/after frames. In the third
+trial, cleanup passed 29 of 30 checks: the final foreground was the retained
+Luma preview instead of baseline LG Home. Its original recovery-needed record is
+preserved; the cause is undetermined. Other checked state and removal passed.
+
+The fourth trial passed all 30 closeout checks and returned to LG Home. Wheel
+events arrived and the human reported expected movement. Its before-frame was
+taken before the requested top-card hover, so the paired frames cannot isolate
+wheel direction or final displacement; Root withheld the visual acknowledgement.
+No wheel-direction, snapback-defect, hold or completed-workflow claim follows.
+A future measurement should capture a settled post-hover baseline before the
+wheel action. App-local idle and all LG protections remain unchanged.

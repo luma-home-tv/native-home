@@ -14,18 +14,29 @@
   },
   "native": {
     "scope": "G2 isolated ordinary Proof only",
-    "attempts": 2,
+    "attempts": 4,
     "first_human_apps_open_report": true,
     "first_native_pointer_click_and_apps_page": true,
     "first_terminal": "host_ack_filename_mismatch_and_phase_timeout",
     "second_terminal": "phase_timeout_awaiting_input",
     "completed_physical_workflow": false,
-    "failure_closeout_checks_each_all_true": 30,
     "isolated_app_state_and_mounts_removed": true,
     "retained_normal_version": "0.28.0",
     "retained_normal_package_preferences_metadata_preserved": true,
     "normal_update_attempted": false,
-    "c2_touched": false
+    "c2_touched": false,
+    "failure_closeout_gates_true_per_attempt": [
+      30,
+      30,
+      29,
+      30
+    ],
+    "third_foreground_mismatch": "retained Luma preview rather than baseline LG Home; original recovery-needed record preserved; cause undetermined",
+    "later_apps_pointer_human_native_frame_checks": true,
+    "fourth_wheel_events_received": true,
+    "fourth_human_wheel_report": "moved as expected",
+    "fourth_wheel_visual_acknowledgement": false,
+    "wheel_direction_or_final_displacement_verified": false
   },
   "unqualified": [
     "wheel workflow",

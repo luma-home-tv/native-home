@@ -167,3 +167,13 @@ does not change description enablement or promote a numeric editor.
   claim follows from this read audit. Existing performance receipts do not
   measure a larger future registry. Luma remains an independent dashboard using
   the attributed PlxNative framework, with no Plex features or copied LG code.
+
+## Subsequent General group
+
+The [language/region record](language-region-read-milestone.json) independently
+qualifies five protected General readings on G2 in isolated 0.30.0. It uses fixed
+public value requests, preserves values when optional descriptors are unavailable,
+and admits no editing capability. Full value objects matched independent reads,
+seven focused native frames were reviewed, and removal/preservation passed.
+Retained delivery, C2, native freshness transitions and broader coverage remain
+open. This does not expand the historical Sound/Accessibility receipts above.

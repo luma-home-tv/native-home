@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "status": "isolated_ordinary_app_read_and_focused_layout_verified_retained_update_pending",
+  "source_revision": "093a7f600be6a3c49fbb4ad966bd4e55b70b63fd",
+  "candidate_version": "0.30.0",
+  "binary_sha256": "13595c926f6b4aadd9cec382fcd295d7797fb4bb5087e9bd0547a556aee1836e",
+  "isolated_ipk_sha256": "af058e095e8cee9509041b716f17af89b4a0d1f325505ed131bc62abbb806274",
+  "rows": [
+    "localeInfo.locales.UI",
+    "localeInfo.locales.AUD",
+    "localeInfo.locales.AUD2",
+    "country",
+    "smartServiceCountryCode2"
+  ],
+  "host": {
+    "library_tests_passed": 207,
+    "binary_tests_passed": 5,
+    "all_target_clippy_warnings_denied": true,
+    "arm_release_compiled": true,
+    "harness_negative_controls_passed": 13
+  },
+  "native": {
+    "scope": "G2 webOS24 isolated ordinary Proof",
+    "ordinary_value_objects_equal_independent_before_and_after": true,
+    "five_protected_current_constraintless_rows": true,
+    "focused_native_frames_reviewed": 7,
+    "down_scrolls": [
+      267.9914245605469,
+      359.9970703125,
+      451.9970703125,
+      543.9970703125,
+      635.9970703125
+    ],
+    "lg_route_scroll": 667.9989624023438,
+    "return_up_scroll": 408.00830078125,
+    "lg_general_route_focused_not_activated": true,
+    "back_restores_category": true,
+    "setting_writes": false,
+    "external_app_launches": false,
+    "elapsed_seconds": 30.12749084,
+    "terminal_reason": "expected_bounded_timeout",
+    "independent_saved_audit_assertions": 277,
+    "preservation_cleanup_gates_all_true": 24,
+    "proof_removed": true,
+    "retained_g2_version": "0.28.0",
+    "retained_package_preferences_metadata_preserved": true,
+    "normal_update_attempted": false,
+    "c2_touched": false,
+    "raw_proc_identity_records_retained": false,
+    "identity_scope": "Live UID/start/executable binding is performed by pinned driver; saved identity is available, raw proc reads are not replayable."
+  },
+  "evidence_sha256": {
+    "candidate": "973603e262ea04f7772fa49a588076fe36b09b5c9cbfcb55b6cad6e192c9760e",
+    "read_layout_validation": "0053253b706098844240a66c59ae1ea1d094e54d788176cc4e0d8939648108d1",
+    "cleanup": "d322ec3dd0b2124057d067a8b3ae9072717cc2570febb074de2ffd73d20ca3d3",
+    "independent_audit": "1862e89aebdc11f25df74382cb9d37804eb482d0f0de7e16b202573d02c640d7",
+    "root_visual_review": "950a2ea67fc0088cb18160298a53063f705c9486a9b335051acf0906060f1285"
+  },
+  "remaining": [
+    "normal retained delivery",
+    "native expiry/external-change transition testing",
+    "physical General navigation",
+    "comprehensive settings inventory and separately validated controls",
+    "full dashboard release"
+  ]
+}
