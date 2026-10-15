@@ -95,6 +95,9 @@ explicit synthetic text; physical typing/Done, native dismissal-drain ordering,
 performance and retained updates remain separate acceptance gates. The
 [parallel delivery plan](docs/parallel-development.md) assigns implementation,
 independent review and per-TV validation without concurrent device ownership.
+The [guidance-read milestone](docs/guidance-read-milestone.json) adds isolated
+ordinary-app and native focus/scroll proof for guidance volume, pitch and speed
+on both TVs. These are read-only choices; retained previews are unchanged.
 
 The [Inputs detail milestone](docs/inputs-detail-milestone.json) adds a native
 two-column source grid and graphite detail pane, matched to the concept. Both TVs

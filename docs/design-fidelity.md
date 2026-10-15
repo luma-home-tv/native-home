@@ -124,5 +124,8 @@ support. [Control coverage](controls-coverage-next.md) and
 The [actual-main-loop record](main-loop-milestone.json) adds interactive
 keyboard/fallback, plain idle/wake and programmatic departure observations on
 both models. These are lifecycle results, not new concept-fidelity frames or
-performance measurements. The candidate guidance readouts still need native
-layout review; the retained previews remain at their recorded versions.
+performance measurements. The [guidance milestone](guidance-read-milestone.json)
+now adds focused/scrolled native review of its three readouts on both models.
+Original framebuffer comparisons confirm static branding remains present;
+preview omissions alone did not establish a renderer defect. The retained
+previews remain at their recorded versions.

@@ -112,8 +112,11 @@ input and every other gap are scoped per scenario; these additions do not
 promote the candidate.
 The parallel controls lane has also delivered the
 [presentation policy module](control-capability-design.md) and a
-[guidance-read candidate](read-coverage-audit.md). The former has no UI caller;
-the latter still needs ordinary-app and native layout qualification.
+[guidance-read implementation](read-coverage-audit.md). The former has no UI caller;
+the latter now has [independent ordinary-app/native component qualification](guidance-read-milestone.json)
+on both models, with preserved-state/removal checks. A stronger intentional
+OK-wake scenario is host-prepared; it still needs native execution under reviewed
+current cleanup guards before replacing the narrower LEFT-wake observation.
 
 The next waves are:
 

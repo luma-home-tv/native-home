@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "status": "Three new guidance readouts independently qualified in isolated ordinary-app native component builds on both models; retained previews unchanged",
+  "source": {
+    "functional_revision": "a46ddcf9be8d3bf5d06eb6af72ddc531cb547fca",
+    "proof_version": "0.25.0",
+    "binary_sha256": "889c09944e490651e40ef30e4227530d5b3036dc92c5c67cc45cc82f50ffdc8b"
+  },
+  "interface": {
+    "new_readouts": [
+      "audioGuidanceVolume",
+      "audioGuidancePitch",
+      "audioGuidanceSpeed"
+    ],
+    "all_accessibility_readouts": 7,
+    "expanded_registry_readouts": 23,
+    "types": "Closed five-choice string enums, not numeric ranges",
+    "policy": "Read-only/LG-managed; no new setter or write capability",
+    "rendering": "Native shared forms/focus/scroll on an OLED-black canvas with graphite surfaces"
+  },
+  "checks": {
+    "library_tests_passed": 163,
+    "keyboard_handler_regressions_passed": 2,
+    "all_target_hostsim_clippy": "passed with warnings denied",
+    "arm_release": "passed; existing neon target-feature warning",
+    "host_native_marker_refusal_before_window": "passed",
+    "forbidden_package_modes_refused": 3,
+    "private_cleanup_and_receipt_host_tests_passed": 19
+  },
+  "devices": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "80a63b6e95094b8ab125243f484ed8ddbb846e1bbc1322d75faaa080fdb2d91a",
+      "ordinary_uid_and_running_executable_verified": true,
+      "validation": {
+        "ordinary_app_seven_values_and_types_match": true,
+        "new_guidance_exact_enums": true,
+        "all_seven_protected_available": true,
+        "focused_disabled_visible_rows": 3,
+        "return_up_visible": true,
+        "actual_scroll_down_and_up": true,
+        "scrolls": [
+          175.994384765625,
+          267.9970703125,
+          359.9970703125
+        ],
+        "return_up_scroll": 316.0014343261719,
+        "back_restores_category": true,
+        "all_read_only": true,
+        "component_capture_only": true,
+        "stage_snapshot_freshness_transition_proved": false
+      },
+      "private_frame_count": 5,
+      "frame_review": "Focused guidance labels/values and upward return are visible; original framebuffer static-branding regions agree across stages/models. Raw frames remain private.",
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "all_proof_uid_processes_absent": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "reboot_required": false,
+        "guidance_values_and_types_unchanged": true,
+        "guidance_descriptors_unchanged": true,
+        "keyboard_absent": true
+      },
+      "device_lease_released": true,
+      "private_agent_removed": true,
+      "retained_version": "0.21.0",
+      "retained_modified": false
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "58c9d854349af0360a5fb30aadcb508f4d66a67110e416ef62f0df81bb8a6f38",
+      "ordinary_uid_and_running_executable_verified": true,
+      "validation": {
+        "ordinary_app_seven_values_and_types_match": true,
+        "new_guidance_exact_enums": true,
+        "all_seven_protected_available": true,
+        "focused_disabled_visible_rows": 3,
+        "return_up_visible": true,
+        "actual_scroll_down_and_up": true,
+        "scrolls": [
+          175.994384765625,
+          267.9970703125,
+          359.9970703125
+        ],
+        "return_up_scroll": 316.0014343261719,
+        "back_restores_category": true,
+        "all_read_only": true,
+        "component_capture_only": true,
+        "stage_snapshot_freshness_transition_proved": false
+      },
+      "private_frame_count": 5,
+      "frame_review": "Focused guidance labels/values and upward return are visible; original framebuffer static-branding regions agree across stages/models. Raw frames remain private.",
+      "cleanup": {
+        "retained_metadata_unchanged": true,
+        "description_values_and_types_unchanged": true,
+        "retained_preview_unchanged": true,
+        "all_proof_uid_processes_absent": true,
+        "proof_process_absent": true,
+        "source_unchanged": true,
+        "last_input_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true,
+        "reboot_required": false,
+        "guidance_values_and_types_unchanged": true,
+        "guidance_descriptors_unchanged": true,
+        "keyboard_absent": true
+      },
+      "device_lease_released": true,
+      "private_agent_removed": true,
+      "retained_version": "0.20.0",
+      "retained_modified": false
+    }
+  },
+  "scope_limits": [
+    "Component input used shared arrows/Back; physical remote/pointer/wheel behaviour is separate.",
+    "Stage readouts are captured snapshots, not newly refreshed service reads at every frame.",
+    "No setting writes, audible guidance effect, reboot persistence, performance or retained-update admission was tested.",
+    "Ordinary isolated Proof identity access does not itself qualify the retained app update.",
+    "Original framebuffer data and fixed-region comparisons govern visual evidence; apparent missing chrome in an image preview was not supported by the original pixels."
+  ],
+  "retained_promotion": false
+}

@@ -2,11 +2,12 @@
 
 Audit date: 2026-10-15. Source audit baseline `8121333`, including
 `src/control_reads.rs`, `src/native_probe.rs`, `src/live.rs` and the fixed
-audio-description adapter. A later host-only candidate in `control_reads.rs`
-adds the three guidance rows described below; it is not part of the frozen
-`8121333` native lifecycle tests and is not a deployment receipt.
-Saved receipts were inspected locally; no TV was contacted for this work.
-Historical evidence is not a current installation or settings-state query.
+audio-description adapter. Later implementation and the separate
+[0.25.0 guidance milestone](guidance-read-milestone.json) add three readouts with
+independent ordinary-app/native component proof on both models. The initial
+schema audit used saved receipts; the later milestone identifies the actual
+device work. Neither expands the earlier `8121333` lifecycle receipt or updates
+the retained previews.
 
 ## Evidence scope
 
@@ -64,7 +65,7 @@ enum member below is active/visible. No selected household value is reproduced.
 
 | Category / key | Exact descriptor schema | Recorded value encoding | Gap |
 | --- | --- | --- | --- |
-| `option/audioGuidanceVolume` | `ArrayExt`: `veryLow`, `low`, `medium`, `high`, `veryHigh` | String enum | Implemented in the host candidate; ordinary-app, C2 and native layout admission unproved |
+| `option/audioGuidanceVolume` | `ArrayExt`: `veryLow`, `low`, `medium`, `high`, `veryHigh` | String enum | Isolated ordinary-app reads and focused native layout qualified independently on both models; retained update pending |
 | `option/audioGuidancePitch` | `ArrayExt`: `veryLow`, `low`, `medium`, `high`, `veryHigh` | String enum | Same |
 | `option/audioGuidanceSpeed` | `ArrayExt`: `veryFast`, `fast`, `medium`, `slow`, `verySlow` | String enum; preserve descriptor ordering | Same |
 | `sound/audioBalance` | `Range`: min -50, max 50, interval 1 | Signed decimal string in inspected audit/closeout values | Missing normal Sound row and descriptor-backed collection; ordinary-app admission unproved; no decibel/percentage or audible-effect claim |
@@ -76,9 +77,9 @@ historical audit directory name do not imply numeric ranges. Audio balance and
 description level are LG scales with different ranges; neither may be labelled
 master volume, percent or dB without separate evidence.
 
-## Smallest next integration slice
+## Guidance implementation and qualification
 
-The host candidate now implements **only the three guidance parameter readouts**:
+The implementation adds **only the three guidance parameter readouts**:
 
 1. Appended stable identities/specs for `audioGuidanceVolume`,
    `audioGuidancePitch` and `audioGuidanceSpeed` to the existing Accessibility
@@ -96,16 +97,17 @@ The host candidate now implements **only the three guidance parameter readouts**
    A valid group can retain its unaffected rows when one key fails; an invalid
    group envelope is rejected as a whole. Section expiry and real focus/visual
    behaviour remain integration/device acceptance gates.
-3. In a later isolated ordinary-app proof, require accepted named getters and
-   descriptors on each target model, current-value membership and independent
-   readback matching without changing any setting. A root audit is insufficient.
-   Inspect the native long-label/scroll/availability states and verify complete
-   removal plus retained/core/settings/source/foreground preservation. Do not
-   transfer G2 qualification to C2 or change the user's accessibility settings.
+3. Separate isolated ordinary-app 0.25.0 trials now verify accepted getters and
+   descriptors, all seven typed values matching independent reads, and each new
+   row focused, disabled and fully inside the native viewport. Captures and
+   recorded positions establish actual down/up scrolling and Back return.
+   Each trial removed its proof package and preserved retained/core/settings/
+   source/foreground state. No accessibility preference was changed.
 
-This candidate has no ordinary-app admission proof for the new keys, no C2
-qualification and no native frame review. It does not promote write authority
-or change the established fixed audio-description adapter.
+The [native milestone](guidance-read-milestone.json) qualifies these component
+results, not physical remote input, per-frame service freshness, performance or
+normal-identity retained promotion. Stage readouts are captured snapshots.
+No write authority or change to the fixed audio-description adapter follows.
 
 Host verification uses a separate agent-owned Cargo target: nine focused
 control-read tests and hostsim library/test clippy with warnings denied pass.
@@ -113,7 +115,7 @@ After integration with the shared live fixtures and display labels, all 162
 library tests and two actual keyboard-handler regressions pass; all-target
 hostsim clippy with warnings denied and the ARM release build also pass.
 Those checks do not establish TV access or native layout behaviour.
-The frozen host/ARM candidate is source
+The earlier frozen host/ARM candidate was source
 `3a54428245769df6cb4cbef79427ba32e4a5e3df`, binary SHA256
 `73b6d190e636abb9e6b7112a7fcd2e6440054aa92a6c61b49126236f54727953`.
 The 0.24.0 lifecycle milestone uses the earlier `8121333` binary and does not
@@ -121,6 +123,10 @@ qualify these added readings.
 The cases also distinguish a valid reading with an inactive top-level UI
 descriptor from malformed/inactive individual enum members. No shared parent
 build target or running device candidate is changed by these checks.
+The later layout-proof source is `a46ddcf9be8d3bf5d06eb6af72ddc531cb547fca`,
+with 163 library tests plus two handler regressions, clippy and ARM build passing.
+Its source/package guards admit the read/layout marker only under the isolated,
+non-interactive native dashboard identity.
 
 Then consider a **separate global Sound read group** for `audioBalance`,
 `audioDescription` and `audioDescriptionVolume`, using two fixed read-only calls.

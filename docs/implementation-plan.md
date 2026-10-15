@@ -110,9 +110,12 @@ per TV. The [coverage audit](controls-coverage-next.md) preserves the comprehens
 control-centre backlog; existing category routes do not establish every-setting
 coverage. Its next candidate is a separately admitted pointer-size control after
 capability/semantics review, rather than a generic setter.
-The [read-coverage audit](read-coverage-audit.md) now identifies three candidate
-guidance-parameter readouts and the Sound dimension boundary. Their host-only
-implementation adds no setter and still needs ordinary-app/native admission.
+The [read-coverage audit](read-coverage-audit.md) identifies three guidance
+parameter readouts and the Sound dimension boundary. The
+[guidance milestone](guidance-read-milestone.json) now qualifies those readouts
+and focused/scrolled native component frames independently on both models.
+They add no setter; physical input, freshness transitions and retained promotion
+remain separate.
 The [capability presentation model](control-capability-design.md) keeps reading
 freshness, edit eligibility, pending operations and LG routes separate; it has
 no normal UI caller yet.
