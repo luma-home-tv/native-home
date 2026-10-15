@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.13.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.14.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -81,7 +81,11 @@ network configuration and OLED protections. HDMI switching remains gated and
 native settings remain read-only. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
 closing its overlay. Version 0.13.0 validates both TVs and all six section entry points. Private TV details and native household captures
-stay outside tracked source. A black OLED canvas with graphite tiles is the
+stay outside tracked source. The [responsiveness milestone](docs/responsiveness-milestone.json)
+records native SDL input, bounded frame/CPU/RSS measurements and the shared
+presentation gate. In the matched G2 workload, sampled foreground CPU fell from
+8.2% to 1.7% of one core; physical remote/panel latency and long-run performance
+remain unverified. A black OLED canvas with graphite tiles is the
 design direction; sustained performance, physical input and complete controls
 still require device verification. The [drawer milestone](docs/drawer-milestone.json)
 adds native All/Favourites filtering and on-screen search, tested through

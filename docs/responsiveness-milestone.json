@@ -1,0 +1,401 @@
+{
+  "code_revision": "161e41b0d39c486efd3ed83bb3d242a67e70b7e7",
+  "package_version": "0.14.0",
+  "deployed_binary_sha256": "aecf99336ad2e38a6532fcb3affcd7c9dc9155722d2ad0e8b4069acbf5a94919",
+  "client_tests": {
+    "passed": 78,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "change": "Interactive and bounded native loops use PlxNative spring-motion/damage presentation gating. Inputs, changed data, clocks/status and foreground return invalidate; keepalive remains. Input polling/live workers remain active. App-local two-minute black idle still stops UI painting.",
+  "framework_ownership": "Presentation gate and spring-motion machinery remain explicitly attributed PlxNative framework APIs; Luma supplies its own invalidation sites.",
+  "measurement_method": {
+    "input": "LG networkinput test service -> SDL ABI adapter -> shared focus/press -> real native Home/Apps/Controls views; not a physical remote test",
+    "key_codes": {
+      "up": 103,
+      "down": 108,
+      "left": 105,
+      "right": 106,
+      "ok": 28,
+      "back": 412
+    },
+    "key_reference": "https://github.com/rorygallagher2024/glasshouse/blob/main/docs/IMPLEMENTATION.md#remote-control-keys-and-the-home-launcher-across-webos-versions",
+    "timings": "App-thread draw submission, swap-call duration and consecutive actively submitted frame intervals; intentional skipped/idle/hidden intervals excluded from pacing histogram",
+    "input_timing": "From app dequeue of key-down to next swap submission, not transport, IR, GPU completion or panel response",
+    "histograms": "Bounded 1002-bin millisecond histogram; percentile values are upper bucket bounds",
+    "resources": "Scoped process /proc status/stat samples; CPU reported as percent of one core using verified CLK_TCK",
+    "mode": "Separate ordinary-UID interactive test identity, no scripted focus probes, no captures during timed workload, passive app launch capability",
+    "workload": "Same mapped key-down counts and navigation sequence on G2 before/after; Home, Apps and Controls, then app-local idle and wake/Back exit. C2 optimized workload measured independently."
+  },
+  "g2_comparison": {
+    "baseline": {
+      "code_revision": "271b97d",
+      "metrics": {
+        "dequeued_input_to_next_swap_submission": {
+          "max_ms": 7.279,
+          "mean_ms": 2.3301428571428575,
+          "p50_upper_ms": 3,
+          "p95_upper_ms": 5,
+          "p99_upper_ms": 8,
+          "samples": 28
+        },
+        "draw_submission": {
+          "max_ms": 64.18,
+          "mean_ms": 0.9369841381123477,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 3,
+          "p99_upper_ms": 5,
+          "samples": 11411
+        },
+        "foreground_swap_intervals": {
+          "max_ms": 64.544,
+          "mean_ms": 16.79645832237707,
+          "p50_upper_ms": 17,
+          "p95_upper_ms": 18,
+          "p99_upper_ms": 19,
+          "samples": 11409
+        },
+        "frames": 11411,
+        "idle_blank_presentations": 1,
+        "key_down": [
+          0,
+          3,
+          8,
+          7,
+          5,
+          2,
+          3
+        ],
+        "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+        "swap_call": {
+          "max_ms": 8.123,
+          "mean_ms": 0.19478476908246428,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 1,
+          "p99_upper_ms": 1,
+          "samples": 11411
+        }
+      },
+      "cpu": {
+        "False": {
+          "seconds": 179.10446466600843,
+          "one_core_cpu_percent": 8.241000595671498
+        },
+        "True": {
+          "seconds": 11.023235624998051,
+          "one_core_cpu_percent": 0.9978921229856179
+        }
+      },
+      "peak_sampled_rss_kib": 39956,
+      "cleanup": {
+        "paths_mounts_absent": true,
+        "state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "home_verified": true,
+        "previous_restored": true
+      }
+    },
+    "presentation_gate": {
+      "code_revision": "751a3fd",
+      "metrics": {
+        "dequeued_input_to_next_swap_submission": {
+          "max_ms": 7.793,
+          "mean_ms": 1.6432142857142857,
+          "p50_upper_ms": 2,
+          "p95_upper_ms": 6,
+          "p99_upper_ms": 8,
+          "samples": 28
+        },
+        "draw_submission": {
+          "max_ms": 127.655,
+          "mean_ms": 1.7769084337349397,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 2,
+          "p99_upper_ms": 16,
+          "samples": 830
+        },
+        "foreground_swap_intervals": {
+          "max_ms": 121.6,
+          "mean_ms": 17.197354748603352,
+          "p50_upper_ms": 17,
+          "p95_upper_ms": 18,
+          "p99_upper_ms": 26,
+          "samples": 716
+        },
+        "frames": 830,
+        "idle_blank_presentations": 1,
+        "key_down": [
+          0,
+          3,
+          8,
+          7,
+          5,
+          2,
+          3
+        ],
+        "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+        "swap_call": {
+          "max_ms": 4.396,
+          "mean_ms": 0.19145783132530123,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 1,
+          "p99_upper_ms": 1,
+          "samples": 830
+        }
+      },
+      "cpu": {
+        "False": {
+          "seconds": 178.9609147920055,
+          "one_core_cpu_percent": 1.6819315007963191
+        },
+        "True": {
+          "seconds": 10.478625750001811,
+          "one_core_cpu_percent": 0.9543236144299048
+        }
+      },
+      "peak_sampled_rss_kib": 38680,
+      "cleanup": {
+        "paths_mounts_absent": true,
+        "state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "home_verified": true,
+        "previous_restored": true
+      }
+    },
+    "same_key_down_counts": true,
+    "foreground_cpu_reduction_percent": 79.5906882754051,
+    "frame_submission_reduction_percent": 92.7263167119446
+  },
+  "devices": {
+    "g2": {
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "elapsed_seconds": 203.37957856,
+      "swap_interval_request_accepted": true,
+      "metrics": {
+        "dequeued_input_to_next_swap_submission": {
+          "max_ms": 7.793,
+          "mean_ms": 1.6432142857142857,
+          "p50_upper_ms": 2,
+          "p95_upper_ms": 6,
+          "p99_upper_ms": 8,
+          "samples": 28
+        },
+        "draw_submission": {
+          "max_ms": 127.655,
+          "mean_ms": 1.7769084337349397,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 2,
+          "p99_upper_ms": 16,
+          "samples": 830
+        },
+        "foreground_swap_intervals": {
+          "max_ms": 121.6,
+          "mean_ms": 17.197354748603352,
+          "p50_upper_ms": 17,
+          "p95_upper_ms": 18,
+          "p99_upper_ms": 26,
+          "samples": 716
+        },
+        "frames": 830,
+        "idle_blank_presentations": 1,
+        "key_down": [
+          0,
+          3,
+          8,
+          7,
+          5,
+          2,
+          3
+        ],
+        "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+        "swap_call": {
+          "max_ms": 4.396,
+          "mean_ms": 0.19145783132530123,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 1,
+          "p99_upper_ms": 1,
+          "samples": 830
+        }
+      },
+      "cpu": {
+        "False": {
+          "seconds": 178.9609147920055,
+          "one_core_cpu_percent": 1.6819315007963191
+        },
+        "True": {
+          "seconds": 10.478625750001811,
+          "one_core_cpu_percent": 0.9543236144299048
+        }
+      },
+      "peak_sampled_rss_kib": 38680,
+      "sdl_navigation_reached_home_apps_controls": true,
+      "idle_did_not_keep_painting": true,
+      "test_cleanup": {
+        "paths_mounts_absent": true,
+        "state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "home_verified": true,
+        "previous_restored": true
+      },
+      "lg_settings_return_regression_cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_preferences_absent": true,
+        "test_catalogue_absent": true,
+        "test_launchpoint_absent": true,
+        "new_settings_surface_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "retained_app_favourites_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_update": {
+        "favourites_loaded": true,
+        "no_timing_marker": true,
+        "no_captures": true,
+        "state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    },
+    "c2": {
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "renderer": "Mali-G52",
+      "ordinary_app_identity": true,
+      "elapsed_seconds": 207.5688249,
+      "swap_interval_request_accepted": true,
+      "metrics": {
+        "dequeued_input_to_next_swap_submission": {
+          "max_ms": 8.763,
+          "mean_ms": 1.58875,
+          "p50_upper_ms": 2,
+          "p95_upper_ms": 5,
+          "p99_upper_ms": 9,
+          "samples": 28
+        },
+        "draw_submission": {
+          "max_ms": 100.836,
+          "mean_ms": 1.0980202140309157,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 2,
+          "p99_upper_ms": 11,
+          "samples": 841
+        },
+        "foreground_swap_intervals": {
+          "max_ms": 62.669,
+          "mean_ms": 16.830605555555554,
+          "p50_upper_ms": 17,
+          "p95_upper_ms": 18,
+          "p99_upper_ms": 22,
+          "samples": 720
+        },
+        "frames": 841,
+        "idle_blank_presentations": 1,
+        "key_down": [
+          0,
+          3,
+          8,
+          7,
+          5,
+          2,
+          3
+        ],
+        "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+        "swap_call": {
+          "max_ms": 1.693,
+          "mean_ms": 0.19542568370986918,
+          "p50_upper_ms": 1,
+          "p95_upper_ms": 1,
+          "p99_upper_ms": 1,
+          "samples": 841
+        }
+      },
+      "cpu": {
+        "False": {
+          "sampled_seconds": 181.80269516699627,
+          "one_core_cpu_percent": 1.5786344626870021
+        },
+        "True": {
+          "sampled_seconds": 10.730540832999395,
+          "one_core_cpu_percent": 0.9319194769053225
+        }
+      },
+      "peak_sampled_rss_kib": 42132,
+      "sdl_navigation_reached_home_apps_controls": true,
+      "idle_did_not_keep_painting": true,
+      "test_cleanup": {
+        "paths_mounts_absent": true,
+        "state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "home_verified": true,
+        "previous_restored": true
+      },
+      "lg_settings_return_regression_cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_preferences_absent": true,
+        "test_catalogue_absent": true,
+        "test_launchpoint_absent": true,
+        "new_settings_surface_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "retained_app_favourites_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_update": {
+        "favourites_loaded": true,
+        "no_timing_marker": true,
+        "no_captures": true,
+        "state": {
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        }
+      }
+    }
+  },
+  "limitations": [
+    "No physical remote/pointer/wheel, GPU-completion timestamps or glass latency measurements",
+    "Not a matched comparison against LG Home, a WebView dashboard or PlxNative Plex app",
+    "Bounded roughly 200-second sessions, not sustained stress, thermal, memory-leak or reboot proof",
+    "Initial/route font and cache work produced draw/frame outliers; p95 is not a worst-case guarantee",
+    "C2 has an optimized measurement only; G2 before/after improvement is not transferred to C2"
+  ],
+  "privacy": "Raw app identities in focus samples, event logs, timing snapshots and detailed /proc samples remain outside Git."
+}

@@ -12,8 +12,8 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.13.0 is installed on both devices; the
-[LG-managed sections record](settings-sections-milestone.json) is the latest scoped proof.
+current native interface. Version 0.14.0 is installed on both devices; the
+[responsiveness record](responsiveness-milestone.json) is the latest scoped proof.
 
 ## Direction
 
@@ -42,7 +42,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Inputs | Four HDMI cards with distinct plug, signal and active states; select through LG's normal source path | Native cards refreshed through normal-app reads; disconnected HDMI 4 launch reached its foreground but EIM activation readback did not confirm it; switching stays disabled |
 | Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; broader native controls/read coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
-| Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; FPS, latency, sustained idle resources and stress memory remain unverified |
+| Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; Native injected SDL navigation and bounded submission/CPU/RSS/idle-paint measurements now exist on both; physical latency, GPU/panel timing and stress memory remain unverified |
 
 The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects

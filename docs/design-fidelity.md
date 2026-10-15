@@ -6,7 +6,7 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.13.0 moves the running interface closer to those concepts. This is a
+Version 0.14.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
@@ -42,5 +42,8 @@ Next design work should complete Inputs details and expand contextual native
 controls and read coverage, then review long text and physical navigation on
 both devices. HDMI switching,
 native setting writes, physical input coverage, reboot persistence and sustained
-performance each need separate evidence. LG Home, boot behaviour and core TV
+long-run performance each need separate evidence. The
+[responsiveness record](responsiveness-milestone.json) measures bounded app-thread
+submission pacing, input handling, CPU/RSS and idle painting on both TVs. Those
+measurements do not prove physical input latency, GPU completion or panel response. LG Home, boot behaviour and core TV
 services remain the working default throughout.

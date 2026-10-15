@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.13.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.14.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -19,6 +19,11 @@ rewrite; order is saved after an explicit change. Older clients cannot read the
 new order field, so preserve a pre-ordering backup before considering a downgrade.
 Opening another app hides/exits this preview; relaunch Luma from
 LG's list. LG Home, power and volume keep their existing ownership.
+
+Interactive sessions now use PlxNative's shared motion/damage presentation gate.
+Focus/gesture motion, changed data, clock/status changes and foreground return
+request repaint; unchanged screens skip redraws with the framework keepalive
+backstop. Input polling and live workers keep running.
 
 After two minutes without app input, Luma presents opaque black and stops
 repainting its UI. The first app input wakes it without activating a hidden tile.
