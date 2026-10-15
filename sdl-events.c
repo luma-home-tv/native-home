@@ -1,5 +1,6 @@
-/* Narrow SDL ABI adapter. Built against each target's actual headers: webOS adds fields
- * to keyboard/mouse events, so Rust must not reinterpret the desktop SDL_Event layout. */
+/* Narrow SDL ABI adapter. webOS text input adds a source/serial field, but the
+ * audited SDL 2.0.14 preedit record retains the older layout. SDK headers alone
+ * do not describe both; Rust never reinterprets the platform SDL_Event union. */
 #include <SDL.h>
 #include <stdint.h>
 #include <string.h>
@@ -17,6 +18,30 @@ static int copy_text(HomeEvent *out,const char *text,size_t capacity) {
     if(n==capacity || n>=sizeof(out->text))return 0;
     memcpy(out->text,text,n);out->text[n]=0;return 1;
 }
+/* Audited device SDL 2.0.14: SDL_SendEditingText writes text at +12 and
+ * signed start/length at +44/+48, with no source field. The newer SDK header
+ * adds inputSource here too, so its SDL_TextEditingEvent must not be used.
+ * This layout is separate from SDL_TEXTINPUT (+16), not a blanket event rule. */
+typedef struct {uint32_t type,timestamp,windowID;char text[32];int32_t start,length;} HomeWebos2014Editing;
+_Static_assert(sizeof(HomeWebos2014Editing)==52,"audited webOS preedit size");
+_Static_assert(offsetof(HomeWebos2014Editing,text)==12,"audited webOS preedit text");
+_Static_assert(offsetof(HomeWebos2014Editing,start)==44,"audited webOS preedit start");
+_Static_assert(offsetof(HomeWebos2014Editing,length)==48,"audited webOS preedit length");
+_Static_assert(sizeof(SDL_Event)>=sizeof(HomeWebos2014Editing),"SDL event holds legacy preedit");
+/* Shared with queue-free fixtures. Unfamiliar native versions fail closed until
+ * their runtime ABI is audited; do not fall back to the build SDK's layout. */
+static int decode_webos_preedit(const void *bytes,size_t size,unsigned major,unsigned minor,unsigned patch,HomeEvent *out) {
+    HomeWebos2014Editing edit;
+    memset(out,0,sizeof(*out));
+    if(!bytes || size<sizeof(edit) || major!=2 || minor!=0 || patch!=14)return 0;
+    memcpy(&edit,bytes,sizeof(edit));
+    if(edit.type!=SDL_TEXTEDITING)return 0;
+    out->kind=11;out->edit_start=edit.start;out->edit_length=edit.length;
+    return copy_text(out,edit.text,sizeof(edit.text));
+}
+int native_home_test_webos_preedit_decode(const void *bytes,size_t size,unsigned major,unsigned minor,unsigned patch,HomeEvent *out) {
+    return decode_webos_preedit(bytes,size,major,minor,patch,out);
+}
 static int decode_event(const SDL_Event *event,HomeEvent *out) {
     const SDL_Event e=*event;
     memset(out,0,sizeof(*out));
@@ -28,11 +53,13 @@ static int decode_event(const SDL_Event *event,HomeEvent *out) {
         return copy_text(out,e.text.text,sizeof(e.text.text));
     }
     if(e.type==SDL_TEXTEDITING) {
-        out->kind=11;out->edit_start=e.edit.start;out->edit_length=e.edit.length;
 #ifdef NATIVE_HOME_WEBOS
-        out->source=e.edit.inputSource;
-#endif
+        SDL_version version;SDL_GetVersion(&version);
+        return decode_webos_preedit(&e,sizeof(e),version.major,version.minor,version.patch,out);
+#else
+        out->kind=11;out->edit_start=e.edit.start;out->edit_length=e.edit.length;
         return copy_text(out,e.edit.text,sizeof(e.edit.text));
+#endif
     }
 #if !defined(NATIVE_HOME_WEBOS) && SDL_VERSION_ATLEAST(2,0,22)
     if(e.type==SDL_TEXTEDITING_EXT) {
@@ -104,7 +131,14 @@ void native_home_text_stop(void) {SDL_StopTextInput();SDL_FlushEvents(SDL_TEXTED
 int native_home_test_text_decode(int composition,const char *text,size_t length,HomeEvent *out) {
     SDL_Event e;memset(&e,0,sizeof(e));e.type=composition?SDL_TEXTEDITING:SDL_TEXTINPUT;
     if(length>sizeof(e.text.text))return 0;
-    if(composition){memcpy(e.edit.text,text,length);e.edit.start=1;e.edit.length=2;}
+    if(composition){
+#ifdef NATIVE_HOME_WEBOS
+        HomeWebos2014Editing edit;memset(&edit,0,sizeof(edit));edit.type=SDL_TEXTEDITING;
+        memcpy(edit.text,text,length);edit.start=1;edit.length=2;memcpy(&e,&edit,sizeof(edit));
+#else
+        memcpy(e.edit.text,text,length);e.edit.start=1;e.edit.length=2;
+#endif
+    }
     else {memcpy(e.text.text,text,length);}
     return decode_event(&e,out);
 }
@@ -115,6 +149,22 @@ int native_home_test_text_push(const char *text,size_t length) {
     memcpy(e.text.text,text,length);return SDL_PushEvent(&e)==1;
 #else
     (void)text;(void)length;return 0;
+#endif
+}
+
+/* Diagnostic injection only: the host must never pass text events to sdl2-compat.
+ * This native fixture uses the audited runtime layout, not the SDK edit union. */
+int native_home_test_preedit_push(const char *text,size_t length,int32_t start,int32_t edit_length) {
+#ifdef NATIVE_HOME_WEBOS
+    SDL_version version;SDL_GetVersion(&version);
+    if(version.major!=2 || version.minor!=0 || version.patch!=14 || !text || length>=32)return 0;
+    if(memchr(text,0,length))return 0;
+    HomeWebos2014Editing edit;memset(&edit,0,sizeof(edit));edit.type=SDL_TEXTEDITING;
+    memcpy(edit.text,text,length);edit.start=start;edit.length=edit_length;
+    SDL_Event event;memset(&event,0,sizeof(event));memcpy(&event,&edit,sizeof(edit));
+    return SDL_PushEvent(&event)==1;
+#else
+    (void)text;(void)length;(void)start;(void)edit_length;return 0;
 #endif
 }
 

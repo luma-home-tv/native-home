@@ -204,6 +204,7 @@ fn live_update(ms: u32) -> crate::live::Update {
     use crate::live::{CatalogueReading, PictureReading, Reading, Update};
     let data = fixture();
     Update {
+        system_keyboard: false,
         observed_ms: ms,
         simulated: true,
         controls: BTreeMap::new(),
@@ -1737,6 +1738,40 @@ fn system_keyboard_owns_search_and_leaving_ends_editing_without_another_keypad()
     s.open(Page::Home);
     s.open(Page::Applications);
     assert!(!s.drawer_state().editing);
+    assert!(!s.drawer_state().system_keyboard());
+    assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn qualified_search_and_explicit_keypad_are_separate_routes_with_no_implicit_switch() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let mut update = live_update(100);
+    update.system_keyboard = true;
+    s.apply_live(&update, 100);
+    s.open(Page::Applications);
+    assert!(s.focus_drawer_control(2));
+    tap(&mut s);
+    assert!(s.drawer_state().system_keyboard());
+    assert!(!s.focus_search_key(0));
+    s.text_input("luma", false);
+    s.back();
+    assert!(!s.drawer_state().editing);
+    assert_eq!(s.focused_item().as_deref(), Some("Search apps"));
+    assert!(s.focus_drawer_control(3));
+    assert_eq!(s.focused_item().as_deref(), Some("Search keypad"));
+    tap(&mut s);
+    assert!(s.drawer_state().editing);
+    assert!(!s.drawer_state().system_keyboard());
+    assert!(s.focus_search_key(0));
+    tap(&mut s);
+    assert_eq!(s.drawer_state().query(), "lumaA");
+    s.back();
+    update.system_keyboard = false;
+    s.apply_live(&update, 200);
+    s.focus_drawer_control(2);
+    tap(&mut s);
+    assert!(s.drawer_state().editing);
     assert!(!s.drawer_state().system_keyboard());
     assert!(s.take_requests().is_empty());
 }

@@ -29,6 +29,7 @@ pub struct PictureReading {
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Update {
+    pub system_keyboard: bool,
     pub observed_ms: u32,
     pub simulated: bool,
     pub catalogue: Reading<CatalogueReading>,
@@ -378,6 +379,7 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         ),
     ]);
     Update {
+        system_keyboard: !simulated && crate::keyboard::qualified(&replies["system_info"]),
         controls,
         observed_ms,
         simulated,
@@ -691,6 +693,15 @@ pub(crate) mod tests {
             data["replies"][format!("{name}_desc")] = json!({"returnValue":true,"results":results});
         }
         data
+    }
+    #[test]
+    fn keyboard_capability_requires_unsimulated_known_platform_info() {
+        let mut raw = serde_json::json!({"replies":{"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"}}});
+        assert!(parse(&raw, "own", 0, false).system_keyboard);
+        assert!(!parse(&raw, "own", 0, true).system_keyboard);
+        raw["replies"]["system_info"]["returnValue"] = false.into();
+        assert!(!parse(&raw, "own", 0, false).system_keyboard);
+        assert!(!parse(&serde_json::json!({}), "own", 0, false).system_keyboard);
     }
     #[test]
     fn global_controls_fail_independently_expire_and_keep_protected_focus_identity() {

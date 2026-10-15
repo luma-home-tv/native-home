@@ -50,6 +50,21 @@ extern "C" {
         length: usize,
         event: *mut Event,
     ) -> c_int;
+    #[cfg(test)]
+    fn native_home_test_webos_preedit_decode(
+        bytes: *const u8,
+        size: usize,
+        major: u32,
+        minor: u32,
+        patch: u32,
+        event: *mut Event,
+    ) -> c_int;
+    fn native_home_test_preedit_push(
+        text: *const u8,
+        length: usize,
+        start: i32,
+        edit_length: i32,
+    ) -> c_int;
     #[cfg(target_arch = "arm")]
     fn native_home_test_text_push(text: *const u8, length: usize) -> c_int;
 }
@@ -59,6 +74,8 @@ pub struct Event {
     pub kind: u32,
     pub key: u32,
     pub repeat: u32,
+    /// Opaque platform metadata. The audited LG text-model path forwards its protocol
+    /// serial here; this is not a verified keyboard-source or prediction discriminator.
     pub source: u32,
     pub scan: i32,
     pub x: i32,
@@ -96,7 +113,7 @@ impl Event {
         std::str::from_utf8(&self.text[..end]).ok()
     }
 }
-#[derive(Default, Debug, serde::Serialize)]
+#[derive(Clone, Copy, Default, Debug, serde::Serialize)]
 #[repr(C)]
 pub struct KeyboardStatus {
     pub support: u32,
@@ -288,6 +305,18 @@ impl Window {
         }
         unsafe { native_home_test_text_push(text.as_ptr(), text.len()) != 0 }
     }
+    /// Synthetic native preedit for the isolated controller proof. This does not
+    /// establish what a human IME emits; the C adapter refuses every host push.
+    pub fn diagnostic_preedit(&self, text: &str, start: i32, length: i32) -> bool {
+        if plx_base::paths::app_id() != crate::identity::PROOF
+            || !self.text_owned.get()
+            || text.len() > 31
+            || text.contains('\0')
+        {
+            return false;
+        }
+        unsafe { native_home_test_preedit_push(text.as_ptr(), text.len(), start, length) != 0 }
+    }
     pub fn swap(&self) {
         unsafe {
             SDL_GL_SwapWindow(self.window);
@@ -353,6 +382,139 @@ impl Drop for Window {
 #[cfg(test)]
 mod text_abi_tests {
     use super::*;
+    fn webos_preedit_fixture(text: &[u8], start: i32, length: i32) -> [u8; 56] {
+        let mut bytes = [0; 56];
+        bytes[..4].copy_from_slice(&0x302_u32.to_ne_bytes());
+        bytes[8..12].copy_from_slice(&73_u32.to_ne_bytes());
+        bytes[12..12 + text.len()].copy_from_slice(text);
+        bytes[44..48].copy_from_slice(&start.to_ne_bytes());
+        bytes[48..52].copy_from_slice(&length.to_ne_bytes());
+        // A nonzero tail catches the old SDK +52 length read.
+        bytes[52..56].copy_from_slice(&999_i32.to_ne_bytes());
+        bytes
+    }
+    #[test]
+    fn actual_webos_2014_preedit_layout_keeps_full_utf8_and_signed_edit_range() {
+        for text in ["Écran", "電視", "е́", ""] {
+            let bytes = webos_preedit_fixture(text.as_bytes(), -4, 7);
+            let mut event = Event::default();
+            assert_eq!(
+                unsafe {
+                    native_home_test_webos_preedit_decode(
+                        bytes.as_ptr(),
+                        bytes.len(),
+                        2,
+                        0,
+                        14,
+                        &mut event,
+                    )
+                },
+                1
+            );
+            assert_eq!(event.kind, 11);
+            assert_eq!(event.text(), Some(text));
+            assert_eq!((event.edit_start, event.edit_length), (-4, 7));
+            assert_eq!(
+                event.source, 0,
+                "this legacy editing event has no source field"
+            );
+        }
+    }
+    #[test]
+    fn legacy_preedit_copy_accepts_unaligned_minimum_record_without_reading_a_source() {
+        let text = "é".repeat(15) + "x";
+        let bytes = webos_preedit_fixture(text.as_bytes(), i32::MIN, -1);
+        let mut unaligned = [0; 57];
+        unaligned[1..].copy_from_slice(&bytes);
+        let mut event = Event::default();
+        assert_eq!(
+            unsafe {
+                native_home_test_webos_preedit_decode(
+                    unaligned[1..].as_ptr(),
+                    52,
+                    2,
+                    0,
+                    14,
+                    &mut event,
+                )
+            },
+            1
+        );
+        assert_eq!(event.text(), Some(text.as_str()));
+        assert_eq!((event.edit_start, event.edit_length), (i32::MIN, -1));
+        assert_eq!(event.source, 0);
+        assert!(!serde_json::to_string(&event).unwrap().contains(&text));
+    }
+    #[test]
+    fn webos_preedit_rejects_unknown_abis_short_records_and_unterminated_payloads() {
+        let bytes = webos_preedit_fixture(b"test", 1, 2);
+        for version in [(2, 0, 13), (2, 0, 15), (2, 24, 1), (3, 0, 0)] {
+            let mut event = Event::default();
+            assert_eq!(
+                unsafe {
+                    native_home_test_webos_preedit_decode(
+                        bytes.as_ptr(),
+                        bytes.len(),
+                        version.0,
+                        version.1,
+                        version.2,
+                        &mut event,
+                    )
+                },
+                0
+            );
+            assert_eq!(event.kind, 0);
+        }
+        let mut event = Event::default();
+        assert_eq!(
+            unsafe {
+                native_home_test_webos_preedit_decode(bytes.as_ptr(), 51, 2, 0, 14, &mut event)
+            },
+            0
+        );
+        let bytes = webos_preedit_fixture(&[b'x'; 32], 1, 2);
+        assert_eq!(
+            unsafe {
+                native_home_test_webos_preedit_decode(
+                    bytes.as_ptr(),
+                    bytes.len(),
+                    2,
+                    0,
+                    14,
+                    &mut event,
+                )
+            },
+            0
+        );
+        let bytes = webos_preedit_fixture(&[0xff, 0xfe], 1, 2);
+        assert_eq!(
+            unsafe {
+                native_home_test_webos_preedit_decode(
+                    bytes.as_ptr(),
+                    bytes.len(),
+                    2,
+                    0,
+                    14,
+                    &mut event,
+                )
+            },
+            1
+        );
+        assert!(
+            event.text().is_none(),
+            "Rust validates UTF8 before the draft sees it"
+        );
+    }
+    #[cfg(not(target_arch = "arm"))]
+    #[test]
+    fn native_preedit_injection_is_impossible_on_host_even_for_a_valid_payload() {
+        for text in ["", "Écran", "é", &"x".repeat(32)] {
+            assert_eq!(
+                unsafe { native_home_test_preedit_push(text.as_ptr(), text.len(), 1, 2) },
+                0
+            );
+        }
+    }
     #[test]
     fn typed_c_decoder_keeps_utf8_and_composition_distinct_without_host_event_injection() {
         for text in ["hello", "Écran", "電視", "е́"] {

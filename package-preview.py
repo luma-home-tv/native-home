@@ -22,8 +22,8 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.22.0' if main == 'home-preview' else '0.1.0'
-if os.environ.get('NATIVE_HOME_MANUAL_TEXT_PROOF') == '1' and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
+version = '0.23.0' if main == 'home-preview' else '0.1.0'
+if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
@@ -86,6 +86,9 @@ if main == 'home-preview':
         if not test_identity or interactive: raise ValueError('Text proof requires isolated diagnostic identity')
         if any(os.environ.get(k) for k in ('NATIVE_HOME_DESCRIPTION_UI_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_RANGE_LAYOUT_PROOF', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_ROUTE_PROOF', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_NAVIGATION_PROOF')): raise ValueError('One isolated trial per package')
         (stage / 'text-input-proof.json').write_text('{}\n')
+        if os.environ.get('NATIVE_HOME_KEYBOARD_FLOW_PROOF') == '1':
+            if os.environ.get('NATIVE_HOME_MANUAL_TEXT_PROOF'): raise ValueError('One text mode per package')
+            (stage / 'keyboard-flow-proof.json').write_text('{}\n')
         if os.environ.get('NATIVE_HOME_MANUAL_TEXT_PROOF') == '1':
             (stage / 'manual-text-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_DESCRIPTION_UI_PROOF') == '1':
@@ -145,6 +148,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
+           'keyboard_flow_proof': os.environ.get('NATIVE_HOME_KEYBOARD_FLOW_PROOF') == '1',
            'text_input_proof': os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') == '1',
            'description_ui_proof': os.environ.get('NATIVE_HOME_DESCRIPTION_UI_PROOF') == '1',
            'range_layout_proof': os.environ.get('NATIVE_HOME_RANGE_LAYOUT_PROOF') == '1',

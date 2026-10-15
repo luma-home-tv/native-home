@@ -74,6 +74,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let text_probe = assets.join("text-input-proof.json").exists();
     let manual_text = assets.join("manual-text-proof.json").exists();
+    let keyboard_flow = assets.join("keyboard-flow-proof.json").exists();
+    if keyboard_flow && (!text_probe || manual_text) {
+        return Err("Keyboard flow requires only the isolated text proof".into());
+    }
     if manual_text && !text_probe {
         return Err("Manual keyboard trial requires the isolated text proof".into());
     }
@@ -775,6 +779,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if text_probe {
         let result = text_input_trial(
             manual_text,
+            keyboard_flow,
             &mut shell,
             &window,
             &output,
@@ -844,6 +849,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         proof_request = Some(request);
     }
+    let mut keyboard = native_home::keyboard::Controller::default();
     let mut settings_handoff = native_home::session::SettingsHandoff::default();
     dispatch_requests(
         &mut shell,
@@ -929,6 +935,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         continue;
                     }
                 }
+                if matches!(e.kind, 2..=6) && !keyboard.accepts_input(now) {
+                    continue;
+                }
+                if hidden_at.is_none() && handle_system_text_event(&mut shell, &e) {
+                    continue;
+                }
                 match e.kind {
                     1 => {
                         reason = "window_closed";
@@ -996,8 +1008,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             if reason == "window_closed" {
+                window.text_stop();
+                keyboard.stopped(now);
                 break;
             }
+            if session.idle(start.elapsed()) && shell.drawer_state().system_keyboard() {
+                shell.back();
+            }
+            sync_text_keyboard(&mut shell, &window, &mut keyboard, hidden_at.is_none(), now);
             // Hidden windows never draw. A fresh, verified Settings overlay can retain only
             // our own underlying card; other departures retain the normal brief Back drain.
             queue_preferences(&mut shell, &mut persistence, &mut storage_error);
@@ -1168,6 +1186,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             reason = "back_from_home";
         }
     }
+    window.text_stop();
+    keyboard.stopped(now);
     if let Some(worker) = action_worker {
         action_receipts.extend(worker.finish());
     }
@@ -1230,6 +1250,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["text_input_proof"] = serde_json::json!(text_receipt);
+    report["keyboard_session"] = serde_json::json!(keyboard);
     report["numeric_control_available_at_last_poll"] = shell.description_value().is_some().into();
     report["description_ui_proof"] = serde_json::json!(description_ui_receipt);
     report["description_actions"] = serde_json::json!(description_actions);
@@ -1293,6 +1314,78 @@ fn accept_replies(
             Ok(prefs) => *committed = Some(prefs),
             Err(failure) => *error = Some(failure),
         }
+    }
+}
+
+fn handle_system_text_event(shell: &mut Shell, event: &native_home::runtime::Event) -> bool {
+    if !shell.drawer_state().system_keyboard() {
+        return false;
+    }
+    match event.kind {
+        2 => {
+            if event.repeat == 0 {
+                match event.key {
+                    5 | 6 => shell.back(),
+                    3 => {
+                        shell.text_edit(&plx_machine::machine::TextEdit::Left);
+                    }
+                    4 => {
+                        shell.text_edit(&plx_machine::machine::TextEdit::Right);
+                    }
+                    7 => {
+                        shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
+                    }
+                    8 => {
+                        shell.text_delete_forward();
+                    }
+                    _ => {}
+                }
+            }
+        }
+        3..=6 => {} // LG owns pointer/focus while its text panel is requested.
+        _ => return false,
+    }
+    true
+}
+fn sync_text_keyboard(
+    shell: &mut Shell,
+    window: &Window,
+    keyboard: &mut native_home::keyboard::Controller,
+    visible: bool,
+    now: u32,
+) {
+    let wanted = shell.drawer_state().system_keyboard();
+    if !wanted && !keyboard.active() {
+        return;
+    }
+    use native_home::keyboard::Command;
+    let action = keyboard.reconcile(
+        wanted,
+        shell.system_keyboard_available(),
+        visible,
+        window.keyboard_status(),
+        now,
+    );
+    match action {
+        Command::Start => {
+            let started = window.text_start();
+            keyboard.started(started, now);
+            if !started {
+                shell.back();
+                shell.storage_notice("TV keyboard unavailable • choose Keypad");
+            }
+        }
+        Command::Stop | Command::Finish | Command::Unavailable => {
+            window.text_stop();
+            keyboard.stopped(now);
+            if wanted {
+                shell.back();
+            }
+            if action == Command::Unavailable {
+                shell.storage_notice("TV keyboard unavailable • choose Keypad");
+            }
+        }
+        Command::None => {}
     }
 }
 
@@ -2133,6 +2226,7 @@ fn description_ui_trial(
 #[allow(clippy::too_many_arguments)]
 fn text_input_trial(
     manual: bool,
+    integrated: bool,
     shell: &mut Shell,
     window: &Window,
     output: &std::path::Path,
@@ -2167,6 +2261,11 @@ fn text_input_trial(
     };
     window.diagnostic_text_trace(&output.join("sdl-keyboard.log"))?;
     phase("starting")?;
+    if integrated {
+        return integrated_keyboard_trial(
+            shell, window, output, live, origin, history, now, &phase,
+        );
+    }
     for cycle in 1..=2 {
         shell.open(Page::Applications);
         shell.focus_drawer_control(2);
@@ -2370,5 +2469,230 @@ fn text_input_trial(
     phase("complete")?;
     Ok(
         serde_json::json!({"native_sdl_commits":commits,"query_match_each_cycle":!manual || manual_results.iter().all(|r|r["matches_requested_query"]==true),"cycles":2,"injection":if manual {"human keyboard trial, no injected text"} else {"native diagnostic SDL queue, not human typing"},"manual":manual,"manual_results":manual_results,"statuses":statuses,"window_event_kinds":kinds,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
+    )
+}
+
+#[cfg(target_arch = "arm")]
+#[allow(clippy::too_many_arguments)]
+fn integrated_keyboard_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    live: &Option<native_home::live::Worker>,
+    origin: Instant,
+    history: &mut Vec<serde_json::Value>,
+    now: &mut u32,
+    phase: &impl Fn(&str) -> Result<(), Box<dyn std::error::Error>>,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let before = shell.preferences().clone();
+    let mut keyboard = native_home::keyboard::Controller::default();
+    let mut statuses = Vec::new();
+    let mut commits = 0;
+    let mut preedits = 0;
+    // Match the normal loop: pump startup events before requesting a panel.
+    while poll().is_some() {}
+    let until = Instant::now() + Duration::from_secs(12);
+    while !shell.system_keyboard_available() && Instant::now() < until {
+        poll_live(live, shell, origin, history);
+        while poll().is_some() {}
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    if !shell.system_keyboard_available() {
+        return Err("Qualified normal-app keyboard capability unavailable".into());
+    }
+    for cycle in 1..=2 {
+        shell.open(Page::Applications);
+        if !shell.focus_drawer_control(2) {
+            return Err("Search entry unavailable".into());
+        }
+        drawer_tap(shell, now);
+        if !shell.drawer_state().system_keyboard() {
+            return Err("Search did not select the admitted system keyboard".into());
+        }
+        shell.text_edit(&plx_machine::machine::TextEdit::Clear);
+        sync_text_keyboard(shell, window, &mut keyboard, true, *now);
+        if !keyboard.active() {
+            return Err("Normal keyboard controller failed to start".into());
+        }
+        for text in ["É", "cran"] {
+            if !window.diagnostic_text(text) {
+                return Err("Native diagnostic commit refused".into());
+            }
+        }
+        let until = Instant::now() + Duration::from_secs(3);
+        while shell.drawer_state().query() != "Écran" && Instant::now() < until {
+            while let Some(e) = poll() {
+                if handle_system_text_event(shell, &e) {
+                    continue;
+                }
+                match e.kind {
+                    10 => {
+                        if let Some(text) = e.text() {
+                            shell.text_input(text, false);
+                            commits += 1;
+                        }
+                    }
+                    11 => {
+                        if let Some(text) = e.text() {
+                            shell.text_preedit(text);
+                        }
+                    }
+                    1 | 7 | 8 => return Err("Keyboard proof lost its foreground card".into()),
+                    _ => {}
+                }
+            }
+            sync_text_keyboard(shell, window, &mut keyboard, true, *now);
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if shell.drawer_state().query() != "Écran" {
+            return Err("Normal text draft did not receive the native commit batch".into());
+        }
+        for (text, start, length) in [("é", 1, 2), ("", 0, 0)] {
+            if !window.diagnostic_preedit(text, start, length) {
+                return Err("Native preedit injector refused the audited ABI".into());
+            }
+            let until = Instant::now() + Duration::from_secs(2);
+            let mut seen = false;
+            while !seen && Instant::now() < until {
+                while let Some(e) = poll() {
+                    if e.kind == 11 {
+                        if let Some(value) = e.text() {
+                            shell.text_preedit(value);
+                            if value == text && e.edit_start == start && e.edit_length == length {
+                                seen = true;
+                                preedits += 1;
+                            }
+                        }
+                    }
+                }
+                sync_text_keyboard(shell, window, &mut keyboard, true, *now);
+                *now += 17;
+                shell.tick(*now, 0.017);
+                shell.draw();
+                window.swap();
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            if !seen
+                || shell.drawer_state().composition() != text
+                || shell.drawer_state().query() != "Écran"
+            {
+                return Err(
+                    "Native preedit boundary or non-filtering draft ownership failed".into(),
+                );
+            }
+            if !text.is_empty() {
+                drawer_capture(shell, window, output, &format!("text-preedit-{cycle}"), now)?;
+            }
+        }
+        drawer_capture(
+            shell,
+            window,
+            output,
+            &format!("text-keyboard-{cycle}"),
+            now,
+        )?;
+        phase(&format!("open-{cycle}"))?;
+        let until = Instant::now() + Duration::from_secs(12);
+        while keyboard.active() && Instant::now() < until {
+            poll_live(live, shell, origin, history);
+            while let Some(e) = poll() {
+                if handle_system_text_event(shell, &e) {
+                    continue;
+                }
+                if matches!(e.kind, 1 | 7 | 8) {
+                    return Err("Keyboard proof lost its foreground card".into());
+                }
+                if e.kind == 10 {
+                    if let Some(text) = e.text() {
+                        shell.text_input(text, false);
+                        commits += 1;
+                    }
+                }
+            }
+            sync_text_keyboard(shell, window, &mut keyboard, true, *now);
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if keyboard.active() || shell.drawer_state().editing || window.keyboard_status().active != 0
+        {
+            return Err("Normal keyboard dismissal left an active editor or SDL request".into());
+        }
+        if keyboard.dismissals != cycle
+            || shell.focused_item().as_deref() != Some("Search apps")
+            || shell.drawer_state().query() != "Écran"
+        {
+            return Err("LG dismissal did not preserve query and return to Search".into());
+        }
+        statuses.push(serde_json::json!({"cycle":cycle,"finished_by_key_or_panel_zero":0,"closed":window.keyboard_status(),"editing":shell.drawer_state().editing,"system_keyboard":shell.drawer_state().system_keyboard()}));
+        drawer_capture(shell, window, output, &format!("text-open-{cycle}"), now)?;
+        drawer_capture(shell, window, output, &format!("text-closed-{cycle}"), now)?;
+        phase(&format!("closed-{cycle}"))?;
+        let until = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < until {
+            while poll().is_some() {}
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+    phase("fallback")?;
+    if !shell.focus_drawer_control(3) {
+        return Err("Explicit Keypad entry unavailable".into());
+    }
+    drawer_tap(shell, now);
+    shell.text_edit(&plx_machine::machine::TextEdit::Clear);
+    for label in ["A", "P", "P"] {
+        let i = native_home::drawer::KEYS
+            .iter()
+            .position(|k| *k == label)
+            .unwrap();
+        if !shell.focus_search_key(i) {
+            return Err("Explicit fallback did not receive focus".into());
+        }
+        drawer_tap(shell, now);
+    }
+    sync_text_keyboard(shell, window, &mut keyboard, true, *now);
+    if shell.drawer_state().query() != "APP"
+        || shell.drawer_state().system_keyboard()
+        || keyboard.opens != 2
+        || window.keyboard_status().active != 0
+    {
+        return Err(
+            "Fallback changed the system-keyboard request or lost the literal query".into(),
+        );
+    }
+    drawer_capture(shell, window, output, "text-fallback", now)?;
+    // Native rendering, not a geometry-only claim: maximum draft at three caret positions.
+    shell.text_edit(&plx_machine::machine::TextEdit::Clear);
+    if !shell.text_input(&"W".repeat(native_home::drawer::MAX_QUERY_BYTES), false) {
+        return Err("Long draft rejected".into());
+    }
+    for (name, steps) in [
+        ("text-long-end", 0),
+        ("text-long-middle", 128),
+        ("text-long-start", 128),
+    ] {
+        for _ in 0..steps {
+            shell.text_edit(&plx_machine::machine::TextEdit::Left);
+        }
+        drawer_capture(shell, window, output, name, now)?;
+        if window.graphics_state().scissor_enabled {
+            return Err("Text entry leaked its scissor".into());
+        }
+    }
+    let long_bytes = shell.drawer_state().query().len();
+    shell.back();
+    shell.open(Page::Home);
+    if shell.preferences() != &before || !shell.take_requests().is_empty() {
+        return Err("Search flow altered preferences or requested a TV action".into());
+    }
+    phase("complete")?;
+    Ok(
+        serde_json::json!({"normal_controller":true,"native_preedit_roundtrips":preedits,"preedit_query_unchanged":true,"native_sdl_commits":commits,"query_match_each_cycle":true,"cycles":2,"injection":"native diagnostic SDL queue, not human typing","controller":keyboard,"explicit_fallback_without_system_request":true,"long_query_bytes":long_bytes,"long_caret_positions":3,"long_native_gl_errors":0,"statuses":statuses,"favourites_unchanged":true,"tv_requests":0,"setting_writes":false}),
     )
 }

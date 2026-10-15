@@ -270,7 +270,7 @@ index 0b445f3..604e58e 100644
 +pub const RANGE_FILL: [f32;4] = TEXT_PRIMARY;
 +pub const RANGE_SAVED: [f32;4] = TEXT_SECONDARY;
 diff --git a/rust-modules/ui/src/widgets.rs b/rust-modules/ui/src/widgets.rs
-index e92ccee..5a5a00d 100644
+index e92ccee..dbab54e 100644
 --- a/rust-modules/ui/src/widgets.rs
 +++ b/rust-modules/ui/src/widgets.rs
 @@ -297,6 +297,10 @@ pub fn warm_tex_on(
@@ -333,7 +333,7 @@ index e92ccee..5a5a00d 100644
          Art::Poster(m) => {
              // **The ROW's server, not the current one.** A `thumb` path is a key on the server that
              // issued it — image-transcode paths embed a server-local ratingKey — so a bare
-@@ -8113,3 +8129,443 @@ mod hero_scrim_tests;
+@@ -8113,3 +8129,648 @@ mod hero_scrim_tests;
  #[cfg(test)]
  #[path = "widgets_art_crop_tests.rs"]
  mod art_crop_tests;
@@ -704,6 +704,87 @@ index e92ccee..5a5a00d 100644
 +    pub placeholder: &'a str,
 +    pub focused: bool,
 +}
++/// Keep GPU text uploads near the viewport without changing the draft. Measurements
++/// are CPU-only. Two context graphemes at each edge keep the cut outside visible ink;
++/// right anchoring also preserves pair kerning at the removed prefix boundary.
++///
++/// A grapheme is not a texture-size bound (an extended cluster may contain thousands
++/// of advancing fallback glyphs). If one cluster alone exceeds the upload budget,
++/// leave that cluster unpainted rather than splitting it or uploading an unsafe run.
++fn text_entry_visible_span(
++    text: &str,
++    x: f32,
++    clip: Rect,
++    mut measure: impl FnMut(&str) -> f32,
++) -> Option<(std::ops::Range<usize>, f32)> {
++    use unicode_segmentation::UnicodeSegmentation;
++    if text.is_empty()
++        || ![x, clip.x, clip.w, clip.x + clip.w]
++            .iter()
++            .all(|v| v.is_finite())
++        || clip.w <= 0.0
++    {
++        return None;
++    }
++    let full = measure(text);
++    if !full.is_finite() || full < 0.0 || x >= clip.x + clip.w || x + full <= clip.x {
++        return None;
++    }
++    let edges = text
++        .grapheme_indices(true)
++        .map(|(i, _)| i)
++        .chain(std::iter::once(text.len()))
++        .collect::<Vec<_>>();
++    let mut valid = true;
++    let mut edge_x = |i: usize| {
++        let width = if i == 0 {
++            0.0
++        } else if i == text.len() {
++            full
++        } else {
++            measure(&text[..i])
++        };
++        valid &= width.is_finite() && width >= 0.0;
++        x + width
++    };
++    let mut first = edges
++        .partition_point(|i| edge_x(*i) < clip.x)
++        .saturating_sub(2);
++    let mut last =
++        (edges.partition_point(|i| edge_x(*i) < clip.x + clip.w) + 1).min(edges.len() - 1);
++    if !valid {
++        return None;
++    }
++    let budget = clip.w + 4.0 * theme::size::LABEL as f32;
++    while first < last {
++        let from = edges[first];
++        let to = edges[last];
++        let width = measure(&text[from..to]);
++        let right = if to == text.len() {
++            full
++        } else {
++            measure(&text[..to])
++        };
++        if ![width, right].iter().all(|v| v.is_finite() && *v >= 0.0) {
++            return None;
++        }
++        let draw_x = x + right - width;
++        if width <= budget {
++            return (draw_x < clip.x + clip.w && draw_x + width > clip.x)
++                .then_some((from..to, draw_x));
++        }
++        // Prefer removing context outside the viewport. At worst this reaches one
++        // oversized cluster, which is rejected without a GPU allocation.
++        let left_excess = (clip.x - draw_x).max(0.0);
++        let right_excess = (draw_x + width - clip.x - clip.w).max(0.0);
++        if left_excess >= right_excess {
++            first += 1;
++        } else {
++            last -= 1;
++        }
++    }
++    None
++}
 +impl View for TextEntry<'_> {
 +    fn draw(&self, _e: &Env, p: Painter) {
 +        let strings = [self.before, self.preedit, self.after, self.placeholder]
@@ -721,27 +802,32 @@ index e92ccee..5a5a00d 100644
 +            p.rring(self.frame, 18.0, 2.0, theme::TEXT_PRIMARY);
 +        }
 +        let _clip = crate::screen::ClipScope::open_in(p, l.clip);
++        let measure = |text: &str| {
++            let text = CString::new(text).unwrap();
++            LegacyMeasure.bounds(&text, theme::size::LABEL, false).0
++        };
++        let draw = |text: &CStr, x: f32, color| {
++            let text = text.to_str().unwrap();
++            if let Some((span, x)) = text_entry_visible_span(text, x, l.clip, measure) {
++                let visible = CString::new(&text[span]).unwrap();
++                let width = LegacyMeasure.bounds(&visible, theme::size::LABEL, false).0;
++                Label::new(visible.as_ptr(), theme::size::LABEL, color)
++                    .draw(p, Rect::new(x, l.clip.y, width, l.clip.h));
++            }
++        };
 +        if self.before.is_empty() && self.preedit.is_empty() && self.after.is_empty() {
-+            Label::new(
-+                strings[3].as_ptr(),
-+                theme::size::LABEL,
-+                theme::TEXT_SECONDARY,
-+            )
-+            .draw(p, l.clip);
++            draw(&strings[3], l.clip.x, theme::TEXT_SECONDARY);
 +        } else {
 +            for (i, x) in [(0, l.before_x), (1, l.preedit_x), (2, l.after_x)] {
-+                if widths[i] > 0.0 {
-+                    Label::new(
-+                        strings[i].as_ptr(),
-+                        theme::size::LABEL,
-+                        if i == 1 {
-+                            theme::TEXT_SECONDARY
-+                        } else {
-+                            theme::TEXT_PRIMARY
-+                        },
-+                    )
-+                    .draw(p, Rect::new(x, l.clip.y, widths[i], l.clip.h));
-+                }
++                draw(
++                    &strings[i],
++                    x,
++                    if i == 1 {
++                        theme::TEXT_SECONDARY
++                    } else {
++                        theme::TEXT_PRIMARY
++                    },
++                );
 +            }
 +        }
 +        if self.focused {
@@ -755,6 +841,125 @@ index e92ccee..5a5a00d 100644
 +#[cfg(test)]
 +mod text_entry_tests {
 +    use super::*;
++    #[test]
++    fn cropped_text_keeps_its_original_right_anchor_under_kerning() {
++        let text = "AV".repeat(100);
++        let measure = |s: &str| {
++            s.len() as f32 * 20.0
++                - s.as_bytes().windows(2).filter(|p| *p == b"AV").count() as f32 * 5.0
++        };
++        let clip = Rect::new(100.0, 0.0, 200.0, 40.0);
++        for x in [-200.0, -215.0, -230.0] {
++            let (span, draw_x) = text_entry_visible_span(&text, x, clip, measure).unwrap();
++            assert_eq!(
++                draw_x + measure(&text[span.clone()]),
++                x + measure(&text[..span.end])
++            );
++        }
++    }
++    #[test]
++    fn oversized_grapheme_and_invalid_metrics_never_reach_the_text_upload() {
++        let clip = Rect::new(100.0, 0.0, 200.0, 40.0);
++        // Prepend scalars form one extended grapheme with the final base. A font's
++        // fallback may give every one nonzero advance: grapheme count is no width bound.
++        let text = format!("{}W", "\u{600}".repeat(1000));
++        let measure = |s: &str| s.chars().count() as f32 * 26.0;
++        assert!(text_entry_visible_span(&text, -500.0, clip, measure).is_none());
++        for width in [f32::NAN, f32::INFINITY, -1.0] {
++            assert!(text_entry_visible_span("text", 100.0, clip, |_| width).is_none());
++        }
++    }
++    #[test]
++    fn visible_upload_is_bounded_and_keeps_graphemes_and_the_caret_end() {
++        use unicode_segmentation::UnicodeSegmentation;
++        let text = "e\u{301}👨‍👩‍👧‍👦W".repeat(256);
++        let measure = |s: &str| s.graphemes(true).count() as f32 * 24.0;
++        let clip = Rect::new(100.0, 0.0, 650.0, 40.0);
++        for x in [100.0, -8000.0, clip.x + clip.w - measure(&text) - 10.0] {
++            let (span, draw_x) = text_entry_visible_span(&text, x, clip, measure).unwrap();
++            let visible = &text[span.clone()];
++            assert!(measure(visible) <= clip.w + 4.0 * 24.0);
++            assert!(text.grapheme_indices(true).any(|(i, _)| i == span.start));
++            assert!(
++                span.end == text.len() || text.grapheme_indices(true).any(|(i, _)| i == span.end)
++            );
++            assert!(draw_x < clip.x + clip.w);
++            assert!(draw_x + measure(visible) >= clip.x);
++        }
++        let (span, _) = text_entry_visible_span(
++            &text,
++            clip.x + clip.w - measure(&text) - 10.0,
++            clip,
++            measure,
++        )
++        .unwrap();
++        assert_eq!(span.end, text.len());
++        assert!(text_entry_visible_span("outside", 1000.0, clip, measure).is_none());
++    }
++    #[test]
++    fn caret_start_middle_end_and_long_preedit_keep_the_adjacent_visible_runs() {
++        use unicode_segmentation::UnicodeSegmentation;
++        let text = "Ae\u{301}界👩🏽‍💻W".repeat(40);
++        let edges = text
++            .grapheme_indices(true)
++            .map(|(i, _)| i)
++            .chain(std::iter::once(text.len()));
++        let measure = |s: &str| s.graphemes(true).count() as f32 * 24.0;
++        for caret in edges {
++            for preedit in ["", "e\u{301}", &"界".repeat(100)] {
++                let before = &text[..caret];
++                let after = &text[caret..];
++                let l = TextEntryLayout::new(
++                    Rect::new(898.0, 248.0, 886.0, 58.0),
++                    measure(before),
++                    measure(preedit),
++                    measure(after),
++                )
++                .unwrap();
++                assert!(l.caret.x >= l.clip.x && l.caret.x + l.caret.w <= l.clip.x + l.clip.w);
++                let adjacent = if preedit.is_empty() { before } else { preedit };
++                let adjacent_x = if preedit.is_empty() {
++                    l.before_x
++                } else {
++                    l.preedit_x
++                };
++                if !adjacent.is_empty() {
++                    let (span, x) =
++                        text_entry_visible_span(adjacent, adjacent_x, l.clip, measure).unwrap();
++                    assert_eq!(
++                        span.end,
++                        adjacent.len(),
++                        "the insertion point's preceding grapheme stays present"
++                    );
++                    assert_eq!(x + measure(&adjacent[span]), l.caret.x);
++                }
++                if !after.is_empty() {
++                    let (span, x) =
++                        text_entry_visible_span(after, l.after_x, l.clip, measure).unwrap();
++                    assert_eq!(span.start, 0, "do not crop away the next editable grapheme");
++                    assert_eq!(x, l.caret.x);
++                }
++            }
++        }
++    }
++    #[test]
++    fn ordinary_crop_uses_logarithmic_metric_queries_without_rasterizing_prefixes() {
++        use std::cell::Cell;
++        let text = "W".repeat(16_384);
++        let calls = Cell::new(0);
++        let measure = |s: &str| {
++            calls.set(calls.get() + 1);
++            s.len() as f32 * 24.0
++        };
++        let clip = Rect::new(100.0, 0.0, 650.0, 40.0);
++        let (span, _) = text_entry_visible_span(&text, -100_000.0, clip, measure).unwrap();
++        assert!(span.len() <= 32);
++        assert!(
++            calls.get() < 40,
++            "do not measure every prefix or churn the bounded metric cache: {}",
++            calls.get()
++        );
++    }
 +    #[test]
 +    fn caret_stays_inside_the_clip_for_long_prefixes_and_preedit_without_tail_ellipses() {
 +        for (before, preedit, after) in [

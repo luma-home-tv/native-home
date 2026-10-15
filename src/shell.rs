@@ -80,6 +80,7 @@ struct AppMenu {
     origin: u32,
     index: usize,
 }
+const TOOLBAR_COUNT: usize = 4;
 const TOOLBAR_BASE: u32 = 30_000;
 const KEYBOARD_BASE: u32 = 31_000;
 const TOOLBAR: Rect = Rect::new(480.0, 248.0, 1344.0, 58.0);
@@ -88,7 +89,8 @@ fn toolbar_rect(index: usize) -> Rect {
     match index {
         0 => Rect::new(480.0, 248.0, 144.0, 58.0),
         1 => Rect::new(648.0, 248.0, 226.0, 58.0),
-        _ => Rect::new(898.0, 248.0, 886.0, 58.0),
+        2 => Rect::new(898.0, 248.0, 698.0, 58.0),
+        _ => Rect::new(1620.0, 248.0, 204.0, 58.0),
     }
 }
 fn keyboard_rect(index: usize) -> Rect {
@@ -100,7 +102,7 @@ fn keyboard_rect(index: usize) -> Rect {
     )
 }
 fn toolbar_key(key: u32) -> Option<usize> {
-    (TOOLBAR_BASE..TOOLBAR_BASE + 3)
+    (TOOLBAR_BASE..TOOLBAR_BASE + TOOLBAR_COUNT as u32)
         .contains(&key)
         .then(|| (key - TOOLBAR_BASE) as usize)
 }
@@ -628,7 +630,7 @@ impl Focusable<HomeHost> for Surface {
                 reachable: AxisMask::BOTH,
                 edge: [EdgeRule::Geometric; 4],
                 extent: TOOLBAR,
-                len: 3,
+                len: TOOLBAR_COUNT,
                 elem: ElemKind::Control,
             });
         }
@@ -794,7 +796,7 @@ impl Focusable<HomeHost> for Surface {
             if let Some(i) = toolbar_key(key.elem) {
                 let next = match dir {
                     Dir::Left => i.checked_sub(1),
-                    Dir::Right => Some(i + 1).filter(|n| *n < 3),
+                    Dir::Right => Some(i + 1).filter(|n| *n < TOOLBAR_COUNT),
                     _ => None,
                 };
                 return next.map_or(Step::Edge, |n| {
@@ -986,7 +988,7 @@ impl Focusable<HomeHost> for Surface {
         } else if group == GroupId(4) {
             KEYBOARD_BASE
         } else if group == GroupId(3) {
-            (0..3)
+            (0..TOOLBAR_COUNT)
                 .min_by(|a, b| {
                     (toolbar_rect(*a).cx() - from.rect.cx())
                         .abs()
@@ -1050,6 +1052,7 @@ pub struct Shell {
     home_launches_enabled: bool,
     input_launches_enabled: bool,
     drawer: Drawer,
+    system_keyboard_available: bool,
     control_category: Page,
     category_labels: [CString; 6],
     control_caption_page: Option<Page>,
@@ -1123,6 +1126,7 @@ impl Shell {
             home_launches_enabled: false,
             input_launches_enabled: false,
             drawer: Drawer::default(),
+            system_keyboard_available: false,
             control_category: Page::Picture,
             category_labels: CATEGORIES.map(|(_, label)| cstr(label)),
             control_caption_page: None,
@@ -1557,6 +1561,7 @@ impl Shell {
         }
     }
     pub fn apply_live(&mut self, update: &Update, now: u32) {
+        self.system_keyboard_available = update.system_keyboard;
         let before = self.snapshot.clone();
         let mut fresh = self.live_state.take().unwrap_or_default();
         live::merge(&mut self.snapshot, update, &mut fresh);
@@ -2394,7 +2399,11 @@ impl Shell {
                 match index {
                     0 => self.drawer.favourites_only = false,
                     1 => self.drawer.favourites_only = true,
-                    _ => self.drawer.editing = true,
+                    _ => {
+                        self.drawer.editing = true;
+                        self.drawer
+                            .use_system_keyboard(index == 2 && self.system_keyboard_available);
+                    }
                 }
                 self.drawer_scroll.jump(0.0);
                 self.drawer_scroll_target = 0.0;
@@ -3331,6 +3340,7 @@ impl Shell {
                         self.drawer.composition()
                     )
                 },
+                "Keypad".to_owned(),
             ]
             .iter()
             .enumerate()
@@ -3521,7 +3531,7 @@ impl Shell {
         if self.surface.page != Page::Applications
             || self.drawer.editing
             || self.menu.is_some()
-            || index >= 3
+            || index >= TOOLBAR_COUNT
         {
             return false;
         }
@@ -3557,6 +3567,9 @@ impl Shell {
     }
     pub fn application_count(&self) -> usize {
         self.surface.cards.len()
+    }
+    pub fn system_keyboard_available(&self) -> bool {
+        self.system_keyboard_available
     }
     pub fn use_system_keyboard(&mut self, active: bool) {
         self.input.cancel_press();
@@ -3723,7 +3736,7 @@ impl Shell {
                 return Some(format!("search-key-{}", KEYS[i]));
             }
             if let Some(i) = toolbar_key(key.elem) {
-                return Some(["All apps", "Favourites", "Search apps"][i].into());
+                return Some(["All apps", "Favourites", "Search apps", "Search keypad"][i].into());
             }
         }
         if self.surface.page == Page::Home && key.elem == HOME_APPS_LINK {

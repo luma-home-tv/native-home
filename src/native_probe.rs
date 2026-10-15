@@ -96,6 +96,7 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
     use plx_platform::webos::ls2;
     use serde_json::json;
     let operations = [
+        ("system_info", "luna://com.webos.service.tv.systemproperty/getSystemInfo", json!({"keys":["modelName","firmwareVersion","sdkVersion"]})),
         (
             "apps",
             "luna://com.webos.applicationManager/listApps",
