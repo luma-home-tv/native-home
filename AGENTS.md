@@ -34,6 +34,13 @@ ordinary native HBC `checkRoot` request and complete temporary cleanup. It did
 not update the retained app, launch an artwork broker or qualify production
 startup. Keep that boundary explicit when planning subsequent artwork work.
 
+The isolated 0.40 result in `docs/artwork-startup-040.md` qualifies one protected
+installed Root helper startup and Identify/Finish. The device driver exited 1
+on a terminal-receipt observation race; native evidence completed and separate
+recovery exited 0 with full temporary removal and preservation. Keep all three
+facts distinct. Normal 0.37 is unchanged; resources, repeated/duplicate startup,
+normal enrollment and production delivery remain unqualified.
+
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
 coordinator may run isolated tests under the existing C2 lease, preserving its

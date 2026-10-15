@@ -1,7 +1,9 @@
 # Installed broker startup candidate, 0.39
 
-Status: implementation and host checks; native command execution is not yet
-qualified. The retained G2 dashboard remains 0.37.0. This candidate adds no boot
+Status: one [isolated 0.40 native startup/exchange](artwork-startup-040.md)
+qualified, with the operator observation failure and completed recovery recorded
+separately. Production/resource startup remains unfinished. The retained G2
+dashboard remains 0.37.0. This candidate adds no boot
 hook, Home interception, service registration, LS2 policy or protected TV setter.
 
 The first [0.39 device attempt](artwork-startup-039.md) refused at the legacy

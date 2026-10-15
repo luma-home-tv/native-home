@@ -50,6 +50,8 @@ IPK:
 The subsequent 0.40 correction admits the exact protected installed Proof helper
 only after its independent installation policy and Core hash are verified, and
 only for the three context GETs. Catalogue access remains denied to that role;
-the historical operator role is unchanged. Passing host checks for this fix
-still requires a fresh frozen candidate and native test. The retained dashboard
+the historical operator role is unchanged. Those host checks did not establish
+native compatibility. The separate [0.40 result](artwork-startup-040.md) now
+records a completed native exchange, an operator observation failure and completed
+recovery. The retained dashboard
 remains 0.37.0. See the [installed startup design](artwork-installed-bootstrap-design.md).

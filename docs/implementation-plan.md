@@ -100,8 +100,11 @@ verified real packaged artwork and the normal loop across two launches.
 The [0.38 read-only capability check](artwork-startup-capability-038.md) now
 qualifies one ordinary native HBC status request with clean isolated removal;
 the retained 0.37 installation and favourites remain untouched. It does not
-qualify a Root child or production startup. Next, qualify the production
-resource startup route, then broader live artwork
+qualify a Root child or production startup. The subsequent
+[0.40 installed startup component](artwork-startup-040.md) qualifies one protected
+Root Identify/Finish exchange, with a failed operator observation and separately
+completed cleanup/preservation. Next, qualify independent/duplicate and negative
+startup sessions, the resource route, then broader live artwork
 coverage and a separately admitted retained integration. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.

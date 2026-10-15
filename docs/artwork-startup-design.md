@@ -5,6 +5,13 @@ startup qualification sequence, 2026-10-15.
 No production startup route is qualified on the G2. This document adds no TV
 operation, service, permission, boot hook or deployment instruction.
 
+One [0.40 isolated installed startup](artwork-startup-040.md) now qualifies the
+protected Proof helper's Identify/Finish and HBC completion. The operator's
+receipt observation failed; separate recovery completed all removal/preservation
+checks. This is independent installed enrollment, with no resource or retained
+loader qualification. The [installed design](artwork-installed-bootstrap-design.md)
+records the protected policy placement required by the actual writable app tree.
+
 The isolated 0.35.0 component demonstrated five bounded Root-side icon transfers,
 ordinary-process decoding and Finish/EOF in an operator-started session. It did
 not establish unattended startup, normal-preview enrollment, recurring refresh,
