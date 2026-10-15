@@ -1,0 +1,218 @@
+{
+  "code_revision": "28bf7221a620b125dbb881c014c663f05ab53fbe",
+  "read_adapter_revision": "3222bab",
+  "package_version": "0.17.0",
+  "binary_sha256": "ef5888f9dcc26c8977492f3d1258aeed5197003ffc10ae58aa8bdba6bc6e4f25",
+  "client_tests": {
+    "passed": 92,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "implementation": [
+    "Fixed read-only registry adds eight picture-profile values, four accessibility values, five General values and three OLED-care/energy values",
+    "Signed and unsigned ranges validate type, bounds and interval; enums validate current membership and reject hidden/inactive options, duplicate descriptors and unexpected dimensions",
+    "Picture extras require matching input/picture-mode dimensions and a full picture read before/after the expanded cycle; changed profiles withdraw the whole picture reading",
+    "Accessibility, General and Panel Care expire independently; a failed General namespace withdraws only its own rows when the other namespace remains readable",
+    "Native freshness timestamps conservatively start before the worker read cycle; service calls remain on a worker with bounded payload/array sizes",
+    "Known read-only values remain legible using the shared table ink; form bindings stay disabled, so presentation cannot grant setting-write authority",
+    "Normal interactive sessions do not persist the diagnostic expanded readout receipt or capture frames"
+  ],
+  "settings": {
+    "picture": [
+      "color",
+      "sharpness",
+      "tint",
+      "colorTemperature",
+      "colorGamut",
+      "gamma",
+      "dynamicContrast",
+      "peakBrightness"
+    ],
+    "accessibility": [
+      "audioGuidance",
+      "highContrast",
+      "screenMagnification",
+      "menuTransparency"
+    ],
+    "general": [
+      "quickStartMode",
+      "pointerSpeed",
+      "pointerSize",
+      "homeAutoLaunch",
+      "homePromotion"
+    ],
+    "panel_care": [
+      "screenShift",
+      "logoLuminanceAdjust",
+      "energySaving"
+    ]
+  },
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6583,
+      "readout_proof": {
+        "ordinary_uid": 6583,
+        "validated_readouts": {
+          "picture": 8,
+          "accessibility": 4,
+          "general": 5,
+          "panel_care": 3
+        },
+        "independent_value_match": true,
+        "all_read_only": true
+      },
+      "capture_pages": [
+        "home",
+        "applications",
+        "inputs",
+        "controls",
+        "picture",
+        "sound",
+        "network",
+        "accessibility",
+        "general",
+        "panel-care"
+      ],
+      "general_accessibility_panel_care_frames_inspected": true,
+      "picture_end_frame_inspected": true,
+      "branding_loaded": true,
+      "cleanup": {
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.17.0",
+        "ordinary_uid": 5724,
+        "favourites_loaded": true,
+        "state": {
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6432,
+      "readout_proof": {
+        "ordinary_uid": 6432,
+        "validated_readouts": {
+          "picture": 8,
+          "accessibility": 4,
+          "general": 5,
+          "panel_care": 3
+        },
+        "independent_value_match": true,
+        "all_read_only": true
+      },
+      "capture_pages": [
+        "home",
+        "applications",
+        "inputs",
+        "controls",
+        "picture",
+        "sound",
+        "network",
+        "accessibility",
+        "general",
+        "panel-care"
+      ],
+      "general_accessibility_panel_care_frames_inspected": true,
+      "picture_end_frame_inspected": true,
+      "branding_loaded": true,
+      "cleanup": {
+        "expanded_settings_unchanged": true,
+        "paths_and_mounts_absent": true,
+        "persistent_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "home_foreground": true,
+        "original_foreground_verified": true
+      },
+      "retained_unchanged_during_proof": true,
+      "retained_update": {
+        "version": "0.17.0",
+        "ordinary_uid": 6249,
+        "favourites_loaded": true,
+        "state": {
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    }
+  },
+  "pilot_audit": {
+    "model": "OLED55G26LA",
+    "scope": "Read-only LG descriptors/values; proprietary Settings source used privately to locate named keys, not copied into the public application",
+    "state": {
+      "core_unchanged": true,
+      "retained_unchanged": true,
+      "picture_unchanged": true,
+      "audio_unchanged": true,
+      "selected_source_unchanged": true,
+      "foreground_unchanged": true,
+      "writes": false
+    }
+  },
+  "first_g2_proof": {
+    "read_adapter_revision": "3222bab",
+    "twenty_ordinary_app_readouts_matched": true,
+    "receipt_issue": "A host test variable reused for an expanded settings reply made the first core comparison false. Saved core hash files matched and an independent fresh cleanup/state recheck passed. The private driver was corrected before the final proof.",
+    "independent_cleanup": {
+      "paths_and_mounts_absent": true,
+      "persistent_state_absent": true,
+      "catalogue_absent": true,
+      "launchpoint_absent": true,
+      "retained_unchanged": true,
+      "core_hashes_unchanged": true,
+      "saved_core_hash_pair_identical": true,
+      "picture_values_unchanged": true,
+      "audio_values_unchanged": true,
+      "expanded_settings_unchanged": true,
+      "home_foreground": true,
+      "original_foreground_verified": true
+    }
+  },
+  "limits": [
+    "All added setting values remain read-only or LG-managed; no native setting setter or privileged broker was added",
+    "Descriptor ranges/options are readout validation, not control-write authority or proof of physical picture effect",
+    "Picture fields describe the settings-service profile; a default profile and no HDMI signal do not prove the currently displayed video source/HDR pipeline",
+    "Physical input, editable choice/range widgets, broader settings coverage, HDMI live playback/format, reboot and sustained performance remain incomplete",
+    "Earlier 0.14 timing measurements do not establish performance of this larger read registry"
+  ],
+  "privacy": "TV inventories, addresses, credentials, favourites, raw values/descriptors, proprietary LG source and native household captures remain private."
+}

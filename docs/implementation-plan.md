@@ -12,8 +12,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.16.0 is installed on both devices; the
-[LG Home return record](lg-home-return-milestone.json) is the latest scoped proof;
+current native interface. Version 0.17.0 is installed on both devices; the
+[expanded control-readout record](control-readouts-milestone.json) is the latest scoped proof;
+the [LG Home return record](lg-home-return-milestone.json) covers the explicit rail shortcut;
 the [Inputs detail record](inputs-detail-milestone.json) covers source layout/readback;
 the [responsiveness record](responsiveness-milestone.json) retains the bounded
 performance evidence from 0.14.0.
@@ -43,7 +44,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
 | Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; C2 tuner restoration and live format/playback remain unverified, so production switching stays disabled |
-| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; broader native controls/read coverage remain |
+| Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; 20 descriptor-validated readouts added in 0.17.0 across Picture, Accessibility, General and Panel Care; editable controls and broader setting coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; Native injected SDL navigation and bounded submission/CPU/RSS/idle-paint measurements now exist on both; physical latency, GPU/panel timing and stress memory remain unverified |
 
@@ -80,7 +81,10 @@ request. Physical input and full text/IME coverage remain to verify.
    operation. A descriptor alone does not grant write authority. Require valid
    range/enum, matching input/HDR/mode context, bounded effect, readback and an
    original-state restoration test. Ordinary-app audio getter aliases and network
-   readings are now independently verified; native setters remain absent. Use a restricted
+   readings are now independently verified. Twenty more descriptor-validated
+   picture/accessibility/general/panel-care readouts have ordinary-app proof on
+   both TVs; signed ranges, enums, dimensions and expiry are checked. Descriptor
+   success does not grant write authority; native setters remain absent. Use a restricted
    local helper only for operations that actually need privilege, with caller,
    executable and session validation and a fixed operation allowlist.
 4. **Finish the interface and measure it.** The combined Home now uses two shared card shelves, with readable source

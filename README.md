@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.16.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.17.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -86,6 +86,12 @@ The [LG Home return milestone](docs/lg-home-return-milestone.json) adds the
 concept's separate rail shortcut. It uses a fixed normal LG app launch, verifies
 foreground and preserves the selected source. Isolated ordinary-app proofs on
 both TVs checked clean removal, core hashes, picture/audio and saved favourites.
+
+The [expanded control-readout milestone](docs/control-readouts-milestone.json)
+adds 20 descriptor-validated settings across Picture, Accessibility, General and
+Panel Care. Native values matched independent LG reads on both TVs. Range, enum,
+profile and freshness checks protect the readouts; all added adjustments remain
+LG-managed and no native setting-write action exists.
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching remains gated and

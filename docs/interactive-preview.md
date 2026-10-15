@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.16.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.17.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -46,7 +46,14 @@ both TVs and a separate, restored G2 switch trial. Production HDMI switching
 remains gated, and native controls are read-only
 or LG-managed. Controls now shows a persistent six-category column beside the
 selected detail panel. Arrows preview categories; Right or OK enters the rows.
-Back returns through the category column to Home. The cached Picture breadcrumb
+Back returns through the category column to Home. Accessibility, General and
+Panel Care now show verified current readings, alongside eight more picture-profile
+values such as colour depth, sharpness, tint, colour temperature, gamut and gamma.
+Bounds/options come from LG descriptors; numeric offsets are not presented as
+physical colour temperature or measured picture output. Known read-only values
+remain legible but cannot activate an adjustment. Panel protections stay
+LG-managed. The [readout record](control-readouts-milestone.json) documents
+ordinary-app proof and independently matched values on both TVs. The cached Picture breadcrumb
 uses the TV settings profile context and becomes unavailable when stale.
 Scrolling keeps the detail heading fixed, including when reading the final
 LG-managed row. Each category now has its own verified LG-managed route on the two tested

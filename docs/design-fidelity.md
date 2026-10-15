@@ -6,7 +6,7 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.16.0 moves the running interface closer to those concepts. This is a
+Version 0.17.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
@@ -17,7 +17,7 @@ progress map, not a claim that the complete concept is implemented.
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs. | Improve partially visible grid rows, long text and full text input; validate physical hold/pointer use. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
 | Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs. | Live video-format detail, C2 tuner-source handling/restoration and production switching; source artwork. |
-| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only values; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Validated native choice/range widgets, broader native read coverage and physical input proof. |
+| Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Validated native choice/range widgets, broader setting coverage, editable controls and physical input proof. |
 
 The sound output, TV volume/mute and sound profile are distinct readings. TV
 volume is not a measurement of an external amplifier's volume. Wired and Wi-Fi
@@ -25,7 +25,7 @@ connection states remain separate; simultaneous connections do not establish
 the active route. Missing, inconsistent or stale values become unavailable.
 Settings setters remain absent; a concept slider never authorizes a TV write.
 
-For this milestone, both commercial TVs rendered seven native proof pages on
+Earlier milestones rendered seven native proof pages on both commercial TVs on
 webOS 24, using the same application binary under ordinary app identities.
 Private Home, Apps, Sound and Network frames were inspected. Separate proof
 packages were removed and checked for remaining launcher entries, state, paths
@@ -49,6 +49,13 @@ The [LG Home return record](lg-home-return-milestone.json) adds the concept's
 separate rail shortcut. It launches only the registered LG Home binary through
 LG's application manager and verifies its foreground. No Home-button interception
 or boot behaviour changes are involved.
+
+The [expanded control-readout record](control-readouts-milestone.json) adds current
+Accessibility, General and Panel Care pages and eight more picture-profile
+readings. Their ranges/options are validated from LG descriptors. Known read-only
+values use normal contrast, while shared form bindings prevent activation. An
+inactive LG control stays subdued; stale or inconsistent state is unavailable.
+Native setting writes remain absent.
 
 Next design work should complete source actions/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on
