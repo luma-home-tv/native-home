@@ -48,6 +48,10 @@ adds independent G2/C2 isolated flow, preedit and long-query evidence. See the
 [parallel-development plan](docs/parallel-development.md),
 [controls coverage audit](docs/controls-coverage-next.md) and
 [webOS24 text compatibility notes](docs/webos24-text-compatibility.md).
+The next 0.27.0 candidate adds clearer native/read-only/LG-managed control-row
+descriptions with existing action admission preserved. Its
+[synthetic host previews](docs/verification/control-row-presentation/README.md)
+are separate from TV qualification; the installed versions below are unchanged.
 
 ## Layout
 

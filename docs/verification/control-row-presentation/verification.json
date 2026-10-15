@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "kind": "synthetic_host_render_not_tv_capture",
+  "host_device_flag": false,
+  "snapshot_contains_household_data": false,
+  "lib_tests_passed": 186,
+  "clippy": "all-targets hostsim warnings denied passed",
+  "arm_release": "passed; existing unstable neon target-feature warning",
+  "captured_pages_gl_error_zero": 10,
+  "visually_reviewed": [
+    "sound",
+    "general",
+    "panel-care",
+    "picture"
+  ],
+  "native_or_retained_deployment_claim": false,
+  "host_binary_sha256": "da8eda136be3fa7c9f6586041716fa45a9a5fd3b3b327c7a26b2df5a079663a0",
+  "arm_binary_sha256": "47ab0b0aaf12fb16e4a518fcad7abc05103583272022c023407c3f5653efcafa",
+  "artifact_sha256": {
+    "sound.png": "25ce717340187f41977419ff37d7d46d4ad3482bf7ba2b0b8e5a65be5a262702",
+    "snapshot.json": "08e11bdaa2eeaa295eade966b30aece07e166dd7b809ff0cbf6e64aa3e170f5c",
+    "panel-care.png": "2caae47c2cde3e3c798c0300093003deae64f607e07981895549299244c55d4b",
+    "general.png": "5c77382380e03368531a3f5d0bf0a296611e3113193ca4c8cec6f49c31b88d6d",
+    "picture.png": "101ecda6e3abe343e45b98fc7140cabbd1d44b38a32e4e8488b21926327e20f7"
+  }
+}

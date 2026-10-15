@@ -1,0 +1,305 @@
+{
+  "captured_at": "Synthetic control-row presentation fixture; no device data",
+  "applications": [],
+  "launch_ids": [],
+  "inputs": [],
+  "context": {
+    "input": "HDMI_1",
+    "dynamic_range": "sdr",
+    "picture_mode": "cinema"
+  },
+  "settings": {
+    "picture": [
+      {
+        "id": "brightness",
+        "label": "Black level",
+        "value": "50",
+        "focus_key": 4,
+        "protected": false,
+        "available": true,
+        "constraint": null,
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "tint",
+        "label": "Tint",
+        "value": "0",
+        "focus_key": 7,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Range",
+          "minimum": -50,
+          "maximum": 50,
+          "step": 1,
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "contrast",
+        "label": "Contrast",
+        "value": "85",
+        "focus_key": 3,
+        "protected": false,
+        "available": true,
+        "constraint": null,
+        "context": {
+          "input": "HDMI_2",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ],
+    "sound": [
+      {
+        "id": "soundOutput",
+        "label": "Sound output",
+        "value": "external_optical",
+        "focus_key": 20,
+        "protected": false,
+        "available": true,
+        "constraint": null,
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "audioBalance",
+        "label": "Balance",
+        "value": "0",
+        "focus_key": 30,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Range",
+          "minimum": -50,
+          "maximum": 50,
+          "step": 1,
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "audioDescriptionVolume",
+        "label": "Audio-description level",
+        "value": "0",
+        "focus_key": 32,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Range",
+          "minimum": -15,
+          "maximum": 15,
+          "step": 1,
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "soundMode",
+        "label": "Sound mode",
+        "value": "standard",
+        "focus_key": 23,
+        "protected": false,
+        "available": false,
+        "constraint": null,
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ],
+    "network": [
+      {
+        "id": "internet",
+        "label": "Internet",
+        "value": "Connected",
+        "focus_key": 60,
+        "protected": false,
+        "available": true,
+        "constraint": null,
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ],
+    "accessibility": [
+      {
+        "id": "audioGuidance",
+        "label": "Audio guidance",
+        "value": "off",
+        "focus_key": 100,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "off",
+            "on"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "screenMagnification",
+        "label": "Screen magnification",
+        "value": "off",
+        "focus_key": 102,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "off",
+            "on"
+          ],
+          "active": false
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ],
+    "general": [
+      {
+        "id": "pointerSpeed",
+        "label": "Pointer speed",
+        "value": "normal",
+        "focus_key": 141,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "slow",
+            "normal",
+            "fast"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "pointerSize",
+        "label": "Pointer size",
+        "value": "small",
+        "focus_key": 142,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "small",
+            "medium",
+            "large"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "quickStartMode",
+        "label": "Quick Start+",
+        "value": "on",
+        "focus_key": 140,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "off",
+            "on"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ],
+    "panel_care": [
+      {
+        "id": "screenShift",
+        "label": "Screen Move",
+        "value": "on",
+        "focus_key": 180,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "off",
+            "on"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      },
+      {
+        "id": "logoLuminanceAdjust",
+        "label": "Logo brightness adjustment",
+        "value": "low",
+        "focus_key": 181,
+        "protected": true,
+        "available": true,
+        "constraint": {
+          "kind": "Choices",
+          "values": [
+            "off",
+            "low",
+            "high"
+          ],
+          "active": true
+        },
+        "context": {
+          "input": "HDMI_1",
+          "dynamic_range": "sdr",
+          "picture_mode": "cinema"
+        }
+      }
+    ]
+  }
+}

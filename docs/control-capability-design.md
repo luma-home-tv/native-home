@@ -1,8 +1,11 @@
 # Control capability presentation model
 
-Status: host-only pure module, registered in the library for shared checks and
-future integration. It is not used by the normal interface. No app behaviour,
-capability gate, setting adapter or TV installation changes with this slice.
+Status: the pure policy now supplies control-row descriptions through
+`control_row_presentation` and `model::controls_form_with_numeric` in the next
+0.27.0 candidate. The integration has host behaviour checks; native rendering
+and deployment remain pending. G2 retains 0.26.0 and C2 retains 0.20.0.
+Existing actions, disabled bindings, fixed adapter admission and LG routes are
+unchanged. This slice adds no setter or privileged operation.
 
 The existing application already has useful but separate concepts:
 
@@ -60,10 +63,25 @@ it last-known; it must never display it as a current/live reading. LG route
 availability survives all reading/editing failures, but the model never invents
 a route when its input is false.
 
-## Integration boundary
+## Current integration and remaining boundary
 
-The coordinator owns later wiring in `model.rs`, `shell.rs` and `live.rs`.
-That work should:
+The fixed row wording distinguishes LG-managed adjustments, protected readings,
+unavailable readings and context mismatches. Current base readings remain
+visible without optional descriptor metadata. Sound's description-level row
+cannot inherit the separate Accessibility editor's capability. Pointer-size
+metadata cannot create an editor. Current range rows retain their validated
+bounds alongside the management hint.
+
+The table currently derives `Current`, `Unavailable` and `WrongContext` from
+the existing availability/context fields. An expired read already collapses
+to `available: false`; the caller therefore says “Reading unavailable”, rather
+than inventing a more precise expiry reason. The pure module supports explicit
+stale/pending evidence for future callers, but this table does not supply those
+states or replace the existing picker/worker pending presentation. The only
+write summary it supplies is the already-admitted fixed pointer-speed editor.
+The dedicated numeric editor retains its existing presentation and admission.
+
+Further integration in `model.rs`, `shell.rs` and `live.rs` should:
 
 1. Derive reading status from the current `Setting.available`,
    `Setting::still_current` and existing domain timestamp, with the appropriate

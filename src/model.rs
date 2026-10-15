@@ -201,20 +201,31 @@ pub fn controls_form_with_pointer(settings: &[Setting], current: &Context, secti
     controls_form_with_numeric(settings,current,section_route,pointer_enabled,None)
 }
 pub fn controls_form_with_numeric(settings:&[Setting],current:&Context,section_route:Option<SettingsSection>,pointer_enabled:bool,description:Option<crate::description_level::Level>)->Form<String,Action,Page> {
+    use crate::control_capability::{DescriptorState, EvidenceState, WriteCapability};
+    use crate::control_row_presentation::{present, RowInput};
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
         let editable=pointer_enabled && section_route==Some(SettingsSection::General) && setting.id=="pointerSpeed" && setting.available && setting.still_current(current)
             && matches!(&setting.constraint,Some(ControlConstraint::Choices{active:true,values}) if values.len()==3 && crate::pointer_speed::Speed::ALL.iter().all(|s|values.iter().any(|v|v==s.wire())));
         let unavailable = !setting.available || !setting.still_current(current);
-        let detail = if editable {"Choose Slow, Normal or Fast".into()} else if !setting.available { "Reading unavailable".into() }
-            else if unavailable { Message::UnavailableContext.text().into() }
-            else if setting.protected { match &setting.constraint {
-                Some(ControlConstraint::Range {minimum, maximum, active, ..}) if *active => format!("Range {minimum} to {maximum} • LG-managed"),
-                Some(ControlConstraint::Range {active: false, ..} | ControlConstraint::Choices {active: false, ..}) => "Inactive in this mode • LG-managed".into(),
-                _ => Message::ManagedByLg.text().into()
-            } }
-            else { String::new() };
-        let value = if unavailable { "Unavailable" } else { display_value(setting) };
+        let reading = if !setting.available { EvidenceState::Unavailable }
+            else if !setting.still_current(current) { EvidenceState::WrongContext }
+            else { EvidenceState::Current };
+        let descriptor = match &setting.constraint {
+            Some(ControlConstraint::Range {active:true,..} | ControlConstraint::Choices {active:true,..}) => DescriptorState::Active,
+            Some(_) => DescriptorState::Inactive,
+            None => DescriptorState::Unknown,
+        };
+        // Presentation describes the existing fixed adapter's admission. It cannot
+        // create actions or change the independently maintained disabled binding.
+        let hint = present(RowInput {section:section_route,setting_id:&setting.id,reading,descriptor,
+            write:editable.then_some(WriteCapability {setting_id:&setting.id,state:EvidenceState::Current}),
+            lg_route_verified:section_route.is_some(),busy:false});
+        let detail = if editable {"Choose Slow, Normal or Fast".into()}
+            else if let Some(ControlConstraint::Range {minimum,maximum,active:true,..}) = &setting.constraint {
+                if hint.show_current_value() {format!("Range {minimum} to {maximum} • {}",hint.detail)} else {hint.detail.into()}
+            } else {hint.detail.into()};
+        let value = if hint.show_current_value() { display_value(setting) } else { "Unavailable" };
         section = section.item_keyed(setting.id.clone(), RowKey(setting.focus_key), RowKind::Button,
             if editable {Action::OpenPointerSpeed} else {Action::Inspect(setting.id.clone())}, Row::new(&setting.label).detail(detail).value(value).server_value().chevron(editable))
             .disabled(unavailable || (setting.protected && !editable));
@@ -295,6 +306,38 @@ mod tests {
         assert_eq!(output.value,"external_optical");
         let mut changed=context();changed.input="HDMI_2".into();table.set(controls_form(&[output],&changed),None);
         assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("Unavailable"));assert_eq!(table.activate(0),None);
+    }
+
+    #[test]
+    fn control_descriptions_explain_current_readings_without_enabling_edits() {
+        let mut table=FormTable::new(2000);
+        table.set(controls_form(&[setting("brightness",false)],&context()),None);
+        let row=&table.table.sections[0].rows[0];
+        assert_eq!(row.value.as_deref(),Some("50"));
+        assert_eq!(row.detail,"Adjust in LG Settings");
+        assert_eq!(table.activate(0),Some(Activation::Action(Action::Inspect("brightness".into()))));
+        let mut panel=setting("screenShift",true);panel.value="on".into();
+        table.set(controls_form_for_section(&[panel],&context(),Some(SettingsSection::PanelCare)),None);
+        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("On"));
+        assert_eq!(table.table.sections[0].rows[0].detail,"Protected • view only");
+        assert_eq!(table.activate(0),None);
+        assert_eq!(table.activate(1),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::PanelCare))));
+    }
+
+    #[test]
+    fn sound_range_description_never_reuses_the_accessibility_editor() {
+        let mut level=setting("audioDescriptionVolume",true);level.value="0".into();
+        level.constraint=Some(ControlConstraint::Range{minimum:-15,maximum:15,step:1,active:true});
+        let mut table=FormTable::new(2000);
+        table.set(controls_form_with_numeric(&[level.clone()],&context(),Some(SettingsSection::Sound),false,None),None);
+        assert_eq!(table.table.sections[0].rows[0].detail,"Range -15 to 15 • Adjust in LG Settings");
+        assert_eq!(table.activate(0),None);
+        let mut other=context();other.input="HDMI_2".into();
+        table.set(controls_form_for_section(&[level],&other,Some(SettingsSection::Sound)),None);
+        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("Unavailable"));
+        assert_eq!(table.table.sections[0].rows[0].detail,"Unavailable in this context");
+        assert_eq!(table.activate(0),None);
+        assert_eq!(table.activate(1),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::Sound))));
     }
 
     #[test]
