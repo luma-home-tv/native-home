@@ -93,7 +93,15 @@ contact. The existing ARM target-feature warning remains.
 | Dashboard ELF | `7ada786be729bbc4cd17a270f3ea88fa9f97b4eafa083742ad10ef31cd06206a` |
 | Separate helper ELF | `be944ea507f760a808880e231e34a9fde84b6b13595e7e156a7c3420a1f41ad5` |
 
+The own-process alarm refinement then built successfully from
+`dacf4c981cfdc6c6976fafde979e43e6de197dc1`, again with 73 equal selected input
+snapshots for both executables. The dashboard ELF is byte-identical to the one
+above; the helper is now
+`38906d4ac221c9e739da0e9de9b693be14f0c9865f9500495778fe22a59c7ddc`.
+A fresh separate Proof IPK binds that helper hash and the new build receipt with
+a new session nonce. It remains a private test package, separate from normal G2.
+
 The host is macOS: Linux transport tests are compiled conditionally and have not
-been executed there. Rebuilt alarm-refinement artifacts, isolated G2 communication and complete removal remain
+been executed there. Isolated G2 communication and complete removal remain
 pending. No device capability, artwork, normal-preview promotion or full-release
 claim follows from these tests/builds.
