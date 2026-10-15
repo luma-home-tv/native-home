@@ -55,6 +55,20 @@ fn base64(bytes: &[u8]) -> String {
 /// JSON-encoded stdout strings. Refusals preserve output for child reconciliation.
 #[cfg(any(target_arch = "arm", test))]
 pub(crate) fn parse_exec_reply(raw: &str) -> Result<Value, String> {
+    parse_exec_fixed(raw, ExecReplyKind::Handshake)
+}
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn parse_exec_resource_reply(raw: &str) -> Result<Value, String> {
+    parse_exec_fixed(raw, ExecReplyKind::Resource)
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy)]
+enum ExecReplyKind {
+    Handshake,
+    Resource,
+}
+#[cfg(any(target_arch = "arm", test))]
+fn parse_exec_fixed(raw: &str, kind: ExecReplyKind) -> Result<Value, String> {
     if raw.len() > REPLY_LIMIT {
         return Err("Oversized SDK exec reply".into());
     }
@@ -112,7 +126,9 @@ pub(crate) fn parse_exec_reply(raw: &str) -> Result<Value, String> {
     for row in &rows {
         if row.as_object().map(|o| o.len()) != Some(5)
             || row["schema"] != 1
-            || row["stage"] != "context_child_started"
+            || !(row["stage"] == "context_child_started"
+                || matches!(kind, ExecReplyKind::Resource)
+                    && row["stage"] == "catalogue_child_started")
             || row["child_pid"].as_u64().is_none_or(|p| p <= 1)
             || row["child_pid"] != row["process_group"]
             || row["program_sha256"].as_str().is_none_or(|s| {
@@ -155,10 +171,36 @@ pub(crate) mod native {
     use std::sync::mpsc::{self, Sender};
 
     pub(crate) fn invoke(marker: &Marker, cancel: &AtomicBool, started: Sender<()>) -> Value {
+        invoke_fixed(marker, cancel, started, ExecReplyKind::Handshake, None)
+    }
+    pub(crate) fn invoke_resource(
+        marker: &Marker,
+        cancel: &AtomicBool,
+        started: Sender<()>,
+        deadline: Instant,
+    ) -> Value {
+        invoke_fixed(
+            marker,
+            cancel,
+            started,
+            ExecReplyKind::Resource,
+            Some(deadline),
+        )
+    }
+    fn invoke_fixed(
+        marker: &Marker,
+        cancel: &AtomicBool,
+        started: Sender<()>,
+        kind: ExecReplyKind,
+        deadline: Option<Instant>,
+    ) -> Value {
         let mut report = json!({"uri":EXEC_URI,"command":COMMAND,"attempts":0,
             "capability":null,"context":null,"own_at_call":null,"raw":null,
             "raw_bytes":0,"raw_truncated":false,"parsed":null,"error":null});
         let result = (|| -> Result<(), String> {
+            if deadline.is_some_and(|end| Instant::now() >= end) {
+                return Err("Resource job expired before capability".into());
+            }
             let capability = crate::artwork_startup_probe::collect();
             report["capability"] = capability.clone();
             if capability["verified"] != true || cancel.load(Ordering::Acquire) {
@@ -169,21 +211,28 @@ pub(crate) mod native {
                 return Err("UI differs from installed marker".into());
             }
             let bus = plx_platform::webos::ls2::register().map_err(|e| format!("{e:?}"))?;
-            let context = probe::read_context(&bus, Instant::now() + Duration::from_secs(3));
+            let context_end = Instant::now() + Duration::from_secs(3);
+            let context = probe::read_context(
+                &bus,
+                deadline.map_or(context_end, |end| end.min(context_end)),
+            );
             report["context"] = context.clone();
             let current = probe::own_identity()?;
             report["own_at_call"] = json!(current);
             if !probe::context_valid(&context) || current != own || cancel.load(Ordering::Acquire) {
                 return Err("Caller/context changed before fixed startup request".into());
             }
+            let budget = deadline.map_or(Duration::from_secs(30), |end| {
+                end.saturating_duration_since(Instant::now())
+                    .min(Duration::from_secs(30))
+            });
+            if budget.is_zero() {
+                return Err("Resource job expired before fixed command".into());
+            }
             report["attempts"] = json!(1);
             let _ = started.send(());
             let raw = bus
-                .call(
-                    EXEC_URI,
-                    &json!({"command":COMMAND}).to_string(),
-                    Duration::from_secs(30),
-                )
+                .call(EXEC_URI, &json!({"command":COMMAND}).to_string(), budget)
                 .map_err(|e| match e {
                     plx_platform::webos::ls2::Fail::Timeout => {
                         "SDK exec completion unobserved: reply wait timed out".to_owned()
@@ -201,7 +250,7 @@ pub(crate) mod native {
             }
             report["raw"] = json!(&raw[..end]);
             report["raw_truncated"] = json!(raw.len() > REPLY_LIMIT);
-            report["parsed"] = parse_exec_reply(&raw)?;
+            report["parsed"] = parse_exec_fixed(&raw, kind)?;
             Ok(())
         })();
         if let Err(error) = result {

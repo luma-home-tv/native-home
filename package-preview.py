@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.41.0' if main == 'home-preview' else '0.1.0'
+version = '0.42.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):

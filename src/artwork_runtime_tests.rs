@@ -21,7 +21,7 @@ struct Permit {
     inode: u64,
 }
 struct Gate {
-    entered: mpsc::Sender<SourceKey>,
+    entered: mpsc::Sender<(SourceKey, Instant)>,
     permits: mpsc::Receiver<Permit>,
     dropped: mpsc::Sender<()>,
     calls: Arc<AtomicUsize>,
@@ -35,7 +35,7 @@ impl Provider for Gate {
     ) -> Result<EncodedFile, ProviderError> {
         self.calls.fetch_add(1, Ordering::SeqCst);
         self.entered
-            .send(source.key().clone())
+            .send((source.key().clone(), deadline))
             .map_err(|_| ProviderError::Unavailable)?;
         loop {
             if cancellation.is_cancelled() {
@@ -83,13 +83,16 @@ impl Drop for Gate {
     }
 }
 struct Controls {
-    entered: mpsc::Receiver<SourceKey>,
+    entered: mpsc::Receiver<(SourceKey, Instant)>,
     permits: mpsc::Sender<Permit>,
     dropped: mpsc::Receiver<()>,
     calls: Arc<AtomicUsize>,
 }
 impl Controls {
     fn started(&self) -> SourceKey {
+        self.started_with_deadline().0
+    }
+    fn started_with_deadline(&self) -> (SourceKey, Instant) {
         self.entered
             .recv_timeout(Duration::from_secs(2))
             .expect("controlled fetch starts")
@@ -100,7 +103,7 @@ impl Controls {
             .expect("controlled fetch exists");
     }
 }
-fn runtime() -> (Runtime, Controls) {
+fn controlled_worker() -> (Worker, Controls) {
     let (entered_tx, entered_rx) = mpsc::channel();
     let (permit_tx, permit_rx) = mpsc::channel();
     let (drop_tx, drop_rx) = mpsc::channel();
@@ -114,7 +117,7 @@ fn runtime() -> (Runtime, Controls) {
     })
     .unwrap();
     (
-        Runtime::new(worker, cache::Config::default()).unwrap(),
+        worker,
         Controls {
             entered: entered_rx,
             permits: permit_tx,
@@ -122,6 +125,99 @@ fn runtime() -> (Runtime, Controls) {
             calls,
         },
     )
+}
+fn runtime() -> (Runtime, Controls) {
+    let (worker, control) = controlled_worker();
+    (
+        Runtime::new(worker, cache::Config::default()).unwrap(),
+        control,
+    )
+}
+
+#[test]
+fn fetch_budget_rejects_zero_or_over_thirty_seconds_without_dispatch() {
+    for budget in [
+        Duration::ZERO,
+        Duration::from_secs(30) + Duration::from_nanos(1),
+    ] {
+        let (worker, control) = controlled_worker();
+        assert!(matches!(
+            Runtime::with_fetch_budget(worker, cache::Config::default(), budget),
+            Err(cache::Error::InvalidConfig)
+        ));
+        control
+            .dropped
+            .recv_timeout(Duration::from_secs(2))
+            .unwrap();
+        assert_eq!(control.calls.load(Ordering::SeqCst), 0);
+        assert!(control.entered.try_recv().is_err());
+    }
+}
+
+#[test]
+fn default_and_configured_budgets_reach_actual_worker_provider_deadlines() {
+    for configured in [None, Some(Duration::from_secs(30))] {
+        let (worker, control) = controlled_worker();
+        let mut runtime = match configured {
+            None => Runtime::new(worker, cache::Config::default()),
+            Some(budget) => Runtime::with_fetch_budget(worker, cache::Config::default(), budget),
+        }
+        .unwrap();
+        runtime
+            .update_catalogue(Some(&sources(&[("fixture.budget", "1")])))
+            .unwrap();
+        let before_submit = Instant::now();
+        assert!(runtime.frame(0).changed.is_none());
+        let (source, deadline) = control.started_with_deadline();
+        let after_arrival = Instant::now();
+        let expected = configured.unwrap_or(Duration::from_secs(2));
+        assert_eq!(source.app_id, "fixture.budget");
+        assert!(deadline >= before_submit + expected);
+        assert!(deadline <= after_arrival + expected);
+        assert!(
+            runtime.resident("fixture.budget").is_none(),
+            "No result was released"
+        );
+        control.release(70);
+        let applied = drive_until(&mut runtime, 1, |r| r.completed == 1);
+        assert_eq!(applied.changed.len(), 1);
+        assert_eq!(
+            runtime
+                .resident("fixture.budget")
+                .unwrap()
+                .fingerprint
+                .file_identity
+                .inode,
+            70
+        );
+        let done = runtime.finish();
+        assert!(done.joined && !done.panicked && done.outstanding_resolved);
+    }
+}
+
+#[test]
+fn configured_long_budget_does_not_publish_cancelled_inflight_content() {
+    let (worker, control) = controlled_worker();
+    let mut runtime =
+        Runtime::with_fetch_budget(worker, cache::Config::default(), Duration::from_secs(30))
+            .unwrap();
+    runtime
+        .update_catalogue(Some(&sources(&[("fixture.cancel_budget", "1")])))
+        .unwrap();
+    assert!(runtime.frame(0).changed.is_none());
+    control.started_with_deadline();
+    assert!(runtime.resident("fixture.cancel_budget").is_none());
+    runtime.update_catalogue(None).unwrap();
+    // Even a provider racing to return released bytes must not make withdrawn
+    // work resident: cancellation is also checked by the real Worker.
+    control.release(71);
+    let applied = drive_until(&mut runtime, 1, |r| r.completed == 1);
+    assert!(applied.changed.is_empty());
+    assert!(runtime.resident("fixture.cancel_budget").is_none());
+    assert!(runtime.source("fixture.cancel_budget").is_none());
+    let done = runtime.finish();
+    assert!(done.joined && !done.panicked && done.outstanding_resolved);
+    assert!(done.evicted.is_empty());
 }
 #[test]
 fn visible_priority_survives_first_catalogue_and_withdrawal_recovery() {

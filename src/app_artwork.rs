@@ -481,8 +481,26 @@ pub(crate) fn read_root_encoded(source: &Source) -> Result<EncodedFile, ReadErro
     }
     read_admitted_source(source)
 }
-// Shared exact no-follow engine. Only the two identity-gated entries above
-// reach this function; neither accepts a caller-supplied path.
+/// Installed Proof authority is separate from the historical operator helper.
+/// This accepts only an already sealed server-owned source, never a wire path.
+#[cfg(all(target_os = "linux", target_arch = "arm"))]
+pub(crate) fn read_installed_encoded(
+    source: &Source,
+    installation: &crate::broker_installation::Installation,
+) -> Result<EncodedFile, ReadError> {
+    let denied = || refusal(ReadReason::PrivilegedProcess, "installed_authority", 0);
+    if installation.pins().profile != crate::broker_installation::Profile::Proof {
+        return Err(denied());
+    }
+    // Revalidates Root UID4/start/ELF and the protected policy/tree as well as
+    // its pinned UI lookup. No developer-app ancestor becomes Root authority.
+    installation.revalidate().map_err(|_| denied())?;
+    let file = read_admitted_source(source)?;
+    installation.revalidate().map_err(|_| denied())?;
+    Ok(file)
+}
+// Shared exact no-follow engine. Only the identity-gated entries above
+// reach this function; none accepts a caller-supplied path.
 fn read_admitted_source(source: &Source) -> Result<EncodedFile, ReadError> {
     let slash = CString::new("/").expect("literal root");
     let fd = unsafe {

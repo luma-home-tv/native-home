@@ -1,10 +1,33 @@
-//! Temporary, isolated artwork/Identify server. Started by the test operator over SSH,
-//! never by the app. Fixed context GETs use the pinned installed system client.
+//! Shared bounded artwork operations. The historical operator helper and the
+//! protected installed Proof bootstrap use distinct authority paths.
+//! Fixed context/catalogue GETs use the pinned installed system client.
 //! Artwork requests select an app and icon variant from our own fixed catalogue.
 //! No caller-selected command, filesystem path or service URI exists.
 #[cfg(any(target_arch = "arm", test))]
 mod proof {
     use crate::broker_protocol as protocol;
+    #[derive(Clone, Copy)]
+    enum ResourceLimit {
+        Operator,
+        Installed,
+    }
+    impl ResourceLimit {
+        fn admits(
+            self,
+            request: &crate::artwork_transfer::Request,
+            nonce: &str,
+            expected: u32,
+        ) -> bool {
+            request.validate().is_ok()
+                && request.nonce == nonce
+                && request.request_id == expected
+                && expected
+                    <= match self {
+                        Self::Operator => 5,
+                        Self::Installed => 1,
+                    }
+        }
+    }
     #[cfg(target_arch = "arm")]
     use crate::broker_protocol::{Enrollment, PeerEvidence};
     #[cfg(target_arch = "arm")]
@@ -332,6 +355,32 @@ mod proof {
         }
     }
     #[cfg(target_arch = "arm")]
+    #[derive(Clone, Copy)]
+    pub(super) enum ResourceAuthority<'a> {
+        Operator,
+        Installed(&'a crate::broker_installation::Installation),
+    }
+    #[cfg(target_arch = "arm")]
+    impl ResourceAuthority<'_> {
+        fn limit(self) -> ResourceLimit {
+            match self {
+                Self::Operator => ResourceLimit::Operator,
+                Self::Installed(_) => ResourceLimit::Installed,
+            }
+        }
+        fn read(
+            self,
+            source: &crate::app_artwork::Source,
+        ) -> Result<crate::app_artwork::EncodedFile, crate::app_artwork::ReadError> {
+            match self {
+                Self::Operator => crate::app_artwork::read_root_encoded(source),
+                Self::Installed(installation) => {
+                    crate::app_artwork::read_installed_encoded(source, installation)
+                }
+            }
+        }
+    }
+    #[cfg(target_arch = "arm")]
     fn resource_catalogue(
         enrolled: &Enrollment,
         deadline: std::time::Instant,
@@ -369,6 +418,7 @@ mod proof {
     fn resource_failure(error: &crate::app_artwork::ReadError) -> ResourceFailure {
         use crate::app_artwork::ReadReason;
         match error.reason {
+            ReadReason::PrivilegedProcess => ResourceFailure::Denied,
             ReadReason::TooLarge => ResourceFailure::TooLarge,
             ReadReason::Changed => ResourceFailure::Changed,
             ReadReason::Io if error.errno == Some(libc::ENOENT) => ResourceFailure::Missing,
@@ -387,6 +437,7 @@ mod proof {
         icon_only: bool,
         deadline: std::time::Instant,
         record: &mut serde_json::Value,
+        authority: ResourceAuthority<'_>,
     ) -> Result<PreparedArtwork, ResourceFailure> {
         use serde_json::json;
         let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_before"])
@@ -400,7 +451,7 @@ mod proof {
         .cloned()
         .ok_or(ResourceFailure::NoSource)?;
         record["source_key"] = json!(source.key());
-        let file = crate::app_artwork::read_root_encoded(&source).map_err(|error| {
+        let file = authority.read(&source).map_err(|error| {
             record["read_error"] = json!(error);
             resource_failure(&error)
         })?;
@@ -423,6 +474,7 @@ mod proof {
         icon_only: bool,
         deadline: std::time::Instant,
         record: &mut serde_json::Value,
+        authority: ResourceAuthority<'_>,
     ) -> Result<(), ResourceFailure> {
         use serde_json::json;
         let map = resource_catalogue(enrolled, deadline, &mut record["catalogue_after"])
@@ -442,7 +494,7 @@ mod proof {
         }
         // The second bounded no-follow read covers same-path replacement or
         // content change while bytes were transferred, even without a new app version.
-        let after = crate::app_artwork::read_root_encoded(source).map_err(|error| {
+        let after = authority.read(source).map_err(|error| {
             record["readback_error"] = json!(error);
             resource_failure(&error)
         })?;
@@ -466,16 +518,33 @@ mod proof {
         enrolled: &Enrollment,
         connect: &crate::broker_transport::Credentials,
         message: &crate::broker_transport::Credentials,
+        authority: ResourceAuthority<'_>,
     ) -> Result<PeerEvidence, Box<dyn std::error::Error>> {
         enrolled.validate(now()?)?;
-        if enrollment(&enrolled.nonce)? != *enrolled {
-            return Err(invalid("Artwork enrollment changed or was revoked").into());
-        }
         let evidence = peer(enrolled.client_pid)?;
-        protocol::authorize(enrolled, connect, message, &evidence)?;
-        if own_hash(&enrolled.nonce)? != enrolled.broker_sha256 {
-            return Err(invalid("Helper identity changed during artwork operation").into());
+        match authority {
+            ResourceAuthority::Operator => {
+                if enrollment(&enrolled.nonce)? != *enrolled {
+                    return Err(invalid("Artwork enrollment changed or was revoked").into());
+                }
+                if own_hash(&enrolled.nonce)? != enrolled.broker_sha256 {
+                    return Err(invalid("Helper identity changed during artwork operation").into());
+                }
+            }
+            ResourceAuthority::Installed(installation) => {
+                let pins = installation.pins();
+                if pins.profile != crate::broker_installation::Profile::Proof
+                    || pins.rendezvous_nonce != enrolled.nonce
+                    || pins.ui_sha256 != enrolled.ui_sha256
+                    || pins.broker_sha256 != enrolled.broker_sha256
+                    || pins.context_reader_sha256 != enrolled.context_reader_sha256
+                {
+                    return Err(invalid("Artwork enrollment differs from protected pins").into());
+                }
+                installation.admit_peer(connect, message, &evidence)?;
+            }
         }
+        protocol::authorize(enrolled, connect, message, &evidence)?;
         Ok(evidence)
     }
     #[cfg(target_arch = "arm")]
@@ -492,13 +561,14 @@ mod proof {
         }
     }
     #[cfg(target_arch = "arm")]
-    fn serve_artwork(
+    pub(super) fn serve_artwork(
         connection: &crate::broker_transport::Connection,
         enrolled: &Enrollment,
         connect: crate::broker_transport::Credentials,
         mut packet: crate::broker_transport::Packet,
         deadline: std::time::Instant,
         report: &mut serde_json::Value,
+        authority: ResourceAuthority<'_>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         use crate::artwork_transfer as wire;
         use serde_json::json;
@@ -517,13 +587,13 @@ mod proof {
                 report["artwork_finish_connect_credentials"] =
                     json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
                 report["artwork_finish_message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
-                let before = resource_peer(enrolled, &connect, &packet.credentials)?;
+                let before = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 report["artwork_finish_peer_before"] = json!(before);
                 let context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 report["artwork_finish_context"] = context.clone();
                 check_context(&context, &enrolled.context_reader_sha256)?;
-                let after = resource_peer(enrolled, &connect, &packet.credentials)?;
+                let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 if after != before {
                     return Err(invalid("Artwork caller changed before finish").into());
                 }
@@ -535,9 +605,9 @@ mod proof {
                 return Ok(());
             }
             let request = wire::parse_request(&packet.bytes)?;
-            if request.nonce != enrolled.nonce
-                || request.request_id != expected_id
-                || expected_id > 5
+            if !authority
+                .limit()
+                .admits(&request, &enrolled.nonce, expected_id)
             {
                 return Err(invalid("Artwork request limit/sequence/session mismatch").into());
             }
@@ -546,15 +616,21 @@ mod proof {
                 json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
             record["message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
             let operation = (|| -> Result<(), Box<dyn std::error::Error>> {
-                let before = resource_peer(enrolled, &connect, &packet.credentials)?;
+                let before = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 record["peer_before"] = json!(before);
                 let context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 record["context_before"] = context.clone();
                 check_context(&context, &enrolled.context_reader_sha256)?;
                 let icon_only = matches!(request.variant, wire::Variant::Icon);
-                let prepared =
-                    prepare_artwork(enrolled, &request.app_id, icon_only, deadline, &mut record);
+                let prepared = prepare_artwork(
+                    enrolled,
+                    &request.app_id,
+                    icon_only,
+                    deadline,
+                    &mut record,
+                    authority,
+                );
                 if matches!(prepared, Err(ResourceFailure::CatalogueUnqualified)) {
                     return Err(invalid(
                         "Catalogue reader unqualified; no further operation permitted",
@@ -580,9 +656,14 @@ mod proof {
                     header = Some(value_header);
                 }
                 let readback = match &prepared {
-                    Ok(value) => {
-                        verify_artwork_after(enrolled, value, icon_only, deadline, &mut record)
-                    }
+                    Ok(value) => verify_artwork_after(
+                        enrolled,
+                        value,
+                        icon_only,
+                        deadline,
+                        &mut record,
+                        authority,
+                    ),
                     Err(reason) => Err(*reason),
                 };
                 if matches!(readback, Err(ResourceFailure::CatalogueUnqualified)) {
@@ -595,7 +676,7 @@ mod proof {
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 record["context_after"] = after_context.clone();
                 check_context(&after_context, &enrolled.context_reader_sha256)?;
-                let after = resource_peer(enrolled, &connect, &packet.credentials)?;
+                let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 record["peer_after"] = json!(after);
                 if after != before {
                     return Err(invalid("Artwork caller changed during operation").into());
@@ -773,7 +854,15 @@ mod proof {
         if crate::artwork_transfer::parse_request(&packet.bytes).is_ok()
             || crate::artwork_transfer::parse_finish_request(&packet.bytes).is_ok()
         {
-            return serve_artwork(&connection, &enrolled, connect, packet, deadline, report);
+            return serve_artwork(
+                &connection,
+                &enrolled,
+                connect,
+                packet,
+                deadline,
+                report,
+                ResourceAuthority::Operator,
+            );
         }
         let request = protocol::parse_request(&packet.bytes)?;
         enrolled.validate(now()?)?;
@@ -834,6 +923,22 @@ mod proof {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn installed_resources_admit_one_read_and_never_relax_nonce_or_sequence() {
+            use crate::artwork_transfer::{Request, Variant};
+            let nonce = "a".repeat(32);
+            let first = Request::new(1, &nonce, "fixture.icon", Variant::Preferred).unwrap();
+            assert!(ResourceLimit::Installed.admits(&first, &nonce, 1));
+            assert!(ResourceLimit::Operator.admits(&first, &nonce, 1));
+            let second = Request::new(2, &nonce, "fixture.icon", Variant::Preferred).unwrap();
+            assert!(!ResourceLimit::Installed.admits(&second, &nonce, 2));
+            assert!(ResourceLimit::Operator.admits(&second, &nonce, 2));
+            assert!(!ResourceLimit::Installed.admits(&first, &"b".repeat(32), 1));
+            assert!(!ResourceLimit::Installed.admits(&first, &nonce, 2));
+            let mut sixth = first.clone();
+            sixth.request_id = 6;
+            assert!(!ResourceLimit::Operator.admits(&sixth, &nonce, 6));
+        }
         #[test]
         fn resource_bytes_need_an_image_signature_before_release() {
             assert!(!image_signature(b"{\"account\":\"not an image\"}"));
@@ -1008,6 +1113,29 @@ mod proof {
 #[cfg(target_arch = "arm")]
 pub(crate) fn proof_peer(pid: u32) -> std::io::Result<crate::broker_protocol::PeerEvidence> {
     proof::peer(pid)
+}
+
+/// Reuse the qualified bounded transfer operation with protected installed
+/// authority rather than the operator's mutable enrollment directory.
+#[cfg(target_arch = "arm")]
+pub(crate) fn serve_installed_artwork(
+    connection: &crate::broker_transport::Connection,
+    enrollment: &crate::broker_protocol::Enrollment,
+    connect: crate::broker_transport::Credentials,
+    packet: crate::broker_transport::Packet,
+    deadline: std::time::Instant,
+    report: &mut serde_json::Value,
+    installation: &crate::broker_installation::Installation,
+) -> Result<(), Box<dyn std::error::Error>> {
+    proof::serve_artwork(
+        connection,
+        enrollment,
+        connect,
+        packet,
+        deadline,
+        report,
+        proof::ResourceAuthority::Installed(installation),
+    )
 }
 
 /// Host builds refuse this proof. There is no stream or unprivileged fallback.

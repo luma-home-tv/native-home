@@ -1,4 +1,4 @@
-//! Installed, fixed-operation Proof startup helper. One Identify/Finish, no resources.
+//! Installed Proof helper: Identify plus Finish, or one sealed icon read then Finish.
 #[cfg(any(target_arch = "arm", test))]
 use crate::{broker_protocol as protocol, broker_transport::Credentials};
 #[cfg(any(target_arch = "arm", test))]
@@ -219,6 +219,28 @@ mod native {
         report["response"] = json!(response);
         report["response_sent"] = json!(true);
         let packet = connection.recv_until(4096, deadline)?;
+        if artwork_transfer::parse_request(&packet.bytes).is_ok() {
+            report["resource_mode"] = json!(true);
+            report["context_cli_gets_only"] = json!(false);
+            crate::broker_server::serve_installed_artwork(
+                &connection,
+                &enrollment,
+                connect,
+                packet,
+                deadline,
+                report,
+                &installation,
+            )?;
+            report["finished"] = report["artwork_finished"].clone();
+            report["finished_sent"] = json!(true);
+            // The shared operation sends Finished only after its final context
+            // and peer readback. The finite installed session now closes.
+            drop(connection);
+            drop(listener);
+            report["connection_closed"] = json!(true);
+            report["qualified"] = json!(true);
+            return Ok(());
+        }
         let finish = artwork_transfer::parse_finish_request(&packet.bytes)?;
         if finish.request_id != 1 || finish.nonce != pins.rendezvous_nonce {
             return Err(invalid("Only first Finish request is admitted after Identify").into());
@@ -259,7 +281,11 @@ mod native {
         let mut report = json!({"schema":1,"stage":"startup_proof_complete","profile":"proof","server_pid":std::process::id(),"operation_budget_ms":20000,"listener_bound":false,"response_sent":false,"finished_sent":false,"connection_closed":false,"qualified":false,"icon_reads":false,"artwork_reads":false,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"context_cli_gets_only":true});
         let result = run(&mut report);
         report["outcome"] = json!(if result.is_ok() {
-            "identified_finished"
+            if report["artwork_session_completed"] == true {
+                "identified_artwork_finished"
+            } else {
+                "identified_finished"
+            }
         } else {
             "refused"
         });

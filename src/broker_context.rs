@@ -66,11 +66,10 @@ impl ReadSet {
 }
 
 #[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
-fn helper_scope(path: &std::path::Path, set: ReadSet, installed_authority: bool) -> bool {
+fn helper_scope(path: &std::path::Path, _set: ReadSet, installed_authority: bool) -> bool {
     path.file_name()
         .is_some_and(|name| name == "artwork-broker-proof")
-        || (matches!(set, ReadSet::Context)
-            && installed_authority
+        || (installed_authority
             && path
                 == std::path::Path::new(&crate::broker_installation::Profile::Proof.helper_path()))
 }
@@ -824,10 +823,10 @@ mod core {
         let path = std::env::current_exe().ok();
         let root = unsafe { libc::getuid() } == 0 && unsafe { libc::geteuid() } == 0;
         // The new installed role is admitted only through protected policy and
-        // its exact kernel executable, and only for these three context GETs.
+        // its exact kernel executable. Both read sets contain fixed GETs;
+        // catalogue data stays inside the helper's sealed resource admission.
         // The historical operator helper keeps its separately qualified scope.
         let installed_authority = root
-            && matches!(set, ReadSet::Context)
             && path.as_deref()
                 == Some(std::path::Path::new(
                     &crate::broker_installation::Profile::Proof.helper_path(),
@@ -974,12 +973,19 @@ mod core {
     mod tests {
         use super::*;
         #[test]
-        fn installed_context_role_needs_exact_protected_authority_and_never_catalogue() {
+        fn installed_fixed_read_sets_need_exact_protected_authority() {
             let path = crate::broker_installation::Profile::Proof.helper_path();
             let path = std::path::Path::new(&path);
             assert!(helper_scope(path, ReadSet::Context, true));
             assert!(!helper_scope(path, ReadSet::Context, false));
-            assert!(!helper_scope(path, ReadSet::Catalogue, true));
+            assert!(helper_scope(path, ReadSet::Catalogue, true));
+            assert!(!helper_scope(path, ReadSet::Catalogue, false));
+            let preview = crate::broker_installation::Profile::Preview.helper_path();
+            assert!(!helper_scope(
+                std::path::Path::new(&preview),
+                ReadSet::Catalogue,
+                true
+            ));
             assert!(!helper_scope(
                 std::path::Path::new("/tmp/artwork-broker-startup-proof"),
                 ReadSet::Context,

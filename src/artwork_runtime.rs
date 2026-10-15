@@ -6,6 +6,9 @@ use crate::artwork_cache::{self as cache, ArtworkCache, ResidentKey, ResidentVie
 use crate::artwork_worker::Worker;
 use std::time::{Duration, Instant};
 
+pub const DEFAULT_FETCH_BUDGET: Duration = Duration::from_secs(2);
+pub const MAX_FETCH_BUDGET: Duration = Duration::from_secs(30);
+
 #[derive(Default)]
 pub struct Frame {
     pub evicted: Vec<ResidentKey>,
@@ -24,6 +27,7 @@ pub struct Runtime {
     rejected: u64,
     visible: Vec<String>,
     favourites: Vec<String>,
+    fetch_budget: Duration,
 }
 pub struct Finished {
     pub evicted: Vec<ResidentKey>,
@@ -33,6 +37,18 @@ pub struct Finished {
 }
 impl Runtime {
     pub fn new(worker: Worker, config: cache::Config) -> Result<Self, cache::Error> {
+        Self::with_fetch_budget(worker, config, DEFAULT_FETCH_BUDGET)
+    }
+    /// Set the finite deadline supplied to each worker job. This does not
+    /// interrupt a blocked provider/codec or bound the time needed to join it.
+    pub fn with_fetch_budget(
+        worker: Worker,
+        config: cache::Config,
+        fetch_budget: Duration,
+    ) -> Result<Self, cache::Error> {
+        if fetch_budget.is_zero() || fetch_budget > MAX_FETCH_BUDGET {
+            return Err(cache::Error::InvalidConfig);
+        }
         Ok(Self {
             cache: ArtworkCache::new(config)?,
             worker: Some(worker),
@@ -46,6 +62,7 @@ impl Runtime {
             rejected: 0,
             visible: Vec::new(),
             favourites: Vec::new(),
+            fetch_budget,
         })
     }
     pub fn set_active(&mut self, active: bool) {
@@ -114,18 +131,16 @@ impl Runtime {
                     .filter(|s| s.key() == work.source())
                     .cloned();
                 match (self.worker.as_mut(), source) {
-                    (Some(worker), Some(source)) => match worker.try_submit(
-                        work,
-                        source,
-                        Instant::now() + Duration::from_secs(2),
-                    ) {
-                        Ok(()) => self.submitted = self.submitted.saturating_add(1),
-                        Err(rejected) => {
-                            self.rejected = self.rejected.saturating_add(1);
-                            self.cache
-                                .submit_result(rejected.work, cache::FetchResult::Failed);
+                    (Some(worker), Some(source)) => {
+                        match worker.try_submit(work, source, Instant::now() + self.fetch_budget) {
+                            Ok(()) => self.submitted = self.submitted.saturating_add(1),
+                            Err(rejected) => {
+                                self.rejected = self.rejected.saturating_add(1);
+                                self.cache
+                                    .submit_result(rejected.work, cache::FetchResult::Failed);
+                            }
                         }
-                    },
+                    }
                     _ => {
                         self.rejected = self.rejected.saturating_add(1);
                         self.cache.submit_result(work, cache::FetchResult::Failed);
