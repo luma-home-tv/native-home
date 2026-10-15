@@ -1114,211 +1114,216 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 clock.accept(reply);
             }
             shell.set_clock(clock.view(live_origin.elapsed()));
-            shell.tick(now, dt);
             observation_batch_seq = observation_batch_seq.saturating_add(1);
-            while let Some(e) = poll() {
-                observation_event_seq = observation_event_seq.saturating_add(1);
-                let mut decision = observation::Decision::Ignored;
-                if e.kind == 2 {
-                    if let Some(m) = &mut performance {
-                        m.input(e.key, start.elapsed());
+            shell.input_frame(now, dt, |shell| {
+                while let Some(e) = poll() {
+                    observation_event_seq = observation_event_seq.saturating_add(1);
+                    let mut decision = observation::Decision::Ignored;
+                    if e.kind == 2 {
+                        if let Some(m) = &mut performance {
+                            m.input(e.key, start.elapsed());
+                        }
                     }
-                }
-                if matches!(e.kind, 2..=6 | 9 | 10 | 11) {
-                    plx_machine::idle::wake();
-                }
-                events = events.saturating_add(1_u32);
-                // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
-                // Consume the first wake input and cancel any gesture armed before blanking.
-                if hidden_at.is_none()
-                    && matches!(e.kind, 2..=6 | 10 | 11)
-                    && !session.input(start.elapsed())
-                {
-                    shell.cancel_press();
-                    if !matches!(e.kind, 10 | 11) {
-                        record_keyboard_observer(
-                            &mut keyboard_observer,
-                            &shell,
-                            &window,
-                            &keyboard,
-                            ObservedFrame {
-                                stamp: observation_stamp(
-                                    start,
-                                    now,
-                                    observation_event_seq,
-                                    observation_batch_seq,
-                                ),
-                                hidden: hidden_at.is_some(),
-                                idle: idle_blanked,
-                                counters: observation_counters(
-                                    loop_counters,
-                                    &shell,
-                                    preference_write_attempts,
-                                    external_action_attempts,
-                                    idle_presentations,
-                                ),
-                            },
-                            Some(observation::EventDecision {
-                                class: observation_class(e.kind),
-                                decision,
-                                origin: observation::Origin::NativeUnclassified,
-                            }),
-                        )?;
-                        continue;
+                    if matches!(e.kind, 2..=6 | 9 | 10 | 11) {
+                        plx_machine::idle::wake();
                     }
-                }
-                if hidden_at.is_none() {
-                    if let Some(result) =
-                        handle_system_text_event(&mut shell, &mut keyboard, &e, now)
+                    events = events.saturating_add(1_u32);
+                    // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
+                    // Consume the first wake input and cancel any gesture armed before blanking.
+                    if hidden_at.is_none()
+                        && matches!(e.kind, 2..=6 | 10 | 11)
+                        && !session.input(start.elapsed())
                     {
-                        decision = result;
-                        record_keyboard_observer(
-                            &mut keyboard_observer,
-                            &shell,
-                            &window,
-                            &keyboard,
-                            ObservedFrame {
-                                stamp: observation_stamp(
-                                    start,
-                                    now,
-                                    observation_event_seq,
-                                    observation_batch_seq,
-                                ),
-                                hidden: hidden_at.is_some(),
-                                idle: idle_blanked,
-                                counters: observation_counters(
-                                    loop_counters,
-                                    &shell,
-                                    preference_write_attempts,
-                                    external_action_attempts,
-                                    idle_presentations,
-                                ),
-                            },
-                            Some(observation::EventDecision {
-                                class: observation_class(e.kind),
-                                decision,
-                                origin: observation::Origin::NativeUnclassified,
-                            }),
-                        )?;
-                        continue;
-                    }
-                }
-                match e.kind {
-                    1 => {
-                        decision = observation::Decision::Accepted;
-                        reason = "window_closed";
                         shell.cancel_press();
-                    }
-                    7 | 8 => {
-                        decision = observation::Decision::Accepted;
-                        shell.cancel_press();
-                        hidden_at.get_or_insert(current);
-                    }
-                    9 => {
-                        decision = observation::Decision::Accepted;
-                        if hidden_at.is_some() && settings_handoff.pending() {
-                            settings_returns = settings_returns.saturating_add(1);
-                            capture_settings_return = true;
-                            settings_handoff.focus_returned();
-                            shell.storage_notice("Returned from LG Settings");
-                        }
-                        hidden_at = None;
-                    }
-                    2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
-                        decision = observation::Decision::Accepted;
-                        match e.key {
-                            1 => shell.direction(Dir::Up),
-                            2 => shell.direction(Dir::Down),
-                            3 => shell.direction(Dir::Left),
-                            4 => shell.direction(Dir::Right),
-                            5 => {
-                                if e.repeat != 0 {
-                                    shell.repeat();
-                                } else {
-                                    shell.press(true, PressFrom::Key);
-                                }
-                            }
-                            6 if e.repeat == 0 => shell.back(),
-                            7 => {
-                                shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
-                            }
-                            8 => {
-                                shell.text_delete_forward();
-                            }
-                            _ => {}
+                        if !matches!(e.kind, 10 | 11) {
+                            record_keyboard_observer(
+                                &mut keyboard_observer,
+                                shell,
+                                &window,
+                                &keyboard,
+                                ObservedFrame {
+                                    stamp: observation_stamp(
+                                        start,
+                                        now,
+                                        observation_event_seq,
+                                        observation_batch_seq,
+                                    ),
+                                    hidden: hidden_at.is_some(),
+                                    idle: idle_blanked,
+                                    counters: observation_counters(
+                                        loop_counters,
+                                        shell,
+                                        preference_write_attempts,
+                                        external_action_attempts,
+                                        idle_presentations,
+                                    ),
+                                },
+                                Some(observation::EventDecision {
+                                    class: observation_class(e.kind),
+                                    decision,
+                                    origin: observation::Origin::NativeUnclassified,
+                                }),
+                            )?;
+                            continue;
                         }
                     }
-                    10 | 11 if hidden_at.is_none() => {
-                        decision = if !shell.drawer_state().editing
-                            || shell.page() != Page::Applications
+                    if hidden_at.is_none() {
+                        if let Some(result) =
+                            handle_system_text_event(shell, &mut keyboard, &e, now)
                         {
-                            observation::Decision::NotEditing
-                        } else if let Some(text) = e.text() {
-                            let changed = if e.kind == 10 {
-                                shell.text_input(text, false)
-                            } else {
-                                shell.text_preedit(text)
-                            };
-                            if changed {
-                                observation::Decision::Accepted
-                            } else {
-                                observation::Decision::Ignored
-                            }
-                        } else {
-                            observation::Decision::Malformed
-                        };
-                    }
-                    3 if e.key == 5 => {
-                        decision = observation::Decision::Accepted;
-                        shell.press(false, PressFrom::Key);
-                    }
-                    4 | 5 if hidden_at.is_none() => {
-                        decision = observation::Decision::Accepted;
-                        shell.pointer(e.x as f32, e.y as f32, e.kind == 5)
-                    }
-                    6 if hidden_at.is_none() => {
-                        decision = observation::Decision::Accepted;
-                        for _ in 0..e.wheel.unsigned_abs().min(3) {
-                            shell.direction(if e.wheel > 0 { Dir::Up } else { Dir::Down });
+                            decision = result;
+                            record_keyboard_observer(
+                                &mut keyboard_observer,
+                                shell,
+                                &window,
+                                &keyboard,
+                                ObservedFrame {
+                                    stamp: observation_stamp(
+                                        start,
+                                        now,
+                                        observation_event_seq,
+                                        observation_batch_seq,
+                                    ),
+                                    hidden: hidden_at.is_some(),
+                                    idle: idle_blanked,
+                                    counters: observation_counters(
+                                        loop_counters,
+                                        shell,
+                                        preference_write_attempts,
+                                        external_action_attempts,
+                                        idle_presentations,
+                                    ),
+                                },
+                                Some(observation::EventDecision {
+                                    class: observation_class(e.kind),
+                                    decision,
+                                    origin: observation::Origin::NativeUnclassified,
+                                }),
+                            )?;
+                            continue;
                         }
                     }
-                    _ if hidden_at.is_some() && matches!(e.kind, 2..=6 | 10 | 11) => {
-                        decision = observation::Decision::Hidden;
+                    match e.kind {
+                        1 => {
+                            decision = observation::Decision::Accepted;
+                            reason = "window_closed";
+                            shell.cancel_press();
+                        }
+                        7 | 8 => {
+                            decision = observation::Decision::Accepted;
+                            shell.cancel_press();
+                            hidden_at.get_or_insert(current);
+                        }
+                        9 => {
+                            decision = observation::Decision::Accepted;
+                            if hidden_at.is_some() && settings_handoff.pending() {
+                                settings_returns = settings_returns.saturating_add(1);
+                                capture_settings_return = true;
+                                settings_handoff.focus_returned();
+                                shell.storage_notice("Returned from LG Settings");
+                            }
+                            hidden_at = None;
+                        }
+                        2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
+                            decision = observation::Decision::Accepted;
+                            match e.key {
+                                1 => shell.direction(Dir::Up),
+                                2 => shell.direction(Dir::Down),
+                                3 => shell.direction(Dir::Left),
+                                4 => shell.direction(Dir::Right),
+                                5 => {
+                                    if e.repeat != 0 {
+                                        shell.repeat();
+                                    } else {
+                                        shell.press(true, PressFrom::Key);
+                                    }
+                                }
+                                6 if e.repeat == 0 => shell.back(),
+                                7 => {
+                                    shell.text_edit(&plx_machine::machine::TextEdit::Backspace);
+                                }
+                                8 => {
+                                    shell.text_delete_forward();
+                                }
+                                _ => {}
+                            }
+                        }
+                        10 | 11 if hidden_at.is_none() => {
+                            decision = if !shell.drawer_state().editing
+                                || shell.page() != Page::Applications
+                            {
+                                observation::Decision::NotEditing
+                            } else if let Some(text) = e.text() {
+                                let changed = if e.kind == 10 {
+                                    shell.text_input(text, false)
+                                } else {
+                                    shell.text_preedit(text)
+                                };
+                                if changed {
+                                    observation::Decision::Accepted
+                                } else {
+                                    observation::Decision::Ignored
+                                }
+                            } else {
+                                observation::Decision::Malformed
+                            };
+                        }
+                        3 if e.key == 5 => {
+                            decision = observation::Decision::Accepted;
+                            shell.press(false, PressFrom::Key);
+                        }
+                        4 | 5 if hidden_at.is_none() => {
+                            decision = observation::Decision::Accepted;
+                            shell.pointer(e.x as f32, e.y as f32, e.kind == 5)
+                        }
+                        6 if hidden_at.is_none() => {
+                            decision = observation::Decision::Accepted;
+                            for _ in 0..e.wheel.unsigned_abs().min(3) {
+                                shell.direction(if e.wheel > 0 { Dir::Up } else { Dir::Down });
+                            }
+                        }
+                        _ if hidden_at.is_some() && matches!(e.kind, 2..=6 | 10 | 11) => {
+                            decision = observation::Decision::Hidden;
+                        }
+                        _ => {}
                     }
-                    _ => {}
+                    record_keyboard_observer(
+                        &mut keyboard_observer,
+                        shell,
+                        &window,
+                        &keyboard,
+                        ObservedFrame {
+                            stamp: observation_stamp(
+                                start,
+                                now,
+                                observation_event_seq,
+                                observation_batch_seq,
+                            ),
+                            hidden: hidden_at.is_some(),
+                            idle: idle_blanked,
+                            counters: observation_counters(
+                                loop_counters,
+                                shell,
+                                preference_write_attempts,
+                                external_action_attempts,
+                                idle_presentations,
+                            ),
+                        },
+                        Some(observation::EventDecision {
+                            class: observation_class(e.kind),
+                            decision,
+                            origin: observation::Origin::NativeUnclassified,
+                        }),
+                    )?;
+                    if event_log.len() < 32 {
+                        event_log.push(e);
+                    }
+                    if shell.should_exit() || reason == "window_closed" {
+                        break;
+                    }
                 }
-                record_keyboard_observer(
-                    &mut keyboard_observer,
-                    &shell,
-                    &window,
-                    &keyboard,
-                    ObservedFrame {
-                        stamp: observation_stamp(
-                            start,
-                            now,
-                            observation_event_seq,
-                            observation_batch_seq,
-                        ),
-                        hidden: hidden_at.is_some(),
-                        idle: idle_blanked,
-                        counters: observation_counters(
-                            loop_counters,
-                            &shell,
-                            preference_write_attempts,
-                            external_action_attempts,
-                            idle_presentations,
-                        ),
-                    },
-                    Some(observation::EventDecision {
-                        class: observation_class(e.kind),
-                        decision,
-                        origin: observation::Origin::NativeUnclassified,
-                    }),
-                )?;
-                if event_log.len() < 32 {
-                    event_log.push(e);
-                }
-            }
+                Ok::<(), Box<dyn std::error::Error>>(())
+            })?;
             if reason == "window_closed" {
                 window.text_stop();
                 keyboard.stopped(now);
@@ -3364,6 +3369,75 @@ mod interactive_keyboard_tests {
             Some(observation::Decision::Drain)
         );
         assert_eq!(shell.focused_item().as_deref(), Some("Search apps"));
+        assert!(shell.take_requests().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod input_frame_tests {
+    use super::*;
+    fn shell() -> Shell {
+        Shell::new(serde_json::from_value(serde_json::json!({
+            "captured_at":"fixture",
+            "applications":[{"id":"com.example.app","title":"Application","type":"native","visible":true,"icon":null}],
+            "launch_ids":["com.example.app"],"inputs":[],
+            "context":{"input":"HDMI_1","dynamic_range":"sdr","picture_mode":"cinema"},"settings":{}
+        })).unwrap(), Preferences::default())
+    }
+    #[test]
+    fn queued_focus_loss_cancels_due_home_hold_before_favourites_change() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = shell();
+        let before = serde_json::to_value(shell.preferences()).unwrap();
+        shell.tick(100, 0.016);
+        shell.press(true, PressFrom::Key);
+        shell
+            .input_frame(650, 0.016, |shell| {
+                shell.cancel_press();
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        assert_eq!(serde_json::to_value(shell.preferences()).unwrap(), before);
+        assert!(shell.take_requests().is_empty());
+    }
+    #[test]
+    fn queued_back_cancels_due_application_commit_before_launch() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = shell();
+        shell.open(Page::Applications);
+        shell.tick(100, 0.016);
+        shell.press(true, PressFrom::Key);
+        shell.tick(200, 0.016);
+        shell.press(false, PressFrom::Key);
+        shell.tick(216, 0.016);
+        shell
+            .input_frame(350, 0.016, |shell| {
+                shell.back();
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        assert_eq!(shell.page(), Page::Home);
+        assert!(shell.take_requests().is_empty());
+    }
+    #[test]
+    fn newly_queued_press_uses_current_frame_time_and_uninterrupted_hold_works() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = shell();
+        shell.open(Page::Applications);
+        shell.tick(100, 0.016);
+        shell
+            .input_frame(700, 0.016, |shell| {
+                shell.press(true, PressFrom::Key);
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        assert!(shell.menu_application().is_none());
+        shell.tick(1199, 0.016);
+        assert!(shell.menu_application().is_none());
+        shell.tick(1200, 0.016);
+        assert_eq!(shell.menu_application(), Some("com.example.app"));
+        shell.press(false, PressFrom::Key);
+        shell.tick(1400, 0.016);
         assert!(shell.take_requests().is_empty());
     }
 }

@@ -2220,3 +2220,125 @@ fn drawer_nonzero_rest_preserves_end_visibility_and_stops_repeated_damage() {
     assert_eq!(shell.drawer_scroll.vel,0.0);
     assert!(shell.take_requests().is_empty());
 }
+
+#[test]
+fn pointer_click_replaces_a_same_card_keyboard_press_without_a_second_launch() {
+    let _serial = plx_base::testlock::serial();
+    let mut shell = Shell::new(fixture(), Preferences::default());
+    shell.enable_app_launches(true);
+    shell.open(Page::Applications);
+    assert!(shell.focus_application("com.example.app00"));
+    let key = FocusKey {
+        entry: entry(Page::Applications),
+        elem: focus(&shell),
+    };
+    let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
+    shell.input.hit.fill(vec![Stop {
+        key,
+        rect,
+        rest_rect: rect,
+        clip: CONTENT,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    }]);
+    shell.input.hit.swap();
+    shell.tick(100, 0.016);
+    shell.press(true, PressFrom::Key);
+    shell.tick(150, 0.05);
+    shell.pointer(rect.cx(), rect.cy(), true);
+    assert_eq!(
+        focus(&shell),
+        key.elem,
+        "click must exercise the already-focused card"
+    );
+    shell.press(false, PressFrom::Key);
+    for ms in (166..=950).step_by(16) {
+        shell.tick(ms, 0.016);
+    }
+    assert_eq!(
+        shell.take_requests(),
+        vec![Action::RequestApplication("com.example.app00".into())],
+        "pointer release owns this activation; later keyboard release must not launch again"
+    );
+    assert!(
+        shell.menu_application().is_none(),
+        "the replaced keyboard arm must not become a hold"
+    );
+}
+
+#[test]
+fn pointer_click_miss_cancels_keyboard_press_but_same_card_hover_keeps_it() {
+    let _serial = plx_base::testlock::serial();
+    for click in [false, true] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        shell.enable_app_launches(true);
+        shell.open(Page::Applications);
+        assert!(shell.focus_application("com.example.app00"));
+        let key = FocusKey {
+            entry: entry(Page::Applications),
+            elem: focus(&shell),
+        };
+        let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
+        shell.input.hit.fill(vec![Stop {
+            key,
+            rect,
+            rest_rect: rect,
+            clip: CONTENT,
+            hover: Hover::Focus,
+            activate: Activate::Press,
+        }]);
+        shell.input.hit.swap();
+        shell.tick(100, 0.016);
+        shell.press(true, PressFrom::Key);
+        shell.tick(150, 0.05);
+        if click {
+            shell.pointer(5.0, 5.0, true);
+        } else {
+            shell.pointer(rect.cx(), rect.cy(), false);
+        }
+        shell.press(false, PressFrom::Key);
+        for ms in (166..=950).step_by(16) {
+            shell.tick(ms, 0.016);
+        }
+        let expected = if click {
+            vec![]
+        } else {
+            vec![Action::RequestApplication("com.example.app00".into())]
+        };
+        assert_eq!(
+            shell.take_requests(),
+            expected,
+            "click miss must cancel; hover over the same card must retain a keyboard tap"
+        );
+        assert_eq!(focus(&shell), key.elem);
+        assert!(shell.menu_application().is_none());
+    }
+}
+
+
+#[test]
+fn home_back_blocks_a_later_pointer_activation_in_the_same_input_batch() {
+    let _serial = plx_base::testlock::serial();
+    let mut shell = Shell::new(fixture(), Preferences::default());
+    shell.enable_app_launches(true);
+    let key = FocusKey { entry: entry(Page::Home), elem: focus(&shell) };
+    assert_eq!(shell.focused_item().as_deref(), Some("com.example.app00"));
+    let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
+    shell.input.hit.fill(vec![Stop {
+        key, rect, rest_rect: rect, clip: CONTENT,
+        hover: Hover::Focus, activate: Activate::Press,
+    }]);
+    shell.input.hit.swap();
+    let before = shell.preferences().clone();
+    shell.input_frame(400, 0.016, |shell| {
+        shell.back();
+        assert!(shell.should_exit());
+        shell.pointer(rect.cx(), rect.cy(), true);
+        Ok::<(), ()>(())
+    }).unwrap();
+    assert!(shell.should_exit());
+    assert_eq!(shell.page(), Page::Home);
+    assert_eq!(shell.preferences(), &before);
+    assert!(shell.take_requests().is_empty(),
+        "Back from Home is terminal; a later queued click must not launch an application");
+}

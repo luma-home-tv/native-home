@@ -2211,6 +2211,7 @@ impl Shell {
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
+        self.input.cancel_press();
         if self.surface.page == Page::RangeEditor {
             self.close_range_editor();
             return;
@@ -2266,6 +2267,7 @@ impl Shell {
         } else if self.surface.page != Page::Home {
             self.rebuild(Page::Home)
         } else {
+            self.pending.clear();
             self.exit = true
         }
     }
@@ -2296,6 +2298,11 @@ impl Shell {
 
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
+        }
+        if click {
+            // A pointer release supersedes any keyboard gesture, even when
+            // focus stays on the same card or the pointer misses every stop.
+            self.input.cancel_press();
         }
         let owner = InputOwner::Entry(entry(self.surface.page));
         let kind = if click {
@@ -2329,6 +2336,9 @@ impl Shell {
         }
     }
     fn activate(&mut self, key: FocusKey<u32>, hold: bool) {
+        if self.exit {
+            return;
+        }
         if self.surface.page == Page::RangeEditor {
             if key.entry != entry(Page::RangeEditor) {
                 return;
@@ -2654,6 +2664,23 @@ impl Shell {
     }
     pub fn menu_application(&self) -> Option<&str> {
         self.menu.as_ref().map(|m| m.id.as_str())
+    }
+    /// Process queued input at this frame's controller time. Deferred gestures are
+    /// advanced only after the batch, so queued cancellation can win the frame.
+    pub fn input_frame<E>(
+        &mut self,
+        ms: u32,
+        dt: f32,
+        input: impl FnOnce(&mut Self) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.now = ms;
+        input(self)?;
+        if self.exit {
+            self.input.cancel_press();
+        } else {
+            self.tick(ms, dt);
+        }
+        Ok(())
     }
     pub fn tick(&mut self, ms: u32, dt: f32) {
         self.now = ms;
