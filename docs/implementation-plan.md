@@ -74,6 +74,8 @@ webOS24's actual icon paths; metadata alone does not establish filesystem access
 The [first passive survey](artwork-access-032.md) read one developer icon but found
 four sampled directories absent inside the ordinary jail. Qualify the missing
 resource route before treating a direct-file worker as complete artwork support.
+The [Identify-only candidate](artwork-broker-identify.md) now separates that
+route's caller/transport qualification from icon reads and production startup.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent
 bounded, read-only inventory work. Existing verified source selection and LG
 routes remain available throughout.

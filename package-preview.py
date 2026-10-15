@@ -18,6 +18,7 @@ build_receipt_path = binary.with_name(binary.name + '.build.json')
 build_receipt = validate_build_receipt(here, binary, build_receipt_path)
 build_receipt_sha256 = hashlib.sha256(build_receipt_path.read_bytes()).hexdigest()
 main = binary.name
+if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary; temporary helpers cannot be packaged')
 app_id = 'com.ash.nativehome.targetproof' if main == 'launch-target' else 'com.ash.nativehome.preview'
 test_identity = os.environ.get('NATIVE_HOME_TEST_IDENTITY') == '1'
 if test_identity:
@@ -25,12 +26,26 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.32.0' if main == 'home-preview' else '0.1.0'
+version = '0.33.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
+broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '1'
+broker_marker = None
+if broker_identify_proof:
+    allowed = {'NATIVE_HOME_BROKER_IDENTIFY_PROOF', 'NATIVE_HOME_NATIVE_READ_PROBE'}
+    others = [k for k, v in os.environ.items() if v and k.startswith('NATIVE_HOME_')
+              and (k.endswith('_PROOF') or k.endswith('_PROBE')) and k not in allowed]
+    if main != 'home-preview' or not test_identity or interactive or os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') != '1' or others:
+        raise ValueError('Broker Identify requires isolated non-interactive native read diagnostics and no other trial')
+    nonce = os.environ.get('NATIVE_HOME_BROKER_NONCE', '')
+    broker_sha256 = os.environ.get('NATIVE_HOME_BROKER_SHA256', '')
+    if len(nonce) != 32 or any(c not in '0123456789abcdef' for c in nonce) or len(broker_sha256) != 64 or any(c not in '0123456789abcdef' for c in broker_sha256):
+        raise ValueError('Strict nonce and broker executable digest required')
+    broker_marker = {'schema': 1, 'nonce': nonce, 'ui_sha256': build_receipt['binary']['sha256'], 'broker_sha256': broker_sha256}
+elif any(os.environ.get(k) for k in ('NATIVE_HOME_BROKER_NONCE', 'NATIVE_HOME_BROKER_SHA256')):
+    raise ValueError('Broker marker values require explicit isolated Identify mode')
 if sound_read_proof and (main != 'home-preview' or not test_identity or interactive or os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') != '1' or any(os.environ.get(k) for k in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
     'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF',
@@ -136,6 +151,8 @@ if main == 'home-preview':
         (stage / 'pointer-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1':
         (stage / 'native-read-probe.json').write_text('{}\n')
+    if broker_marker is not None:
+        (stage / 'artwork-broker-proof.json').write_text(json.dumps(broker_marker, separators=(',', ':'))+'\n')
     if sound_read_proof:
         (stage / 'sound-read-proof.json').write_text('{}\n')
     for app in snapshot['applications']:
@@ -183,6 +200,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
+           'broker_identify_proof': broker_identify_proof,
            'native_sound_read_proof': sound_read_proof,
            'keyboard_observer_proof': keyboard_observer,
            'keyboard_recipe_proof': keyboard_recipe,

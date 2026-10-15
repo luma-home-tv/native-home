@@ -19,6 +19,11 @@ jail. Direct filesystem access is therefore insufficient as the demonstrated
 complete solution. Resource-route qualification comes before the worker/texture
 integration below; no developer-only substitute is admitted as completion.
 
+The next [Identify-only broker candidate](artwork-broker-identify.md) tests a
+temporary operator-started native connection with kernel/process/context binding.
+It has no resource operation or production startup mechanism. Its result must
+precede any privileged artwork-read implementation.
+
 ## Admission experiment
 
 After the retained 0.31 delivery, run a small separate Proof app on G2. Select one

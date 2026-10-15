@@ -92,6 +92,9 @@ pub fn collect() -> serde_json::Value {
     if plx_base::paths::app_id() == crate::identity::PROOF && unsafe { libc::geteuid() } >= 1000 {
         let artwork_access = crate::app_artwork::survey(&value, plx_base::paths::app_id());
         value["artwork_access"] = artwork_access;
+        if std::path::Path::new(&plx_base::paths::in_app_dir("artwork-broker-proof.json")).exists() {
+            value["artwork_broker"] = crate::broker_probe::collect();
+        }
     }
     value["registered"] = serde_json::json!(true);
     value["uid"] = serde_json::json!(unsafe { libc::geteuid() });

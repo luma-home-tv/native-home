@@ -78,6 +78,9 @@ The [0.32 passive artwork-access survey](docs/artwork-access-032.md) adds a boun
 reader and decoder groundwork. One developer-app sample was readable; four other
 locations were absent in the ordinary jail. Full live artwork remains unfinished,
 and normal G2 stays on 0.31.0.
+The [0.33 Identify-only candidate](docs/artwork-broker-identify.md) adds a separate
+temporary native helper and restricted caller-binding proof. Host checks pass;
+G2 communication/removal and all privileged artwork operations remain unqualified.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
@@ -102,7 +105,9 @@ The build wrapper checks those inputs before and after compilation; packaging
 requires its matching adjacent build receipt. See [build inputs](docs/build-inputs.md).
 `build-client.py host --bin home-preview` builds the desktop renderer.
 The ARM path uses the LG SDK through `NATIVE_HOME_WEBOS_SDK` and a separate
-`NATIVE_HOME_BUILD_DIR`; it builds only the dashboard binaries. Packaging includes
+`NATIVE_HOME_BUILD_DIR`. An explicit `--bin artwork-broker-proof` builds the
+separate operator-started Identify test helper; application packaging rejects it.
+Packaging includes
 the Luma client, fonts, its own icon and explicitly supplied development assets.
 No Plex application package, server sign-in or playback feature is built.
 

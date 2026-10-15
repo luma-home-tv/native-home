@@ -7,7 +7,7 @@ from build_provenance import snapshot, record_build_receipt
 
 parser = argparse.ArgumentParser()
 parser.add_argument('target', choices=('host', 'arm', 'test'))
-parser.add_argument('--bin', choices=('control-preview', 'home-preview', 'launch-target'), default='control-preview')
+parser.add_argument('--bin', choices=('control-preview', 'home-preview', 'launch-target', 'artwork-broker-proof'), default='control-preview')
 args = parser.parse_args()
 here = Path(__file__).resolve().parent
 repo = here
