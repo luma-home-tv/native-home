@@ -10,6 +10,12 @@ Both normal package versions were unpacked and checked before TV contact; only
 the executable and app version metadata differ across the 32-entry bundles.
 The installed old bundle and complete saved state were backed up before upgrade.
 
+Later inspection found undeclared formatting changes in the external framework
+used for 0.29/0.30. The [build-input record](build-inputs.md) preserves the scope
+and comparison results. The executable/package identities and runtime evidence
+below remain valid; the old declared dependency pins do not establish byte-exact
+reproduction. Historical artifacts and receipts are unchanged.
+
 Normal Apps/Search/LG-keyboard/Back and Controls/General/Back ran through 30
 Root-reviewed private compositor frames. Twenty-nine fixed network keys were
 accepted; a separate General review checkpoint sent no input. Each of the five

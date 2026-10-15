@@ -7,12 +7,16 @@ from pathlib import Path
 import shutil
 import subprocess
 import tarfile
+from build_provenance import validate_build_receipt
 
 here = Path(__file__).resolve().parent
 repo = here
 output = Path(os.environ['NATIVE_HOME_BUILD_DIR']).resolve()
 sdk = Path(os.environ['NATIVE_HOME_WEBOS_SDK']).resolve()
-binary = Path(os.environ['NATIVE_HOME_ARM_BINARY']).resolve()
+binary = Path(os.environ['NATIVE_HOME_ARM_BINARY']).absolute()
+build_receipt_path = binary.with_name(binary.name + '.build.json')
+build_receipt = validate_build_receipt(here, binary, build_receipt_path)
+build_receipt_sha256 = hashlib.sha256(build_receipt_path.read_bytes()).hexdigest()
 main = binary.name
 app_id = 'com.ash.nativehome.targetproof' if main == 'launch-target' else 'com.ash.nativehome.preview'
 test_identity = os.environ.get('NATIVE_HOME_TEST_IDENTITY') == '1'
@@ -22,7 +26,7 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.30.0' if main == 'home-preview' else '0.1.0'
+version = '0.31.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
@@ -47,6 +51,9 @@ if interactive and (main != 'home-preview' or any(os.environ.get(name) for name 
 shutil.copy2(binary, stage / main)
 (stage / main).chmod(0o755)
 staged_binary_sha256 = hashlib.sha256((stage / main).read_bytes()).hexdigest()
+if (staged_binary_sha256 != build_receipt['binary']['sha256'] or
+        (stage / main).stat().st_size != build_receipt['binary']['bytes']):
+    raise RuntimeError('Staged binary differs from verified build receipt')
 for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
     shutil.copy2(repo / 'resources/fonts' / name, stage / name)
 # Independent Luma Home branding; no PlxNative mark is used as this client's identity.
@@ -143,6 +150,8 @@ if main == 'home-preview':
         (stage / 'icons').mkdir(exist_ok=True)
         shutil.copy2(source, stage / relative)
 
+if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
+    raise RuntimeError('Build receipt changed during packaging')
 control = ('Package: ' + app_id + '\nVersion: ' + version + '\nSection: misc\nPriority: optional\n'
            'Architecture: arm\nMaintainer: Native Home development\n'
            'Description: Isolated native interface preview\n').encode()
@@ -165,6 +174,9 @@ subprocess.run([str(ar), 'rc', str(ipk), 'debian-binary', 'control.tar.gz', 'dat
 members = subprocess.check_output([str(ar), 't', str(ipk)], text=True).splitlines()
 if members != ['debian-binary', 'control.tar.gz', 'data.tar.gz']: raise RuntimeError('Invalid IPK members')
 receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_bytes()).hexdigest(),
+           'build_receipt_sha256': build_receipt_sha256,
+           'build_source_revision': build_receipt['git_revision'],
+           'framework': build_receipt['snapshot']['framework'],
            'binary_sha256': staged_binary_sha256, 'bytes': ipk.stat().st_size,
            'performance_proof': os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1',
            'controls_probe': os.environ.get('NATIVE_HOME_CONTROLS_PROBE') == '1',

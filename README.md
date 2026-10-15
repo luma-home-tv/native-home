@@ -31,6 +31,9 @@ buffer. These generic changes are
 candidates for upstream contribution; their presence does not turn the upstream
 framework into Luma Home-authored code.
 
+The patch also provides a read-only form binding that blocks activation without
+dimming a valid current value. Unavailable and inactive rows retain dim styling.
+
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
 keeps that support material intact. Its full repository cache contains upstream
@@ -60,6 +63,9 @@ The [latest backed-up G2 delivery](docs/retained-preview-030-milestone.json) is
 language/region readings. Normal Apps/Search/keyboard and General navigation,
 favourites preservation and cleanup are verified; physical and broader release
 checks remain separate. The C2 was not contacted for this delivery.
+The [build-input record](docs/build-inputs.md) documents a subsequently discovered
+formatting drift in 0.29/0.30 dependency inputs and the new verification guards.
+The frozen runtime evidence remains scoped to its actual executable hashes.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
@@ -79,6 +85,9 @@ physical latency, normal-identity total cost or a matched speedup comparison.
 ## Development
 
 Run `python3 prepare-framework.py`, then `python3 build-client.py test`.
+`python3 tools/verify-framework.py .` performs a read-only input check.
+The build wrapper checks those inputs before and after compilation; packaging
+requires its matching adjacent build receipt. See [build inputs](docs/build-inputs.md).
 `build-client.py host --bin home-preview` builds the desktop renderer.
 The ARM path uses the LG SDK through `NATIVE_HOME_WEBOS_SDK` and a separate
 `NATIVE_HOME_BUILD_DIR`; it builds only the dashboard binaries. Packaging includes

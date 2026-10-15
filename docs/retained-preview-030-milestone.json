@@ -4,6 +4,7 @@
   "version": "0.30.0",
   "previous_version": "0.28.0",
   "source_revision": "093a7f600be6a3c49fbb4ad966bd4e55b70b63fd",
+  "subsequent_build_input_caveat": "See build-inputs.md: external framework formatting drift means declared dependency pins do not establish reproduction of this frozen executable; original runtime receipts remain unchanged.",
   "binary_sha256": "13595c926f6b4aadd9cec382fcd295d7797fb4bb5087e9bd0547a556aee1836e",
   "normal_ipk_sha256": "96b647728985419b3d51d6a3bac7aa3a6ddaa58004a7b378f6be3f9cf51c65d5",
   "rollback_ipk_sha256": "635eec8fc8fe27b1f4e453334d9da28ee753da04e0515bf625adc5bf2153243d",

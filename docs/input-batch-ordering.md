@@ -26,6 +26,10 @@ This change does not add SDL event timestamps, calibrate physical hold duration,
 change the framework's 500 ms release/hold boundary, or fix controller-time drift
 caused by clamped frame deltas. Native observer event origins remain unclassified.
 No LG Home, boot, firmware, settings adapter, or framework dependency is changed.
+This describes the intended functional scope. Later inspection found undeclared
+formatter changes in the external framework compiled for 0.29/0.30; see the
+[build-input correction](build-inputs.md). The frozen binary/runtime evidence is
+preserved, but the old declared pins do not establish byte-exact reproduction.
 
 ## Isolated G2 attempt boundary
 

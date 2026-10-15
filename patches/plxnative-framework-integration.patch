@@ -136,6 +136,65 @@ index ff9994c..2f19905 100644
 +        assert!(!tile_admitted(true,false,Rect::new(1300.0,340.0,230.0,230.0),clip));
 +    }
 +}
+diff --git a/rust-modules/ui/src/form.rs b/rust-modules/ui/src/form.rs
+index 352bf07..43ce8c2 100644
+--- a/rust-modules/ui/src/form.rs
++++ b/rust-modules/ui/src/form.rs
+@@ -80,7 +80,7 @@ pub struct Binding<Id, A, Dest> {
+     pub key: RowKey,
+     pub kind: RowKind<Dest>,
+     pub action: A,
+-    /// Set by [`FormSection::disabled`]: [`FormTable::activate`] answers `None`.
++    /// Set by [`FormSection::disabled`] or [`FormSection::read_only`]: activation is `None`.
+     pub disabled: bool,
+ }
+ 
+@@ -163,6 +163,15 @@ impl<Id, A, Dest> FormSection<Id, A, Dest> {
+         }
+         self
+     }
++    /// Keep a current read-only value legible while blocking activation. Unlike
++    /// [`Self::disabled`], this does not dim the row. Call `disabled` as well for
++    /// unavailable or inactive content. A skipped declaration affects no prior row.
++    pub fn read_only(mut self, cond: bool) -> Self {
++        if let Some(Slot::Item(b, _)) = self.slots.last_mut().filter(|_| cond && !self.skipped) {
++            b.disabled = true;
++        }
++        self
++    }
+     pub fn item_keyed_if(
+         mut self,
+         cond: bool,
+diff --git a/rust-modules/ui/src/form_tests.rs b/rust-modules/ui/src/form_tests.rs
+index 0446cf2..c83d8b6 100644
+--- a/rust-modules/ui/src/form_tests.rs
++++ b/rust-modules/ui/src/form_tests.rs
+@@ -535,3 +535,25 @@ fn map_retypes_bindings_demotes_declined_rows_and_slots_read_the_layout() {
+     assert_eq!(t.table.sections[0].rows[1].label, "Beta", "drawn exactly as declared");
+     assert_eq!(t.index_of_key(RowKey(11)), Some(0), "the key the closure answered is the key bound");
+ }
++
++
++#[test]
++fn read_only_blocks_activation_without_dimming_and_respects_skipped_items() {
++    let t = table(F::new().section(S::new("Readings")
++        .item(Id::A, RowKind::Button, Act::A, Row::new("Current").value("On"))
++        .read_only(true)
++        .item(Id::B, nav(), Act::B, Row::new("Unavailable"))
++        .read_only(true).disabled(true)
++        .item(Id::C, RowKind::Button, Act::C, Row::new("Action"))
++        .read_only(false)
++        .item_if(false, Id::D, RowKind::Button, Act::D, Row::new("Omitted"))
++        .read_only(true)));
++    assert!(t.binding_at(0).unwrap().disabled);
++    assert!(!t.table.sections[0].rows[0].dim);
++    assert_eq!(t.activate(0), None);
++    assert!(t.binding_at(1).unwrap().disabled && t.table.sections[0].rows[1].dim);
++    assert_eq!(t.activate(1), None);
++    assert!(!t.binding_at(2).unwrap().disabled && !t.table.sections[0].rows[2].dim);
++    assert_eq!(t.activate(2), Some(Activation::Action(Act::C)));
++    assert_eq!(t.table.next_selectable(0, 1), Some(1));
++}
 diff --git a/rust-modules/ui/src/text_buffer.rs b/rust-modules/ui/src/text_buffer.rs
 index 978406e..c0edc08 100644
 --- a/rust-modules/ui/src/text_buffer.rs

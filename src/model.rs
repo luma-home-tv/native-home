@@ -228,7 +228,8 @@ pub fn controls_form_with_numeric(settings:&[Setting],current:&Context,section_r
         let value = if hint.show_current_value() { display_value(setting) } else { "Unavailable" };
         section = section.item_keyed(setting.id.clone(), RowKey(setting.focus_key), RowKind::Button,
             if editable {Action::OpenPointerSpeed} else {Action::Inspect(setting.id.clone())}, Row::new(&setting.label).detail(detail).value(value).server_value().chevron(editable))
-            .disabled(unavailable || (setting.protected && !editable));
+            .read_only(setting.protected && !editable)
+            .disabled(unavailable || (setting.protected && descriptor == DescriptorState::Inactive));
     }
     if section_route==Some(SettingsSection::Accessibility) {
         section=section.item_keyed("audioDescriptionVolume".into(),RowKey(1580),RowKind::Button,Action::OpenDescriptionLevel,
@@ -381,6 +382,7 @@ mod tests {
                 assert_eq!(binding.action, Action::Inspect((*id).into()));
                 let row = &table.table.sections[0].rows[index];
                 assert_eq!(row.value.as_deref(), Some(*value));
+                assert!(!row.dim, "a current protected reading must retain normal ink");
                 assert_eq!(row.detail, "Protected • view only");
                 assert!(row.ticon.is_none(), "readings must not advertise a drill-in editor");
                 assert_eq!(table.activate(index), None);
@@ -393,6 +395,35 @@ mod tests {
                 Action::OpenLgSettingsSection(SettingsSection::General)
             )));
         }
+    }
+
+    #[test]
+    fn unavailable_wrong_context_and_inactive_readings_remain_dim_and_inert() {
+        let _serial = plx_base::testlock::serial();
+        let current = context();
+        let ids = ["localeInfo.locales.UI", "localeInfo.locales.AUD", "country", "smartServiceCountryCode2"];
+        let mut rows = ids.iter().enumerate().map(|(i, id)| {
+            let mut row = setting(id, true);
+            row.focus_key = 145 + i as u32;
+            row.value = "GBR".into();
+            row
+        }).collect::<Vec<_>>();
+        rows[1].available = false;
+        rows[2].context.input = "HDMI_4".into();
+        rows[3].constraint = Some(ControlConstraint::Choices {
+            values: vec!["GBR".into()], active: false,
+        });
+        let mut table = FormTable::new(2000);
+        table.set(controls_form_with_numeric(&rows, &current,
+            Some(SettingsSection::General), true, None), None);
+        assert!(!table.table.sections[0].rows[0].dim);
+        for index in 0..4 {
+            assert!(table.binding_at(index).unwrap().disabled);
+            assert_eq!(table.activate(index), None);
+            assert_eq!(table.table.sections[0].rows[index].dim, index != 0);
+        }
+        assert_eq!(table.table.sections[0].rows[1].value.as_deref(), Some("Unavailable"));
+        assert_eq!(table.table.sections[0].rows[2].value.as_deref(), Some("Unavailable"));
     }
 
     #[test]

@@ -3,6 +3,7 @@ import argparse
 import os
 from pathlib import Path
 import subprocess
+from build_provenance import snapshot, record_build_receipt
 
 parser = argparse.ArgumentParser()
 parser.add_argument('target', choices=('host', 'arm', 'test'))
@@ -17,6 +18,9 @@ cargo = env.get('NATIVE_HOME_CARGO', 'cargo')
 toolchain = env.get('NATIVE_HOME_RUST_TOOLCHAIN', 'nightly-2026-07-02')
 common = [cargo, '+' + toolchain]
 manifest = ['--locked', '--manifest-path', str(here / 'Cargo.toml')]
+# Check before even invoking the C compiler or Cargo. The root build script also
+# checks direct Cargo invocations, but cannot precede dependency build scripts.
+before = snapshot(here)
 if args.target == 'test':
     command = common + ['test'] + manifest + ['--lib']
 elif args.target == 'host':
@@ -43,4 +47,16 @@ else:
     env['RUSTFLAGS'] = ' '.join(flags)
     command = common + ['build'] + manifest + ['--release', '--target', 'arm-unknown-linux-gnueabi',
                  '-Z', 'build-std=std,panic_abort', '--bin', args.bin]
-raise SystemExit(subprocess.run(command, cwd=repo, env=env).returncode)
+result = subprocess.run(command, cwd=repo, env=env)
+if result.returncode:
+    raise SystemExit(result.returncode)
+after = snapshot(here)
+if before != after:
+    raise RuntimeError('Build inputs/framework changed during build')
+if args.target != 'test':
+    target_dir = Path(env.get('CARGO_TARGET_DIR', here / 'target'))
+    if not target_dir.is_absolute():
+        target_dir = here / target_dir
+    binary = (target_dir / 'debug' / args.bin if args.target == 'host' else
+              target_dir / 'arm-unknown-linux-gnueabi/release' / args.bin)
+    print('Build receipt:', record_build_receipt(here, binary, args.target, before, after))

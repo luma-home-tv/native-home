@@ -2,6 +2,7 @@
   "schema": 1,
   "status": "isolated_read_layout_verified_subsequent_normal_g2_delivery_verified",
   "source_revision": "093a7f600be6a3c49fbb4ad966bd4e55b70b63fd",
+  "subsequent_build_input_caveat": "See build-inputs.md: external framework formatting drift means declared dependency pins do not establish reproduction of this frozen executable; original runtime receipts remain unchanged.",
   "candidate_version": "0.30.0",
   "binary_sha256": "13595c926f6b4aadd9cec382fcd295d7797fb4bb5087e9bd0547a556aee1836e",
   "isolated_ipk_sha256": "af058e095e8cee9509041b716f17af89b4a0d1f325505ed131bc62abbb806274",

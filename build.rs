@@ -3,6 +3,7 @@ mod host_link;
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
+    verify_framework();
     println!("cargo:rerun-if-changed=.dependencies/plx-native/rust-modules/build_support/host_link.rs");
     if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default()=="arm" {
         println!("cargo:rustc-link-lib=luna-service2");
@@ -10,6 +11,23 @@ fn main() {
     }
     compile_events();
     host_link::emit(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(".dependencies/plx-native"));
+}
+
+fn verify_framework() {
+    // Recursive directory tracking makes cached direct Cargo invocations rerun
+    // this guard after dependency edits. The wrapper checks before Cargo starts.
+    for path in ["tools/verify-framework.py", "dependency-lock.json",
+        "patches/plxnative-framework-integration.patch", ".dependencies/plx-native"] {
+        println!("cargo:rerun-if-changed={path}");
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let result = std::process::Command::new("python3")
+        .arg(root.join("tools/verify-framework.py"))
+        .arg(root)
+        .output()
+        .expect("Run read-only framework verifier");
+    assert!(result.status.success(), "Framework verification failed: {}",
+        String::from_utf8_lossy(&result.stderr));
 }
 
 fn compile_events() {
