@@ -112,6 +112,11 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
             json!({}),
         ),
         (
+            "current_input",
+            "luna://com.webos.service.eim/getCurrentInput",
+            json!({}),
+        ),
+        (
             "picture",
             "luna://com.webos.service.settings/getSystemSettings",
             json!({"category":"picture","keys":["pictureMode","backlight","contrast","brightness"]}),

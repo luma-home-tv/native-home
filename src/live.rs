@@ -125,7 +125,16 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
     let inputs = reading((|| {
         let data = checked(replies, "inputs")?;
         let mut ports = BTreeMap::new();
-        for input in array(data, "devices", 16)? {
+        let devices = array(data, "devices", 16)?;
+        let current_selection = checked(replies, "current_input")
+            .and_then(|data| text(data, "mainInputSourceId", 64))
+            .ok()
+            .filter(|current| {
+                devices
+                    .iter()
+                    .any(|device| device["id"].as_str() == Some(current.as_str()))
+            });
+        for input in devices {
             let id = text(input, "id", 16)?;
             if !matches!(id.as_str(), "HDMI_1" | "HDMI_2" | "HDMI_3" | "HDMI_4") {
                 continue;
@@ -136,12 +145,14 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
                     .and_then(Value::as_bool)
                     .ok_or_else(|| format!("missing {key}"))
             };
+            let selected = current_selection.as_ref().map(|current| current == &id);
             let row = Input {
                 id: id.clone(),
                 label: text(input, "label", 128)?,
                 plugged: flag("hdmiPlugIn")?,
                 signal: flag("hdmiSignalExist")?,
                 active: flag("activate")?,
+                selected,
             };
             if ports.insert(id, row).is_some() {
                 return Err("Duplicate HDMI identity".into());
@@ -420,7 +431,12 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
             snapshot.inputs = value.clone();
             fresh.inputs = Some(update.observed_ms);
         }
-        Reading::Failed(_) => fresh.inputs = None,
+        Reading::Failed(_) => {
+            fresh.inputs = None;
+            for input in &mut snapshot.inputs {
+                input.selected = None;
+            }
+        }
     }
     match &update.picture {
         Reading::Value(value) => {
@@ -502,6 +518,11 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
     expire(snapshot, fresh, update.observed_ms);
 }
 pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
+    if !Freshness::current(fresh.inputs, now) {
+        for input in &mut snapshot.inputs {
+            input.selected = None;
+        }
+    }
     for (section, stamp) in [
         ("picture", fresh.picture),
         ("sound", fresh.sound),
@@ -692,6 +713,31 @@ mod tests {
                 parse(&data, "self", 100, false).picture,
                 Reading::Failed(_)
             ));
+        }
+    }
+    #[test]
+    fn selected_input_uses_independent_eim_getter_not_device_activate_flags() {
+        let mut data = raw();
+        data["replies"]["current_input"] =
+            serde_json::json!({"returnValue":true,"mainInputSourceId":"HDMI_4"});
+        data["replies"]["inputs"]["devices"][0]["activate"] = true.into();
+        let Reading::Value(ports) = parse(&data, "com.example.self", 100, false).inputs else {
+            panic!("ports")
+        };
+        assert_eq!(
+            ports.iter().map(|p| p.selected).collect::<Vec<_>>(),
+            [Some(false), Some(false), Some(false), Some(true)]
+        );
+        for invalid in [
+            serde_json::json!({"returnValue":false}),
+            serde_json::json!({"returnValue":true,"mainInputSourceId":"UNKNOWN"}),
+            serde_json::json!({"returnValue":true,"mainInputSourceId":true}),
+        ] {
+            data["replies"]["current_input"] = invalid;
+            let Reading::Value(ports) = parse(&data, "com.example.self", 100, false).inputs else {
+                panic!("cable/signal reads should remain")
+            };
+            assert!(ports.iter().all(|p| p.selected.is_none()));
         }
     }
 }

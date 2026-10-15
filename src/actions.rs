@@ -52,6 +52,7 @@ pub enum Op {
     Apps,
     LaunchPoints,
     Inputs,
+    CurrentInput,
     Foreground,
     Windows,
     Launch,
@@ -273,17 +274,8 @@ pub fn execute<P: Platform>(
             if overlay || current.get("appId").and_then(Value::as_str) == receipt.target.as_deref()
             {
                 if let Request::Input { id } = &request {
-                    let inputs = get(platform, Op::Inputs)?;
-                    let active =
-                        inputs
-                            .get("devices")
-                            .and_then(Value::as_array)
-                            .is_some_and(|rows| {
-                                rows.iter().any(|r| {
-                                    r.get("id").and_then(Value::as_str) == Some(id)
-                                        && r.get("activate").and_then(Value::as_bool) == Some(true)
-                                })
-                            });
+                    let current_input = get(platform, Op::CurrentInput)?;
+                    let active = current_input["mainInputSourceId"].as_str() == Some(id.as_str());
                     if !active {
                         platform.wait();
                         continue;
@@ -314,6 +306,7 @@ impl Platform for NativePlatform {
             Op::Apps => "luna://com.webos.applicationManager/listApps",
             Op::LaunchPoints => "luna://com.webos.applicationManager/listLaunchPoints",
             Op::Inputs => "luna://com.webos.service.eim/getAllInputStatus",
+            Op::CurrentInput => "luna://com.webos.service.eim/getCurrentInput",
             Op::Foreground => "luna://com.webos.applicationManager/getForegroundAppInfo",
             Op::Windows => "luna://com.webos.surfacemanager/getForegroundWindowInfo",
             Op::Launch => "luna://com.webos.applicationManager/launch",
@@ -451,6 +444,7 @@ mod tests {
         rows: Value,
         points: Value,
         inputs: Value,
+        current_input: String,
         launches: Vec<Value>,
         accepted: bool,
         window_after: Option<String>,
@@ -465,6 +459,7 @@ mod tests {
                 rows: json!({"returnValue":true,"apps":[{"id":"com.example.target","type":"native","visible":true},{"id":"com.palm.app.settings","type":"web","visible":false,"version":"4.0.1","uiRevision":2,"main":"index.multi.html"},{"id":"com.webos.app.hdmi1","type":"native","visible":false}]}),
                 points: json!({"returnValue":true,"launchPoints":[{"id":"com.example.target"}]}),
                 inputs: json!({"returnValue":true,"devices":[{"id":"HDMI_1","appId":"com.webos.app.hdmi1","activate":true}]}),
+                current_input: "HDMI_1".into(),
                 launches: Vec::new(),
                 accepted: true,
                 window_after: None,
@@ -479,6 +474,9 @@ mod tests {
                 Op::Apps => self.rows.clone(),
                 Op::LaunchPoints => self.points.clone(),
                 Op::Inputs => self.inputs.clone(),
+                Op::CurrentInput => {
+                    json!({"returnValue":true,"mainInputSourceId":self.current_input})
+                }
                 Op::Windows => {
                     if self.launches.is_empty() {
                         self.initial_windows.clone()
@@ -845,5 +843,38 @@ mod tests {
         ] {
             assert!(serde_json::from_value::<Request>(value).is_err());
         }
+    }
+    #[test]
+    fn input_launch_needs_current_source_readback_and_not_the_device_flag() {
+        let mut p = Fake::new();
+        p.after = "com.webos.app.hdmi1".into();
+        p.inputs["devices"][0]["activate"] = false.into();
+        let r = execute(
+            &mut p,
+            "com.example.home",
+            Request::Input {
+                id: "HDMI_1".into(),
+            },
+            Capabilities {
+                inputs: true,
+                ..Default::default()
+            },
+        );
+        assert!(r.verified);
+        let mut p = Fake::new();
+        p.after = "com.webos.app.hdmi1".into();
+        p.current_input = "HDMI_4".into();
+        let r = execute(
+            &mut p,
+            "com.example.home",
+            Request::Input {
+                id: "HDMI_1".into(),
+            },
+            Capabilities {
+                inputs: true,
+                ..Default::default()
+            },
+        );
+        assert!(r.admitted && !r.verified);
     }
 }

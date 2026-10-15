@@ -121,6 +121,13 @@ const CARD_STYLE: RowStyle = RowStyle {
     right_reserve: 96.0,
     ..RowStyle::HOME
 };
+const INPUT_DETAIL: Rect = Rect::new(1326.0, 330.0, 498.0, 598.0);
+const INPUT_DETAIL_STYLE: RowStyle = RowStyle {
+    w: 372.0,
+    h: 230.0,
+    gap: 34.0,
+    ..CARD_STYLE
+};
 const INPUT_STYLE: RowStyle = RowStyle {
     w: 310.0,
     h: 190.0,
@@ -161,7 +168,9 @@ pub struct Input {
     pub label: String,
     pub plugged: bool,
     pub signal: bool,
-    pub active: bool,
+    pub active: bool, // Legacy EIM device flag; not an authoritative selection indicator.
+    #[serde(default)]
+    pub selected: Option<bool>,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Snapshot {
@@ -580,7 +589,7 @@ impl Focusable<HomeHost> for Surface {
                 GroupKind::Column
             } else {
                 GroupKind::Grid {
-                    cols: 4,
+                    cols: if self.page == Page::Inputs { 2 } else { 4 },
                     holes: &[],
                 }
             },
@@ -697,7 +706,13 @@ impl Focusable<HomeHost> for Surface {
         let Some(i) = keys.iter().position(|k| *k == key.elem) else {
             return Step::Edge;
         };
-        let cols = if rail || self.table_mode { 1 } else { 4 };
+        let cols = if rail || self.table_mode {
+            1
+        } else if self.page == Page::Inputs {
+            2
+        } else {
+            4
+        };
         let next = match dir {
             Dir::Up => i.checked_sub(cols),
             Dir::Down => Some(i + cols),
@@ -1084,7 +1099,10 @@ impl Shell {
                 }
             }
             Page::Inputs => {
-                self.surface.grid.set_columns(4, INPUT_STYLE, 480.0);
+                self.surface.grid = Grid::new(
+                    entry(page),
+                    GridSpec::new(330.0, 320.0).columns(2, INPUT_DETAIL_STYLE, 480.0),
+                );
                 self.surface.cards = self.input_cards();
             }
 
@@ -1221,7 +1239,11 @@ impl Shell {
                     let key = input_key(&input.id)?;
                     let caption = format!(
                         "{}{}\n{}",
-                        if input.active { "Active • " } else { "" },
+                        if input.selected == Some(true) {
+                            "Selected • "
+                        } else {
+                            ""
+                        },
                         if input.plugged {
                             "Connected"
                         } else {
@@ -1278,7 +1300,13 @@ impl Shell {
                         .get(section)
                         .is_some_and(|rows| rows.iter().any(|r| r.available))
             });
-            if due {
+            let input_selection_due = !Freshness::current(fresh.inputs, now)
+                && self
+                    .snapshot
+                    .inputs
+                    .iter()
+                    .any(|input| input.selected.is_some());
+            if due || input_selection_due {
                 plx_machine::idle::invalidate();
                 let before = self.snapshot.clone();
                 live::expire(&mut self.snapshot, fresh, now);
@@ -2304,7 +2332,7 @@ impl Shell {
         } else {
             let content = if self.surface.editing {
                 Rect::new(CONTENT.x, 330.0, CONTENT.w, 320.0)
-            } else if self.surface.menu.is_some() {
+            } else if self.surface.menu.is_some() || self.surface.page == Page::Inputs {
                 Rect::new(CONTENT.x, CONTENT.y, 884.0, CONTENT.h)
             } else {
                 CONTENT
@@ -2313,6 +2341,95 @@ impl Shell {
             self.surface
                 .grid
                 .draw(&mut f, p.clipped(content), &self.surface.cards);
+        }
+        if self.surface.page == Page::Inputs {
+            Label::new(
+                c"Choose a source".as_ptr(),
+                theme::size::TITLE,
+                theme::TEXT_PRIMARY,
+            )
+            .bold()
+            .draw(p, Rect::new(480.0, 244.0, 1344.0, 60.0));
+            p.rrect(INPUT_DETAIL, 28.0, 28.0, theme::SURFACE_PANEL);
+            let input = focused
+                .and_then(|key| {
+                    self.snapshot
+                        .inputs
+                        .iter()
+                        .find(|input| input_key(&input.id) == Some(key))
+                })
+                .or_else(|| self.snapshot.inputs.first());
+            if let Some(input) = input {
+                let current = self
+                    .live_state
+                    .as_ref()
+                    .is_some_and(|f| Freshness::current(f.inputs, self.live_now));
+                let title = cstr(&plx_gfx::text::elide(
+                    &input.label,
+                    418.0,
+                    theme::size::HEADLINE,
+                    1,
+                    false,
+                ));
+                Label::new(title.as_ptr(), theme::size::HEADLINE, theme::TEXT_PRIMARY)
+                    .bold()
+                    .draw(p, Rect::new(1366.0, 354.0, 418.0, 60.0));
+                for (i, (label, value)) in [
+                    ("Input", input.id.replace('_', " ")),
+                    (
+                        "Cable",
+                        if !current {
+                            "Unavailable"
+                        } else if input.plugged {
+                            "Connected"
+                        } else {
+                            "Not connected"
+                        }
+                        .into(),
+                    ),
+                    (
+                        "Signal",
+                        if !current {
+                            "Unavailable"
+                        } else if input.signal {
+                            "Detected"
+                        } else {
+                            "Not detected"
+                        }
+                        .into(),
+                    ),
+                    (
+                        "Selected input",
+                        match input.selected.filter(|_| current) {
+                            Some(true) => "Yes",
+                            Some(false) => "No",
+                            None => "Unavailable",
+                        }
+                        .into(),
+                    ),
+                    ("Video format", "Unavailable".into()),
+                ]
+                .into_iter()
+                .enumerate()
+                {
+                    let y = 422.0 + i as f32 * 86.0;
+                    Label::new(
+                        cstr(label).as_ptr(),
+                        theme::size::CAPTION,
+                        theme::TEXT_SECONDARY,
+                    )
+                    .draw(p, Rect::new(1366.0, y, 418.0, 34.0));
+                    Label::new(
+                        cstr(&value).as_ptr(),
+                        theme::size::LABEL,
+                        theme::TEXT_PRIMARY,
+                    )
+                    .draw(
+                        p.clipped(INPUT_DETAIL),
+                        Rect::new(1366.0, y + 32.0, 418.0, 40.0),
+                    );
+                }
+            }
         }
         for i in 0..4 {
             {

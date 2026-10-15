@@ -20,6 +20,7 @@ fn fixture() -> Snapshot {
             plugged: true,
             signal: false,
             active: false,
+            selected: None,
         }],
         context: Context {
             input: "HDMI_1".into(),
@@ -437,6 +438,7 @@ fn home_shelves_cross_by_geometry_and_keep_input_requests_out_of_favourites() {
             plugged: false,
             signal: false,
             active: false,
+            selected: None,
         })
         .collect();
     let mut s = Shell::new(data, Preferences::default());
@@ -482,6 +484,7 @@ fn home_updates_inputs_by_identity_without_turning_old_input_readings_into_actio
             plugged: true,
             signal: true,
             active: false,
+            selected: None,
         }]),
         ..live_update(100)
     };
@@ -1016,4 +1019,34 @@ fn a_previous_category_settings_button_cannot_invoke_the_new_category_route() {
     s.pointer(1100.0, 660.0, true);
     assert_eq!(focus(&s), CATEGORY_BASE + 1);
     assert!(s.take_requests().is_empty());
+}
+
+#[test]
+fn two_column_inputs_preserve_port_identity_and_withdraw_selected_status_when_stale() {
+    let _serial = plx_base::testlock::serial();
+    let mut data = fixture();
+    data.inputs = (1..=4)
+        .map(|port| Input {
+            id: format!("HDMI_{port}"),
+            label: format!("Port {port}"),
+            plugged: false,
+            signal: false,
+            active: false,
+            selected: Some(port == 4),
+        })
+        .collect();
+    let mut s = Shell::new(data.clone(), Preferences::default());
+    s.open(Page::Inputs);
+    s.direction(Dir::Right);
+    assert_eq!(s.focused_item().as_deref(), Some("HDMI_2"));
+    s.direction(Dir::Down);
+    assert_eq!(s.focused_item().as_deref(), Some("HDMI_4"));
+    let update = Update {
+        inputs: live::Reading::Value(data.inputs),
+        ..live_update(100)
+    };
+    s.apply_live(&update, 100);
+    s.age_live(15101);
+    assert!(s.snapshot.inputs.iter().all(|p| p.selected.is_none()));
+    assert_eq!(s.focused_item().as_deref(), Some("HDMI_4"));
 }

@@ -508,7 +508,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return Err("LG Settings route unavailable".into());
                 }
             }
-            native_home::actions::Request::Input { id } if id == "HDMI_4" => {
+            native_home::actions::Request::Input { id }
+                if matches!(id.as_str(), "HDMI_1" | "HDMI_4") =>
+            {
                 shell.open(Page::Inputs);
                 if !shell.focus_input(id) {
                     return Err("HDMI 4 unavailable".into());
