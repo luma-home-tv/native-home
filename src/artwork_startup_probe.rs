@@ -152,7 +152,7 @@ trait Backend {
 fn report(app_id: &str, uid: u32) -> Value {
     json!({"schema":1,"app_id":app_id,"uid":uid,"inert_check_only":true,"uri":URI,
         "payload":{},"registered":false,"request_attempted":false,"check_root_calls":0,
-        "own_before":null,"own_at_call":null,"own_after":null,"context_before":null,
+        "own_before":null,"own_at_call":null,"own_after":null,"context_first":null,"context_before":null,
         "context_after":null,"foreground_checks":0,"identity_stable":false,
         "context_valid_before":false,"context_valid_after":false,"response":null,
         "outcome":"not_attempted","verified":false,"negative_observation_verified":false,
@@ -214,6 +214,11 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
             attempts += 1;
             let context = backend.context(gate);
             let valid = context_valid_for_profile(&context, profile);
+            if attempts == 1 {
+                // Diagnostic evidence only. Admission still uses the current
+                // before/after contexts, never this potentially stale sample.
+                output["context_first"] = context.clone();
+            }
             output["context_before"] = context;
             output["foreground_checks"] = json!(attempts);
             output["context_valid_before"] = json!(valid);
@@ -683,6 +688,25 @@ mod tests {
         assert_eq!(r["outcome"], "context_changed");
         assert_eq!(r["response"]["root"], true);
         assert_eq!(r["verified"], false);
+    }
+    #[test]
+    fn first_concrete_context_survives_deadline_placeholders_without_granting_access() {
+        let mut initial = context();
+        initial["foreground"]["appId"] = json!("another.app");
+        let exhausted = json!({"system_info":{"deadline":true},"foreground":{"deadline":true},"windows":{"deadline":true}});
+        let mut fake = Fake {
+            context_cost: Duration::from_millis(100),
+            ..Default::default()
+        };
+        fake.contexts.push_back(initial.clone());
+        fake.contexts
+            .extend(std::iter::repeat_n(exhausted.clone(), 64));
+        let report = run(&mut fake);
+        assert_eq!(report["context_first"], initial);
+        assert_eq!(report["context_before"], exhausted);
+        assert_eq!(report["outcome"], "context_unavailable");
+        assert_eq!(fake.calls, 0);
+        assert_eq!(report["verified"], false);
     }
     #[test]
     fn foreground_wait_is_finite_and_overdue_reply_cannot_be_promoted() {

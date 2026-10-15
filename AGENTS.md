@@ -114,3 +114,11 @@ LG Home, Core, boot, permission, media or OLED changes.
 
 Do not rewrite public history or change the existing public repository's identity
 until the standalone result has been reviewed with the user.
+
+The actual 0.45 Preview experiment in `docs/preview-artwork-admission-045.md`
+completed a known-no-worker decline and exact normal 0.37 restoration. Its context
+expired before checkRoot: no HBC request, resource worker or Root command ran.
+This proves the controlled restoration path, not Preview permission/resource
+access. The 0.46 candidate in `docs/preview-artwork-preflight-046.md` renders while
+collecting the same inert preflight and retains its first context for diagnosis;
+all admission gates remain strict. It needs fresh native qualification.

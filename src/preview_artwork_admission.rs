@@ -21,6 +21,14 @@ fn save(path: &Path, value: &Value) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+fn external_input() -> bool {
+    let mut interrupted = false;
+    while let Some(event) = crate::runtime::poll() {
+        interrupted |= matches!(event.kind, 1..=8 | 10 | 11);
+    }
+    interrupted
+}
+
 /// Only the fixed inert checkRoot call executes before this hold. No resource
 /// provider, pending ticket or Root command is created here, even on refusal.
 pub fn preflight(
@@ -28,28 +36,39 @@ pub fn preflight(
     window: &Window,
     output: &Path,
 ) -> Result<Value, Box<dyn std::error::Error>> {
-    let mut capability = std::thread::Builder::new()
+    let preferences = shell.preferences().clone();
+    shell.open(Page::Home);
+    // Present the CARD and keep its event/render loop alive while LS2 checks
+    // its context. Joining before the first swap prevents this sequencing.
+    let mut interrupted = external_input();
+    if !interrupted {
+        shell.draw();
+        window.swap();
+    }
+    let began = Instant::now();
+    let worker = std::thread::Builder::new()
         .name("preview-artwork-capability".into())
-        .spawn(|| crate::artwork_startup_probe::collect_for_profile(Profile::Preview))?
+        .spawn(|| crate::artwork_startup_probe::collect_for_profile(Profile::Preview))?;
+    let mut requests = 0usize;
+    // SDK setup/destruction retain their existing soft lifetime boundary.
+    while began.elapsed() < Duration::from_secs(8) || !worker.is_finished() {
+        interrupted |= external_input();
+        requests += shell.take_requests().len();
+        if !interrupted {
+            shell.draw();
+            window.swap();
+        }
+        std::thread::sleep(Duration::from_millis(17));
+    }
+    let mut capability = worker
         .join()
         .map_err(|_| "Preview inert capability worker panicked")?;
     capability["worker_joined"] = json!(true);
+    interrupted |= external_input();
     save(&output.join("preview-artwork-capability.json"), &capability)?;
-    let preferences = shell.preferences().clone();
-    shell.open(Page::Home);
-    let began = Instant::now();
-    let mut interrupted = false;
-    let mut requests = 0usize;
-    while began.elapsed() < Duration::from_secs(8) {
-        while let Some(event) = crate::runtime::poll() {
-            interrupted |= matches!(event.kind, 1..=8 | 10 | 11);
-        }
-        requests += shell.take_requests().len();
+    if !interrupted {
         shell.draw();
-        window.swap();
-        std::thread::sleep(Duration::from_millis(17));
     }
-    shell.draw();
     let frame = output.join("preview-artwork-preflight-home.ppm");
     window.capture(&frame)?;
     // Only this newly created own diagnostic capture is normalized.
@@ -58,7 +77,11 @@ pub fn preflight(
         .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
         .open(&frame)?;
     file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
-    window.swap();
+    if !interrupted {
+        window.swap();
+    }
+    interrupted |= external_input();
+    requests += shell.take_requests().len();
     Ok(
         json!({"capability":capability,"reported_elapsed_ms":began.elapsed().as_millis() as u64,
         "interrupted":interrupted,"requests_empty":requests==0,

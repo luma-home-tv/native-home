@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "version": "0.45.0",
+  "status": "Completed known-no-worker actual Preview diagnostic with exact normal37 restoration; resource capability unqualified",
+  "functional_source_revision": "9c6af7247fe62f22f34c2cdbfac6d53808e73e5f",
+  "selected_source_inputs": 99,
+  "artifacts": {
+    "ui": {
+      "bytes": 3815060,
+      "sha256": "eeb70d4cab122debff46c98131bbff856268cb867beb6466622daccd5fac5528"
+    },
+    "preview_helper": {
+      "bytes": 847792,
+      "sha256": "d604bdb5f1ae7a44d35c39effa9c0c694f7b050ed785592e5c94ec000391a3b1",
+      "executed_by_this_trial": false
+    },
+    "ipk": {
+      "bytes": 2307684,
+      "sha256": "3c6a831e100bb8f9486fbd9be0dd91f32b9554644939007ab995aad2c3812ac8"
+    },
+    "candidate_sha256": "28d568f825618538e2cd2f00a5a1cf937039269e3a72a4b275fdd545389ca563",
+    "carrier_sha256": "940977e3bf6fcaaa7af7b88885de9982b13c6891ebbdb5736e79dd28452605eb"
+  },
+  "native": {
+    "device": "G2",
+    "webos_generation": 24,
+    "actual_preview_identity_verified": true,
+    "ordinary_raw_process_records": 6,
+    "device_carrier_exit": 0,
+    "mode": "known_never_exec",
+    "capability_outcome": "context_unavailable",
+    "registered": true,
+    "request_attempted": false,
+    "check_root_calls": 0,
+    "root_status_verified": false,
+    "negative_root_status_observation_verified": false,
+    "resource_worker_created": false,
+    "root_exec_attempts": 0,
+    "resource_jobs": 0,
+    "resource_helpers": 0,
+    "resource_children": 0,
+    "resource_component_qualified": false,
+    "permission_denial_observed": false,
+    "permission_diagnosis_inferred": false
+  },
+  "restoration": {
+    "version": "0.37.0",
+    "supported_same_id_install_without_uninstall": true,
+    "full_original_bundle_bytes_and_metadata_restored": true,
+    "full_original_state_bytes_and_metadata_unchanged": true,
+    "diagnostic_preference_write_attempts": 0,
+    "selected_state_domains_unchanged": 20,
+    "selected_core_hashes_unchanged": 5,
+    "raw_pending_absence_observations": 3,
+    "pending_absence_before_restore_not_inferred_from_install": true,
+    "temporary_protected_helper_configuration_and_directory_removed": true,
+    "preexisting_runtime_folders_preserved": true,
+    "only_new_runtime_exact_files_removed": true,
+    "uploads_removed": true,
+    "upload_absence_evidence_scope": "Hash/owner-guarded executed cleanup and no-error closeout; no independent per-file post-removal scan",
+    "device_lease_and_private_host_agent_removed": true,
+    "lg_home_current": true,
+    "unknown_barrier": false,
+    "closeout_errors": {},
+    "old_code_execution_tested": false,
+    "normal_product_activated": false
+  },
+  "independent_audit": {
+    "version": 3,
+    "execution_exit": 0,
+    "assertions_passed": 19412,
+    "script_sha256": "d5d8c8cd88d6b6ce30d70b0f1ea1388f81b212732b4a5360474e60ecaa1cf08a",
+    "result_sha256": "6e79b684aad65add285ccce1f642ced6cb9c917f66da27779ca9ec0d3284b5a5",
+    "historical_git_inputs_not_mutable_checkout": true,
+    "prior_runtime_path_parser_failure_preserved": true,
+    "device_evidence_changed_for_audit_correction": false
+  },
+  "attempt_history": [
+    {
+      "stage": "initial_cli_candidate_lookup",
+      "stopped_before_tv_contact": true,
+      "device_output_created": false
+    },
+    {
+      "stage": "first_device_coordinator",
+      "execution_exit": 1,
+      "failure": "Missing host capacity-parser binding",
+      "root_helper_directory_staged": false,
+      "app_install_attempted": false,
+      "normal37_untouched": true,
+      "uploads_lease_and_private_agent_cleaned": true,
+      "unknown_barrier": false,
+      "closeout_errors": {}
+    },
+    {
+      "stage": "corrected_coordinator_new_candidate_and_output",
+      "execution_exit": 0,
+      "normal37_restored": true
+    }
+  ],
+  "host_checks": {
+    "library_tests": 442,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "python_package_provenance_framework_tests": 57,
+    "private_carrier_policy_lifecycle_storage_cases": 25,
+    "both_arm_binaries_built": true
+  },
+  "source_followup": {
+    "collector_join_before_first_diagnostic_draw_swap_observed_in_source": true,
+    "causal_explanation_established": false,
+    "final_context_only_deadline_results_retained": true,
+    "next_version": "0.46.0",
+    "proposed_change": "Pump Home while the collector runs and preserve the first concrete context observation",
+    "foreground_gate_seconds_unchanged": 5,
+    "operation_budget_seconds_unchanged": 8,
+    "context_policy_relaxed": false,
+    "next_version_native_qualification": false
+  },
+  "boundaries": {
+    "preview_root_resource_capability_qualified": false,
+    "normal_loader_or_production_activation_qualified": false,
+    "all_apps_or_installation_classes_qualified": false,
+    "c2_root_artwork_qualified": false,
+    "keyboard_or_departure_recovery_qualified": false,
+    "physical_input_or_panel_pixel_identity_qualified": false,
+    "performance_power_or_hard_lifetime_qualified": false
+  },
+  "framework_attribution": "README.md#plxnative-framework-dependency",
+  "transition_plan": "artwork-transition-lifecycle.md"
+}

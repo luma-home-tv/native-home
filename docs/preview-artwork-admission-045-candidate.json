@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "version": "0.45.0",
+  "functional_source_revision": "9c6af7247fe62f22f34c2cdbfac6d53808e73e5f",
+  "selected_source_inputs": 99,
+  "binaries": {
+    "home-preview": {
+      "bytes": 3815060,
+      "name": "home-preview",
+      "sha256": "eeb70d4cab122debff46c98131bbff856268cb867beb6466622daccd5fac5528"
+    },
+    "artwork-broker": {
+      "bytes": 847792,
+      "name": "artwork-broker",
+      "sha256": "d604bdb5f1ae7a44d35c39effa9c0c694f7b050ed785592e5c94ec000391a3b1"
+    }
+  },
+  "build_receipt_sha256": {
+    "home-preview": "f0d2d38b6c8188dfcf0ecd05b50f44ba909918262b4f253f48b06208b7f7b8fc",
+    "artwork-broker": "0c4d899f1d95869aee2173ad6538096e5dc1c463340f00066f6dbd14b38bb75e"
+  },
+  "same_snapshot": true,
+  "host_checks": {
+    "library_tests": 442,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "python_tests": 57
+  },
+  "actual_preview_identity_qualified": false,
+  "normal_updated": false,
+  "normal_interactive_artwork_enabled": false
+}
