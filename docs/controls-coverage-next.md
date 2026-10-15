@@ -67,8 +67,10 @@ existence does not enable other numeric settings.
    The next 0.27.0 candidate now connects the pure policy to actual form-row
    wording, with [synthetic host previews](verification/control-row-presentation/README.md),
    behaviour checks and an ARM build. Existing actions/disabled bindings are
-   preserved. It does not infer an expiry cause from `available: false`; native
-   rendering and retained deployment of this slice remain pending.
+   preserved. It does not infer an expiry cause from `available: false`.
+   [Isolated G2 Sound/Accessibility read/layout qualification](control-row-presentation-milestone.json)
+   now adds scoped native wording/scroll evidence; normal deployment and broader
+   native conditional-state coverage remain pending.
 2. **Finish validation of existing controls.** Prioritise physical Magic Remote
    choice/range navigation, staged-versus-saved clarity, Back/Cancel, repeat
    suppression and pointer/wheel behaviour. Prove expiry/external-change

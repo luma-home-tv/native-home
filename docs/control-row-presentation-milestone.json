@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "status": "0.27.0 control-row presentation integrated; G2 isolated Sound/Accessibility read and layout qualification passed; retained preview remains 0.26.0",
+  "source": {
+    "functional_revision": "3e08ceac1ac424511fcee71997467c0335af74db",
+    "version": "0.27.0",
+    "binary_sha256": "47ab0b0aaf12fb16e4a518fcad7abc05103583272022c023407c3f5653efcafa",
+    "ipk_sha256": "8da8a0922a29befb29ea8eed0418e2dc1f5d415724d512ecbb2faffb041339f1",
+    "candidate_manifest_sha256": "4b5191e27f30326fb1999889561fcb823747f6e19274d60717f5da3f632eedf2"
+  },
+  "change": {
+    "actual_form_row_wording_uses_fixed_section_and_setting_policy": true,
+    "current_values_visible_without_optional_descriptor": true,
+    "unavailable_and_wrong_context_values_hidden": true,
+    "unavailable_not_invented_as_expired": true,
+    "current_range_bounds_retained": true,
+    "sound_description_level_cannot_inherit_accessibility_editor": true,
+    "actions_disabled_bindings_and_existing_adapter_admission_unchanged": true,
+    "new_setters_or_privileged_operations": false
+  },
+  "host": {
+    "library_tests_passed": 186,
+    "clippy_all_targets_hostsim_warnings_denied": true,
+    "host_renderer_and_arm_release_builds_passed": true,
+    "synthetic_captured_pages_with_zero_gl_errors": 10,
+    "synthetic_panels_visually_reviewed": ["Sound", "Picture", "General", "Panel care"],
+    "synthetic_fixture_and_images": "verification/control-row-presentation/README.md"
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "identity": "Separate ordinary-app Proof identity",
+    "actual_producer_uid_and_executable_verified": true,
+    "host_exit_code": 0,
+    "native_exit_reason": "timeout",
+    "native_elapsed_seconds": 30.11493846,
+    "exit_scope": "Planned bounded non-interactive capture run, not an interactive Back or startup-reliability test",
+    "independent_saved_artifact_assertions_passed": 60,
+    "native_capture_pages_with_zero_gl_errors": 10,
+    "private_sound_and_guidance_frames_downloaded": 10,
+    "sound_values_and_wire_types_match_independent_reads": true,
+    "guidance_values_and_wire_types_match_independent_reads": true,
+    "focused_disabled_rows_contained": {"sound": 3, "guidance": 3},
+    "actual_scroll_down_up_and_category_return_verified": true,
+    "root_visual_review": {
+      "frames": ["sound", "sound-description-level", "accessibility"],
+      "new_lg_managed_descriptions_readable": true,
+      "signed_sound_range_hint_readable": true,
+      "method": "Inspect downloaded native frames bound to the new executable; row layout JSON does not serialize description strings"
+    },
+    "settings_writes": false,
+    "application_launches": false
+  },
+  "closeout": {
+    "cleanup_boolean_checks_passed": 23,
+    "proof_package_processes_runtime_state_jail_mounts_catalogue_and_launchpoint_removed": true,
+    "retained_appinfo_executable_favourites_bytes_and_metadata_preserved": true,
+    "checked_core_settings_source_audio_and_descriptors_preserved": true,
+    "original_lg_home_verified_without_forced_launch": true,
+    "verified_upload_removed": true,
+    "lease_absence_and_private_agent_cleanup_verified": true,
+    "reboot_required": false,
+    "cleanup_receipt_sha256": "537480ca078b45cfbf30a170ce889eeae40a623cd84c963f88f6e48cdba78fcf",
+    "retained_g2_version": "0.26.0",
+    "c2_changed_in_this_run": false
+  },
+  "limits": [
+    "This is component read/layout and scoped visual evidence, not current normal-identity interaction, physical input or performance qualification.",
+    "Picture/General/Panel-care conditional wording has synthetic host inspection; this run's downloaded native visual subset covers Sound/Accessibility.",
+    "Native stale/error transitions, all inactive/context variants and pixel-exact concept fidelity were not established.",
+    "Comprehensive setting coverage, richer verified adapters, physical controls, full media integration and release reliability remain open."
+  ],
+  "retained_updated": false,
+  "whole_dashboard_goal_complete": false
+}

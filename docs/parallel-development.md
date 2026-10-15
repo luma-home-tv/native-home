@@ -37,6 +37,11 @@ It does not change device authorisation or the protections in `AGENTS.md`.
    and physical smoothness require separate evidence. Check repeated app and
    keyboard sessions, memory growth, service failure/recovery, durable favourites
    and controlled restart/reboot persistence without changing boot configuration.
+   The [current measurement method](current-performance-method.md) and
+   [G2 0.26.0 result](current-performance-milestone.json) now add one bounded
+   isolated profile with process resource/raw timing evidence and removal.
+   Apps repaints during the input-free window remain a concrete investigation;
+   normal-identity comparisons and broader reliability remain open.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
@@ -114,7 +119,13 @@ input and every other gap are scoped per scenario; these additions do not
 promote the candidate.
 The parallel controls lane has also delivered the
 [presentation policy module](control-capability-design.md) and a
-[guidance-read implementation](read-coverage-audit.md). The former has no UI caller;
+[guidance-read implementation](read-coverage-audit.md). The presentation policy
+now supplies actual row wording in the next 0.27.0 candidate, with
+[synthetic host previews](verification/control-row-presentation/README.md);
+isolated G2 Sound/Accessibility evidence is recorded
+[separately](control-row-presentation-milestone.json), and normal deployment
+remains pending. At the earlier
+guidance milestone it had no UI caller;
 the latter now has [independent ordinary-app/native component qualification](guidance-read-milestone.json)
 on both models, with preserved-state/removal checks. The stronger
 [intentional OK-wake scenario](ok-wake-milestone.json) now has independent native

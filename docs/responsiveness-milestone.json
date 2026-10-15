@@ -23,7 +23,7 @@
     },
     "key_reference": "https://github.com/rorygallagher2024/glasshouse/blob/main/docs/IMPLEMENTATION.md#remote-control-keys-and-the-home-launcher-across-webos-versions",
     "timings": "App-thread draw submission, swap-call duration and consecutive actively submitted frame intervals; intentional skipped/idle/hidden intervals excluded from pacing histogram",
-    "input_timing": "From app dequeue of key-down to next swap submission, not transport, IR, GPU completion or panel response",
+    "input_timing": "From app dequeue of the latest key-down retained before a measured frame to the timestamp after swap() returns; not transport, IR, GPU completion or panel response. The serialized field retains its historical submission name.",
     "histograms": "Bounded 1002-bin millisecond histogram; percentile values are upper bucket bounds",
     "resources": "Scoped process /proc status/stat samples; CPU reported as percent of one core using verified CLK_TCK",
     "mode": "Separate ordinary-UID interactive test identity, no scripted focus probes, no captures during timed workload, passive app launch capability",
@@ -397,5 +397,6 @@
     "Initial/route font and cache work produced draw/frame outliers; p95 is not a worst-case guarantee",
     "C2 has an optimized measurement only; G2 before/after improvement is not transferred to C2"
   ],
-  "privacy": "Raw app identities in focus samples, event logs, timing snapshots and detailed /proc samples remain outside Git."
+  "privacy": "Raw app identities in focus samples, event logs, timing snapshots and detailed /proc samples remain outside Git.",
+  "measurement_interpretation_note": "The input boundary wording was corrected after inspecting the original 0.14 source and current 0.26 call sites. Recorded measurements are unchanged. Latest-input overwrite and suspended() mean there is not one latency sample per dequeued key."
 }

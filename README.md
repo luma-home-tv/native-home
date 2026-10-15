@@ -51,7 +51,12 @@ adds independent G2/C2 isolated flow, preedit and long-query evidence. See the
 The next 0.27.0 candidate adds clearer native/read-only/LG-managed control-row
 descriptions with existing action admission preserved. Its
 [synthetic host previews](docs/verification/control-row-presentation/README.md)
-are separate from TV qualification; the installed versions below are unchanged.
+and [isolated G2 Sound/Accessibility qualification](docs/control-row-presentation-milestone.json)
+remain separate evidence; the installed normal versions below are unchanged.
+The [current G2 timing/resource profile](docs/current-performance-milestone.json)
+measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
+preserved state. It records continuing Apps repaints and is separate from
+physical latency, normal-identity total cost or a matched speedup comparison.
 
 ## Layout
 

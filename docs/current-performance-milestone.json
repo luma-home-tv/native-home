@@ -1,0 +1,326 @@
+{
+  "schema": 1,
+  "status": "G2 isolated current 0.26.0 dashboard resource/timing profile passed with complete preservation and removal",
+  "source": {
+    "functional_revision": "7f29884be4c5a0c48794e71110744676c78bb371",
+    "version": "0.26.0",
+    "binary_sha256": "d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf",
+    "performance_ipk_sha256": "574d5540c3e2902017885c3258a1502dcecbc8aa064b756bc0e800fbb2a5d5e5",
+    "candidate_manifest_sha256": "2b258f3397bba3d4a70cf7874dbabdf779c7e6bead3fd42938490f948883d386"
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "renderer": "Mali-G52",
+    "identity": "Separate ordinary-app Proof identity",
+    "retained_g2_version": "0.26.0",
+    "c2_changed": false
+  },
+  "profile": {
+    "host_exit_code": 0,
+    "native_elapsed_seconds": 198.97206194,
+    "native_process_samples": 73,
+    "observed_clk_tck": 100,
+    "independent_saved_artifact_assertions_passed": 2336,
+    "diagnostic_snapshots_enabled": true,
+    "captures_during_timing": false,
+    "application_or_setting_activation": false,
+    "initial_own_favourites_seed_writes": 1,
+    "additional_preference_writes": 0,
+    "workload": "Input-free Home window; fixed Apps arrow navigation and input-free window; Controls/Sound window; actual native two-minute idle; post-blank window; wake-only Back; post-wake window; Back exit",
+    "cpu_scope": "Measured ordinary process, percent of one logical core; companion services and SSH daemon excluded; retrieval bounds and diagnostic overhead apply.",
+    "phase_endpoint_scope_only": true
+  },
+  "phases": [
+    {
+      "name": "settled_home",
+      "endpoint_scope_only": true,
+      "sample_count": 4,
+      "cpu": {
+        "cpu_ticks_delta": 12,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.454983250005171,
+        "cpu_percent_one_core_midpoint": 1.6096615642954901,
+        "cpu_percent_one_core_lower": 1.5646833581389352,
+        "cpu_percent_one_core_upper": 1.6573021803628394,
+        "rss_sample_max_kib": 34444,
+        "process_hwm_kib": 36584
+      },
+      "native_integer_delta": {
+        "frames": 7,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 7,
+          "swap_call": 7,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "settled_apps",
+      "endpoint_scope_only": true,
+      "sample_count": 4,
+      "cpu": {
+        "cpu_ticks_delta": 37,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.578179958494729,
+        "cpu_percent_one_core_midpoint": 4.882438818112917,
+        "cpu_percent_one_core_lower": 4.752327781664733,
+        "cpu_percent_one_core_upper": 5.019874860175837,
+        "rss_sample_max_kib": 36032,
+        "process_hwm_kib": 36584
+      },
+      "native_integer_delta": {
+        "frames": 247,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 247,
+          "swap_call": 247,
+          "foreground_swap_intervals": 246,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "settled_controls_sound",
+      "endpoint_scope_only": true,
+      "sample_count": 4,
+      "cpu": {
+        "cpu_ticks_delta": 11,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.38707329150202,
+        "cpu_percent_one_core_midpoint": 1.4890877030628946,
+        "cpu_percent_one_core_lower": 1.4520218725933072,
+        "cpu_percent_one_core_upper": 1.528095467765772,
+        "rss_sample_max_kib": 38224,
+        "process_hwm_kib": 38804
+      },
+      "native_integer_delta": {
+        "frames": 7,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 7,
+          "swap_call": 7,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "idle_blanked",
+      "endpoint_scope_only": true,
+      "sample_count": 4,
+      "cpu": {
+        "cpu_ticks_delta": 9,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.393544646001828,
+        "cpu_percent_one_core_midpoint": 1.2172781028470405,
+        "cpu_percent_one_core_lower": 1.1815885269589428,
+        "cpu_percent_one_core_upper": 1.2551908168676622,
+        "rss_sample_max_kib": 38232,
+        "process_hwm_kib": 38848
+      },
+      "native_integer_delta": {
+        "frames": 0,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 0,
+          "swap_call": 0,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "post_wake",
+      "endpoint_scope_only": true,
+      "sample_count": 4,
+      "cpu": {
+        "cpu_ticks_delta": 14,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.4121387294944725,
+        "cpu_percent_one_core_midpoint": 1.8887935737482937,
+        "cpu_percent_one_core_lower": 1.8393174063783355,
+        "cpu_percent_one_core_upper": 1.9410050576192575,
+        "rss_sample_max_kib": 38512,
+        "process_hwm_kib": 38848
+      },
+      "native_integer_delta": {
+        "frames": 6,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 6,
+          "swap_call": 6,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    }
+  ],
+  "fixed_apps_arrow_workload": {
+    "frames": 351,
+    "idle_blank_presentations": 0,
+    "key_down": [
+      0,
+      1,
+      1,
+      2,
+      2,
+      0,
+      0
+    ],
+    "histogram_sample_counts": {
+      "draw_submission": 351,
+      "swap_call": 351,
+      "foreground_swap_intervals": 343,
+      "dequeued_input_to_next_swap_submission": 6
+    }
+  },
+  "whole_session_native_metrics": {
+    "dequeued_input_to_next_swap_submission": {
+      "max_ms": 7.246,
+      "mean_ms": 1.7110588235294117,
+      "p50_upper_ms": 2,
+      "p95_upper_ms": 8,
+      "p99_upper_ms": 8,
+      "samples": 17
+    },
+    "draw_submission": {
+      "max_ms": 68.848,
+      "mean_ms": 0.9231307759372276,
+      "p50_upper_ms": 1,
+      "p95_upper_ms": 2,
+      "p99_upper_ms": 3,
+      "samples": 1147
+    },
+    "foreground_swap_intervals": {
+      "max_ms": 69.253,
+      "mean_ms": 16.793074898785424,
+      "p50_upper_ms": 17,
+      "p95_upper_ms": 18,
+      "p99_upper_ms": 19,
+      "samples": 988
+    },
+    "frames": 1147,
+    "idle_blank_presentations": 1,
+    "key_down": [
+      0,
+      1,
+      5,
+      4,
+      2,
+      2,
+      3
+    ],
+    "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+    "swap_call": {
+      "max_ms": 2.699,
+      "mean_ms": 0.1929895379250218,
+      "p50_upper_ms": 1,
+      "p95_upper_ms": 1,
+      "p99_upper_ms": 1,
+      "samples": 1147
+    }
+  },
+  "memory": {
+    "sampled_peak_rss_kib": 38512,
+    "process_lifetime_hwm_kib": 38848
+  },
+  "interpretation": {
+    "input_boundary": "The field named dequeued_input_to_next_swap_submission measures the latest retained dequeued key to the timestamp after swap() returns; not physical input or panel response.",
+    "histograms": "Whole session only; upper bucket bounds. Active interval samples exclude deliberately skipped iterations, and latency samples are not guaranteed per key.",
+    "phase_duration": "At least eight-second host holds; CPU endpoint intervals here are approximately 7.4 to 7.6 seconds, with actual durations and retrieval bounds listed per phase.",
+    "idle": "One black clear/swap counted separately; zero further ordinary frames in the sampled blanked interval. Input polling and live workers continue.",
+    "apps": "The input-free Apps window submitted 247 ordinary frames, mostly in its first part, then only one between the last two samples. Home and Sound each submitted seven. A settled_apps label does not prove animation-free steady state; do not treat its CPU average as steady-state Apps cost. Cause of the early burst remains under investigation.",
+    "comparison": "No matched normal-identity, old-version, LG Home, PlxNative Plex or WebView comparison; do not infer a speedup."
+  },
+  "preservation_and_cleanup": {
+    "boolean_checks_passed": 23,
+    "retained_appinfo_executable_favourites_bytes_and_metadata_preserved": true,
+    "checked_core_picture_sound_guidance_expanded_settings_source_and_last_input_preserved": true,
+    "proof_package_all_uid_processes_runtime_state_jail_mounts_catalogue_and_launchpoint_removed": true,
+    "verified_upload_removed": true,
+    "lease_released_and_absence_verified": true,
+    "private_host_agent_socket_and_directory_removed": true,
+    "original_lg_home_verified_without_forced_launch": true,
+    "reboot_required": false
+  },
+  "receipt_sha256": {
+    "performance-validation.json": "3d8232269936639366d30a78a2cb0c0a6502d7204b8a03d89abd3668d08320d2",
+    "shell-receipt.json": "b01580a199ca37cf9dcb23ec66aa7238fa541139a5acbf520b8284edf8e224a5",
+    "cleanup-receipt.json": "537480ca078b45cfbf30a170ce889eeae40a623cd84c963f88f6e48cdba78fcf"
+  },
+  "independent_audit_sha256": "e97ce4279ac9a8b31c57e1f64f03142cbfca438f2a6a96f9a25d64f5ca075823",
+  "limits": [
+    "One roughly 199-second instrumented isolated profile, not sustained stress, thermal, memory-leak, reboot or release-reliability proof.",
+    "The normal Preview has additional enabled action workers; this profile is not its exact process resource measurement.",
+    "Sequential owner and phase observations are endpoints, not atomic or continuous coverage.",
+    "No GPU completion timestamps, physical remote latency, panel latency, full media/HDR/HDMI validation or current C2 result."
+  ],
+  "whole_dashboard_goal_complete": false,
+  "apps_input_free_counter_samples": [
+    {
+      "native_seconds_since_first_sample": 0.0,
+      "ordinary_frames_since_first_sample": 0
+    },
+    {
+      "native_seconds_since_first_sample": 3.016408,
+      "ordinary_frames_since_first_sample": 180
+    },
+    {
+      "native_seconds_since_first_sample": 5.023988,
+      "ordinary_frames_since_first_sample": 246
+    },
+    {
+      "native_seconds_since_first_sample": 8.046819,
+      "ordinary_frames_since_first_sample": 247
+    }
+  ]
+}
