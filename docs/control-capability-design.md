@@ -100,7 +100,8 @@ inventing facts. Protect that boundary with explicit adapter wiring and review.
 The initial module compiled directly with `rustc --edition 2021 --test -D warnings`
 in a separate agent-owned output path. After library registration and independent
 review, seven focused tests pass as part of the shared all-target host suite
-(157 library tests and two actual keyboard-handler regressions). Its
+(157 library tests and two actual keyboard-handler regressions before the
+guidance registry addition). Its
 negative/transition cases cover active descriptors
 without write evidence, mismatched/empty identities, protected and delegated
 policy despite write evidence, reading expiry/context changes, independently

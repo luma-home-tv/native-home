@@ -91,6 +91,17 @@ composing languages and retained updates remain separate gates. The user saw no
 word predictions in the available G2 keyboard mode; no prediction-replacement
 contract is inferred. See [ABI notes](webos24-text-compatibility.md).
 
+The newer [actual-main-loop record](main-loop-milestone.json) separates the
+0.24.0 interactive scenarios from the earlier helper trials. Both models have
+independent keyboard/fallback, real 120-second idle and programmatic LG Home
+departure results, with preserved-state/removal checks. Both also completed idle
+begun with LG editing active; adjacent recorded states show editor/SDK closure
+at the idle transition, without establishing an exact SDK close cause. Network
+Back and fixed synthetic text are not physical typing/Done evidence; LEFT wake
+does not qualify intentional OK suppression or exact focus preservation. Native
+dismissal-drain observations, explicit idle stop cause, physical input,
+same-install relaunch, performance and retained promotion remain separate gates.
+
 The [parallel plan](parallel-development.md) now lists the six broad remaining
 delivery stages, the immediate interactive-loop gate and the next parallel wave.
 It assigns independent firmware/text,
@@ -99,6 +110,12 @@ per TV. The [coverage audit](controls-coverage-next.md) preserves the comprehens
 control-centre backlog; existing category routes do not establish every-setting
 coverage. Its next candidate is a separately admitted pointer-size control after
 capability/semantics review, rather than a generic setter.
+The [read-coverage audit](read-coverage-audit.md) now identifies three candidate
+guidance-parameter readouts and the Sound dimension boundary. Their host-only
+implementation adds no setter and still needs ordinary-app/native admission.
+The [capability presentation model](control-capability-design.md) keeps reading
+freshness, edit eligibility, pending operations and LG routes separate; it has
+no normal UI caller yet.
 
 ## Next implementation stages
 

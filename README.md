@@ -88,6 +88,14 @@ verified Picture, Sound, Accessibility, General and OLED Care routes on both
 TVs, plus a focused Network entry in LG General. Earlier native idle/wake and owned-app launch
 checks are recorded in the [deployment milestone](docs/deployment-milestone.json).
 
+The [actual-main-loop milestone](docs/main-loop-milestone.json) records newer
+isolated 0.24.0 keyboard/fallback, real idle/wake and programmatic departure
+scenarios independently on both models. These use network navigation and
+explicit synthetic text; physical typing/Done, native dismissal-drain ordering,
+performance and retained updates remain separate acceptance gates. The
+[parallel delivery plan](docs/parallel-development.md) assigns implementation,
+independent review and per-TV validation without concurrent device ownership.
+
 The [Inputs detail milestone](docs/inputs-detail-milestone.json) adds a native
 two-column source grid and graphite detail pane, matched to the concept. Both TVs
 render the Luma mark/name and independently read source status. A separate G2

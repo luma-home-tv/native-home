@@ -58,12 +58,21 @@ findings in small batches; request changes from a file's owner instead of editin
 across assignments. More simultaneous sessions are useful only when there are
 more independent outputs; shared shell/input integration remains one owner's work.
 
-The current wave assigns the coordinator interactive-loop integration/G2, an
-input/framework reviewer the acceptance and performance contract, a controls
-agent the pointer-size design/proof-only module, and the C2 validator a prepared
-main-loop harness. The next wave can test a frozen keyboard candidate on both
-TVs while controls work continues. A new controls candidate gets its own later
-integration and restoration gate.
+Use waves rather than keeping every agent on a permanent role. During device
+validation, the coordinator owns G2, a second validator owns C2, a reviewer audits
+evidence and a host-only worker prepares the next independent feature. During
+implementation, reassign the device validator to a bounded UI or test module.
+This keeps hardware tests running alongside development without asking two
+agents to integrate the same event loop. Give each assignment one deliverable,
+named owned files, a completion check and a handoff point; stop expanding its
+scope once that output is ready.
+
+Prefer one integration checkout and separate worktrees for substantial code
+changes, with separate build targets and private output directories. A worktree
+does not replace file ownership or a device lease. Agree a small interface before
+parallel implementation, then integrate one reviewed change at a time. Preserve
+the frozen artifact while the next source proposal develops elsewhere; unrelated
+proposals need not invalidate the artifact already under test.
 
 ## Four working lanes
 
@@ -83,20 +92,61 @@ its existence does not resolve a shared build-target or device conflict.
 
 ## What can proceed now
 
-- The ABI/text reviewer can audit source, recorded device-derived layout facts
-  and fixtures without operating a TV or changing the active renderer.
-- The controls agent can extend the coverage matrix and write pointer-size
-  admission/restore cases while keyboard integration continues. Pointer speed
-  and G2 audio-description level are the only current fixed setting writers;
-  pointer-size labels are not proof of its complete enum or write capability.
-- The C2 agent can inspect compatibility gates and prepare read-only preflight,
-  independent keyboard-window observation, retained-state backups and cleanup
-  checks. It must wait before running an unqualified keyboard candidate.
-- The coordinator can integrate and run G2 validation independently of those
-  host/review tasks. G2 and C2 device jobs may overlap only with separate leases,
-  SSH agents, package/output directories and teardown ownership.
+The isolated 0.24.0 candidate at
+`81213337bee7dde2d4808f058c9973957d56ab12` has now completed the actual-main-loop
+keyboard/fallback scenario independently on both models. Each run passed its
+31 scenario checks and its removal/preserved-state checks. Remote navigation
+used network events, the two text commits used fixed synthetic fixtures, and
+both LG dismissals used guarded Back. These runs establish neither physical
+LG Done/typing on this candidate nor observed same-batch dismissal input, idle,
+window departure, performance or retained-update acceptance. Both retained
+previews remain unchanged.
 
-The reconciled candidate source is `760db0eb11217e3de7766bc7d3223d995d1fc634`. It is a candidate, not a release receipt.
+The [actual-main-loop record](main-loop-milestone.json) now adds independent
+plain idle/wake and programmatic departure results on both models. Each idle
+hold is checked against advancing native timestamps/batches and unchanged
+submission counters, not just host sleep. LEFT wake remains a narrow
+no-observed-activation check. Both models also completed idle begun with LG
+editing active, with the adjacent-state/close-cause limitation recorded. Physical
+input and every other gap are scoped per scenario; these additions do not
+promote the candidate.
+The parallel controls lane has also delivered the
+[presentation policy module](control-capability-design.md) and a
+[guidance-read candidate](read-coverage-audit.md). The former has no UI caller;
+the latter still needs ordinary-app and native layout qualification.
+
+The next waves are:
+
+| Wave | Coordinator / G2 | C2 validator | Independent review | Host-only implementation |
+| --- | --- | --- | --- | --- |
+| Finish input acceptance | Integrate evidence; qualify real idle/wake and departure in bounded separate scenarios, then dismissal-order gaps. | Independently qualify the same admitted profiles on C2 with separate teardown. | Audit actual-loop hooks and receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
+| Deliver useful controls and visual improvements | Integrate the next reviewed adapter/UI slice and freeze a new candidate. | Prepare independent regression recipes while host work proceeds; validate only after handoff. | Review fixed operation admission, failure/recovery and visual acceptance. | Implement disjoint operation modules or visual components under explicit ownership; central shell/live wiring has one owner. |
+| Qualify normal use and release | Validate app/Settings/HDMI handoffs and matched performance; perform backed-up rollout after acceptance. | Repeat relevant C2 workloads and preserve its independent source-restoration boundary. | Audit release evidence, limitations, privacy and generic upstream patch separation. | Prepare release documentation and upstream-ready generic framework changes while hardware tests run. |
+
+Human remote/pointer/wheel and live-video checks can be grouped into short
+sessions once the relevant artifact is stable. They do not block host-only
+features, but remain explicit release gaps. Unsupported composing-language
+behaviour or unavailable controls must be described honestly rather than
+silently counted as complete.
+
+The next controls assignments can be prepared independently: a pure capability
+state model for consistent native/read-only/stale/protected presentation; a
+pointer-size trial state machine that handles uncertain writes and guarded
+restoration; and an evidence-based audit of the next missing read-only fields.
+Each gets a new operation-specific module or fixture/document output. The
+coordinator retains ownership of shared model, live-worker and shell integration.
+Pointer size remains unconnected to the UI until its separate native trial and
+restoration gate pass.
+
+Track delivered, accepted slices and time blocked on integration/device access.
+Do not promise a fixed multiplier from four agents: shared integration and
+hardware-dependent acceptance remain serial boundaries. The useful gain comes
+from overlapping host work, independent review and two-device validation while
+keeping rework and repeated setup small.
+
+The previous reconciled component candidate was
+`760db0eb11217e3de7766bc7d3223d995d1fc634`; its evidence remains scoped to that
+revision. The newer candidate above is not a release receipt.
 The [text milestone](text-input-milestone.json) records isolated G2 activation,
 typing/Done/Back observations and corrected dismissal/removal; its retained
 versions are G2 0.21.0 and C2 0.20.0 using the earlier Luma keypad. Refresh source,

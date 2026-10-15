@@ -113,6 +113,11 @@ After integration with the shared live fixtures and display labels, all 162
 library tests and two actual keyboard-handler regressions pass; all-target
 hostsim clippy with warnings denied and the ARM release build also pass.
 Those checks do not establish TV access or native layout behaviour.
+The frozen host/ARM candidate is source
+`3a54428245769df6cb4cbef79427ba32e4a5e3df`, binary SHA256
+`73b6d190e636abb9e6b7112a7fcd2e6440054aa92a6c61b49126236f54727953`.
+The 0.24.0 lifecycle milestone uses the earlier `8121333` binary and does not
+qualify these added readings.
 The cases also distinguish a valid reading with an inactive top-level UI
 descriptor from malformed/inactive individual enum members. No shared parent
 build target or running device candidate is changed by these checks.

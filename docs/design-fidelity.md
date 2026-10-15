@@ -120,3 +120,9 @@ G2/C2 Search/Keypad routing, corrected legacy preedit decoding and maximum draft
 rendering. It does not establish normal interactive performance or complete IME
 support. [Control coverage](controls-coverage-next.md) and
 [parallel ownership](parallel-development.md) make the remaining work explicit.
+
+The [actual-main-loop record](main-loop-milestone.json) adds interactive
+keyboard/fallback, plain idle/wake and programmatic departure observations on
+both models. These are lifecycle results, not new concept-fidelity frames or
+performance measurements. The candidate guidance readouts still need native
+layout review; the retained previews remain at their recorded versions.
