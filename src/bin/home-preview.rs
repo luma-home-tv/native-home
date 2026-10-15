@@ -31,6 +31,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         return Err("Navigation proof requires isolated diagnostic identity".into());
     }
+    let description_ui_proof = assets.join("description-ui-proof.json").exists();
+    if description_ui_proof
+        && (!device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || navigation_proof
+            || [
+                "range-layout-proof.json",
+                "description-level-proof.json",
+                "pointer-proof.json",
+                "pointer-ui-proof.json",
+                "launch-proof.json",
+                "management-proof.json",
+                "controls-proof.json",
+                "drawer-proof.json",
+                "preferences-hold-probe.json",
+            ]
+            .iter()
+            .any(|name| assets.join(name).exists()))
+    {
+        return Err("Numeric UI proof requires an isolated non-interactive identity and no other action trial".into());
+    }
     let range_layout_proof = assets.join("range-layout-proof.json").exists()
         || args.iter().any(|a| a == "--range-layout-proof");
     if range_layout_proof
@@ -98,6 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
+            "description-ui-proof.json",
             "range-layout-proof.json",
             "description-level-proof.json",
             "pointer-proof.json",
@@ -247,6 +270,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?);
     }
     let mut pointer_actions = Vec::new();
+    #[allow(unused_mut)]
+    let mut description_worker: Option<native_home::description_level::Worker> = None;
+    #[cfg(target_arch = "arm")]
+    if device
+        && (plx_base::paths::app_id() == native_home::identity::PREVIEW || description_ui_proof)
+    {
+        description_worker = Some(native_home::description_level::Worker::native(
+            plx_base::paths::app_id().into(),
+        )?);
+    }
+    let mut description_actions = Vec::new();
+    let mut description_attempts = 0u64;
+
     let mut action_receipts = Vec::new();
     let state_path = if device {
         native_home::identity::preferences_dir(plx_base::paths::app_id())
@@ -297,6 +333,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for _ in 0..45 {
                 now += 17;
                 poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+                pump_description(
+                    &description_worker,
+                    &mut shell,
+                    live_origin,
+                    &mut description_actions,
+                    &mut description_attempts,
+                );
                 if let Some(enabled) = action_worker.as_ref().and_then(|w| w.input_capability()) {
                     shell.enable_input_launches(enabled);
                 }
@@ -641,6 +684,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    #[allow(unused_mut)]
+    let mut description_ui_receipt = None::<serde_json::Value>;
+    #[cfg(target_arch = "arm")]
+    if description_ui_proof {
+        description_ui_receipt = Some(description_ui_trial(
+            &mut shell,
+            &window,
+            &output,
+            &description_worker,
+            live_origin,
+            &mut description_actions,
+            &mut description_attempts,
+            &mut now,
+        )?);
+        shell.open(Page::Home);
+    }
     let mut proof_request = None;
     if let Some(request) = launch_proof {
         match &request {
@@ -724,6 +783,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             plx_machine::idle::frame_begin(dt);
             now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+            pump_description(
+                &description_worker,
+                &mut shell,
+                live_origin,
+                &mut description_actions,
+                &mut description_attempts,
+            );
             if let Some(enabled) = action_worker.as_ref().and_then(|w| w.input_capability()) {
                 shell.enable_input_launches(enabled);
             }
@@ -985,6 +1051,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(worker) = pointer_worker {
         pointer_actions.extend(worker.finish());
     }
+    if let Some(worker) = description_worker {
+        for outcome in worker.finish() {
+            description_attempts += u64::from(outcome.attempted);
+            description_actions.push(outcome);
+        }
+    }
     if let Some(worker) = live_worker {
         worker.finish();
     }
@@ -1034,6 +1106,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["description_ui_proof"] = serde_json::json!(description_ui_receipt);
+    report["description_actions"] = serde_json::json!(description_actions);
+    report["description_action_attempts"] = description_attempts.into();
     report["range_layout_proof"] = serde_json::json!(range_receipt);
     report["navigation_proof"] = serde_json::json!(navigation_receipt);
     report["source_switching_enabled"] = shell.input_launches_enabled().into();
@@ -1049,6 +1124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || report["description_level_proof"]["change"]["attempted"].as_bool() == Some(true)
         || report["description_level_proof"]["restoration"]["attempted"].as_bool() == Some(true)
         || report["description_level_proof"]["recovery"]["attempted"].as_bool() == Some(true)
+        || description_attempts > 0
         || pointer_actions.iter().any(|r| r.attempted))
     .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
@@ -1738,4 +1814,192 @@ fn range_layout_trial(
         .open(output.join("range-layout-complete.json"))?;
     serde_json::to_writer_pretty(file, &receipt)?;
     Ok(receipt)
+}
+
+fn pump_description(
+    worker: &Option<native_home::description_level::Worker>,
+    shell: &mut Shell,
+    origin: Instant,
+    receipts: &mut Vec<native_home::description_level::Outcome>,
+    attempts: &mut u64,
+) {
+    let now = origin.elapsed().as_millis() as u32;
+    if let Some(worker) = worker {
+        // Outcomes precede samples, so an older read cycle cannot rewind a confirmed write.
+        for outcome in worker.poll() {
+            shell.description_reply(&outcome, now);
+            *attempts += u64::from(outcome.attempted);
+            receipts.push(outcome);
+            if receipts.len() > 32 {
+                receipts.remove(0);
+            }
+        }
+        if let Some(sample) = worker.sample() {
+            let stamp = sample
+                .started
+                .checked_duration_since(origin)
+                .unwrap_or_default()
+                .as_millis() as u32;
+            shell.description_sample(sample.value, stamp, now);
+        }
+    }
+    shell.age_description(now);
+    if let Some(change) = shell.take_description_request() {
+        let error = match worker {
+            Some(w) => w.queue(change).err(),
+            None => Some("Numeric worker unavailable".into()),
+        };
+        if let Some(message) = error {
+            shell.description_reply(
+                &native_home::description_level::Outcome::refused(change, message),
+                now,
+            );
+        }
+    }
+}
+
+#[cfg(target_arch = "arm")]
+#[allow(clippy::too_many_arguments)]
+fn description_ui_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    worker: &Option<native_home::description_level::Worker>,
+    origin: Instant,
+    receipts: &mut Vec<native_home::description_level::Outcome>,
+    attempts: &mut u64,
+    now: &mut u32,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    use native_home::description_level::Level;
+    let before = shell.preferences().clone();
+    let phase =
+        |stage: &str, original: Level, target: Level| -> Result<(), Box<dyn std::error::Error>> {
+            let tmp = output.join("description-ui-next.json");
+            let file = std::fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .mode(0o600)
+                .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                .open(&tmp)?;
+            serde_json::to_writer(
+                file,
+                &serde_json::json!({"stage":stage,"original":original,"target":target}),
+            )?;
+            std::fs::rename(tmp, output.join("description-ui-current.json"))?;
+            Ok(())
+        };
+    let deadline = Instant::now() + Duration::from_secs(12);
+    while shell.description_value().is_none() && Instant::now() < deadline {
+        pump_description(worker, shell, origin, receipts, attempts);
+        *now += 17;
+        shell.tick(*now, 0.017);
+        shell.draw();
+        window.swap();
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let original = shell
+        .description_value()
+        .ok_or("Native numeric capability unavailable")?;
+    let adjacent = original.adjacent();
+    if !shell.focus_description_setting() {
+        return Err("Numeric entry unavailable".into());
+    }
+    drawer_tap(shell, now);
+    if shell.page() != Page::RangeEditor {
+        return Err("Numeric entry did not open range editor".into());
+    }
+    shell.direction(if adjacent.value() > original.value() {
+        Dir::Right
+    } else {
+        Dir::Left
+    });
+    if shell.take_description_request().is_some() {
+        return Err("Staging wrote a setting".into());
+    }
+    drawer_capture(shell, window, output, "numeric-staged", now)?;
+    phase("staged", original, adjacent)?;
+    let until = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < until {
+        pump_description(worker, shell, origin, receipts, attempts);
+        *now += 17;
+        shell.tick(*now, 0.017);
+        shell.draw();
+        window.swap();
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    shell.back();
+    if shell.page() != Page::Accessibility || shell.range_state().is_some() || *attempts != 0 {
+        return Err("Cancel did not restore the numeric entry without writing".into());
+    }
+    let mut transitions = 0;
+    for (value, stage) in [
+        (adjacent, "changed"),
+        (Level::new(-15).unwrap(), "minimum"),
+        (Level::new(15).unwrap(), "maximum"),
+        (original, "restored"),
+    ] {
+        let expected = shell
+            .description_value()
+            .ok_or("Numeric context withdrawn before next selection")?;
+        if !shell.focus_description_setting() {
+            return Err("Numeric row unavailable".into());
+        }
+        drawer_tap(shell, now);
+        while shell.range_state().unwrap().staged() != i64::from(value.value()) {
+            let staged = shell.range_state().unwrap().staged();
+            shell.direction(if staged < i64::from(value.value()) {
+                Dir::Right
+            } else {
+                Dir::Left
+            });
+        }
+        let count = receipts.len();
+        shell.direction(Dir::Down);
+        drawer_tap(shell, now);
+        let deadline = Instant::now() + Duration::from_secs(15);
+        while expected != value && receipts.len() == count && Instant::now() < deadline {
+            pump_description(worker, shell, origin, receipts, attempts);
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if expected != value {
+            let outcome = receipts.last().ok_or("No numeric completion")?;
+            if receipts.len() != count + 1
+                || !outcome.verified
+                || outcome.change.expected != expected
+                || outcome.change.value != value
+            {
+                return Err("Numeric UI readback not confirmed".into());
+            }
+            transitions += 1;
+        }
+        if shell
+            .range_state()
+            .is_none_or(|r| r.saved() != i64::from(value.value()))
+        {
+            return Err("Saved marker did not follow verified value".into());
+        }
+        drawer_capture(shell, window, output, &format!("numeric-{stage}"), now)?;
+        phase(stage, original, value)?;
+        let until = Instant::now() + Duration::from_secs(4);
+        while Instant::now() < until {
+            pump_description(worker, shell, origin, receipts, attempts);
+            *now += 17;
+            shell.tick(*now, 0.017);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    }
+    shell.back();
+    shell.open(Page::Home);
+    if shell.preferences() != &before || !shell.take_requests().is_empty() {
+        return Err("Numeric trial changed favourites or emitted unrelated actions".into());
+    }
+    Ok(
+        serde_json::json!({"staging_no_write":true,"cancel_no_write":true,"native_entry_and_apply":true,"endpoints_verified":true,"original_restored":true,"verified_transitions":transitions,"favourites_unchanged":true,"transport":"fixed ordinary-app numeric worker"}),
+    )
 }

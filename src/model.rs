@@ -72,6 +72,7 @@ pub enum Action {
     RequestInput(String),
     OpenLgHome,
     OpenPointerSpeed,
+    OpenDescriptionLevel,
     SetPointerSpeed(crate::pointer_speed::Change),
     ClosePointerSpeed,
     OpenLgSettings,
@@ -188,6 +189,9 @@ pub fn controls_form_for_section(settings: &[Setting], current: &Context, sectio
     controls_form_with_pointer(settings,current,section_route,false)
 }
 pub fn controls_form_with_pointer(settings: &[Setting], current: &Context, section_route: Option<SettingsSection>, pointer_enabled:bool) -> Form<String, Action, Page> {
+    controls_form_with_numeric(settings,current,section_route,pointer_enabled,None)
+}
+pub fn controls_form_with_numeric(settings:&[Setting],current:&Context,section_route:Option<SettingsSection>,pointer_enabled:bool,description:Option<crate::description_level::Level>)->Form<String,Action,Page> {
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
         let editable=pointer_enabled && section_route==Some(SettingsSection::General) && setting.id=="pointerSpeed" && setting.available && setting.still_current(current)
@@ -205,6 +209,11 @@ pub fn controls_form_with_pointer(settings: &[Setting], current: &Context, secti
         section = section.item_keyed(setting.id.clone(), RowKey(setting.focus_key), RowKind::Button,
             if editable {Action::OpenPointerSpeed} else {Action::Inspect(setting.id.clone())}, Row::new(&setting.label).detail(detail).value(value).server_value().chevron(editable))
             .disabled(unavailable || (setting.protected && !editable));
+    }
+    if section_route==Some(SettingsSection::Accessibility) {
+        section=section.item_keyed("audioDescriptionVolume".into(),RowKey(1580),RowKind::Button,Action::OpenDescriptionLevel,
+            Row::new("Audio-description level").detail(if description.is_some(){"Signed level • stage then Apply"}else{"Adjust in LG Settings"})
+                .value(description.map(|v|v.value().to_string()).unwrap_or_else(||"LG-managed".into())).chevron(description.is_some())).disabled(description.is_none());
     }
     let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(route.focus_key()),
         RowKind::Button, if route == SettingsSection::Picture {Action::OpenLgSettings} else {Action::OpenLgSettingsSection(route)},

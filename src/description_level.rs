@@ -1,4 +1,4 @@
-//! Experimental fixed numeric operation, restricted to the isolated proof identity.
+//! Fixed global audio-description level operation; the live range path is G2-only.
 //! Never changes audio-description enablement, master volume, sound mode or routing.
 use serde::{Deserialize, Serialize};
 #[cfg(any(test, target_arch = "arm"))]
@@ -203,10 +203,15 @@ fn owner<P: Platform>(p: &mut P, own: &str) -> Result<(), String> {
     Ok(())
 }
 pub fn inspect<P: Platform>(p: &mut P, own: &str) -> Result<Level, String> {
-    inspect_reading(p, own).map(|r| r.level)
+    inspect_reading(p, own, false).map(|r| r.level)
 }
-fn inspect_reading<P: Platform>(p: &mut P, own: &str) -> Result<Reading, String> {
-    if own != crate::identity::PROOF {
+pub fn inspect_range<P: Platform>(p: &mut P, own: &str) -> Result<Level, String> {
+    inspect_reading(p, own, true).map(|r| r.level)
+}
+fn inspect_reading<P: Platform>(p: &mut P, own: &str, range: bool) -> Result<Reading, String> {
+    if (range && !matches!(own, crate::identity::PROOF | crate::identity::PREVIEW))
+        || (!range && own != crate::identity::PROOF)
+    {
         return Err("Numeric trial requires isolated proof identity".into());
     }
     let info = get(p, Op::SystemInfo)?;
@@ -219,11 +224,26 @@ fn inspect_reading<P: Platform>(p: &mut P, own: &str) -> Result<Reading, String>
     {
         return Err("Audio-description level writes are not validated for this firmware".into());
     }
+    if range && info["modelName"].as_str() != Some("OLED55G26LA") {
+        return Err("Native numeric controls are not validated on this model".into());
+    }
     owner(p, own)?;
     descriptor(&get(p, Op::Descriptor)?)?;
     current(&get(p, Op::Value)?)
 }
 pub fn apply<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -> Outcome {
+    apply_inner(p, own, change, enabled, false)
+}
+pub fn apply_range<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -> Outcome {
+    apply_inner(p, own, change, enabled, true)
+}
+fn apply_inner<P: Platform>(
+    p: &mut P,
+    own: &str,
+    change: Change,
+    enabled: bool,
+    range: bool,
+) -> Outcome {
     let mut out = Outcome {
         change,
         attempted: false,
@@ -237,7 +257,7 @@ pub fn apply<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -
             return Err("Audio-description level write capability is disabled".into());
         }
         let start = std::time::Instant::now();
-        let initial = inspect_reading(p, own)?;
+        let initial = inspect_reading(p, own, range)?;
         if initial.level != change.expected {
             return Err("Audio-description level changed since selection".into());
         }
@@ -253,7 +273,7 @@ pub fn apply<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -
             out.verified = true;
             return Ok(());
         }
-        if (change.value.value() as i16 - change.expected.value() as i16).abs() != 1 {
+        if !range && (change.value.value() as i16 - change.expected.value() as i16).abs() != 1 {
             return Err("Numeric trial permits one step only".into());
         }
         out.attempted = true;
@@ -339,6 +359,96 @@ impl Platform for Native {
     }
     fn wait(&mut self) {
         std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
+impl Outcome {
+    pub fn refused(change: Change, detail: impl Into<String>) -> Self {
+        Self {
+            change,
+            attempted: false,
+            admitted: false,
+            verified: false,
+            detail: detail.into(),
+            wire_format: None,
+        }
+    }
+}
+#[cfg(any(test, target_arch = "arm"))]
+fn execute_queued<P: Platform>(
+    p: &mut P,
+    own: &str,
+    change: Change,
+    queued: std::time::Instant,
+) -> Outcome {
+    if queued.elapsed() > std::time::Duration::from_secs(2) {
+        Outcome::refused(change, "Numeric gesture expired")
+    } else {
+        apply_range(p, own, change, true)
+    }
+}
+pub struct Sample {
+    pub started: std::time::Instant,
+    pub value: Option<Level>,
+}
+/// One worker owns all LS2 calls. Samples are capacity-one and gestures expire in the queue.
+pub struct Worker {
+    requests: std::sync::mpsc::SyncSender<(std::time::Instant, Change)>,
+    samples: std::sync::mpsc::Receiver<Sample>,
+    replies: std::sync::mpsc::Receiver<Outcome>,
+    thread: std::thread::JoinHandle<()>,
+}
+impl Worker {
+    #[cfg(target_arch = "arm")]
+    pub fn native(own: String) -> std::io::Result<Self> {
+        let (requests, receive) = std::sync::mpsc::sync_channel::<(std::time::Instant, Change)>(1);
+        let (sample_send, samples) = std::sync::mpsc::sync_channel(1);
+        let (send, replies) = std::sync::mpsc::channel();
+        let thread = std::thread::Builder::new()
+            .name("numeric-control".into())
+            .spawn(move || {
+                let mut platform = Native::new().ok();
+                loop {
+                    let started = std::time::Instant::now();
+                    let value = platform.as_mut().and_then(|p| inspect_range(p, &own).ok());
+                    let _ = sample_send.try_send(Sample { started, value });
+                    match receive.recv_timeout(std::time::Duration::from_secs(3)) {
+                        Ok((queued, change)) => {
+                            let outcome = match platform.as_mut() {
+                                Some(p) => execute_queued(p, &own, change, queued),
+                                None => Outcome::refused(change, "Numeric service unavailable"),
+                            };
+                            if send.send(outcome).is_err() {
+                                break;
+                            }
+                        }
+                        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                    }
+                }
+            })?;
+        Ok(Self {
+            requests,
+            samples,
+            replies,
+            thread,
+        })
+    }
+    pub fn queue(&self, change: Change) -> Result<(), String> {
+        self.requests
+            .try_send((std::time::Instant::now(), change))
+            .map_err(|_| "Numeric change already pending".into())
+    }
+    pub fn sample(&self) -> Option<Sample> {
+        self.samples.try_iter().last()
+    }
+    pub fn poll(&self) -> Vec<Outcome> {
+        self.replies.try_iter().collect()
+    }
+    pub fn finish(self) -> Vec<Outcome> {
+        drop(self.requests);
+        let _ = self.thread.join();
+        self.replies.try_iter().collect()
     }
 }
 
@@ -594,6 +704,89 @@ mod tests {
         let mut p = Fake::new();
         p.drift_encoding = true;
         assert!(!trial(&mut p).attempted);
+        assert!(p.sets.is_empty());
+    }
+    #[test]
+    fn live_range_path_admits_only_g2_and_preserves_wire_type_at_both_endpoints() {
+        for encoding in [Encoding::Integer, Encoding::DecimalString] {
+            let mut p = Fake::new();
+            p.encoding = encoding;
+            for (expected, value) in [(10, -15), (-15, 15), (15, 10)] {
+                let out = apply_range(
+                    &mut p,
+                    crate::identity::PROOF,
+                    Change {
+                        expected: Level::new(expected).unwrap(),
+                        value: Level::new(value).unwrap(),
+                    },
+                    true,
+                );
+                assert!(out.verified);
+                assert_eq!(out.wire_format, Some(encoding));
+            }
+            assert_eq!(p.level.value(), 10);
+            assert_eq!(p.encoding, encoding);
+        }
+        let mut p = Fake::new();
+        p.info["modelName"] = "OLED65C26LD".into();
+        let out = apply_range(
+            &mut p,
+            crate::identity::PROOF,
+            Change {
+                expected: Level::new(10).unwrap(),
+                value: Level::new(-15).unwrap(),
+            },
+            true,
+        );
+        assert!(!out.attempted);
+        assert!(p.sets.is_empty());
+        let mut p = Fake::new();
+        p.enabled = true;
+        assert!(
+            !apply_range(
+                &mut p,
+                crate::identity::PROOF,
+                Change {
+                    expected: Level::new(10).unwrap(),
+                    value: Level::new(-15).unwrap()
+                },
+                true
+            )
+            .attempted
+        );
+    }
+    #[test]
+    fn normal_g2_owner_is_supported_but_expired_queue_or_foreign_identity_never_sets() {
+        struct Preview(Fake);
+        impl Platform for Preview {
+            fn call(&mut self, op: Op) -> Result<Value, String> {
+                let mut v = self.0.call(op)?;
+                match op {
+                    Op::Foreground => v["appId"] = crate::identity::PREVIEW.into(),
+                    Op::Windows => v["windows"][0]["appId"] = crate::identity::PREVIEW.into(),
+                    _ => {}
+                }
+                Ok(v)
+            }
+            fn wait(&mut self) {}
+        }
+        let c = Change {
+            expected: Level::new(10).unwrap(),
+            value: Level::new(-15).unwrap(),
+        };
+        let mut p = Preview(Fake::new());
+        assert!(apply_range(&mut p, crate::identity::PREVIEW, c, true).verified);
+        let mut p = Fake::new();
+        let outcome = execute_queued(
+            &mut p,
+            crate::identity::PROOF,
+            c,
+            std::time::Instant::now() - std::time::Duration::from_secs(3),
+        );
+        assert!(!outcome.attempted);
+        assert!(p.sets.is_empty());
+        let mut p = Fake::new();
+        assert!(!apply_range(&mut p, "other", c, true).attempted);
         assert!(p.sets.is_empty());
     }
 }

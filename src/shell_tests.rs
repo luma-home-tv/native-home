@@ -1591,3 +1591,81 @@ fn range_track_click_stages_the_painted_value_while_hover_and_external_refresh_p
     assert!(s.range_state().is_none());
     assert!(s.take_requests().is_empty());
 }
+
+#[test]
+fn range_back_restores_the_actual_parent_instead_of_always_returning_to_controls() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open_range_editor("Example", RangeScale::new(-15, 15, 1).unwrap(), 0);
+    s.direction(Dir::Right);
+    s.back();
+    assert_eq!(s.page(), Page::Home);
+    assert!(s.range_state().is_none());
+    assert!(s.take_range_request().is_none());
+}
+fn numeric_shell() -> Shell {
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.description_sample(
+        Some(crate::description_level::Level::new(10).unwrap()),
+        100,
+        100,
+    );
+    assert!(s.focus_description_setting());
+    tap(&mut s);
+    assert_eq!(s.page(), Page::RangeEditor);
+    s
+}
+#[test]
+fn numeric_editor_withdraws_stale_or_changed_samples_and_never_turns_staging_into_a_write() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = numeric_shell();
+    s.direction(Dir::Right);
+    assert!(s.take_description_request().is_none());
+    s.age_description(8_101);
+    assert_ne!(s.page(), Page::RangeEditor);
+    assert!(s.description_value().is_none());
+    assert!(s.take_description_request().is_none());
+    let mut s = numeric_shell();
+    s.description_sample(
+        Some(crate::description_level::Level::new(9).unwrap()),
+        200,
+        200,
+    );
+    assert_ne!(s.page(), Page::RangeEditor);
+    assert_eq!(s.description_value().unwrap().value(), 9);
+    assert!(s.take_requests().is_empty());
+}
+#[test]
+fn numeric_worker_reply_advances_saved_and_ignores_read_cycles_started_before_confirmation() {
+    use crate::description_level::{Change, Level, Outcome};
+    let _serial = plx_base::testlock::serial();
+    let mut s = numeric_shell();
+    s.direction(Dir::Right);
+    s.direction(Dir::Down);
+    tap(&mut s);
+    let change = s.take_description_request().unwrap();
+    assert_eq!(
+        change,
+        Change {
+            expected: Level::new(10).unwrap(),
+            value: Level::new(11).unwrap()
+        }
+    );
+    s.description_reply(
+        &Outcome {
+            change,
+            attempted: true,
+            admitted: true,
+            verified: true,
+            detail: "confirmed".into(),
+            wire_format: None,
+        },
+        300,
+    );
+    assert_eq!(s.range_state().unwrap().saved(), 11);
+    s.description_sample(Some(Level::new(10).unwrap()), 250, 350);
+    assert_eq!(s.description_value().unwrap().value(), 11);
+    s.description_sample(Some(Level::new(9).unwrap()), 400, 450);
+    assert_ne!(s.page(), Page::RangeEditor);
+    assert_eq!(s.description_value().unwrap().value(), 9);
+}

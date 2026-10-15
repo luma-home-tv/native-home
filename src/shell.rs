@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
 use crate::model::{
-    controls_form_with_pointer, Action, Application, Catalogue, Context, Page, Setting,
+    controls_form_with_numeric, Action, Application, Catalogue, Context, Page, Setting,
     SettingsSection,
 };
 
@@ -50,6 +50,7 @@ struct RangeSession {
     state: StagedRange,
     pending: bool,
     return_page: Page,
+    description: bool,
 }
 const MENU_BASE: u32 = 32_000;
 const MENU_PANEL: Rect = Rect::new(1360.0, 330.0, 464.0, 598.0);
@@ -1065,6 +1066,8 @@ pub struct Shell {
     home_return: Option<(Page, usize)>,
     range: Option<RangeSession>,
     range_request: Option<(i64, i64)>,
+    description_sample: Option<(u32, crate::description_level::Level)>,
+    description_confirmation: Option<(u32, crate::description_level::Level)>,
     pointer_enabled: bool,
     pointer_pending: bool,
     pointer_expected: Option<crate::pointer_speed::Speed>,
@@ -1136,6 +1139,8 @@ impl Shell {
             home_return: None,
             range: None,
             range_request: None,
+            description_sample: None,
+            description_confirmation: None,
             pointer_enabled: false,
             pointer_pending: false,
             pointer_expected: None,
@@ -1336,11 +1341,12 @@ impl Shell {
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
                 self.surface.table.set(
-                    controls_form_with_pointer(
+                    controls_form_with_numeric(
                         settings,
                         &self.snapshot.context,
                         SettingsSection::from_page(detail),
                         self.pointer_value().is_some() && !self.pointer_pending,
+                        self.description_value(),
                     ),
                     None,
                 );
@@ -1830,10 +1836,6 @@ impl Shell {
         } else {
             self.pointer_enabled = false;
         }
-        if self.surface.page == Page::RangeEditor {
-            self.close_range_editor();
-            return;
-        }
         if self.surface.page == Page::PointerSpeed {
             self.close_pointer_picker();
         } else {
@@ -2204,6 +2206,10 @@ impl Shell {
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
+        if self.surface.page == Page::RangeEditor {
+            self.close_range_editor();
+            return;
+        }
         if self.surface.page == Page::PointerSpeed {
             self.close_pointer_picker();
             return;
@@ -2320,6 +2326,15 @@ impl Shell {
             }
             match range_key(key.elem) {
                 Some(1) => {
+                    if self.range.as_ref().is_some_and(|r| {
+                        r.description
+                            && self.description_value().map(|v| i64::from(v.value()))
+                                != Some(r.state.saved())
+                    }) {
+                        self.close_range_editor();
+                        self.status = cstr("Value changed or expired • reopen to adjust");
+                        return;
+                    }
                     if let Some(r) = self.range.as_mut().filter(|r| !r.pending) {
                         if let Some(proposal) = r.state.proposal() {
                             r.pending = true;
@@ -2433,6 +2448,9 @@ impl Shell {
             {
                 match self.surface.table.activate(i) {
                     Some(plx_ui::form::Activation::Push(p)) => self.rebuild(p),
+                    Some(plx_ui::form::Activation::Action(Action::OpenDescriptionLevel)) => {
+                        self.open_description_editor();
+                    }
                     Some(plx_ui::form::Activation::Action(Action::OpenPointerSpeed)) => {
                         self.open_pointer_picker();
                     }
@@ -3659,6 +3677,118 @@ impl Shell {
     pub fn take_requests(&mut self) -> Vec<Action> {
         std::mem::take(&mut self.pending)
     }
+    pub fn description_value(&self) -> Option<crate::description_level::Level> {
+        self.description_sample
+            .filter(|(stamp, _)| self.live_now.wrapping_sub(*stamp) <= 8_000)
+            .map(|(_, value)| value)
+    }
+    pub fn description_sample(
+        &mut self,
+        value: Option<crate::description_level::Level>,
+        started: u32,
+        now: u32,
+    ) {
+        self.live_now = now;
+        if self
+            .description_confirmation
+            .is_some_and(|(stamp, _)| started <= stamp)
+        {
+            return;
+        }
+        self.description_confirmation = None;
+        let before = self.description_sample.map(|(_, value)| value);
+        self.description_sample = value
+            .filter(|_| now.wrapping_sub(started) <= 8_000)
+            .map(|v| (started, v));
+        self.validate_description_editor();
+        if before != self.description_value()
+            && (self.surface.control_page == Some(Page::Accessibility)
+                && self.surface.page != Page::RangeEditor)
+        {
+            self.rebuild(self.surface.page);
+        }
+    }
+    pub fn age_description(&mut self, now: u32) {
+        self.live_now = now;
+        if self.description_sample.is_some() && self.description_value().is_none() {
+            self.description_sample = None;
+            self.validate_description_editor();
+            if self.surface.control_page == Some(Page::Accessibility)
+                && self.surface.page != Page::RangeEditor
+            {
+                self.rebuild(self.surface.page);
+            }
+        }
+    }
+    fn validate_description_editor(&mut self) {
+        if self.range.as_ref().is_some_and(|r| {
+            r.description
+                && !r.pending
+                && self.description_value().map(|v| i64::from(v.value())) != Some(r.state.saved())
+        }) {
+            self.close_range_editor();
+            self.status = cstr("Value changed or expired • reopen to adjust");
+        }
+    }
+    pub fn focus_description_setting(&mut self) -> bool {
+        if self.description_value().is_none() || self.range.as_ref().is_some_and(|r| r.pending) {
+            return false;
+        }
+        self.rebuild(Page::Accessibility);
+        self.focus_special(TABLE_BASE + 1580, GroupId(1));
+        true
+    }
+    fn open_description_editor(&mut self) {
+        if let Some(value) = self.description_value() {
+            if self.open_range_editor(
+                "Audio-description level",
+                RangeScale::new(-15, 15, 1).unwrap(),
+                i64::from(value.value()),
+            ) {
+                self.range.as_mut().unwrap().description = true;
+            }
+        }
+    }
+    pub fn take_description_request(&mut self) -> Option<crate::description_level::Change> {
+        if !self
+            .range
+            .as_ref()
+            .is_some_and(|r| r.description && r.pending)
+        {
+            return None;
+        }
+        let (expected, value) = self.range_request.take()?;
+        Some(crate::description_level::Change {
+            expected: crate::description_level::Level::new(i8::try_from(expected).ok()?)?,
+            value: crate::description_level::Level::new(i8::try_from(value).ok()?)?,
+        })
+    }
+    pub fn description_reply(&mut self, outcome: &crate::description_level::Outcome, now: u32) {
+        if !self.range.as_ref().is_some_and(|r| {
+            r.description
+                && r.pending
+                && r.state.proposal()
+                    == Some((
+                        i64::from(outcome.change.expected.value()),
+                        i64::from(outcome.change.value.value()),
+                    ))
+        }) {
+            return;
+        }
+        let confirmed = self.range_reply(
+            i64::from(outcome.change.expected.value()),
+            i64::from(outcome.change.value.value()),
+            outcome.verified,
+        );
+        if confirmed {
+            self.description_sample = Some((now, outcome.change.value));
+            self.description_confirmation = Some((now, outcome.change.value));
+        } else {
+            self.description_sample = None;
+            self.close_range_editor();
+            self.status = cstr("Change not confirmed • use LG Settings or reopen after refresh");
+        }
+    }
     pub fn open_range_editor(&mut self, label: &str, scale: RangeScale, saved: i64) -> bool {
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return false;
@@ -3676,6 +3806,7 @@ impl Shell {
             state,
             pending: false,
             return_page,
+            description: false,
         });
         self.range_request = None;
         self.rebuild(Page::RangeEditor);

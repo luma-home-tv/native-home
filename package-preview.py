@@ -22,11 +22,11 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.20.0' if main == 'home-preview' else '0.1.0'
+version = '0.21.0' if main == 'home-preview' else '0.1.0'
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
-    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_RANGE_LAYOUT_PROOF'))):
+    'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_NATIVE_READ_PROBE', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_NAVIGATION_PROOF', 'NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_RANGE_LAYOUT_PROOF', 'NATIVE_HOME_DESCRIPTION_UI_PROOF'))):
     raise ValueError('Interactive package must not include scripted proof actions')
 shutil.copy2(binary, stage / main)
 (stage / main).chmod(0o755)
@@ -80,6 +80,10 @@ if main == 'home-preview':
     if os.environ.get('NATIVE_HOME_POINTER_UI_PROOF') == '1':
         if not test_identity or interactive: raise ValueError('Pointer UI proof requires isolated diagnostic identity')
         (stage / 'pointer-ui-proof.json').write_text('{}\n')
+    if os.environ.get('NATIVE_HOME_DESCRIPTION_UI_PROOF') == '1':
+        if not test_identity or interactive: raise ValueError('Numeric UI proof requires isolated diagnostic identity')
+        if any(os.environ.get(k) for k in ('NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_RANGE_LAYOUT_PROOF', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_ROUTE_PROOF', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_NAVIGATION_PROOF')): raise ValueError('One isolated trial per package')
+        (stage / 'description-ui-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_RANGE_LAYOUT_PROOF') == '1':
         if not test_identity or interactive: raise ValueError('Range layout proof requires isolated diagnostic identity')
         if any(os.environ.get(k) for k in ('NATIVE_HOME_DESCRIPTION_LEVEL_PROOF', 'NATIVE_HOME_POINTER_PROOF', 'NATIVE_HOME_POINTER_UI_PROOF', 'NATIVE_HOME_ROUTE_PROOF', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_PREFERENCES_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_NAVIGATION_PROOF')): raise ValueError('One isolated trial per package')
@@ -133,6 +137,7 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
            'native_read_probe': os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1',
+           'description_ui_proof': os.environ.get('NATIVE_HOME_DESCRIPTION_UI_PROOF') == '1',
            'range_layout_proof': os.environ.get('NATIVE_HOME_RANGE_LAYOUT_PROOF') == '1',
            'description_level_proof': os.environ.get('NATIVE_HOME_DESCRIPTION_LEVEL_PROOF') == '1',
            'pointer_proof': os.environ.get('NATIVE_HOME_POINTER_PROOF') == '1',

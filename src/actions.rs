@@ -32,6 +32,7 @@ impl Request {
             Action::OpenLgSettings => Some(Self::LgSettings {}),
             Action::OpenLgSettingsSection(section) => Some(Self::LgSettingsSection { section }),
             Action::Inspect(_)
+            | Action::OpenDescriptionLevel
             | Action::OpenPointerSpeed
             | Action::SetPointerSpeed(_)
             | Action::ClosePointerSpeed => None,
