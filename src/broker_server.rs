@@ -410,6 +410,14 @@ mod proof {
                 invalid("Temporary helper requires the operator's root test connection").into(),
             );
         }
+        // The helper schedules termination of its OWN process. The operator
+        // never signals a root PID after a racy procfs identity check. A kernel
+        // uninterruptible wait can still defer signal delivery; unknown exit
+        // therefore requires retained recovery evidence, never a guessed kill.
+        if unsafe { libc::signal(libc::SIGALRM, libc::SIG_DFL) } == libc::SIG_ERR {
+            return Err(io::Error::last_os_error().into());
+        }
+        unsafe { libc::alarm(30) };
         let limit = libc::rlimit {
             rlim_cur: 0,
             rlim_max: 0,

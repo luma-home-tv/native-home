@@ -49,11 +49,14 @@ The app never supplies it.
 
 Socket operations have monotonic deadlines. The server's 25-second I/O deadline
 does not guarantee process lifetime: synchronous bus registration and file reads
-can outlast it. The test driver must provide a separate timeout, fresh
-PID/start/hash-bound termination if needed, process/endpoint absence checks and
-exact-file cleanup. It may remove only its verified executable and enrollment,
-then the empty owned directory. Failure to bind or verify cleanup requires a
-recovery record, not a guessed kill or recursive removal.
+can outlast it. A subsequent safety refinement schedules default `SIGALRM`
+termination of the helper's own process after 30 seconds. Signal delivery can
+still be deferred by a kernel uninterruptible wait. The driver never signals an
+external root PID based on sampled procfs identity. It waits, verifies actual
+process/endpoint absence, and removes only its verified executable and enrollment,
+then the empty owned directory. Failure to bind or verify exit/cleanup requires
+a recovery record with ownership evidence retained. Operator observation and
+cleanup also include bounded SSH-call overhead; no hard wall-time claim follows.
 
 The marker is accepted only as a bounded root-owned regular package file, with
 symlink, FIFO, mode, link-count and mutation checks. The handshake is called only
@@ -76,7 +79,7 @@ checks. Host all-target clippy with warnings denied and 13 framework-verifier
 tests and 14 build/provenance guard tests pass. The helper has no binary-specific
 unit tests.
 
-Both ARM release builds pass from source
+The initial ARM release builds pass from source
 `f137bd5bdd643f91e7392c9922d20f172b53e41d`, with equal snapshots of 73 selected
 inputs and the same verified framework. Ten actual local packaging cases pass:
 Identify has exactly its two diagnostic markers; ordinary passive and normal
@@ -85,12 +88,12 @@ Identify, mixed trials, invalid nonce/hash, stray marker values and packaging
 the helper itself are rejected. These used a synthetic snapshot and made no TV
 contact. The existing ARM target-feature warning remains.
 
-| Artifact | SHA-256 |
+| Initial artifact (before own-process alarm refinement) | SHA-256 |
 | --- | --- |
 | Dashboard ELF | `7ada786be729bbc4cd17a270f3ea88fa9f97b4eafa083742ad10ef31cd06206a` |
 | Separate helper ELF | `be944ea507f760a808880e231e34a9fde84b6b13595e7e156a7c3420a1f41ad5` |
 
 The host is macOS: Linux transport tests are compiled conditionally and have not
-been executed there. Isolated G2 communication and complete removal remain
+been executed there. Rebuilt alarm-refinement artifacts, isolated G2 communication and complete removal remain
 pending. No device capability, artwork, normal-preview promotion or full-release
 claim follows from these tests/builds.
