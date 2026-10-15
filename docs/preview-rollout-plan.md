@@ -1,7 +1,8 @@
 # Backed-up G2 preview rollout
 
 Historical scope: this plan delivered G2 normal Preview 0.26.0. G2 now retains
-0.28.0 after the [later backed-up update](apps-scroll-rest-milestone.json). The original
+0.30.0 after the [latest backed-up update](retained-preview-030-milestone.json);
+the [0.28.0 update](apps-scroll-rest-milestone.json) remains historical evidence. The original
 [update record](preview-update-milestone.json) covers the installer rehearsal,
 fresh backups, complete installed bundle/state verification, normal keyboard
 smoke and cleanup. C2 remains on 0.20.0. The [startup/relaunch](startup-relaunch-milestone.json),

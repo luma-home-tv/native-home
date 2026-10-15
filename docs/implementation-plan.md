@@ -12,7 +12,7 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 retains 0.28.0 and C2 remains on 0.20.0. The
+current native interface. G2 retains 0.30.0; the recorded C2 version is 0.20.0. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -57,7 +57,9 @@ The [input-batch candidate](input-batch-ordering-milestone.json) records the 0.2
 queued-cancellation and duplicate-activation fixes. Its physical workflow remains
 incomplete. The [0.30.0 language/region candidate](language-region-reads.md) adds
 five protected General readings; [isolated ordinary-app reads and focused native layout](language-region-read-milestone.json)
-are verified on G2, while retained delivery remains pending.
+are verified on G2. The [backed-up normal 0.30.0 delivery](retained-preview-030-milestone.json)
+then verified Apps/Search/keyboard, General rows and preservation; broader release
+checks remain open.
 
 The earlier [OLED/branding milestone](oled-branding-milestone.json) records
 true-black framebuffer evidence and clean removal on `2a53bfd`. The later [standalone device milestone](standalone-device-milestone.json) corrects

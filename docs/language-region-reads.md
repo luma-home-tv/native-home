@@ -1,4 +1,4 @@
-# Language and region readings (0.30.0 candidate)
+# Language and region readings (0.30.0)
 
 General now includes five fixed, protected readings: menu language, preferred
 and secondary audio languages, TV country, and LG services country. Language
@@ -32,7 +32,9 @@ partial-failure/expiry transitions and real FormTable disabled/route bindings.
 All-target host clippy with warnings denied and the ARM release build pass (the
 existing target-feature warning remains). These checks do not establish TV
 rendering, ordinary UID access, physical navigation or comprehensive settings
-coverage. Normal G2 remains on 0.28.0; no retained update is part of this slice.
+coverage. The original isolated phase left normal G2 on 0.28.0. The subsequent
+[backed-up normal delivery](retained-preview-030-milestone.json) installed 0.30.0,
+visually matched all five rows to independent GETs, and preserved favourites.
 
 The isolated diagnostic adds seven General captures using the existing shared
 arrows and Back: each of the five new rows, the enabled LG General route without
@@ -43,5 +45,6 @@ Root-reviewed frames and all 24 preservation/removal checks. An independent
 saved-artifact audit passed 277 assertions. The driver binds live UID/start/ELF
 identity, but raw process reads were not retained for independent replay. These
 are component read/layout checks; native expiry transitions, physical General
-navigation and retained delivery remain open. The comprehensive control centre
+navigation remain open. Retained G2 delivery is recorded separately above.
+The comprehensive control centre
 remains incomplete.

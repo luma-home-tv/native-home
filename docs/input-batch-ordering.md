@@ -18,7 +18,9 @@ machines without a GL context or TV actions.
 Validation: 193 library tests and 5 home-preview binary tests passed; host clippy
 with all targets and warnings denied passed. The ARM release build also passed (the existing target-feature warning remains).
 Physical G2 qualification is partial, as described below. The installed normal
-preview remains version 0.28.0 until a separate backed-up update is verified.
+preview was held at version 0.28.0 for the isolated attempts below. The later
+[normal 0.30.0 delivery](retained-preview-030-milestone.json) includes these fixes
+and separately verifies normal UI operation and preserved favourites.
 
 This change does not add SDL event timestamps, calibrate physical hold duration,
 change the framework's 500 ms release/hold boundary, or fix controller-time drift

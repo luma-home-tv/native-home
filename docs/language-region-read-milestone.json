@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "isolated_ordinary_app_read_and_focused_layout_verified_retained_update_pending",
+  "status": "isolated_read_layout_verified_subsequent_normal_g2_delivery_verified",
   "source_revision": "093a7f600be6a3c49fbb4ad966bd4e55b70b63fd",
   "candidate_version": "0.30.0",
   "binary_sha256": "13595c926f6b4aadd9cec382fcd295d7797fb4bb5087e9bd0547a556aee1836e",
@@ -57,10 +57,14 @@
     "root_visual_review": "950a2ea67fc0088cb18160298a53063f705c9486a9b335051acf0906060f1285"
   },
   "remaining": [
-    "normal retained delivery",
     "native expiry/external-change transition testing",
     "physical General navigation",
     "comprehensive settings inventory and separately validated controls",
     "full dashboard release"
-  ]
+  ],
+  "subsequent_retained_delivery": {
+    "version": "0.30.0",
+    "record": "retained-preview-030-milestone.json",
+    "scope": "Normal visual General and Apps/Search/keyboard smoke, saved-state preservation and checked-domain equality; isolated record above retains its historical identity."
+  }
 }
