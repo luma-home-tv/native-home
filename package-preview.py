@@ -22,7 +22,7 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.15.0' if main == 'home-preview' else '0.1.0'
+version = '0.16.0' if main == 'home-preview' else '0.1.0'
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
 if interactive and (main != 'home-preview' or any(os.environ.get(name) for name in (
     'NATIVE_HOME_DRAWER_PROBE', 'NATIVE_HOME_MANAGEMENT_PROBE', 'NATIVE_HOME_CONTROLS_PROBE', 'NATIVE_HOME_LAUNCH_PROOF', 'NATIVE_HOME_ROUTE_PROOF',
@@ -66,7 +66,8 @@ if main == 'home-preview':
     route = os.environ.get('NATIVE_HOME_ROUTE_PROOF')
     if route:
         sections = {'settings-sound':'sound','settings-network':'network','settings-accessibility':'accessibility','settings-general':'general','settings-panel-care':'panel_care'}
-        if route == 'settings': proof = {'kind':'LgSettings'}
+        if route == 'home': proof = {'kind':'LgHome'}
+        elif route == 'settings': proof = {'kind':'LgSettings'}
         elif route in ('hdmi1','hdmi4'): proof = {'kind':'Input','id':'HDMI_1' if route=='hdmi1' else 'HDMI_4'}
         elif route in sections: proof = {'kind':'LgSettingsSection','section':sections[route]}
         else: raise ValueError('Unknown proof route')

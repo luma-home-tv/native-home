@@ -121,16 +121,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut action_worker = None;
     #[allow(unused_mut)]
     let mut app_launches_enabled = false;
+    #[allow(unused_mut)]
+    let mut home_launches_enabled = false;
     #[cfg(target_arch = "arm")]
     if device {
         app_launches_enabled = native_home::identity::app_launches(
             plx_base::paths::app_id(),
             matches!(&launch_proof, Some(native_home::actions::Request::Application { id }) if id == native_home::identity::TARGET),
         );
+        home_launches_enabled = native_home::identity::home_launches(
+            plx_base::paths::app_id(),
+            matches!(launch_proof, Some(native_home::actions::Request::LgHome {})),
+        );
         action_worker = Some(native_home::actions::Worker::native(
             plx_base::paths::app_id().into(),
             native_home::actions::Capabilities {
                 apps: app_launches_enabled,
+                home: home_launches_enabled,
                 inputs: matches!(
                     launch_proof,
                     Some(native_home::actions::Request::Input { .. })
@@ -163,6 +170,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     queue_preferences(&mut shell, &mut persistence, &mut storage_error);
     let preferences_at_boot = shell.preferences().clone();
     shell.enable_app_launches(app_launches_enabled);
+    shell.enable_home_launches(home_launches_enabled);
     shell.load_icons(&assets);
     let mut now = 0;
     let mut capture_diagnostics = Vec::new();
@@ -501,6 +509,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     return Err("Launch target is not in live drawer".into());
                 }
             }
+            native_home::actions::Request::LgHome {} => {
+                if !shell.focus_lg_home() {
+                    return Err("LG Home return unavailable".into());
+                }
+            }
             native_home::actions::Request::LgSettings {}
             | native_home::actions::Request::LgSettingsSection { .. } => {
                 shell.open(request.settings_section().unwrap().page());
@@ -666,6 +679,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             native_home::actions::Request::LgSettings {}
                             | native_home::actions::Request::LgSettingsSection { .. } => {
                                 "LG Settings unavailable • open it from LG Home"
+                            }
+                            native_home::actions::Request::LgHome {} => {
+                                "LG Home return could not be confirmed"
                             }
                             native_home::actions::Request::Application { .. } => {
                                 "Application launch could not be confirmed"
@@ -936,6 +952,7 @@ fn dispatch_requests(
             None => matches!(
                 request,
                 native_home::actions::Request::Application { .. }
+                    | native_home::actions::Request::LgHome {}
                     | native_home::actions::Request::LgSettings {}
                     | native_home::actions::Request::LgSettingsSection { .. }
             ),

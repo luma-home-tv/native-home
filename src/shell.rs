@@ -106,11 +106,22 @@ fn category_key(key: u32) -> Option<usize> {
         .then(|| (key - CATEGORY_BASE) as usize)
 }
 const RAIL_BASE: u32 = 10_000;
+const LG_HOME_KEY: u32 = RAIL_BASE + 4;
+const RAIL_COUNT: u32 = 5;
 const TABLE_BASE: u32 = 20_000;
 const RAIL: Rect = Rect::new(96.0, 238.0, 286.0, 690.0);
 const CONTENT: Rect = Rect::new(438.0, 238.0, 1386.0, 690.0);
 fn rail_rect(index: usize) -> Rect {
-    Rect::new(96.0, 254.0 + 84.0 * index as f32, 286.0, 68.0)
+    Rect::new(
+        96.0,
+        if index == 4 {
+            682.0
+        } else {
+            254.0 + 84.0 * index as f32
+        },
+        286.0,
+        68.0,
+    )
 }
 const CARD_STYLE: RowStyle = RowStyle {
     w: 230.0,
@@ -555,7 +566,7 @@ impl Focusable<HomeHost> for Surface {
             reachable: AxisMask::HORIZONTAL,
             edge: [EdgeRule::Geometric; 4],
             extent: RAIL,
-            len: 4,
+            len: RAIL_COUNT as usize,
             elem: ElemKind::Control,
         });
         if self.page == Page::Home {
@@ -617,7 +628,7 @@ impl Focusable<HomeHost> for Surface {
         }
         if self.page == Page::Applications && toolbar_key(*key).is_some() {
             Some(GroupId(3))
-        } else if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
+        } else if (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(key) {
             Some(GroupId(0))
         } else if self.input_cards.index_of(key).is_some() {
             Some(GroupId(2))
@@ -697,9 +708,9 @@ impl Focusable<HomeHost> for Surface {
                     .neighbour::<HomeHost, _>(&self.input_cards, key, dir);
             }
         }
-        let rail = (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem);
+        let rail = (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(&key.elem);
         let keys = if rail {
-            (RAIL_BASE..RAIL_BASE + 4).collect::<Vec<_>>()
+            (RAIL_BASE..RAIL_BASE + RAIL_COUNT).collect::<Vec<_>>()
         } else {
             self.keys()
         };
@@ -762,7 +773,7 @@ impl Focusable<HomeHost> for Surface {
                 });
             }
         }
-        if (RAIL_BASE..RAIL_BASE + 4).contains(key) {
+        if (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(key) {
             let i = (*key - RAIL_BASE) as usize;
             let rect = rail_rect(i);
             Some(Placed {
@@ -888,6 +899,7 @@ pub struct Shell {
     live_now: u32,
     live_updates: u32,
     app_launches_enabled: bool,
+    home_launches_enabled: bool,
     drawer: Drawer,
     control_category: Page,
     category_labels: [CString; 6],
@@ -948,6 +960,7 @@ impl Shell {
             live_now: 0,
             live_updates: 0,
             app_launches_enabled: false,
+            home_launches_enabled: false,
             drawer: Drawer::default(),
             control_category: Page::Picture,
             category_labels: CATEGORIES.map(|(_, label)| cstr(label)),
@@ -976,6 +989,13 @@ impl Shell {
                 Row::new(title),
             );
         }
+        rail = rail.item_keyed(
+            "lg-home".into(),
+            RowKey(5),
+            RowKind::Button,
+            Action::OpenLgHome,
+            Row::new("LG Home"),
+        );
         let mut rt = FormTable::new(2000);
         rt.set(Form::new().section(rail), None);
         Surface {
@@ -1414,6 +1434,17 @@ impl Shell {
             self.live_now,
         )
     }
+    pub fn enable_home_launches(&mut self, enabled: bool) {
+        self.home_launches_enabled = enabled;
+        plx_machine::idle::invalidate();
+    }
+    pub fn focus_lg_home(&mut self) -> bool {
+        if self.menu.is_some() || self.drawer.editing {
+            return false;
+        }
+        self.focus_special(LG_HOME_KEY, GroupId(0));
+        true
+    }
     pub fn enable_app_launches(&mut self, enabled: bool) {
         self.app_launches_enabled = enabled;
         self.rebuild(self.surface.page);
@@ -1673,7 +1704,7 @@ impl Shell {
                 .current(InputOwner::Entry(entry(self.surface.page)))
                 .map(|key| key.elem);
             if current.is_some_and(|key| {
-                category_key(key).is_some() || (RAIL_BASE..RAIL_BASE + 4).contains(&key)
+                category_key(key).is_some() || (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(&key)
             }) {
                 self.rebuild(Page::Home);
             } else {
@@ -1777,6 +1808,24 @@ impl Shell {
                 }
                 return;
             }
+        }
+        if key.elem == LG_HOME_KEY {
+            if self
+                .surface
+                .group_of(&key.elem, &self.context(&LegacyMeasure))
+                != Some(GroupId(0))
+            {
+                return;
+            }
+            self.status = cstr(if self.home_launches_enabled {
+                "Opening LG Home…"
+            } else {
+                "LG Home return is unavailable in this preview"
+            });
+            if self.home_launches_enabled {
+                self.pending.push(Action::OpenLgHome);
+            }
+            return;
         }
         if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
             self.rebuild(TABS[(key.elem - RAIL_BASE) as usize].0);
@@ -2007,9 +2056,9 @@ impl Shell {
         }
         let current = cx.focus.current.map(|k| k.elem);
         self.surface.rail.table.list_focused =
-            current.is_some_and(|k| (RAIL_BASE..RAIL_BASE + 4).contains(&k));
+            current.is_some_and(|k| (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(&k));
         self.surface.rail.table.sel = current
-            .filter(|k| (RAIL_BASE..RAIL_BASE + 4).contains(k))
+            .filter(|k| (RAIL_BASE..RAIL_BASE + RAIL_COUNT).contains(k))
             .map(|k| (k - RAIL_BASE) as i32)
             .unwrap_or(
                 TABS.iter()
@@ -2115,7 +2164,12 @@ impl Shell {
         };
         let owner = InputOwner::Entry(entry(self.surface.page));
         let focused = self.input.engine.current(owner).map(|key| key.elem);
-        for (i, (_, title)) in TABS.iter().enumerate() {
+        for (i, title) in TABS
+            .iter()
+            .map(|(_, title)| *title)
+            .chain(std::iter::once("LG Home"))
+            .enumerate()
+        {
             let rect = rail_rect(i);
             let active = focused == Some(RAIL_BASE + i as u32);
             let ink = if active {
@@ -2135,15 +2189,22 @@ impl Shell {
             }
             Label::new(cstr(title).as_ptr(), theme::size::BODY, ink)
                 .draw(p, Rect::new(rect.x + 80.0, rect.y, rect.w - 96.0, rect.h));
-            if self.navigation_textures[i] != 0 {
+            if self.navigation_textures[if i == 4 { 0 } else { i }] != 0 {
                 p.tex(
-                    self.navigation_textures[i],
+                    self.navigation_textures[if i == 4 { 0 } else { i }],
                     Rect::new(rect.x + 28.0, rect.cy() - 16.0, 32.0, 32.0),
                     0.0,
                     ink,
                 );
             }
         }
+        p.rect(
+            Rect::new(120.0, 670.0, 238.0, 1.0),
+            0.0,
+            theme::HAIRLINE,
+            theme::HAIRLINE,
+            0.0,
+        );
         let network = self.snapshot.settings.get("network");
         let connected = network.is_some_and(|rows| {
             rows.iter().any(|r| {
@@ -2431,7 +2492,7 @@ impl Shell {
                 }
             }
         }
-        for i in 0..4 {
+        for i in 0..RAIL_COUNT {
             {
                 let r = rail_rect(i as usize);
                 f.stop(
@@ -2439,7 +2500,7 @@ impl Shell {
                     Stop {
                         key: FocusKey {
                             entry: entry(self.surface.page),
-                            elem: RAIL_BASE + i as u32,
+                            elem: RAIL_BASE + i,
                         },
                         rect: r,
                         rest_rect: r,
@@ -2755,7 +2816,9 @@ impl Shell {
                 return Some(["All apps", "Favourites", "Search apps"][i].into());
             }
         }
-        if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
+        if key.elem == LG_HOME_KEY {
+            Some("LG Home".into())
+        } else if (RAIL_BASE..RAIL_BASE + 4).contains(&key.elem) {
             Some(TABS[(key.elem - RAIL_BASE) as usize].1.to_owned())
         } else if self.surface.table_mode {
             self.surface

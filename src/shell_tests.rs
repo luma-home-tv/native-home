@@ -1050,3 +1050,65 @@ fn two_column_inputs_preserve_port_identity_and_withdraw_selected_status_when_st
     assert!(s.snapshot.inputs.iter().all(|p| p.selected.is_none()));
     assert_eq!(s.focused_item().as_deref(), Some("HDMI_4"));
 }
+
+#[test]
+fn lg_home_rail_is_reachable_and_uses_a_distinct_gated_request_without_changing_preferences() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let before = s.preferences().clone();
+    assert!(s.focus_lg_home());
+    assert_eq!(focus(&s), LG_HOME_KEY);
+    let key = FocusKey {
+        entry: entry(s.page()),
+        elem: LG_HOME_KEY,
+    };
+    s.activate(key, false);
+    assert!(s.take_requests().is_empty());
+    s.direction(Dir::Up);
+    assert_eq!(focus(&s), RAIL_BASE + 3);
+    s.direction(Dir::Down);
+    assert_eq!(focus(&s), LG_HOME_KEY);
+    s.enable_home_launches(true);
+    s.press(true, PressFrom::Key);
+    s.tick(50, 0.05);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert_eq!(s.take_requests(), vec![Action::OpenLgHome]);
+    assert_eq!(s.preferences(), &before);
+    assert_eq!(s.page(), Page::Home);
+    assert!(!s.should_exit());
+}
+#[test]
+fn armed_lg_home_return_is_cancelled_by_navigation_and_hidden_behind_search_or_menu() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.enable_home_launches(true);
+    s.focus_lg_home();
+    s.press(true, PressFrom::Key);
+    s.direction(Dir::Up);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert!(s.take_requests().is_empty());
+    s.open(Page::Applications);
+    let key = FocusKey {
+        entry: entry(s.page()),
+        elem: LG_HOME_KEY,
+    };
+    s.drawer.editing = true;
+    s.rebuild(Page::Applications);
+    assert!(!s.focus_lg_home());
+    s.activate(key, false);
+    assert!(s.take_requests().is_empty());
+    s.back();
+    s.focus_application("com.example.app00");
+    let app = FocusKey {
+        entry: entry(s.page()),
+        elem: focus(&s),
+    };
+    s.activate(app, true);
+    assert!(s.menu_application().is_some());
+    assert!(!s.focus_lg_home());
+    s.activate(key, false);
+    assert!(s.take_requests().is_empty());
+    assert!(s.menu_application().is_some());
+}

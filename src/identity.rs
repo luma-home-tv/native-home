@@ -17,6 +17,10 @@ pub fn preferences_dir(value: &str) -> Option<std::path::PathBuf> {
 pub fn app_launches(value: &str, owned_target_proof: bool) -> bool {
     value == PREVIEW || (value == PROOF && owned_target_proof)
 }
+/// Fixed LG Home return is separate from opening household applications.
+pub fn home_launches(value: &str, explicit_home_proof: bool) -> bool {
+    value == PREVIEW || (value == PROOF && explicit_home_proof)
+}
 
 #[cfg(test)]
 mod tests {
@@ -44,5 +48,9 @@ mod tests {
         assert!(!app_launches(PROOF, false));
         assert!(app_launches(PROOF, true));
         assert!(!app_launches("com.webos.app.home", true));
+        assert!(home_launches(PREVIEW, false));
+        assert!(!home_launches(PROOF, false));
+        assert!(home_launches(PROOF, true));
+        assert!(!home_launches(TARGET, true));
     }
 }

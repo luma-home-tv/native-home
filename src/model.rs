@@ -70,6 +70,7 @@ pub enum Action {
     Inspect(String),
     RequestApplication(String),
     RequestInput(String),
+    OpenLgHome,
     OpenLgSettings,
     OpenLgSettingsSection(SettingsSection),
 }

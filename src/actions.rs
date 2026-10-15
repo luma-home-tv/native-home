@@ -9,6 +9,7 @@ use std::{sync::mpsc, thread};
 pub enum Request {
     Application { id: String },
     Input { id: String },
+    LgHome {},
     LgSettings {},
     LgSettingsSection { section: SettingsSection },
 }
@@ -27,6 +28,7 @@ impl Request {
         match action {
             Action::RequestApplication(id) => Some(Self::Application { id }),
             Action::RequestInput(id) => Some(Self::Input { id }),
+            Action::OpenLgHome => Some(Self::LgHome {}),
             Action::OpenLgSettings => Some(Self::LgSettings {}),
             Action::OpenLgSettingsSection(section) => Some(Self::LgSettingsSection { section }),
             Action::Inspect(_) => None,
@@ -38,6 +40,7 @@ pub struct Capabilities {
     pub apps: bool,
     pub inputs: bool,
     pub settings: bool,
+    pub home: bool,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct Receipt {
@@ -119,6 +122,7 @@ fn target(
         Request::LgSettings {} | Request::LgSettingsSection { .. } => {
             ("com.palm.app.settings".to_owned(), false)
         }
+        Request::LgHome {} => ("com.webos.app.home".to_owned(), false),
         Request::Input { id } => {
             let app = match id.as_str() {
                 "HDMI_1" => "com.webos.app.hdmi1",
@@ -150,6 +154,13 @@ fn target(
     }
     let app = matches[0];
     let kind = app.get("type").and_then(Value::as_str).unwrap_or("");
+    if matches!(request, Request::LgHome {})
+        && (kind != "native"
+            || app["main"].as_str() != Some("file:///usr/bin/com.webos.app.home")
+            || app["version"].as_str() != Some("1.0.0"))
+    {
+        return Err("LG Home metadata has not been validated".into());
+    }
     if !matches!(kind, "native" | "native_builtin" | "web") {
         return Err("Application is not launchable".into());
     }
@@ -188,21 +199,20 @@ pub fn execute<P: Platform>(
         let allowed = match request {
             Request::Application { .. } => caps.apps,
             Request::Input { .. } => caps.inputs,
+            Request::LgHome {} => caps.home,
             Request::LgSettings {} | Request::LgSettingsSection { .. } => caps.settings,
         };
         if !allowed {
             return Err("Operation has not been validated".into());
         }
-        if request.is_settings() {
+        if request.is_settings() || matches!(request, Request::LgHome {}) {
             let info = get(platform, Op::SystemInfo)?;
             let known_firmware = info["firmwareVersion"].as_str() == Some("23.25.55")
                 && info["sdkVersion"].as_str() == Some("9.2.2");
             let model = info["modelName"].as_str();
             let verified = matches!(model, Some("OLED55G26LA" | "OLED65C26LD"));
             if !known_firmware || !verified {
-                return Err(
-                    "LG Settings handoff is not validated for this TV firmware/section".into(),
-                );
+                return Err("LG handoff is not validated for this TV firmware".into());
             }
         }
         let before = get(platform, Op::Foreground)?;
@@ -495,6 +505,71 @@ mod tests {
             })
         }
         fn wait(&mut self) {}
+    }
+    fn home_platform() -> Fake {
+        let mut p = Fake::new();
+        p.rows["apps"].as_array_mut().unwrap().push(json!({"id":"com.webos.app.home","type":"native","visible":false,"main":"file:///usr/bin/com.webos.app.home","version":"1.0.0"}));
+        p.after = "com.webos.app.home".into();
+        p
+    }
+    #[test]
+    fn lg_home_return_uses_fixed_registered_target_and_foreground_readback() {
+        for model in ["OLED55G26LA", "OLED65C26LD"] {
+            let mut p = home_platform();
+            p.system_info["modelName"] = model.into();
+            let r = execute(
+                &mut p,
+                "com.example.home",
+                Request::LgHome {},
+                Capabilities {
+                    home: true,
+                    ..Default::default()
+                },
+            );
+            assert!(r.admitted && r.verified);
+            assert_eq!(p.launches, vec![json!({"id":"com.webos.app.home"})]);
+            assert_eq!(r.target.as_deref(), Some("com.webos.app.home"));
+        }
+        let mut p = home_platform();
+        p.after = "com.example.other".into();
+        let r = execute(
+            &mut p,
+            "com.example.home",
+            Request::LgHome {},
+            Capabilities {
+                home: true,
+                ..Default::default()
+            },
+        );
+        assert!(r.admitted && !r.verified);
+    }
+    #[test]
+    fn lg_home_return_rejects_unverified_firmware_metadata_or_owner_before_launch() {
+        for case in 0..8 {
+            let mut p = home_platform();
+            let mut caps = Capabilities {
+                home: true,
+                ..Default::default()
+            };
+            match case {
+                0 => caps.home = false,
+                1 => p.system_info["firmwareVersion"] = "unknown".into(),
+                2 => p.system_info["sdkVersion"] = "10.0".into(),
+                3 => p.system_info["modelName"] = "unknown".into(),
+                4 => p.rows["apps"][3]["main"] = "other".into(),
+                5 => p.rows["apps"][3]["type"] = "web".into(),
+                6 => p.rows["apps"][3]["version"] = "2.0".into(),
+                _ => p.foreground = "com.example.other".into(),
+            }
+            assert!(!execute(&mut p, "com.example.home", Request::LgHome {}, caps).admitted);
+            assert!(p.launches.is_empty());
+        }
+        for value in [
+            json!({"kind":"LgHome","id":"com.example.other"}),
+            json!({"kind":"LgHome","params":{"target":"reset"}}),
+        ] {
+            assert!(serde_json::from_value::<Request>(value).is_err());
+        }
     }
     #[test]
     fn registered_application_launch_has_exact_payload_and_readback() {
