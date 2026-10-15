@@ -45,3 +45,5 @@ pub mod keyboard_observer;
 pub mod sound_reads;
 
 pub mod locale_reads;
+
+pub mod app_artwork;

@@ -23,6 +23,257 @@ index 3b681c7..681f55d 100644
  [[package]]
  name = "untrusted"
  version = "0.9.0"
+diff --git a/rust-modules/gfx/src/img.rs b/rust-modules/gfx/src/img.rs
+index 36c2799..fbce6dd 100644
+--- a/rust-modules/gfx/src/img.rs
++++ b/rust-modules/gfx/src/img.rs
+@@ -106,6 +106,92 @@ pub fn img_decode_owned(data: &[u8]) -> Option<(u32, u32, Vec<u8>)> {
+     }
+ }
+ 
++/// Decode with caller-chosen pixel limits, without changing the existing poster defaults.
++///
++/// `max_axis` bounds BOTH dimensions. `max_rgba_bytes` strictly bounds both the
++/// decoder's output-image buffer and the RGBA8 result, checked from header metadata
++/// BEFORE pixel decode or conversion. The caller separately bounds encoded bytes.
++///
++/// Codec bookkeeping gets `image::Limits::max_alloc = max(max_rgba_bytes, 64 KiB)`,
++/// installed before decoder construction and reduced by the output-buffer reservation
++/// before pixel decode. That codec limit is best-effort: `image` documents max_alloc
++/// as non-strict, and some codec allocations do not honour it. The two image buffers,
++/// encoded bytes and bookkeeping can coexist; this is NOT a total-heap bound or an
++/// OOM guarantee. As in the default path, decoder panics become `None`; allocation
++/// aborts cannot be caught. No GL operation is performed here.
++pub fn img_decode_owned_bounded(
++    data: &[u8],
++    max_axis: u32,
++    max_rgba_bytes: u64,
++) -> Option<(u32, u32, Vec<u8>)> {
++    if data.is_empty() {
++        return None;
++    }
++    let limits = owned_decode_limits(max_axis, max_rgba_bytes)?;
++    catch_unwind(AssertUnwindSafe(|| {
++        let mut reader = image::ImageReader::new(std::io::Cursor::new(data))
++            .with_guessed_format()
++            .ok()?;
++        // PNG consumes these limits while constructing its header decoder. Other
++        // enabled codecs receive them through ImageReader::into_decoder.
++        reader.limits(limits.clone());
++        let decoder = reader.into_decoder().ok()?;
++        decode_owned_bounded_decoder(decoder, max_axis, max_rgba_bytes, limits)
++    }))
++    .ok()
++    .flatten()
++}
++
++fn owned_decode_limits(max_axis: u32, max_rgba_bytes: u64) -> Option<image::Limits> {
++    // At least one RGBA8 pixel must fit, and Vec buffers cannot exceed isize::MAX.
++    if max_axis == 0 || max_rgba_bytes < 4 || max_rgba_bytes > isize::MAX as u64 {
++        return None;
++    }
++    let mut limits = image::Limits::default();
++    limits.max_image_width = Some(max_axis);
++    limits.max_image_height = Some(max_axis);
++    limits.max_alloc = Some(max_rgba_bytes.max(64 * 1024));
++    Some(limits)
++}
++
++fn bounded_rgba_len(width: u32, height: u32, max_axis: u32, max_bytes: u64) -> Option<usize> {
++    if width == 0 || height == 0 || width > max_axis || height > max_axis {
++        return None;
++    }
++    let bytes = u64::from(width).checked_mul(u64::from(height))?.checked_mul(4)?;
++    if bytes > max_bytes || bytes > isize::MAX as u64 {
++        return None;
++    }
++    usize::try_from(bytes).ok()
++}
++
++fn decode_owned_bounded_decoder(
++    mut decoder: impl image::ImageDecoder,
++    max_axis: u32,
++    max_rgba_bytes: u64,
++    mut limits: image::Limits,
++) -> Option<(u32, u32, Vec<u8>)> {
++    let (width, height) = decoder.dimensions();
++    let rgba_len = bounded_rgba_len(width, height, max_axis, max_rgba_bytes)?;
++    let decoded_bytes = decoder.total_bytes();
++    // A high-bit-depth source may need MORE memory than its eventual RGBA8 output.
++    // Reject that image before DynamicImage allocates its native pixel buffer.
++    if decoded_bytes == 0 || decoded_bytes > max_rgba_bytes || decoded_bytes > isize::MAX as u64 {
++        return None;
++    }
++    limits.reserve(decoded_bytes).ok()?;
++    decoder.set_limits(limits).ok()?;
++    let decoded = image::DynamicImage::from_decoder(decoder).ok()?;
++    if decoded.width() != width || decoded.height() != height {
++        return None;
++    }
++    // Consuming avoids copying an already-RGBA8 image. For other pixel types the
++    // conversion allocation is independently bounded by the checked header size.
++    let rgba = decoded.into_rgba8();
++    let raw = rgba.into_raw();
++    (raw.len() == rgba_len).then_some((width, height, raw))
++}
++
+ /// The first six bytes as hex, for a failure line only — never built on the success path.
+ fn magic(data: &[u8]) -> String {
+     data.iter().take(6).map(|b| format!("{b:02x}")).collect()
+@@ -198,3 +284,153 @@ pub fn img_upload_rgba(px: *const c_uchar, w: c_int, h: c_int) -> c_uint {
+     }
+     crate::gfx::upload_rgba(0, w, h, px)
+ }
++
++#[cfg(test)]
++mod bounded_decode_tests {
++    use super::*;
++    use image::{ExtendedColorType, ImageEncoder};
++    use std::cell::Cell;
++
++    fn png(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
++        let mut output = Vec::new();
++        image::codecs::png::PngEncoder::new(&mut output)
++            .write_image(rgba, width, height, ExtendedColorType::Rgba8)
++            .unwrap();
++        output
++    }
++
++    #[test]
++    fn bounded_png_preserves_rgba_and_accepts_exact_output_and_axis_edges() {
++        let pixels = [10, 20, 30, 40, 50, 60, 70, 80];
++        let encoded = png(2, 1, &pixels);
++        assert_eq!(img_decode_owned_bounded(&encoded, 2, 8), Some((2, 1, pixels.to_vec())));
++        assert!(img_decode_owned_bounded(&encoded, 1, 8).is_none());
++        assert!(img_decode_owned_bounded(&encoded, 2, 7).is_none());
++        assert_eq!(img_decode_owned_bounded(&encoded, 2, 9), Some((2, 1, pixels.to_vec())));
++    }
++
++    #[test]
++    fn production_512_rgba_png_accepts_exact_one_mib_output_cap() {
++        const SIDE: u32 = 512;
++        const RGBA_BYTES: usize = 512 * 512 * 4;
++        let pixels = [20_u8, 40, 60, 80].repeat(RGBA_BYTES / 4);
++        let encoded = png(SIDE, SIDE, &pixels);
++        assert!(encoded.len() < 32 * 1024, "solid pixels should need only a small encoded fixture");
++        let (width, height, decoded) =
++            img_decode_owned_bounded(&encoded, SIDE, RGBA_BYTES as u64)
++                .expect("production-sized RGBA8 image exactly fills its output budget");
++        assert_eq!((width, height), (SIDE, SIDE));
++        assert_eq!(decoded.len(), RGBA_BYTES);
++        assert_eq!(decoded, pixels);
++        assert!(img_decode_owned_bounded(&encoded, SIDE, RGBA_BYTES as u64 - 1).is_none());
++        assert!(img_decode_owned_bounded(&encoded, SIDE - 1, RGBA_BYTES as u64).is_none());
++    }
++
++    #[test]
++    fn bounded_jpeg_decodes_to_owned_rgba_without_gl() {
++        let mut encoded = Vec::new();
++        image::codecs::jpeg::JpegEncoder::new(&mut encoded)
++            .write_image(&[200, 40, 20].repeat(4), 2, 2, ExtendedColorType::Rgb8)
++            .unwrap();
++        let (width, height, pixels) = img_decode_owned_bounded(&encoded, 2, 16).unwrap();
++        assert_eq!((width, height, pixels.len()), (2, 2, 16));
++        assert!(pixels.chunks_exact(4).all(|pixel| pixel[3] == 255));
++    }
++
++    #[test]
++    fn bounded_invalid_caps_and_size_arithmetic_refuse_without_allocation() {
++        let encoded = png(1, 1, &[1, 2, 3, 4]);
++        for (axis, bytes) in [(0, 4), (1, 0), (1, 3), (1, u64::MAX)] {
++            assert!(img_decode_owned_bounded(&encoded, axis, bytes).is_none());
++        }
++        assert_eq!(bounded_rgba_len(0, 1, 512, 1024), None);
++        assert_eq!(bounded_rgba_len(1, 0, 512, 1024), None);
++        assert_eq!(bounded_rgba_len(u32::MAX, u32::MAX, u32::MAX, u64::MAX), None);
++        assert_eq!(bounded_rgba_len(512, 512, 512, 1024 * 1024), Some(1024 * 1024));
++        assert_eq!(bounded_rgba_len(512, 512, 512, 1024 * 1024 - 1), None);
++    }
++
++    struct ProbeDecoder<'a> {
++        width: u32,
++        height: u32,
++        color: image::ColorType,
++        read_called: &'a Cell<bool>,
++    }
++    impl image::ImageDecoder for ProbeDecoder<'_> {
++        fn dimensions(&self) -> (u32, u32) { (self.width, self.height) }
++        fn color_type(&self) -> image::ColorType { self.color }
++        fn read_image(self, pixels: &mut [u8]) -> image::ImageResult<()> {
++            self.read_called.set(true);
++            pixels.fill(0);
++            Ok(())
++        }
++        fn read_image_boxed(self: Box<Self>, pixels: &mut [u8]) -> image::ImageResult<()> {
++            image::ImageDecoder::read_image(*self, pixels)
++        }
++    }
++
++    #[test]
++    fn rgba_native_image_and_axis_caps_reject_before_pixel_decode() {
++        for (width, height, color, axis, bytes) in [
++            // Native RGB fits (48 bytes), but the RGBA conversion (64) does not.
++            (4, 4, image::ColorType::Rgb8, 4, 60),
++            // RGBA8 fits (16), but the native high-bit-depth buffer (32) does not.
++            (2, 2, image::ColorType::Rgba16, 2, 20),
++            (4, 1, image::ColorType::Rgba8, 3, 1024),
++        ] {
++            let read_called = Cell::new(false);
++            let decoder = ProbeDecoder { width, height, color, read_called: &read_called };
++            let limits = owned_decode_limits(axis, bytes).unwrap();
++            assert!(decode_owned_bounded_decoder(decoder, axis, bytes, limits).is_none());
++            assert!(!read_called.get(), "over-budget headers must never reach pixel decode");
++        }
++    }
++
++    #[test]
++    fn valid_probe_decoder_reaches_pixel_decode_and_exact_length_result() {
++        let read_called = Cell::new(false);
++        let decoder = ProbeDecoder {
++            width: 2, height: 1, color: image::ColorType::Rgb8, read_called: &read_called,
++        };
++        let limits = owned_decode_limits(2, 8).unwrap();
++        assert_eq!(decode_owned_bounded_decoder(decoder, 2, 8, limits),
++                   Some((2, 1, vec![0, 0, 0, 255, 0, 0, 0, 255])));
++        assert!(read_called.get());
++    }
++
++    fn crc32(bytes: &[u8]) -> u32 {
++        let mut crc = u32::MAX;
++        for byte in bytes {
++            crc ^= u32::from(*byte);
++            for _ in 0..8 {
++                crc = (crc >> 1) ^ (0xedb8_8320 & 0_u32.wrapping_sub(crc & 1));
++            }
++        }
++        !crc
++    }
++
++    #[test]
++    fn enormous_png_header_and_truncated_input_fail_without_large_fixture_buffers() {
++        let encoded = png(1, 1, &[1, 2, 3, 4]);
++        assert_eq!(&encoded[12..16], b"IHDR");
++        let mut oversized = encoded.clone();
++        oversized[16..20].copy_from_slice(&0x7fff_ffff_u32.to_be_bytes());
++        oversized[20..24].copy_from_slice(&0x7fff_ffff_u32.to_be_bytes());
++        let crc = crc32(&oversized[12..29]);
++        oversized[29..33].copy_from_slice(&crc.to_be_bytes());
++        assert!(oversized.len() < 1024, "only a tiny header fixture is needed");
++        assert!(img_decode_owned_bounded(&oversized, 512, 1024 * 1024).is_none());
++        for end in [0, 1, 8, 16, 24, 32] {
++            assert!(img_decode_owned_bounded(&encoded[..end], 512, 1024 * 1024).is_none());
++        }
++        assert!(img_decode_owned_bounded(b"not an image", 512, 1024 * 1024).is_none());
++    }
++
++    #[test]
++    fn bounded_caps_do_not_change_the_existing_default_decode() {
++        let pixels = [10, 20, 30, 40, 50, 60, 70, 80];
++        let encoded = png(2, 1, &pixels);
++        assert!(img_decode_owned_bounded(&encoded, 1, 4).is_none());
++        assert_eq!(img_decode_owned(&encoded), Some((2, 1, pixels.to_vec())));
++    }
++}
 diff --git a/rust-modules/ui/Cargo.toml b/rust-modules/ui/Cargo.toml
 index 787cc67..8dd86af 100644
 --- a/rust-modules/ui/Cargo.toml

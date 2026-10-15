@@ -87,6 +87,12 @@ pub fn collect() -> serde_json::Value {
         survey.insert(name.to_owned(), result);
     }
     value["survey"] = json!(survey);
+    // Only the isolated diagnostic collects file-access evidence. The ordinary
+    // live worker calls `read`, which must never perform this survey on refresh.
+    if plx_base::paths::app_id() == crate::identity::PROOF && unsafe { libc::geteuid() } >= 1000 {
+        let artwork_access = crate::app_artwork::survey(&value, plx_base::paths::app_id());
+        value["artwork_access"] = artwork_access;
+    }
     value["registered"] = serde_json::json!(true);
     value["uid"] = serde_json::json!(unsafe { libc::geteuid() });
     value

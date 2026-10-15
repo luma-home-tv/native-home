@@ -33,6 +33,9 @@ framework into Luma Home-authored code.
 
 The patch also provides a read-only form binding that blocks activation without
 dimming a valid current value. Unavailable and inactive rows retain dim styling.
+An opt-in bounded image decoder checks dimensions and per-image pixel-buffer
+sizes before decoding; existing decoder defaults remain unchanged. Codec memory
+limits are additional safeguards, not a total-heap or OOM guarantee.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
