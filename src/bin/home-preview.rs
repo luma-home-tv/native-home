@@ -185,6 +185,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         return Err("Performance diagnostics require the isolated identity".into());
     }
     let observer_requested = assets.join("keyboard-observer.json").exists();
+    if assets.join("native-read-probe.json").exists()
+        && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
+    {
+        return Err(
+            "Native read/layout diagnostics require the isolated non-interactive dashboard".into(),
+        );
+    }
     let recipe_requested = assets.join("keyboard-recipe.json").exists();
     if observer_requested
         && (!device
@@ -421,6 +428,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut drawer_proof = None;
     let mut management_proof = None;
     let mut controls_proof = None;
+    let mut guidance_layout_proof = None;
     let mut navigation = Vec::new();
     let mut navigation_page = None;
     let mut scripted_requests = Vec::new();
@@ -482,6 +490,54 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             shell.open(Page::Picture);
             if shell.focus_lg_settings() {
                 drawer_capture(&mut shell, &window, &output, "picture-more", &mut now)?;
+            }
+            shell.open(Page::Accessibility);
+            shell.direction(Dir::Right);
+            let guidance_preferences = shell.preferences().clone();
+            let mut stages = Vec::new();
+            for (index, id, frame) in [
+                (4, "audioGuidanceVolume", "guidance-volume"),
+                (5, "audioGuidancePitch", "guidance-pitch"),
+                (6, "audioGuidanceSpeed", "guidance-speed"),
+            ] {
+                for _ in 0..9 {
+                    if shell.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+                        break;
+                    }
+                    shell.direction(Dir::Down);
+                }
+                drawer_capture(&mut shell, &window, &output, frame, &mut now)?;
+                let row = shell
+                    .control_row_layout(id)
+                    .ok_or("Missing guidance row layout")?;
+                if row["focused"] != true || row["disabled"] != true || row["fully_visible"] != true
+                {
+                    return Err("Guidance row did not settle into a visible read-only focus".into());
+                }
+                stages.push(serde_json::json!({"frame":frame,"layout":row,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["accessibility"]}));
+            }
+            for _ in 0..2 {
+                shell.direction(Dir::Up);
+            }
+            drawer_capture(&mut shell, &window, &output, "guidance-return-up", &mut now)?;
+            let up = shell
+                .control_row_layout("audioGuidanceVolume")
+                .ok_or("Missing guidance return row")?;
+            let return_up = serde_json::json!({"frame":"guidance-return-up","layout":up,"graphics":window.graphics_state(),"presentation":shell.presentation_probe(),"readouts":shell.control_readout_proof()["accessibility"]});
+            shell.back();
+            let back = shell.focused_item().as_deref() == Some("category-Accessibility");
+            let preferences_unchanged = shell.preferences() == &guidance_preferences;
+            let no_requests = shell.take_requests().is_empty();
+            guidance_layout_proof = Some(
+                serde_json::json!({"stages":stages,"return_up":return_up,"back_restores_category":back,"preferences_unchanged":preferences_unchanged,"no_tv_requests":no_requests,"input":"scripted shared arrows/Back; no OK activation"}),
+            );
+            if up["focused"] != true
+                || up["fully_visible"] != true
+                || !back
+                || !preferences_unchanged
+                || !no_requests
+            {
+                return Err("Guidance navigation did not return to its row/category".into());
             }
         }
         if args.iter().any(|arg| arg == "--drawer-proof")
@@ -1494,6 +1550,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["guidance_layout_proof"] = serde_json::json!(guidance_layout_proof);
     report["text_input_proof"] = serde_json::json!(text_receipt);
     report["keyboard_session"] = serde_json::json!(keyboard);
     report["keyboard_main_observation"] = observer_requested.into();

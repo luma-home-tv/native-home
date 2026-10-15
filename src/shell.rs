@@ -2796,6 +2796,26 @@ impl Shell {
             .table
             .update(dt, self.surface.table_area().h);
     }
+    /// Diagnostic geometry for an existing control binding; never grants activation.
+    /// Values and app inventory are intentionally excluded.
+    pub fn control_row_layout(&self, id: &str) -> Option<serde_json::Value> {
+        self.surface.control_page?;
+        let index = self.surface.table.index_of(&id.to_owned())?;
+        let binding = self.surface.table.binding_at(index)?;
+        let clip = self.surface.table_area();
+        let rect = self.surface.table.table.row_frame(clip, index as i32)?;
+        let focused = self
+            .input
+            .engine
+            .current(InputOwner::Entry(entry(self.surface.page)))
+            .is_some_and(|key| key.elem == TABLE_BASE + binding.key.0);
+        Some(serde_json::json!({
+            "id":id,"key":binding.key.0,"index":index,"focused":focused,
+            "disabled":binding.disabled,"rect":[rect.x,rect.y,rect.w,rect.h],
+            "clip":[clip.x,clip.y,clip.w,clip.h],"scroll":self.surface.table.table.scroll_pos(),
+            "fully_visible":rect.x >= clip.x && rect.y >= clip.y && rect.x+rect.w <= clip.x+clip.w && rect.y+rect.h <= clip.y+clip.h
+        }))
+    }
     /// Presentation metadata only; no app inventory or TV values are recorded here.
     pub fn presentation_probe(&self) -> serde_json::Value {
         serde_json::json!({

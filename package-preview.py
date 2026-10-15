@@ -22,10 +22,12 @@ if test_identity:
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
 if main not in ('control-preview', 'home-preview', 'launch-target'): raise ValueError('Unexpected preview binary')
-version = '0.24.0' if main == 'home-preview' else '0.1.0'
+version = '0.25.0' if main == 'home-preview' else '0.1.0'
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
+if os.environ.get('NATIVE_HOME_NATIVE_READ_PROBE') == '1' and (main != 'home-preview' or not test_identity or interactive):
+    raise ValueError('Native read/layout diagnostics require the isolated non-interactive dashboard')
 keyboard_observer = os.environ.get('NATIVE_HOME_KEYBOARD_OBSERVER_PROOF') == '1'
 keyboard_recipe = os.environ.get('NATIVE_HOME_KEYBOARD_RECIPE_PROOF') == '1'
 if keyboard_recipe and not keyboard_observer: raise ValueError('Keyboard recipe requires explicit observer')

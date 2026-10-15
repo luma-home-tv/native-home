@@ -1156,6 +1156,71 @@ fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_sett
     }
 }
 
+#[test]
+fn guidance_rows_scroll_into_read_only_focus_and_return_without_actions() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let data = crate::live::tests::global_raw();
+    s.apply_live(
+        &crate::live::parse(&data, "com.example.self", 100, false),
+        100,
+    );
+    let preferences = s.preferences().clone();
+    assert!(s.control_row_layout("audioGuidanceVolume").is_none());
+    s.open(Page::Accessibility);
+    s.direction(Dir::Right);
+    let mut now = 100;
+    let mut previous_scroll = 0.0;
+    for (index, id) in [
+        (4, "audioGuidanceVolume"),
+        (5, "audioGuidancePitch"),
+        (6, "audioGuidanceSpeed"),
+    ] {
+        for _ in 0..9 {
+            if s.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+                break;
+            }
+            s.direction(Dir::Down);
+        }
+        for _ in 0..45 {
+            now += 17;
+            s.tick(now, 0.017);
+        }
+        let row = s.control_row_layout(id).unwrap();
+        assert_eq!(row["index"], index);
+        assert_eq!(row["key"], 100 + index);
+        assert_eq!(row["focused"], true);
+        assert_eq!(row["disabled"], true);
+        assert_eq!(row["fully_visible"], true);
+        let scroll = row["scroll"].as_f64().unwrap();
+        assert!(scroll > previous_scroll);
+        previous_scroll = scroll;
+        s.press(true, PressFrom::Key);
+        s.press(false, PressFrom::Key);
+        for _ in 0..30 {
+            now += 17;
+            s.tick(now, 0.017);
+        }
+        assert!(s.take_requests().is_empty());
+        assert_eq!(s.page(), Page::Accessibility);
+    }
+    for _ in 0..2 {
+        s.direction(Dir::Up);
+    }
+    for _ in 0..45 {
+        now += 17;
+        s.tick(now, 0.017);
+    }
+    let row = s.control_row_layout("audioGuidanceVolume").unwrap();
+    assert_eq!(row["focused"], true);
+    assert_eq!(row["fully_visible"], true);
+    assert!(row["scroll"].as_f64().unwrap() < previous_scroll);
+    s.back();
+    assert_eq!(s.focused_item().as_deref(), Some("category-Accessibility"));
+    assert_eq!(s.preferences(), &preferences);
+    assert!(s.take_requests().is_empty());
+}
+
 fn pointer_data() -> serde_json::Value {
     let mut raw = crate::live::tests::global_raw();
     raw["replies"]["general_option_values"]["settings"]["pointerSpeed"] = "normal".into();
