@@ -41,6 +41,8 @@ extern "C" {
     fn native_home_text_start(window: *mut c_void) -> c_int;
     fn native_home_text_stop();
     fn native_home_text_flush();
+    #[cfg(target_arch = "arm")]
+    fn native_home_text_trace();
     #[cfg(test)]
     fn native_home_test_text_decode(
         composition: c_int,
@@ -234,6 +236,26 @@ impl Window {
         let started = unsafe { native_home_text_start(self.window) } != 0;
         self.text_owned.set(started);
         started
+    }
+    #[cfg(target_arch = "arm")]
+    pub fn diagnostic_text_trace(&self, path: &Path) -> std::io::Result<()> {
+        use std::os::fd::AsRawFd;
+        if plx_base::paths::app_id() != crate::identity::PROOF {
+            return Err(std::io::Error::other("Diagnostic identity required"));
+        }
+        let log = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(path)?;
+        if unsafe { libc::dup2(log.as_raw_fd(), 2) } < 0 {
+            return Err(std::io::Error::last_os_error());
+        }
+        unsafe {
+            native_home_text_trace();
+        }
+        Ok(())
     }
     #[cfg(target_arch = "arm")]
     pub fn diagnostic_text_flush(&self) {

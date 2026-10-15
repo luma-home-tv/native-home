@@ -2156,6 +2156,7 @@ fn text_input_trial(
         std::fs::rename(tmp, output.join("text-input-current.json"))?;
         Ok(())
     };
+    window.diagnostic_text_trace(&output.join("sdl-keyboard.log"))?;
     phase("starting")?;
     for cycle in 1..=2 {
         shell.open(Page::Applications);

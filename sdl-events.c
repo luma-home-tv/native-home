@@ -116,3 +116,5 @@ int native_home_test_text_push(const char *text,size_t length) {
     (void)text;(void)length;return 0;
 #endif
 }
+
+void native_home_text_trace(void) {SDL_LogSetPriority(SDL_LOG_CATEGORY_INPUT,SDL_LOG_PRIORITY_DEBUG);}
