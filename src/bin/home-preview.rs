@@ -23,6 +23,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let pointer_proof = assets.join("pointer-proof.json").exists();
+    if pointer_proof
+        && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
+    {
+        return Err("Pointer write proof requires isolated non-interactive TV identity".into());
+    }
     let session_capture = interactive && assets.join("session-proof.json").exists();
     let performance_proof = interactive && assets.join("performance-proof.json").exists();
     if performance_proof && device && plx_base::paths::app_id() != native_home::identity::PROOF {
@@ -37,6 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
+            "pointer-proof.json",
         ]
         .iter()
         .any(|name| assets.join(name).exists())
@@ -77,6 +84,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         None
     };
+    #[allow(unused_mut)]
+    let mut pointer_probe: Option<std::thread::JoinHandle<serde_json::Value>> = None;
+    #[cfg(target_arch = "arm")]
+    if pointer_proof {
+        let folder = output.clone();
+        pointer_probe = Some(
+            std::thread::Builder::new()
+                .name("pointer-write-proof".into())
+                .spawn(move || pointer_write_proof(&folder))?,
+        );
+    }
     let bytes = std::fs::read(assets.join("snapshot.json"))?;
     if bytes.len() > 1024 * 1024 {
         return Err("Snapshot too large".into());
@@ -866,6 +884,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .open(output.join("native-api-probe.json"))?;
         serde_json::to_writer_pretty(&mut file, data)?;
     }
+    let pointer_proof_receipt = match pointer_probe {
+        Some(worker) => Some(worker.join().map_err(|_| "Pointer proof worker panicked")?),
+        None => None,
+    };
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
@@ -878,6 +900,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "preferences_at_boot":preferences_at_boot,"preferences_loaded":loaded_preferences.is_some(),"preferences_readback_confirmed":persistent_readback,
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["pointer_proof"] = serde_json::json!(pointer_proof_receipt);
+    report["setting_writes"] = report["pointer_proof"]["change"]["attempted"]
+        .as_bool()
+        .unwrap_or(false)
+        .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
     report["performance"] = performance
         .as_ref()
@@ -1023,4 +1050,89 @@ fn drawer_capture(
     }
     window.capture(&output.join(format!("{name}.ppm")))?;
     Ok(())
+}
+
+#[cfg(target_arch = "arm")]
+fn pointer_write_proof(folder: &std::path::Path) -> serde_json::Value {
+    use native_home::pointer_speed::{self, Change, Speed};
+    let stage = |value: &serde_json::Value| -> Result<(), String> {
+        let temp = folder.join("pointer-proof-next.json");
+        let file = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&temp)
+            .map_err(|e| e.to_string())?;
+        serde_json::to_writer(file, value).map_err(|e| e.to_string())?;
+        std::fs::rename(temp, folder.join("pointer-proof-current.json")).map_err(|e| e.to_string())
+    };
+    std::thread::sleep(Duration::from_secs(3));
+    let mut p = match pointer_speed::Native::new() {
+        Ok(p) => p,
+        Err(e) => return serde_json::json!({"error":e}),
+    };
+    let original = match pointer_speed::inspect(&mut p, native_home::identity::PROOF) {
+        Ok(v) => v,
+        Err(e) => {
+            let r = serde_json::json!({"stage":"refused","error":e});
+            let _ = stage(&r);
+            return r;
+        }
+    };
+    let target = if original == Speed::Slow {
+        Speed::Normal
+    } else {
+        Speed::Slow
+    };
+    let change = pointer_speed::apply(
+        &mut p,
+        native_home::identity::PROOF,
+        Change {
+            expected: original,
+            value: target,
+        },
+        true,
+    );
+    let mut receipt =
+        serde_json::json!({"stage":"changed","original":original,"target":target,"change":change});
+    if !change.verified {
+        receipt["stage"] = "refused".into();
+        if change.attempted {
+            let recovery = pointer_speed::apply(
+                &mut p,
+                native_home::identity::PROOF,
+                Change {
+                    expected: target,
+                    value: original,
+                },
+                true,
+            );
+            receipt["recovery"] = serde_json::json!(recovery);
+        }
+        let _ = stage(&receipt);
+        return receipt;
+    }
+    if let Err(e) = stage(&receipt) {
+        receipt["stage_error"] = e.into();
+    }
+    std::thread::sleep(Duration::from_secs(8));
+    let restore = pointer_speed::apply(
+        &mut p,
+        native_home::identity::PROOF,
+        Change {
+            expected: target,
+            value: original,
+        },
+        true,
+    );
+    receipt["restoration"] = serde_json::json!(restore);
+    receipt["stage"] = if restore.verified {
+        "restored"
+    } else {
+        "restoration_failed"
+    }
+    .into();
+    let _ = stage(&receipt);
+    receipt
 }
