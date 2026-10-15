@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Section {
+    Sound,
     Accessibility,
     General,
     PanelCare,
@@ -12,6 +13,7 @@ pub enum Section {
 impl Section {
     pub fn name(self) -> &'static str {
         match self {
+            Self::Sound => "sound",
             Self::Accessibility => "accessibility",
             Self::General => "general",
             Self::PanelCare => "panel_care",

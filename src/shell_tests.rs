@@ -410,6 +410,167 @@ fn sound_and_network_failures_withdraw_rows_and_staleness_rebuilds_the_visible_f
 }
 
 #[test]
+fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    let mut data = crate::live::tests::global_raw();
+    data["replies"].as_object_mut().unwrap().extend(
+        crate::sound_reads::tests::fixture()
+            .as_object()
+            .unwrap()
+            .clone(),
+    );
+    let mut update = crate::live::parse(&data, "self", 100, false);
+    update.sound = live::Reading::Value(vec![
+        ("soundOutput".into(), "external_optical".into()),
+        ("volume".into(), "10".into()),
+        ("muteStatus".into(), "false".into()),
+        ("soundMode".into(), "standard".into()),
+        ("audioInput".into(), "hdmi4".into()),
+    ]);
+    s.apply_live(&update, 100);
+    s.open(Page::Sound);
+    assert_eq!(
+        s.control_readout_proof()["sound"],
+        serde_json::to_value(&s.snapshot.settings["sound"]).unwrap()
+    );
+    s.direction(Dir::Right);
+    let prefs = s.preferences().clone();
+    let mut now = 100;
+    for (index, key, id, expected) in [
+        (5, 30, "audioBalance", "-4"),
+        (6, 31, "audioDescription", "On"),
+        (7, 32, "audioDescriptionVolume", "3"),
+    ] {
+        for _ in 0..10 {
+            if s.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+                break;
+            }
+            s.direction(Dir::Down);
+        }
+        for _ in 0..45 {
+            now += 17;
+            s.tick(now, 0.017);
+        }
+        let row = s.control_row_layout(id).unwrap();
+        assert_eq!(row["key"], key);
+        assert_eq!(row["focused"], true);
+        assert_eq!(row["disabled"], true);
+        assert_eq!(row["fully_visible"], true);
+        assert_eq!(
+            s.surface.table.table.sections[0].rows[index]
+                .value
+                .as_deref(),
+            Some(expected)
+        );
+        assert!(s.surface.table.activate(index).is_none());
+        tap(&mut s);
+        assert!(s.take_requests().is_empty());
+        assert_eq!(s.page(), Page::Sound);
+    }
+    let owner = InputOwner::Entry(entry(s.page()));
+    let focus_before = s.input.engine.current(owner);
+    update.observed_ms = now;
+    update.sound = live::Reading::Failed("Denied".into());
+    s.apply_live(&update, now);
+    assert_eq!(s.input.engine.current(owner), focus_before);
+    assert!(s.reading_label().contains("some readings unavailable"));
+    assert_eq!(
+        s.surface.table.table.sections[0].rows[1].value.as_deref(),
+        Some("Unavailable")
+    );
+    assert_eq!(
+        s.surface.table.table.sections[0].rows[5].value.as_deref(),
+        Some("-4")
+    );
+    update.observed_ms = now + 1;
+    update.sound = live::Reading::Value(vec![("volume".into(), "12".into())]);
+    update.controls.insert(
+        crate::control_reads::Section::Sound,
+        live::Reading::Failed("Denied".into()),
+    );
+    s.apply_live(&update, now + 1);
+    assert_eq!(s.input.engine.current(owner), focus_before);
+    assert_eq!(
+        s.surface.table.table.sections[0].rows[1].value.as_deref(),
+        Some("12")
+    );
+    assert!(s.surface.table.table.sections[0].rows[5..8]
+        .iter()
+        .all(|r| r.value.as_deref() == Some("Unavailable")));
+    assert!(s.reading_label().contains("some readings unavailable"));
+    assert!(s.focus_lg_settings());
+    tap(&mut s);
+    assert_eq!(
+        s.take_requests(),
+        vec![Action::OpenLgSettingsSection(SettingsSection::Sound)]
+    );
+    assert_eq!(s.preferences(), &prefs);
+}
+
+#[test]
+fn sound_status_is_unavailable_when_fresh_optional_envelopes_contain_no_readings() {
+    let _serial = plx_base::testlock::serial();
+    for simulated in [false, true] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        let mut data = crate::live::tests::global_raw();
+        data["replies"].as_object_mut().unwrap().extend(
+            crate::sound_reads::tests::fixture()
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        let mut first = crate::live::parse(&data, "self", 100, simulated);
+        first.sound = live::Reading::Value(vec![("volume".into(), "10".into())]);
+        shell.apply_live(&first, 100);
+        shell.open(Page::Sound);
+        assert!(shell.reading_label().contains("some readings unavailable"));
+        data["replies"][crate::sound_reads::VALUES_REPLY]["settings"] = serde_json::json!({});
+        data["replies"][crate::sound_reads::DESCRIPTORS_REPLY]["results"] = serde_json::json!([]);
+        let denied = crate::live::parse(&data, "self", 200, simulated);
+        assert!(matches!(denied.sound, live::Reading::Failed(_)));
+        assert!(matches!(
+            denied.controls[&crate::control_reads::Section::Sound],
+            live::Reading::Value(_)
+        ));
+        shell.apply_live(&denied, 200);
+        let fresh = shell.live_state.as_ref().unwrap();
+        assert_eq!(fresh.sound, None);
+        assert_eq!(
+            fresh.controls.get(&crate::control_reads::Section::Sound),
+            Some(&200)
+        );
+        assert!(shell.snapshot.settings["sound"]
+            .iter()
+            .all(|row| !row.available));
+        assert!(shell.surface.table.table.sections[0]
+            .rows
+            .iter()
+            .all(|row| row.value.as_deref() == Some("Unavailable")));
+        assert_eq!(
+            shell.reading_label(),
+            "Reading unavailable • last state kept"
+        );
+        assert!(shell.take_requests().is_empty());
+        data["replies"].as_object_mut().unwrap().extend(
+            crate::sound_reads::tests::fixture()
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        shell.apply_live(&crate::live::parse(&data, "self", 300, simulated), 300);
+        assert!(shell.reading_label().contains("some readings unavailable"));
+        assert_eq!(
+            shell.surface.table.table.sections[0].rows[5]
+                .value
+                .as_deref(),
+            Some("-4")
+        );
+        assert!(shell.take_requests().is_empty());
+    }
+}
+
+#[test]
 fn explicit_system_routes_use_registered_surface_keys() {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(fixture(), Preferences::default());

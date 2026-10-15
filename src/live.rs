@@ -357,6 +357,13 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
     };
     let controls = BTreeMap::from([
         (
+            ControlSection::Sound,
+            reading(
+                crate::sound_reads::parse(replies)
+                    .map_err(|error| format!("Optional Sound read unavailable: {error:?}")),
+            ),
+        ),
+        (
             ControlSection::Accessibility,
             reading(control_reads::read(
                 replies,
@@ -566,8 +573,10 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
                     available: field.is_some(),
                 }
             })
-            .collect();
-            snapshot.settings.insert("sound".into(), rows);
+            .collect::<Vec<_>>();
+            let sound = snapshot.settings.entry("sound".into()).or_default();
+            sound.retain(optional_sound_row);
+            sound.splice(0..0, rows);
             fresh.sound = Some(update.observed_ms);
         }
         Reading::Failed(_) => fresh.sound = None,
@@ -606,6 +615,27 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
         }
         Reading::Failed(_) => fresh.network = None,
     }
+    let mut optional_sound = match update.controls.get(&ControlSection::Sound) {
+        Some(Reading::Value(rows)) => {
+            fresh
+                .controls
+                .insert(ControlSection::Sound, update.observed_ms);
+            rows.clone()
+        }
+        _ => {
+            fresh.controls.remove(&ControlSection::Sound);
+            crate::sound_reads::unavailable_rows()
+        }
+    };
+    // Global validation stays in the parser; bind read-only rows to this presentation
+    // snapshot, matching the existing global groups and exact-context form model.
+    for row in &mut optional_sound {
+        row.context = snapshot.context.clone();
+        row.protected = true;
+    }
+    let sound = snapshot.settings.entry("sound".into()).or_default();
+    sound.retain(|row| !optional_sound_row(row));
+    sound.extend(optional_sound);
     for section in [
         ControlSection::Accessibility,
         ControlSection::General,
@@ -628,34 +658,44 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
     }
     expire(snapshot, fresh, update.observed_ms);
 }
+fn optional_sound_row(row: &Setting) -> bool {
+    crate::sound_reads::Key::ALL
+        .iter()
+        .any(|key| row.id == key.id() && row.focus_key == key.focus_key())
+}
+/// The same per-row predicate drives withdrawal and the shell's redraw decision.
+/// Optional global Sound and core routed audio have independent freshness clocks.
+fn row_expired(section: &str, row: &Setting, fresh: &Freshness, now: u32) -> bool {
+    let stamp = match section {
+        "picture" => fresh.picture,
+        "sound" if optional_sound_row(row) => fresh.controls.get(&ControlSection::Sound).copied(),
+        "sound" => fresh.sound,
+        "network" => fresh.network,
+        "accessibility" => fresh.controls.get(&ControlSection::Accessibility).copied(),
+        "general" => fresh.controls.get(&ControlSection::General).copied(),
+        "panel_care" => fresh.controls.get(&ControlSection::PanelCare).copied(),
+        _ => return false,
+    };
+    row.available && !Freshness::current(stamp, now)
+}
+pub fn needs_expiry(snapshot: &Snapshot, fresh: &Freshness, now: u32) -> bool {
+    (!Freshness::current(fresh.inputs, now)
+        && snapshot.inputs.iter().any(|input| input.selected.is_some()))
+        || snapshot
+            .settings
+            .iter()
+            .any(|(section, rows)| rows.iter().any(|row| row_expired(section, row, fresh, now)))
+}
 pub fn expire(snapshot: &mut Snapshot, fresh: &Freshness, now: u32) {
     if !Freshness::current(fresh.inputs, now) {
         for input in &mut snapshot.inputs {
             input.selected = None;
         }
     }
-    for (section, stamp) in [
-        ("picture", fresh.picture),
-        ("sound", fresh.sound),
-        ("network", fresh.network),
-        (
-            "accessibility",
-            fresh.controls.get(&ControlSection::Accessibility).copied(),
-        ),
-        (
-            "general",
-            fresh.controls.get(&ControlSection::General).copied(),
-        ),
-        (
-            "panel_care",
-            fresh.controls.get(&ControlSection::PanelCare).copied(),
-        ),
-    ] {
-        if !Freshness::current(stamp, now) {
-            if let Some(rows) = snapshot.settings.get_mut(section) {
-                for row in rows {
-                    row.available = false;
-                }
+    for (section, rows) in &mut snapshot.settings {
+        for row in rows {
+            if row_expired(section, row, fresh, now) {
+                row.available = false;
             }
         }
     }
@@ -686,13 +726,20 @@ pub(crate) mod tests {
             let mut results = Vec::new();
             for spec in specs {
                 let choices: &[&str] = match spec.id {
-                    "audioGuidanceVolume" | "audioGuidancePitch" =>
-                        &["veryLow", "low", "medium", "high", "veryHigh"],
+                    "audioGuidanceVolume" | "audioGuidancePitch" => {
+                        &["veryLow", "low", "medium", "high", "veryHigh"]
+                    }
                     "audioGuidanceSpeed" => &["veryFast", "fast", "medium", "slow", "verySlow"],
                     _ => &["on", "off"],
                 };
-                values.insert(spec.id.into(), json!(if choices.len() == 5 { "medium" } else { "on" }));
-                let array = choices.iter().map(|value| json!({"value":value,"visible":true,"active":true})).collect::<Vec<_>>();
+                values.insert(
+                    spec.id.into(),
+                    json!(if choices.len() == 5 { "medium" } else { "on" }),
+                );
+                let array = choices
+                    .iter()
+                    .map(|value| json!({"value":value,"visible":true,"active":true}))
+                    .collect::<Vec<_>>();
                 results.push(json!({"key":spec.id,"category":category,"dimension":[],"vtype":"ArrayExt","ui":{"visible":true,"active":true},"values":{"arrayExt":array}}));
             }
             data["replies"][format!("{name}_values")] =
@@ -839,6 +886,121 @@ pub(crate) mod tests {
         data["replies"]["sound_settings"] = json!({"returnValue":true,"category":"sound","dimension":{"audioInput":"hdmi4"},"settings":{"soundMode":"standard","soundOutput":"external_optical"}});
         data["replies"]["network"] = json!({"returnValue":true,"isInternetConnectionAvailable":true,"wired":{"state":"connected","ipAddress":"203.0.113.10"},"wifi":{"state":"connected","ssid":"Example Wi-Fi","ipAddress":"2001:db8::10"}});
         data
+    }
+    fn sound_data() -> Value {
+        let mut data = full_readings();
+        data["replies"].as_object_mut().unwrap().extend(
+            crate::sound_reads::tests::fixture()
+                .as_object()
+                .unwrap()
+                .clone(),
+        );
+        data
+    }
+    #[test]
+    fn optional_sound_failures_and_recovery_do_not_withdraw_or_replace_core_profiles() {
+        let mut data = sound_data();
+        let mut snapshot = Snapshot {
+            captured_at: "fixture".into(),
+            applications: Vec::new(),
+            launch_ids: BTreeSet::new(),
+            inputs: Vec::new(),
+            context: Context {
+                input: "previous".into(),
+                dynamic_range: "sdr".into(),
+                picture_mode: "cinema".into(),
+            },
+            settings: BTreeMap::new(),
+        };
+        let mut fresh = Freshness::default();
+        let apply = |data: &Value, ms, snapshot: &mut Snapshot, fresh: &mut Freshness| {
+            merge(snapshot, &parse(data, "com.example.self", ms, false), fresh);
+        };
+        apply(&data, 100, &mut snapshot, &mut fresh);
+        let core = snapshot.settings["sound"][..5].to_vec();
+        assert_eq!(
+            snapshot.settings["sound"]
+                .iter()
+                .map(|r| r.focus_key)
+                .collect::<Vec<_>>(),
+            [20, 21, 22, 23, 24, 30, 31, 32]
+        );
+        assert_eq!(core[3].value, "standard");
+        assert_eq!(core[4].value, "hdmi4");
+        assert!(snapshot.settings["sound"][5..]
+            .iter()
+            .all(|r| r.protected && r.available && r.still_current(&snapshot.context)));
+        data["replies"][crate::sound_reads::DESCRIPTORS_REPLY]["returnValue"] = false.into();
+        apply(&data, 200, &mut snapshot, &mut fresh);
+        assert_eq!(snapshot.settings["sound"][..5], core);
+        assert!(snapshot.settings["sound"][5..]
+            .iter()
+            .all(|r| !r.available && r.constraint.is_none()));
+        assert!(Freshness::current(fresh.sound, 200));
+        assert!(!fresh.controls.contains_key(&ControlSection::Sound));
+        data = sound_data();
+        data["replies"]["audio"]["returnValue"] = false.into();
+        apply(&data, 300, &mut snapshot, &mut fresh);
+        assert!(snapshot.settings["sound"][..5].iter().all(|r| !r.available));
+        assert!(snapshot.settings["sound"][5..].iter().all(|r| r.available));
+        assert_eq!(fresh.sound, None);
+        assert_eq!(fresh.controls.get(&ControlSection::Sound), Some(&300));
+        data = sound_data();
+        data["replies"][crate::sound_reads::VALUES_REPLY]["settings"]["audioBalance"] = "51".into();
+        apply(&data, 400, &mut snapshot, &mut fresh);
+        assert!(!snapshot.settings["sound"][5].available);
+        assert!(snapshot.settings["sound"][6..].iter().all(|r| r.available));
+        assert_eq!(snapshot.settings["sound"][..5], core);
+        apply(&sound_data(), 500, &mut snapshot, &mut fresh);
+        assert!(snapshot.settings["sound"].iter().all(|r| r.available));
+        assert_eq!(snapshot.settings["sound"].len(), 8);
+    }
+    #[test]
+    fn sound_groups_expire_independently_without_perpetual_redraw_or_value_resurrection() {
+        for optional_old in [true, false] {
+            let mut snapshot = Snapshot {
+                captured_at: "fixture".into(),
+                applications: Vec::new(),
+                launch_ids: BTreeSet::new(),
+                inputs: Vec::new(),
+                context: Context {
+                    input: "previous".into(),
+                    dynamic_range: "sdr".into(),
+                    picture_mode: "cinema".into(),
+                },
+                settings: BTreeMap::new(),
+            };
+            let mut fresh = Freshness::default();
+            merge(
+                &mut snapshot,
+                &parse(&sound_data(), "self", 10_000, false),
+                &mut fresh,
+            );
+            if optional_old {
+                fresh.controls.insert(ControlSection::Sound, 100);
+            } else {
+                fresh.sound = Some(100);
+            }
+            assert!(!needs_expiry(&snapshot, &fresh, 15_100));
+            assert!(needs_expiry(&snapshot, &fresh, 15_101));
+            expire(&mut snapshot, &fresh, 15_101);
+            assert!(!needs_expiry(&snapshot, &fresh, 15_101));
+            assert!(snapshot.settings["sound"][..5]
+                .iter()
+                .all(|r| r.available == optional_old));
+            assert!(snapshot.settings["sound"][5..]
+                .iter()
+                .all(|r| r.available != optional_old));
+            expire(&mut snapshot, &fresh, 15_102);
+            assert!(!needs_expiry(&snapshot, &fresh, 15_102));
+            merge(
+                &mut snapshot,
+                &parse(&sound_data(), "self", 15_200, false),
+                &mut fresh,
+            );
+            assert!(snapshot.settings["sound"].iter().all(|r| r.available));
+            assert!(!needs_expiry(&snapshot, &fresh, 15_200));
+        }
     }
     #[test]
     fn sound_output_transition_invalid_numbers_and_denied_replies_are_not_current() {

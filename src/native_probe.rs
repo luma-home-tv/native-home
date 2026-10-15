@@ -96,7 +96,11 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
     use plx_platform::webos::ls2;
     use serde_json::json;
     let operations = [
-        ("system_info", "luna://com.webos.service.tv.systemproperty/getSystemInfo", json!({"keys":["modelName","firmwareVersion","sdkVersion"]})),
+        (
+            "system_info",
+            "luna://com.webos.service.tv.systemproperty/getSystemInfo",
+            json!({"keys":["modelName","firmwareVersion","sdkVersion"]}),
+        ),
         (
             "apps",
             "luna://com.webos.applicationManager/listApps",
@@ -147,6 +151,7 @@ pub(crate) fn read(bus: &plx_platform::webos::ls2::Registration) -> serde_json::
     let mut replies = serde_json::Map::new();
     for (name, uri, payload) in operations.into_iter().map(|(name,uri,payload)|(name.to_owned(),uri,payload))
         .chain(crate::control_reads::operations())
+        .chain(crate::sound_reads::operations().into_iter().map(|(name, uri, payload)| (name.to_owned(), uri, payload)))
         .chain(std::iter::once(("picture_after".into(),"luna://com.webos.service.settings/getSystemSettings",json!({"category":"picture","keys":["pictureMode","backlight","contrast","brightness"]})))) {
         let response = bus.call(
             uri,

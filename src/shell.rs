@@ -1595,48 +1595,7 @@ impl Shell {
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
         if let Some(fresh) = &self.live_state {
-            let due = [
-                ("picture", fresh.picture),
-                ("sound", fresh.sound),
-                ("network", fresh.network),
-                (
-                    "accessibility",
-                    fresh
-                        .controls
-                        .get(&crate::control_reads::Section::Accessibility)
-                        .copied(),
-                ),
-                (
-                    "general",
-                    fresh
-                        .controls
-                        .get(&crate::control_reads::Section::General)
-                        .copied(),
-                ),
-                (
-                    "panel_care",
-                    fresh
-                        .controls
-                        .get(&crate::control_reads::Section::PanelCare)
-                        .copied(),
-                ),
-            ]
-            .into_iter()
-            .any(|(section, stamp)| {
-                !Freshness::current(stamp, now)
-                    && self
-                        .snapshot
-                        .settings
-                        .get(section)
-                        .is_some_and(|rows| rows.iter().any(|r| r.available))
-            });
-            let input_selection_due = !Freshness::current(fresh.inputs, now)
-                && self
-                    .snapshot
-                    .inputs
-                    .iter()
-                    .any(|input| input.selected.is_some());
-            if due || input_selection_due {
+            if live::needs_expiry(&self.snapshot, fresh, now) {
                 plx_machine::idle::invalidate();
                 let before = self.snapshot.clone();
                 live::expire(&mut self.snapshot, fresh, now);
@@ -1878,7 +1837,7 @@ impl Shell {
     }
     /// Diagnostic-only readout receipt; the normal interactive package does not persist this.
     pub fn control_readout_proof(&self) -> serde_json::Value {
-        ["picture", "accessibility", "general", "panel_care"]
+        ["picture", "sound", "accessibility", "general", "panel_care"]
             .into_iter()
             .map(|name| {
                 (
@@ -1905,6 +1864,37 @@ impl Shell {
         let Some(fresh) = &self.live_state else {
             return "Updating TV state…".into();
         };
+        if shown == Page::Sound {
+            let core = Freshness::current(fresh.sound, self.live_now);
+            let optional = Freshness::current(
+                fresh
+                    .controls
+                    .get(&crate::control_reads::Section::Sound)
+                    .copied(),
+                self.live_now,
+            );
+            let current_row = |row: &Setting| {
+                let optional_row = crate::sound_reads::Key::ALL
+                    .iter()
+                    .any(|key| row.id == key.id() && row.focus_key == key.focus_key());
+                row.available
+                    && row.still_current(&self.snapshot.context)
+                    && if optional_row { optional } else { core }
+            };
+            let rows = self.snapshot.settings.get("sound");
+            if !rows.is_some_and(|rows| rows.iter().any(current_row)) {
+                return "Reading unavailable • last state kept".into();
+            }
+            let partial = rows.is_some_and(|rows| rows.iter().any(|row| !current_row(row)));
+            if core != optional || partial {
+                return if fresh.simulated {
+                    "Simulated update • some readings unavailable"
+                } else {
+                    "Live TV state • some readings unavailable"
+                }
+                .into();
+            }
+        }
         let stamp = match shown {
             Page::Home | Page::Applications => fresh.catalogue,
             Page::Inputs => fresh.inputs,

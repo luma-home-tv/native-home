@@ -128,14 +128,14 @@ with 163 library tests plus two handler regressions, clippy and ARM build passin
 Its source/package guards admit the read/layout marker only under the isolated,
 non-interactive native dashboard identity.
 
-Then consider a **separate global Sound read group** for `audioBalance`,
-`audioDescription` and `audioDescriptionVolume`, using two fixed read-only calls.
-Do not add it to the existing profile-dimensional getter and infer global scope
-from the combined response. Validate dimensions and signed range/string types;
-preserve optional-group failure independently of valid output/volume/mute rows.
-Give this group its own conservative freshness receipt and independent
-ordinary-app matching proof before claiming native coverage. Reading a level
-must not require changing description enablement or promoting a numeric editor.
+The next **separate global Sound read group** for `audioBalance`,
+`audioDescription` and `audioDescriptionVolume` is now
+[integrated as a host-only candidate](sound-read-design.md), using two fixed
+read-only calls. It validates global dimensions and signed range/string types,
+with independent freshness and failure handling beside output/volume/mute/profile
+rows. It does not extend the profile-dimensional getter. Independent ordinary-app
+matching and native layout proof remain required on each TV. Reading a level
+does not change description enablement or promote a numeric editor.
 
 ## Rejected shortcuts and remaining unknowns
 
