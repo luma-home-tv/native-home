@@ -685,8 +685,15 @@ pub(crate) mod tests {
             let mut values = serde_json::Map::new();
             let mut results = Vec::new();
             for spec in specs {
-                values.insert(spec.id.into(), json!("on"));
-                results.push(json!({"key":spec.id,"category":category,"dimension":[],"vtype":"ArrayExt","ui":{"visible":true,"active":true},"values":{"arrayExt":[{"value":"on","visible":true,"active":true},{"value":"off","visible":true,"active":true}]}}));
+                let choices: &[&str] = match spec.id {
+                    "audioGuidanceVolume" | "audioGuidancePitch" =>
+                        &["veryLow", "low", "medium", "high", "veryHigh"],
+                    "audioGuidanceSpeed" => &["veryFast", "fast", "medium", "slow", "verySlow"],
+                    _ => &["on", "off"],
+                };
+                values.insert(spec.id.into(), json!(if choices.len() == 5 { "medium" } else { "on" }));
+                let array = choices.iter().map(|value| json!({"value":value,"visible":true,"active":true})).collect::<Vec<_>>();
+                results.push(json!({"key":spec.id,"category":category,"dimension":[],"vtype":"ArrayExt","ui":{"visible":true,"active":true},"values":{"arrayExt":array}}));
             }
             data["replies"][format!("{name}_values")] =
                 json!({"returnValue":true,"category":category,"settings":values});

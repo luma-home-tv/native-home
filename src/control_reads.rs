@@ -87,6 +87,21 @@ pub const ACCESSIBILITY: &[Spec] = &[
         label: "Menu transparency",
         key: 103,
     },
+    Spec {
+        id: "audioGuidanceVolume",
+        label: "Audio guidance volume",
+        key: 104,
+    },
+    Spec {
+        id: "audioGuidancePitch",
+        label: "Audio guidance pitch",
+        key: 105,
+    },
+    Spec {
+        id: "audioGuidanceSpeed",
+        label: "Audio guidance speed",
+        key: 106,
+    },
 ];
 pub const GENERAL_OPTION: &[Spec] = &[
     Spec {
@@ -236,6 +251,51 @@ fn constraint(desc: &Value, current: &Value) -> Option<(ControlConstraint, Strin
         _ => None,
     }
 }
+/// These three global preferences are evidenced string enums, never numeric sliders.
+/// Keep this validation local to their fixed identities; other registry schemas are unchanged.
+fn registry_constraint(
+    spec: &Spec,
+    desc: &Value,
+    current: &Value,
+) -> Option<(ControlConstraint, String)> {
+    let expected: Option<&[&str]> = match spec.id {
+        "audioGuidanceVolume" | "audioGuidancePitch" => {
+            Some(&["veryLow", "low", "medium", "high", "veryHigh"])
+        }
+        "audioGuidanceSpeed" => Some(&["veryFast", "fast", "medium", "slow", "verySlow"]),
+        _ => None,
+    };
+    if let Some(expected) = expected {
+        if desc["category"].as_str() != Some("option")
+            || desc["vtype"].as_str() != Some("ArrayExt")
+            || !desc["dimension"]
+                .as_array()
+                .is_some_and(|dims| dims.is_empty())
+        {
+            return None;
+        }
+        let values = desc["values"].as_object()?;
+        if values.len() != 1 {
+            return None;
+        }
+        let choices = values.get("arrayExt")?.as_array()?;
+        if choices.len() != expected.len() {
+            return None;
+        }
+        let mut seen = BTreeSet::new();
+        for choice in choices {
+            let value = choice["value"].as_str()?;
+            if !expected.contains(&value)
+                || !seen.insert(value)
+                || choice["visible"].as_bool() != Some(true)
+                || choice["active"].as_bool() != Some(true)
+            {
+                return None;
+            }
+        }
+    }
+    constraint(desc, current)
+}
 /// Picture extra reads bind to the current profile; these global domains require empty dimensions.
 pub fn read(
     replies: &Value,
@@ -300,7 +360,9 @@ pub fn read(
                             && a.iter().copied().collect::<BTreeSet<_>>() == expected
                     })
                 {
-                    values.get(spec.id).and_then(|v| constraint(d, v))
+                    values
+                        .get(spec.id)
+                        .and_then(|v| registry_constraint(spec, d, v))
                 } else {
                     None
                 }
@@ -410,5 +472,208 @@ mod tests {
             !read(&replies, "picture_extra", "picture", &specs, Some(&context)).unwrap()[0]
                 .available
         );
+    }
+    fn accessibility_fixture() -> Value {
+        let mut values = serde_json::Map::new();
+        let descriptors = ACCESSIBILITY.iter().map(|spec| {
+            let choices: &[&str] = match spec.id {
+                "audioGuidanceVolume" | "audioGuidancePitch" => &["veryLow","low","medium","high","veryHigh"],
+                "audioGuidanceSpeed" => &["veryFast","fast","medium","slow","verySlow"],
+                _ => &["on","off"],
+            };
+            values.insert(spec.id.into(), if choices.len() == 5 { "medium" } else { "off" }.into());
+            json!({"key":spec.id,"category":"option","dimension":[],"vtype":"ArrayExt","ui":{"visible":true,"active":true},"values":{"arrayExt":choices.iter().map(|value|json!({"value":value,"visible":true,"active":true})).collect::<Vec<_>>()}})
+        }).collect::<Vec<_>>();
+        json!({"accessibility_values":{"returnValue":true,"category":"option","settings":values},"accessibility_desc":{"returnValue":true,"results":descriptors}})
+    }
+    fn accessibility_rows(replies: &Value) -> Result<Vec<Setting>, String> {
+        read(replies, "accessibility", "option", ACCESSIBILITY, None)
+    }
+    fn only_guidance_volume_unavailable(replies: &Value) {
+        let rows = accessibility_rows(replies).unwrap();
+        for row in rows {
+            assert!(row.protected);
+            if row.id == "audioGuidanceVolume" {
+                assert!(!row.available);
+                assert!(row.constraint.is_none());
+                assert_eq!(row.value, "Unavailable");
+            } else {
+                assert!(row.available, "{} unexpectedly withdrawn", row.id);
+            }
+        }
+    }
+    #[test]
+    fn guidance_readouts_have_stable_unique_keys_and_keep_the_existing_bounded_calls() {
+        let mut keys = BTreeSet::new();
+        for specs in [
+            PICTURE,
+            ACCESSIBILITY,
+            GENERAL_OPTION,
+            GENERAL_HOME,
+            PANEL_CARE,
+        ] {
+            for spec in specs {
+                assert!(keys.insert(spec.key));
+            }
+        }
+        assert_eq!(
+            ACCESSIBILITY.iter().map(|s| s.key).collect::<Vec<_>>(),
+            (100..=106).collect::<Vec<_>>()
+        );
+        let operations = operations();
+        assert_eq!(operations.len(), 10);
+        let access = operations
+            .iter()
+            .filter(|(name, _, _)| name.starts_with("accessibility_"))
+            .collect::<Vec<_>>();
+        assert_eq!(access.len(), 2);
+        assert!(access.iter().all(|(_, uri, payload)| matches!(
+            uri.rsplit('/').next(),
+            Some("getSystemSettings" | "getSystemSettingDesc")
+        ) && payload["keys"]
+            .as_array()
+            .unwrap()
+            .len()
+            == 7));
+        let rows = accessibility_rows(&accessibility_fixture()).unwrap();
+        assert!(rows.iter().all(|r| r.available && r.protected));
+        for row in &rows[4..] {
+            assert_eq!(row.value, "medium");
+            assert!(
+                matches!(&row.constraint,Some(ControlConstraint::Choices{values,..}) if values.len()==5)
+            );
+        }
+    }
+    #[test]
+    fn partial_missing_guidance_value_or_descriptor_does_not_withdraw_valid_rows() {
+        let mut replies = accessibility_fixture();
+        replies["accessibility_values"]["settings"]
+            .as_object_mut()
+            .unwrap()
+            .remove("audioGuidanceVolume");
+        only_guidance_volume_unavailable(&replies);
+        let mut replies = accessibility_fixture();
+        replies["accessibility_desc"]["results"]
+            .as_array_mut()
+            .unwrap()
+            .remove(4);
+        only_guidance_volume_unavailable(&replies);
+        let mut replies = accessibility_fixture();
+        let duplicate = replies["accessibility_desc"]["results"][4].clone();
+        replies["accessibility_desc"]["results"]
+            .as_array_mut()
+            .unwrap()
+            .push(duplicate);
+        only_guidance_volume_unavailable(&replies);
+    }
+    #[test]
+    fn inactive_guidance_ui_can_retain_a_valid_protected_reading() {
+        let mut replies = accessibility_fixture();
+        replies["accessibility_desc"]["results"][4]["ui"]["active"] = false.into();
+        let rows = accessibility_rows(&replies).unwrap();
+        let row = &rows[4];
+        assert!(row.available && row.protected);
+        assert_eq!(row.value, "medium");
+        assert!(
+            matches!(&row.constraint,Some(ControlConstraint::Choices{active:false,values}) if values.len()==5)
+        );
+        assert!(rows.iter().all(|row| row.available && row.protected));
+    }
+    #[test]
+    fn guidance_numeric_mixed_unknown_and_duplicate_schemas_are_not_inferred_as_ranges() {
+        for case in 0..9 {
+            let mut replies = accessibility_fixture();
+            match case {
+                0 => {
+                    let d = &mut replies["accessibility_desc"]["results"][4];
+                    d["vtype"] = "Range".into();
+                    d["values"] = json!({"range":{"min":0,"max":4,"interval":1}});
+                    replies["accessibility_values"]["settings"]["audioGuidanceVolume"] = 2.into();
+                }
+                1 => replies["accessibility_values"]["settings"]["audioGuidanceVolume"] = 2.into(),
+                2 => {
+                    replies["accessibility_desc"]["results"][4]["values"]["arrayExt"][0]["value"] =
+                        "extraLow".into()
+                }
+                3 => {
+                    replies["accessibility_desc"]["results"][4]["values"]["arrayExt"][0]["value"] =
+                        "low".into()
+                }
+                4 => {
+                    replies["accessibility_desc"]["results"][4]["values"]["range"] =
+                        json!({"min":0,"max":4,"interval":1})
+                }
+                5 => {
+                    replies["accessibility_desc"]["results"][4]["values"]["arrayExt"][0]["active"] =
+                        false.into()
+                }
+                6 => {
+                    replies["accessibility_values"]["settings"]["audioGuidanceVolume"] = "on".into()
+                }
+                7 => {
+                    replies["accessibility_desc"]["results"][4]["values"]["arrayExt"]
+                        .as_array_mut()
+                        .unwrap()
+                        .remove(0);
+                }
+                _ => replies["accessibility_desc"]["results"][4]["category"] = "sound".into(),
+            }
+            only_guidance_volume_unavailable(&replies);
+        }
+        // Pitch and speed each require their own exact enum, not merely five strings.
+        for index in [5, 6] {
+            let mut replies = accessibility_fixture();
+            replies["accessibility_desc"]["results"][index]["values"]["arrayExt"][0]["value"] =
+                "unknown".into();
+            let rows = accessibility_rows(&replies).unwrap();
+            assert!(!rows[index].available);
+            assert!(rows
+                .iter()
+                .enumerate()
+                .all(|(i, row)| i == index || row.available));
+        }
+    }
+    #[test]
+    fn guidance_global_dimensions_and_reply_integrity_are_required() {
+        let mut replies = accessibility_fixture();
+        replies["accessibility_desc"]["results"][4]["dimension"] = json!(["input"]);
+        only_guidance_volume_unavailable(&replies);
+        let mut replies = accessibility_fixture();
+        replies["accessibility_values"]["dimension"] = json!({"input":"HDMI_1"});
+        assert!(accessibility_rows(&replies).is_err());
+        let mut replies = accessibility_fixture();
+        let context = Context {
+            input: "HDMI_1".into(),
+            picture_mode: "game".into(),
+            dynamic_range: "sdr".into(),
+        };
+        replies["accessibility_values"]["dimension"] =
+            json!({"input":"HDMI_1","pictureMode":"game"});
+        for desc in replies["accessibility_desc"]["results"]
+            .as_array_mut()
+            .unwrap()
+        {
+            desc["dimension"] = json!(["input", "pictureMode"]);
+        }
+        let rows = read(
+            &replies,
+            "accessibility",
+            "option",
+            ACCESSIBILITY,
+            Some(&context),
+        )
+        .unwrap();
+        assert!(rows[4..].iter().all(|r| !r.available && r.protected));
+        for case in 0..5 {
+            let mut replies = accessibility_fixture();
+            match case {
+                0 => replies["accessibility_values"]["returnValue"] = false.into(),
+                1 => replies["accessibility_desc"]["returnValue"] = false.into(),
+                2 => replies["accessibility_values"]["settings"] = json!([]),
+                3 => replies["accessibility_desc"]["results"] = "malformed".into(),
+                _ => replies["accessibility_values"]["category"] = "sound".into(),
+            }
+            assert!(accessibility_rows(&replies).is_err(), "case {case}");
+        }
     }
 }
