@@ -36,6 +36,12 @@ link counts may change as receipts are created, so directory identity uses
 device, inode, owner, group and mode. Receipt files still require exactly one
 link before and after writing.
 
+Both ARM binaries build from functional source
+`e7f60903349ed5ad5dbdfcb19cf6d99c3865da39`, with matching snapshots of 95 selected
+inputs and the pinned framework. The [compiled candidate](artwork-installed-renderer-043-candidate.json)
+binds their actual bytes and build receipts. The existing target-feature stability
+warning remains. Compilation does not establish the combined device path.
+
 The candidate has not yet passed its combined native device run. It does not
 qualify all installed artwork, production startup, normal hide/resume/relaunch,
 performance, physical input or a retained update. G2 remains the primary test

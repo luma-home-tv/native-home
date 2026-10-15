@@ -1,0 +1,45 @@
+{
+  "actual_helper_build_receipt_sha256": "c5059bd749872ad4e85b154807008dd59387263434f12a669acc3dd55fb772b2",
+  "actual_ui_build_receipt_sha256": "c52caa6ce23dfeae0e45efc9640dcdb2ae5e3770cae378c0a057efb2e909ed75",
+  "c2_contacted": false,
+  "combined_native_run_performed": false,
+  "framework": {
+    "integration_patch_sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf",
+    "known_upstream_symlinks": 3,
+    "new_patch_files": 0,
+    "patched_files": 10,
+    "revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+    "schema": 1,
+    "scope": "Fresh filesystem/Git read; not atomic against concurrent mutation or dependency build-script admission.",
+    "status": "verified",
+    "tracked_upstream_blobs": 1643
+  },
+  "functional_source_revision": "e7f60903349ed5ad5dbdfcb19cf6d99c3865da39",
+  "helper": {
+    "bytes": 848088,
+    "name": "artwork-broker-startup-proof",
+    "sha256": "2367730237fc5c8705e43221265c4f5d4a91f36791153a58fd17125d6393cd80"
+  },
+  "host_checks": {
+    "build_provenance_framework_package_tests": 41,
+    "clippy_warnings_denied": true,
+    "dashboard_tests": 5,
+    "library_tests": 398
+  },
+  "isolated_renderer_source_activated": true,
+  "new_test_package_installed": false,
+  "normal_retained_version": "0.37.0",
+  "normal_updated": false,
+  "physical_input_or_performance_qualified": false,
+  "production_startup_qualified": false,
+  "schema": 1,
+  "selected_source_inputs": 95,
+  "status": "Proof-only installed-provider renderer source and ARM compilation candidate; combined native run pending",
+  "two_arm_receipts_same_snapshot": true,
+  "ui": {
+    "bytes": 3749448,
+    "name": "home-preview",
+    "sha256": "59a9c9b9c3423725d7d689e57609c645b861aec0dc2e7afcdb31146fbc8cda4c"
+  },
+  "version": "0.43.0"
+}
