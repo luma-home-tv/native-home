@@ -184,7 +184,16 @@ mod native {
                     &json!({"command":COMMAND}).to_string(),
                     Duration::from_secs(30),
                 )
-                .map_err(|e| format!("SDK exec completion unobserved: {e:?}"))?;
+                .map_err(|e| match e {
+                    plx_platform::webos::ls2::Fail::Timeout => {
+                        "SDK exec completion unobserved: reply wait timed out".to_owned()
+                    }
+                    plx_platform::webos::ls2::Fail::Setup {
+                        stage,
+                        detail,
+                        code,
+                    } => format!("SDK exec setup failed at {stage}, code {code:?}: {detail}"),
+                })?;
             report["raw_bytes"] = json!(raw.len());
             let mut end = raw.len().min(REPLY_LIMIT);
             while !raw.is_char_boundary(end) {
@@ -277,7 +286,10 @@ mod native {
         result["hold_ms"] = json!(hold.elapsed().as_millis());
         let finish = wire::FinishRequest::new(1, &marker.nonce).map_err(|e| e.to_string())?;
         connection
-            .send_until(&wire::json(&finish).map_err(|e| e.to_string())?, deadline)
+            .send_until(
+                &serde_json::to_vec(&finish).map_err(|e| e.to_string())?,
+                deadline,
+            )
             .map_err(|e| e.to_string())?;
         let finished = wire::receive_finished(&connection, &finish, &response, peer, deadline)
             .map_err(|e| e.to_string())?;
