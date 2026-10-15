@@ -43,6 +43,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         return Err("Pointer write proof requires isolated non-interactive TV identity".into());
     }
+    let description_proof = assets.join("description-level-proof.json").exists();
+    if description_proof
+        && (!device
+            || interactive
+            || pointer_proof
+            || pointer_ui_proof
+            || [
+                "launch-proof.json",
+                "preferences-hold-probe.json",
+                "management-proof.json",
+                "controls-proof.json",
+                "drawer-proof.json",
+                "navigation-proof.json",
+            ]
+            .iter()
+            .any(|name| assets.join(name).exists())
+            || plx_base::paths::app_id() != native_home::identity::PROOF)
+    {
+        return Err("Numeric proof requires isolated non-interactive TV identity".into());
+    }
     let session_capture = interactive && assets.join("session-proof.json").exists();
     let performance_proof = interactive && assets.join("performance-proof.json").exists();
     if performance_proof && device && plx_base::paths::app_id() != native_home::identity::PROOF {
@@ -57,6 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "launch-proof.json",
             "preferences-hold-probe.json",
             "native-read-probe.json",
+            "description-level-proof.json",
             "pointer-proof.json",
             "pointer-ui-proof.json",
             "navigation-proof.json",
@@ -109,6 +130,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::thread::Builder::new()
                 .name("pointer-write-proof".into())
                 .spawn(move || pointer_write_proof(&folder))?,
+        );
+    }
+    #[allow(unused_mut)]
+    let mut description_probe: Option<std::thread::JoinHandle<serde_json::Value>> = None;
+    #[cfg(target_arch = "arm")]
+    if description_proof {
+        let folder = output.clone();
+        description_probe = Some(
+            std::thread::Builder::new()
+                .name("numeric-write-proof".into())
+                .spawn(move || description_level_proof(&folder))?,
         );
     }
     let bytes = std::fs::read(assets.join("snapshot.json"))?;
@@ -959,6 +991,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(worker) => Some(worker.join().map_err(|_| "Pointer proof worker panicked")?),
         None => None,
     };
+    let description_receipt = match description_probe {
+        Some(worker) => Some(worker.join().map_err(|_| "Numeric proof worker panicked")?),
+        None => None,
+    };
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
@@ -973,6 +1009,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["navigation_proof"] = serde_json::json!(navigation_receipt);
     report["source_switching_enabled"] = shell.input_launches_enabled().into();
+    report["description_level_proof"] = serde_json::json!(description_receipt);
     report["pointer_proof"] = serde_json::json!(pointer_proof_receipt);
     report["pointer_ui_proof"] = serde_json::json!(pointer_ui_receipt);
     report["pointer_actions"] = serde_json::json!(pointer_actions);
@@ -981,6 +1018,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(false)
         .into();
     report["setting_writes"] = (report["setting_writes"].as_bool() == Some(true)
+        || report["description_level_proof"]["change"]["attempted"].as_bool() == Some(true)
+        || report["description_level_proof"]["restoration"]["attempted"].as_bool() == Some(true)
+        || report["description_level_proof"]["recovery"]["attempted"].as_bool() == Some(true)
         || pointer_actions.iter().any(|r| r.attempted))
     .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
@@ -1496,4 +1536,86 @@ fn navigation_trial(
         .open(output.join("navigation-proof-complete.json"))?;
     serde_json::to_writer_pretty(file, &receipt)?;
     Ok(receipt)
+}
+
+#[cfg(target_arch = "arm")]
+fn description_level_proof(folder: &std::path::Path) -> serde_json::Value {
+    use native_home::description_level::{self, Change};
+    let stage = |value: &serde_json::Value| -> Result<(), String> {
+        let temp = folder.join("description-level-proof-next.json");
+        let file = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&temp)
+            .map_err(|e| e.to_string())?;
+        serde_json::to_writer(file, value).map_err(|e| e.to_string())?;
+        std::fs::rename(temp, folder.join("description-level-proof-current.json"))
+            .map_err(|e| e.to_string())
+    };
+    std::thread::sleep(Duration::from_secs(3));
+    let mut p = match description_level::Native::new() {
+        Ok(p) => p,
+        Err(e) => return serde_json::json!({"error":e}),
+    };
+    let original = match description_level::inspect(&mut p, native_home::identity::PROOF) {
+        Ok(v) => v,
+        Err(e) => {
+            let r = serde_json::json!({"stage":"refused","error":e});
+            let _ = stage(&r);
+            return r;
+        }
+    };
+    let target = original.adjacent();
+    let change = description_level::apply(
+        &mut p,
+        native_home::identity::PROOF,
+        Change {
+            expected: original,
+            value: target,
+        },
+        true,
+    );
+    let mut receipt =
+        serde_json::json!({"stage":"changed","original":original,"target":target,"change":change});
+    if !change.verified {
+        receipt["stage"] = "refused".into();
+        if change.attempted {
+            let recovery = description_level::apply(
+                &mut p,
+                native_home::identity::PROOF,
+                Change {
+                    expected: target,
+                    value: original,
+                },
+                true,
+            );
+            receipt["recovery"] = serde_json::json!(recovery);
+        }
+        let _ = stage(&receipt);
+        return receipt;
+    }
+    if let Err(e) = stage(&receipt) {
+        receipt["stage_error"] = e.into();
+    }
+    std::thread::sleep(Duration::from_secs(8));
+    let restore = description_level::apply(
+        &mut p,
+        native_home::identity::PROOF,
+        Change {
+            expected: target,
+            value: original,
+        },
+        true,
+    );
+    receipt["restoration"] = serde_json::json!(restore);
+    receipt["stage"] = if restore.verified {
+        "restored"
+    } else {
+        "restoration_failed"
+    }
+    .into();
+    let _ = stage(&receipt);
+    receipt
 }
