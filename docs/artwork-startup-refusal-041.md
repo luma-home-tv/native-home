@@ -76,6 +76,13 @@ per declared case. The [candidate record](artwork-startup-refusal-041-candidate.
 binds their hashes and the actual ARM receipts. The helper remains outside both
 ordinary app archives. These builds/packages do not qualify runtime refusal.
 
+The separate host validator passes 13 synthetic rejection/acceptance tests and
+independently admits both actual ARM archives, including exact marker, resource
+bytes and payload closure. Its artifact bindings are recorded in the candidate
+record. It grades expected refusal separately from positive startup and requires
+the ordinary effective GID from independent process records. A saved-only host
+grade still supplies no native process or refusal evidence.
+
 The independent device carrier still needs validation before either case can
 run. No 0.41 package has been installed, and the Root helper/server policy is
 unchanged. Full native preservation and clean removal remain required.

@@ -58,5 +58,13 @@
   "tv_contacted_during_candidate_preparation": false,
   "c2_contacted": false,
   "private_raw_artifacts_published": false,
-  "next_step": "Complete independent refusal carrier admission, execute two isolated G2 cases serially with full preservation and cleanup, then advance restricted artwork resource integration."
+  "next_step": "Complete independent refusal carrier admission, execute two isolated G2 cases serially with full preservation and cleanup, then advance restricted artwork resource integration.",
+  "independent_local_admission": {
+    "validator_sha256": "072c4350232707f43f0566dedd7b4daccc528fcc82301a87eda1c59bc0b740b0",
+    "synthetic_tests_sha256": "49a757b4d55cfc7849f7d7e43aad4a142ea9ed34e824f535eb10267f8256be4e",
+    "synthetic_tests": 13,
+    "actual_arm_packages_checked": 2,
+    "native_cases_run": 0,
+    "receipt_sha256": "bfc8c6113e3800b5dc16205071ac662b38bee295dd8d1fa62d20e6f08139106c"
+  }
 }
