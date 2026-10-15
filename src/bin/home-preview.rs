@@ -143,7 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         )?);
     }
     #[allow(unused_mut)]
-    let mut action_worker = None;
+    let mut action_worker: Option<native_home::actions::Worker> = None;
     #[allow(unused_mut)]
     let mut app_launches_enabled = false;
     #[allow(unused_mut)]
@@ -163,10 +163,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             native_home::actions::Capabilities {
                 apps: app_launches_enabled,
                 home: home_launches_enabled,
-                inputs: matches!(
-                    launch_proof,
-                    Some(native_home::actions::Request::Input { .. })
-                ),
+                inputs: plx_base::paths::app_id() == native_home::identity::PREVIEW
+                    || matches!(
+                        launch_proof,
+                        Some(native_home::actions::Request::Input { .. })
+                    ),
                 settings: plx_base::paths::app_id() == native_home::identity::PREVIEW
                     || launch_proof
                         .as_ref()
@@ -233,6 +234,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for _ in 0..45 {
                 now += 17;
                 poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+                if let Some(enabled) = action_worker.as_ref().and_then(|w| w.input_capability()) {
+                    shell.enable_input_launches(enabled);
+                }
                 poll_pointer(
                     &pointer_worker,
                     &mut shell,
@@ -588,11 +592,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             native_home::actions::Request::Input { id }
-                if matches!(id.as_str(), "HDMI_1" | "HDMI_4") =>
+                if matches!(id.as_str(), "HDMI_1" | "HDMI_2" | "HDMI_3" | "HDMI_4") =>
             {
                 shell.open(Page::Inputs);
                 if !shell.focus_input(id) {
-                    return Err("HDMI 4 unavailable".into());
+                    return Err("Requested HDMI source unavailable".into());
                 }
             }
             _ => return Err("Unapproved isolated proof route".into()),
@@ -647,6 +651,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             plx_machine::idle::frame_begin(dt);
             now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+            if let Some(enabled) = action_worker.as_ref().and_then(|w| w.input_capability()) {
+                shell.enable_input_launches(enabled);
+            }
             poll_pointer(
                 &pointer_worker,
                 &mut shell,
@@ -1073,6 +1080,7 @@ fn dispatch_requests(
             None => matches!(
                 request,
                 native_home::actions::Request::Application { .. }
+                    | native_home::actions::Request::Input { .. }
                     | native_home::actions::Request::LgHome {}
                     | native_home::actions::Request::LgSettings {}
                     | native_home::actions::Request::LgSettingsSection { .. }

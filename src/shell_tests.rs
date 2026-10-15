@@ -135,6 +135,7 @@ fn explicitly_empty_favourites_stay_empty_after_restart() {
 fn inputs_are_typed_separately_from_application_launches() {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(fixture(), Preferences::default());
+    s.enable_input_launches(true);
     s.open(Page::Inputs);
     s.activate(
         FocusKey {
@@ -445,6 +446,7 @@ fn home_shelves_cross_by_geometry_and_keep_input_requests_out_of_favourites() {
         })
         .collect();
     let mut s = Shell::new(data, Preferences::default());
+    s.enable_input_launches(true);
     let first = s.focused_item();
     s.direction(Dir::Right);
     s.direction(Dir::Right);
@@ -1301,4 +1303,23 @@ fn confirmed_pointer_value_cannot_be_rewound_by_a_read_cycle_started_before_the_
         260,
     );
     assert_eq!(s.pointer_value(), Some(Speed::Fast));
+}
+
+#[test]
+fn input_capability_is_required_and_stale_input_state_cannot_be_activated() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.open(Page::Inputs);
+    s.focus_input("HDMI_1");
+    let key = FocusKey {
+        entry: entry(s.page()),
+        elem: focus(&s),
+    };
+    s.activate(key, false);
+    assert!(s.take_requests().is_empty());
+    s.enable_input_launches(true);
+    s.apply_live(&live_update(100), 100);
+    s.age_live(15_101);
+    s.activate(key, false);
+    assert!(s.take_requests().is_empty());
 }

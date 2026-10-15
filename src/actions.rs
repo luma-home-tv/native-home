@@ -164,6 +164,13 @@ fn target(
     {
         return Err("LG Home metadata has not been validated".into());
     }
+    if matches!(request, Request::Input { .. })
+        && (kind != "native"
+            || app["main"].as_str() != Some("file:///usr/bin/com.webos.app.inputcommon")
+            || app["version"].as_str() != Some("1.0.0"))
+    {
+        return Err("Input application metadata has not been validated".into());
+    }
     if !matches!(kind, "native" | "native_builtin" | "web") {
         return Err("Application is not launchable".into());
     }
@@ -184,6 +191,20 @@ fn target(
         }
     }
     Ok(id)
+}
+fn input_firmware(info: &Value, own_id: &str) -> bool {
+    info["returnValue"].as_bool() == Some(true)
+        && info["firmwareVersion"].as_str() == Some("23.25.55")
+        && info["sdkVersion"].as_str() == Some("9.2.2")
+        && (info["modelName"].as_str() == Some("OLED55G26LA")
+            || (own_id == crate::identity::PROOF
+                && info["modelName"].as_str() == Some("OLED65C26LD")))
+}
+fn known_source(value: &Value) -> bool {
+    matches!(
+        value["mainInputSourceId"].as_str(),
+        Some("HDMI_1" | "HDMI_2" | "HDMI_3" | "HDMI_4" | "ATV" | "DTV")
+    )
 }
 pub fn execute<P: Platform>(
     platform: &mut P,
@@ -216,6 +237,20 @@ pub fn execute<P: Platform>(
             let verified = matches!(model, Some("OLED55G26LA" | "OLED65C26LD"));
             if !known_firmware || !verified {
                 return Err("LG handoff is not validated for this TV firmware".into());
+            }
+        }
+        if matches!(request, Request::Input { .. }) {
+            if !input_firmware(&get(platform, Op::SystemInfo)?, own_id) {
+                return Err("Source switching is not validated for this model/firmware".into());
+            }
+            if !known_source(&get(platform, Op::CurrentInput)?) {
+                return Err("Current source readback unavailable".into());
+            }
+            if windows(&get(platform, Op::Windows)?)?
+                .iter()
+                .any(|r| r["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_OVERLAY"))
+            {
+                return Err("Dashboard is covered by another window".into());
             }
         }
         let before = get(platform, Op::Foreground)?;
@@ -366,6 +401,7 @@ pub struct Worker {
     replies: mpsc::Receiver<Receipt>,
     windows: mpsc::Receiver<WindowObservation>,
     thread: thread::JoinHandle<()>,
+    input_capability: mpsc::Receiver<bool>,
 }
 impl Worker {
     #[cfg(target_arch = "arm")]
@@ -373,12 +409,19 @@ impl Worker {
         let (requests, receive) = mpsc::sync_channel::<Work>(1);
         let (send, replies) = mpsc::channel();
         let (window_send, windows) = mpsc::channel();
+        let (input_send, input_capability) = mpsc::channel();
         let thread = thread::Builder::new()
             .name("home-launch".into())
             .spawn(move || {
                 let mut platform = plx_platform::webos::ls2::register()
                     .ok()
                     .map(|bus| NativePlatform { bus });
+                let supported = caps.inputs
+                    && platform
+                        .as_mut()
+                        .and_then(|p| get(p, Op::SystemInfo).ok())
+                        .is_some_and(|info| input_firmware(&info, &own_id));
+                let _ = input_send.send(supported);
                 while let Ok(work) = receive.recv() {
                     let request = match work {
                         Work::Launch(request) => request,
@@ -420,7 +463,11 @@ impl Worker {
             replies,
             windows,
             thread,
+            input_capability,
         })
+    }
+    pub fn input_capability(&self) -> Option<bool> {
+        self.input_capability.try_iter().last()
     }
     pub fn queue(&self, request: Request) -> Result<(), String> {
         self.requests
@@ -442,6 +489,7 @@ impl Worker {
             replies,
             windows: _,
             thread,
+            input_capability: _,
         } = self;
         drop(requests);
         let _ = thread.join();
@@ -469,7 +517,7 @@ mod tests {
             Self {
                 foreground: "com.example.home".into(),
                 after: "com.example.target".into(),
-                rows: json!({"returnValue":true,"apps":[{"id":"com.example.target","type":"native","visible":true},{"id":"com.palm.app.settings","type":"web","visible":false,"version":"4.0.1","uiRevision":2,"main":"index.multi.html"},{"id":"com.webos.app.hdmi1","type":"native","visible":false}]}),
+                rows: json!({"returnValue":true,"apps":[{"id":"com.example.target","type":"native","visible":true},{"id":"com.palm.app.settings","type":"web","visible":false,"version":"4.0.1","uiRevision":2,"main":"index.multi.html"},{"id":"com.webos.app.hdmi1","type":"native","visible":false,"main":"file:///usr/bin/com.webos.app.inputcommon","version":"1.0.0"}]}),
                 points: json!({"returnValue":true,"launchPoints":[{"id":"com.example.target"}]}),
                 inputs: json!({"returnValue":true,"devices":[{"id":"HDMI_1","appId":"com.webos.app.hdmi1","activate":true}]}),
                 current_input: "HDMI_1".into(),
@@ -686,11 +734,12 @@ mod tests {
             .verified
         );
         let mut p = Fake::new();
+        p.foreground = crate::identity::PREVIEW.into();
         p.after = "com.webos.app.hdmi1".into();
         assert!(
             execute(
                 &mut p,
-                "com.example.home",
+                crate::identity::PREVIEW,
                 Request::Input {
                     id: "HDMI_1".into()
                 },
@@ -702,11 +751,12 @@ mod tests {
             .verified
         );
         let mut p = Fake::new();
+        p.foreground = crate::identity::PREVIEW.into();
         p.inputs["devices"][0]["appId"] = json!("com.example.other");
         assert!(
             !execute(
                 &mut p,
-                "com.example.home",
+                crate::identity::PREVIEW,
                 Request::Input {
                     id: "HDMI_1".into()
                 },
@@ -925,11 +975,12 @@ mod tests {
     #[test]
     fn input_launch_needs_current_source_readback_and_not_the_device_flag() {
         let mut p = Fake::new();
+        p.foreground = crate::identity::PREVIEW.into();
         p.after = "com.webos.app.hdmi1".into();
         p.inputs["devices"][0]["activate"] = false.into();
         let r = execute(
             &mut p,
-            "com.example.home",
+            crate::identity::PREVIEW,
             Request::Input {
                 id: "HDMI_1".into(),
             },
@@ -940,11 +991,12 @@ mod tests {
         );
         assert!(r.verified);
         let mut p = Fake::new();
+        p.foreground = crate::identity::PREVIEW.into();
         p.after = "com.webos.app.hdmi1".into();
         p.current_input = "HDMI_4".into();
         let r = execute(
             &mut p,
-            "com.example.home",
+            crate::identity::PREVIEW,
             Request::Input {
                 id: "HDMI_1".into(),
             },
@@ -954,5 +1006,67 @@ mod tests {
             },
         );
         assert!(r.admitted && !r.verified);
+    }
+    #[test]
+    fn hdmi_admission_requires_verified_model_firmware_builtin_metadata_and_readback() {
+        for changed in 0..7 {
+            let mut p = Fake::new();
+            p.foreground = crate::identity::PREVIEW.into();
+            p.after = "com.webos.app.hdmi1".into();
+            match changed {
+                0 => p.system_info["modelName"] = "OLED65C26LD".into(),
+                1 => p.system_info["firmwareVersion"] = "unknown".into(),
+                2 => p.system_info["sdkVersion"] = "unknown".into(),
+                3 => p.rows["apps"][2]["main"] = "other".into(),
+                4 => p.rows["apps"][2]["version"] = "2.0.0".into(),
+                5 => p.current_input = "unknown".into(),
+                _ => {
+                    p.initial_windows = json!({"returnValue":true,"windows":[{"windowType":"_WEBOS_WINDOW_TYPE_OVERLAY","appId":"com.palm.app.settings"}]})
+                }
+            }
+            let r = execute(
+                &mut p,
+                crate::identity::PREVIEW,
+                Request::Input {
+                    id: "HDMI_1".into(),
+                },
+                Capabilities {
+                    inputs: true,
+                    ..Default::default()
+                },
+            );
+            assert!(!r.admitted && p.launches.is_empty());
+        }
+        for port in 1..=4 {
+            let mut p = Fake::new();
+            p.foreground = crate::identity::PREVIEW.into();
+            p.after = format!("com.webos.app.hdmi{port}");
+            p.current_input = format!("HDMI_{port}");
+            p.rows["apps"]
+                .as_array_mut()
+                .unwrap()
+                .retain(|a| a["id"].as_str() != Some("com.webos.app.hdmi1"));
+            p.rows["apps"].as_array_mut().unwrap().push(json!({"id":p.after,"type":"native","main":"file:///usr/bin/com.webos.app.inputcommon","version":"1.0.0"}));
+            p.inputs =
+                json!({"returnValue":true,"devices":[{"id":p.current_input,"appId":p.after}]});
+            assert!(
+                execute(
+                    &mut p,
+                    crate::identity::PREVIEW,
+                    Request::Input {
+                        id: format!("HDMI_{port}")
+                    },
+                    Capabilities {
+                        inputs: true,
+                        ..Default::default()
+                    }
+                )
+                .verified
+            );
+            assert_eq!(
+                p.launches,
+                vec![json!({"id":format!("com.webos.app.hdmi{port}")})]
+            );
+        }
     }
 }

@@ -902,6 +902,7 @@ pub struct Shell {
     live_updates: u32,
     app_launches_enabled: bool,
     home_launches_enabled: bool,
+    input_launches_enabled: bool,
     drawer: Drawer,
     control_category: Page,
     category_labels: [CString; 6],
@@ -967,6 +968,7 @@ impl Shell {
             live_updates: 0,
             app_launches_enabled: false,
             home_launches_enabled: false,
+            input_launches_enabled: false,
             drawer: Drawer::default(),
             control_category: Page::Picture,
             category_labels: CATEGORIES.map(|(_, label)| cstr(label)),
@@ -1099,7 +1101,8 @@ impl Shell {
                     }
                 }
             }
-            Page::Inputs => "HDMI status • source switching disabled in this preview",
+            Page::Inputs if self.input_launches_enabled => "OK open source • Back Home",
+            Page::Inputs => "HDMI status • source switching unavailable on this TV",
             Page::PointerSpeed if self.pointer_pending => "Applying pointer speed…",
             Page::PointerSpeed => "OK apply selection • Back cancel",
             Page::General if self.pointer_enabled => {
@@ -1662,6 +1665,10 @@ impl Shell {
             "Pointer speed could not be confirmed • use LG Settings"
         });
     }
+    pub fn enable_input_launches(&mut self, enabled: bool) {
+        self.input_launches_enabled = enabled;
+        self.rebuild(self.surface.page);
+    }
     pub fn enable_home_launches(&mut self, enabled: bool) {
         self.home_launches_enabled = enabled;
         plx_machine::idle::invalidate();
@@ -2180,8 +2187,12 @@ impl Shell {
                 self.status = cstr("Reading unavailable • refresh before opening this item");
                 return;
             }
+            if input && !self.input_launches_enabled {
+                self.status = cstr("Source switching is unavailable on this TV");
+                return;
+            }
             self.status = cstr(if input {
-                "Source switching is unavailable in this preview"
+                "Opening source…"
             } else if self.app_launches_enabled {
                 "Opening application…"
             } else {
