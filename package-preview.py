@@ -37,7 +37,7 @@ icon = Path(os.environ.get('NATIVE_HOME_PREVIEW_ICON', repo / 'assets/luma-home/
 shutil.copy2(icon, stage / 'icon.png')
 info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
         'type': 'native', 'main': main, 'title': 'Native Launch Target' if main == 'launch-target' else 'Luma Home Test' if test_identity else 'Luma Home Preview',
-        'appDescription': 'Isolated native dashboard preview; app launching, read-only controls',
+        'appDescription': 'Native dashboard preview; verified pointer-speed control and LG-managed settings',
         'icon': 'icon.png', 'largeIcon': 'icon.png', 'transparent': False,
         'nativeLifeCycleInterfaceVersion': 2, 'handlesRelaunch': False,
         'requiredMemory': 96, 'requiredPermissions': []}
