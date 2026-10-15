@@ -1,12 +1,23 @@
 # Interactive keyboard acceptance
 
-This is the next acceptance contract, not a completed test receipt. It was
-prepared from source `16b0194`, the [keyboard integration record](keyboard-integration-milestone.json)
+This is the acceptance contract; individual results live in the linked receipts.
+It was originally prepared from source `16b0194`, the [keyboard integration record](keyboard-integration-milestone.json)
 and the [text compatibility audit](webos24-text-compatibility.md). The recorded
 0.23.0 trials on both models exercised shared search/controller code inside a
 bounded diagnostic helper. They establish the operations listed in that record;
 they do not establish that the normal interactive event loop wires them together
 correctly. The older human G2 typing report also does not qualify a newer binary.
+
+Current results: the [actual-loop record](main-loop-milestone.json) covers
+independent keyboard/fallback, idle and programmatic departure scenarios on both
+models. The [0.25.0 OK-wake record](ok-wake-milestone.json) adds first-OK wake
+suppression and a second distinct OK action on both. The
+[current G2 human check](manual-keyboard-milestone.json) covers typing/Done,
+same-process reopen/Back and one observed same-batch release drain, with no
+fallback keypad. These are bounded results, not full acceptance: C2 physical
+typing, pointer/later-batch dismissal races, same-install relaunch, performance
+and retained promotion remain open. One failed G2 startup exited on early focus
+loss before readiness; investigate cold-entry reliability before promotion.
 
 The coordinator owns the interactive implementation and G2 lease. The background
 input/framework lane can review event ordering, fixtures and receipts without
@@ -56,7 +67,7 @@ that never arrived, a skipped stage or an expired observer is not a pass.
 
 ### Required event ordering
 
-The 0.23.0 helper trials do not resolve a main-loop batch-ordering hazard. Done
+The 0.23.0 helper trials did not resolve a main-loop batch-ordering hazard. Done
 can end drawer editing before the post-poll keyboard reconciliation stops SDL.
 The app-local input-drain latch must therefore be armed immediately when the
 shared text-event handler processes Done/Back, before polling the next event.
@@ -68,12 +79,13 @@ time so a delayed loop cannot masquerade as a precise wall-clock guarantee. A
 regression must drive the real shared handler with Done followed by a release or
 click at the same timestamp, then cover later input inside and outside the drain.
 Pure assertions about the controller's timestamp helper are insufficient. The
-native acceptance still needs evidence that the main dispatcher uses that
-handler and preserves the ordering.
+current G2 human receipt observes an accepted closing key-down followed by a
+drained release in the same main-loop SDL batch. This covers that event pair;
+later-batch, pointer and broader race cases still need native evidence.
 
-## Proposed passive Proof instrumentation
+## Passive Proof instrumentation contract
 
-This is an implementation contract for the coordinator, not an existing hook.
+The actual-loop observer now implements this contract; see the receipts above.
 Enable it only when both the Proof identity and an explicit interactive-keyboard
 observation marker are present. Refuse it under the retained identity or together
 with an action-trial helper. It must observe the normal loop without changing

@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "status": "Human-confirmed LG keyboard typing, Done and Back qualified through the actual main loop on G2; three preceding incomplete attempts retained in the evidence history",
+  "source": {
+    "functional_revision": "a46ddcf9be8d3bf5d06eb6af72ddc531cb547fca",
+    "proof_version": "0.25.0",
+    "binary_sha256": "889c09944e490651e40ef30e4227530d5b3036dc92c5c67cc45cc82f50ffdc8b",
+    "ipk_sha256": "de81f59c97fbe19e88c3c00be18457845ec689b8bf0676aed326703c661cf1a5"
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "identity": "Isolated ordinary-app Proof identity",
+    "running_executable_verified": true,
+    "retained_version": "0.21.0",
+    "retained_modified": false
+  },
+  "human_check": {
+    "report": "Both worked",
+    "sequence": [
+      "Type lowercase lu with the LG keyboard, then select Done",
+      "Host reopens the system editor; type lowercase ma, then press physical Back"
+    ],
+    "expected_draft_after_done": "lu",
+    "expected_draft_after_back": "luma",
+    "attribution": "User confirmation is recorded separately; received native event origin remains native_unclassified"
+  },
+  "observed": {
+    "scenario_checks_passed": 28,
+    "independent_artifact_audit_checks_passed": 41,
+    "keyboard": {
+      "opens": 2,
+      "stops": 2,
+      "dismissals": 1,
+      "failures": 0
+    },
+    "text_commits": 4,
+    "synthetic_recipe_queued": 0,
+    "fallback_targets_during_open_and_after_close": 0,
+    "independent_system_keyboard_windows_open_close_twice": true,
+    "terminal_exit": "back_from_home",
+    "additional_keyboard_stage_preference_writes": 0,
+    "external_action_attempts": 0,
+    "same_batch_drain": {
+      "received_keydown_decision": "accepted",
+      "following_keyup_decision": "drain",
+      "event_sequence_difference": 1,
+      "same_event_batch": true,
+      "same_elapsed_and_controller_timestamp": true,
+      "drained_events": 1,
+      "scope": "Observed Done-associated release in this successful G2 sequence; observer does not record key codes"
+    }
+  },
+  "counter_semantics": "Done is an explicit application close and increments stops without an implicit dismissal. Physical Back hides the LG panel and produces the one implicit dismissal. Both sessions must stop with zero failures.",
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "accepted": false,
+      "outcome": "Human input window timed out; no native text received",
+      "cleanup_verified": true
+    },
+    {
+      "attempt": 2,
+      "accepted": false,
+      "outcome": "Exit reason window_hidden at 697 ms before live executable binding; recorded event kinds were two shown/focus-gained events followed by focus loss. Startup reliability remains unresolved",
+      "cleanup": "Independently verified using the protected runtime OS owner plus the previously live-verified same application identity and binary, final PID/UID consistency, and producer/all-identity process absence",
+      "live_executable_bound_this_attempt": false,
+      "cleanup_verified": true
+    },
+    {
+      "attempt": 3,
+      "accepted": false,
+      "outcome": "Host harness incorrectly required an implicit dismissal for explicit Done; native lu and Done close were already correct. Host aborted and closed the attempt",
+      "cleanup_verified": true
+    },
+    {
+      "attempt": 4,
+      "accepted": true,
+      "outcome": "Corrected host metric checks opens/stops and zero failures; both human rounds and ordinary exit completed",
+      "cleanup_verified": true
+    }
+  ],
+  "closeout": {
+    "scope": "Successful attempt and each preceding attempt at their respective closeout times",
+    "proof_runtime_package_catalogue_launchpoint_and_state_removed": true,
+    "producer_and_all_identity_processes_absent": true,
+    "original_lg_home_foreground_verified": true,
+    "retained_preview_and_favourites_preserved": true,
+    "checked_core_hashes_and_settings_preserved": true,
+    "lease_released": true,
+    "private_host_agent_removed": true,
+    "reboot_required": false
+  },
+  "scope_limits": [
+    "Only G2 has this current-build human qualification; C2 physical typing remains unqualified.",
+    "The observer supports the reported fixture progression and system editor lifecycle, while input source attribution remains unclassified.",
+    "One observed same-batch release drain does not qualify pointer clicks, later-batch inputs inside the drain interval, repeated presses or all dismissal races.",
+    "No word predictions appeared in the earlier prediction experiment; prediction replacement and complex composition remain unqualified.",
+    "No performance, full TV functionality, reboot persistence or retained-preview promotion claim follows from these checks."
+  ],
+  "retained_promotion": false
+}

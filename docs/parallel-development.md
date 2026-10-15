@@ -114,15 +114,25 @@ The parallel controls lane has also delivered the
 [presentation policy module](control-capability-design.md) and a
 [guidance-read implementation](read-coverage-audit.md). The former has no UI caller;
 the latter now has [independent ordinary-app/native component qualification](guidance-read-milestone.json)
-on both models, with preserved-state/removal checks. A stronger intentional
-OK-wake scenario is host-prepared; it still needs native execution under reviewed
-current cleanup guards before replacing the narrower LEFT-wake observation.
+on both models, with preserved-state/removal checks. The stronger
+[intentional OK-wake scenario](ok-wake-milestone.json) now has independent native
+results on both models: first OK wakes without editing, second OK opens one LG
+panel. Native completion preceded a host interruption; reviewed same-run cleanup
+recovered both closeouts without restarting the tests.
+
+The [current G2 human check](manual-keyboard-milestone.json) adds typing/Done,
+same-process reopen/Back and one same-batch drained closing-key release. Three
+incomplete attempts remain recorded, including early startup focus loss and a
+corrected host assertion. C2 physical input, later-batch/pointer drain races,
+cold-entry reliability and performance remain open. A separate host lane has
+integrated the [optional Sound readings](sound-read-design.md), with independent
+review and freshness/error fixtures; no Sound candidate has reached either TV.
 
 The next waves are:
 
 | Wave | Coordinator / G2 | C2 validator | Independent review | Host-only implementation |
 | --- | --- | --- | --- | --- |
-| Finish input acceptance | Integrate evidence; qualify real idle/wake and departure in bounded separate scenarios, then dismissal-order gaps. | Independently qualify the same admitted profiles on C2 with separate teardown. | Audit actual-loop hooks and receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
+| Finish input acceptance | Investigate startup focus-loss observation; qualify remaining dismissal-order and relaunch gaps. | Qualify physical typing when available and repeat relevant new immutable profiles with separate teardown. | Audit actual-loop hooks and receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
 | Deliver useful controls and visual improvements | Integrate the next reviewed adapter/UI slice and freeze a new candidate. | Prepare independent regression recipes while host work proceeds; validate only after handoff. | Review fixed operation admission, failure/recovery and visual acceptance. | Implement disjoint operation modules or visual components under explicit ownership; central shell/live wiring has one owner. |
 | Qualify normal use and release | Validate app/Settings/HDMI handoffs and matched performance; perform backed-up rollout after acceptance. | Repeat relevant C2 workloads and preserve its independent source-restoration boundary. | Audit release evidence, limitations, privacy and generic upstream patch separation. | Prepare release documentation and upstream-ready generic framework changes while hardware tests run. |
 

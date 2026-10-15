@@ -97,10 +97,19 @@ independent keyboard/fallback, real 120-second idle and programmatic LG Home
 departure results, with preserved-state/removal checks. Both also completed idle
 begun with LG editing active; adjacent recorded states show editor/SDK closure
 at the idle transition, without establishing an exact SDK close cause. Network
-Back and fixed synthetic text are not physical typing/Done evidence; LEFT wake
-does not qualify intentional OK suppression or exact focus preservation. Native
-dismissal-drain observations, explicit idle stop cause, physical input,
-same-install relaunch, performance and retained promotion remain separate gates.
+Back and fixed synthetic text are not physical typing/Done evidence. The newer
+[OK-wake record](ok-wake-milestone.json) independently qualifies a first OK that
+only wakes, followed by a distinct second OK that opens Search, on both models.
+Both host drivers were interrupted after native completion; reviewed same-run
+closeout recovered removal and preservation without restarting either scenario.
+The [G2 human record](manual-keyboard-milestone.json) adds current-build typing,
+Done, same-process reopen and Back with `luma` retained and no fallback keypad.
+One closing-key release was drained in the same SDL batch. Pointer, later-batch
+and broader dismissal races remain unqualified, as do C2 physical typing,
+explicit idle stop cause, same-install relaunch, performance and retained promotion.
+One preceding G2 attempt exited on early focus loss before readiness; its cause
+and cold-entry reliability remain unresolved. The other incomplete attempts and
+the corrected host dismissal-counter mistake remain in the record.
 
 The [parallel plan](parallel-development.md) now lists the six broad remaining
 delivery stages, the immediate interactive-loop gate and the next parallel wave.
@@ -116,6 +125,10 @@ parameter readouts and the Sound dimension boundary. The
 and focused/scrolled native component frames independently on both models.
 They add no setter; physical input, freshness transitions and retained promotion
 remain separate.
+The [optional global Sound group](sound-read-design.md) now has fixed GETs,
+strict schemas and three protected rows integrated behind independent freshness.
+This is host-only work; ordinary-app permission and native focus/scroll/layout
+must be qualified separately on each TV before claiming coverage.
 The [capability presentation model](control-capability-design.md) keeps reading
 freshness, edit eligibility, pending operations and LG routes separate; it has
 no normal UI caller yet.

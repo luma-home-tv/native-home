@@ -129,3 +129,9 @@ now adds focused/scrolled native review of its three readouts on both models.
 Original framebuffer comparisons confirm static branding remains present;
 preview omissions alone did not establish a renderer defect. The retained
 previews remain at their recorded versions.
+
+The [G2 human check](manual-keyboard-milestone.json) now confirms the intended
+single-keyboard Done/reopen/Back flow on the 0.25.0 actual main loop. The
+[OK-wake record](ok-wake-milestone.json) adds intentional wake suppression on
+both models. Neither supplies new concept frames or performance measurements;
+the separate optional Sound rows remain host-only pending native layout review.

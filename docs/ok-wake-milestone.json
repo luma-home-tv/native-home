@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "status": "Stronger intentional OK wake independently qualified through the actual main event loop on both models; host interruption required same-run closeout recovery",
+  "source": {
+    "functional_revision": "a46ddcf9be8d3bf5d06eb6af72ddc531cb547fca",
+    "proof_version": "0.25.0",
+    "binary_sha256": "889c09944e490651e40ef30e4227530d5b3036dc92c5c67cc45cc82f50ffdc8b"
+  },
+  "scenario": {
+    "name": "idle_ok_wake",
+    "identity": "Isolated ordinary-app Proof identity",
+    "execution": "Actual interactive main loop, normal navigation and live readings; passive bounded observer; no component navigation helper or text recipe",
+    "navigation_fence": "Final navigation key-up observed, balanced down/up counts, then a fresh quiet producer snapshot before the idle baseline",
+    "idle": "At least 120 seconds after the last native input; then at least three fresh producer seconds with unchanged draw/swap counters",
+    "input": "Two serialized guarded network OK requests correlated with distinct ordered native down/up pairs",
+    "origin": "Native received events remain native_unclassified; the observer omits key codes",
+    "panel_visibility": "Independent surface-manager keyboard-window snapshots, separate from SDK panel flags",
+    "exit": "Ordinary Back navigation closes the editor and exits from Home"
+  },
+  "devices": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "de81f59c97fbe19e88c3c00be18457845ec689b8bf0676aed326703c661cf1a5",
+      "ordinary_uid_and_running_executable_verified": true,
+      "scenario_checks_passed": 29,
+      "independent_artifact_audit_checks_passed": 36,
+      "idle_transition_after_last_input_ms": 120017,
+      "fresh_idle_hold_ms": 3006,
+      "first_ok": "Wakes canvas; Search remains closed, with no transient editor or fallback targets",
+      "second_ok": "Distinct later OK opens one LG system editor; independently observed keyboard window",
+      "back": "Closes the editor and returns focus to Search",
+      "terminal_exit": "back_from_home",
+      "terminal_idle_wakes": 1,
+      "terminal_black_presentations": 1,
+      "keyboard": {
+        "opens": 1,
+        "stops": 1,
+        "dismissals": 1,
+        "failures": 0
+      },
+      "host_driver": "Interrupted after scenario completion and uninstall request; original owned lease and producer identity verified before resuming closeout of this same run",
+      "closeout": {
+        "same_test_not_restarted": true,
+        "cleanup_verified": true,
+        "original_lg_home_foreground_verified": true,
+        "retained_preview_and_favourites_preserved": true,
+        "checked_core_settings_and_services_state_preserved": true,
+        "lease_released": true,
+        "private_host_agent_removed": true,
+        "reboot_required": false
+      },
+      "retained_version": "0.21.0",
+      "retained_modified": false
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "sdk": "9.2.2",
+      "ipk_sha256": "4024d5fc54800e358986acf900c8f01eda57638b56488b169498c33e07a21cf1",
+      "ordinary_uid_and_running_executable_verified": true,
+      "scenario_checks_passed": 29,
+      "independent_artifact_audit_checks_passed": 36,
+      "idle_transition_after_last_input_ms": 120016,
+      "fresh_idle_hold_ms": 3005,
+      "first_ok": "Wakes canvas; Search remains closed, with no transient editor or fallback targets",
+      "second_ok": "Distinct later OK opens one LG system editor; independently observed keyboard window",
+      "back": "Closes the editor and returns focus to Search",
+      "terminal_exit": "back_from_home",
+      "terminal_idle_wakes": 1,
+      "terminal_black_presentations": 1,
+      "keyboard": {
+        "opens": 1,
+        "stops": 1,
+        "dismissals": 1,
+        "failures": 0
+      },
+      "host_driver": "Interrupted after scenario completion and uninstall request; original owned lease and producer identity verified before resuming closeout of this same run",
+      "closeout": {
+        "same_test_not_restarted": true,
+        "cleanup_verified": true,
+        "original_lg_home_foreground_verified": true,
+        "retained_preview_and_favourites_preserved": true,
+        "checked_core_settings_and_services_state_preserved": true,
+        "lease_released": true,
+        "private_host_agent_removed": true,
+        "reboot_required": false
+      },
+      "retained_version": "0.20.0",
+      "retained_modified": false
+    }
+  },
+  "scope_limits": [
+    "Network dispatch/native event correlation assumes a quiet device; it does not prove exclusive source attribution or physical Magic Remote typing, Done, Back, pointer or wheel behaviour.",
+    "The idle hold establishes no additional draw/swap submissions over its bounded fresh interval; it is not a sustained performance, wall-power or OLED lifetime measurement.",
+    "Both original host drivers were interrupted after the scenario and uninstall request. Successful resumed closeout of the same run is not an uninterrupted host exit-zero claim.",
+    "Cleanup evidence is scoped to each completed OK-wake run and its closeout time; later independently owned tests may reuse the isolated identity.",
+    "Preservation checks cover retained files and favourites, selected core hashes, picture/audio/source/accessibility settings and foreground restoration; they do not prove all possible TV functionality.",
+    "No retained preview update, setting write, boot hook, Home interception or release-readiness admission is claimed."
+  ],
+  "retained_promotion": false
+}

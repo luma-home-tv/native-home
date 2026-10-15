@@ -91,13 +91,21 @@ checks are recorded in the [deployment milestone](docs/deployment-milestone.json
 The [actual-main-loop milestone](docs/main-loop-milestone.json) records newer
 isolated 0.24.0 keyboard/fallback, real idle/wake and programmatic departure
 scenarios independently on both models. These use network navigation and
-explicit synthetic text; physical typing/Done, native dismissal-drain ordering,
-performance and retained updates remain separate acceptance gates. The
+explicit synthetic text. The newer [OK-wake record](docs/ok-wake-milestone.json)
+qualifies first-OK suppression and a distinct second-OK action on both models.
+The [G2 human check](docs/manual-keyboard-milestone.json) confirms `lu` + Done,
+reopen, then `ma` + Back retains `luma` with no second keypad. Its native trace
+also records one safely drained same-batch closing-key release. Broader dismissal
+races, C2 physical typing, performance and retained updates remain separate
+acceptance gates. One G2 attempt exited on early focus loss before readiness;
+cold-entry reliability remains under investigation. The
 [parallel delivery plan](docs/parallel-development.md) assigns implementation,
 independent review and per-TV validation without concurrent device ownership.
 The [guidance-read milestone](docs/guidance-read-milestone.json) adds isolated
 ordinary-app and native focus/scroll proof for guidance volume, pitch and speed
 on both TVs. These are read-only choices; retained previews are unchanged.
+The next [optional Sound read group](docs/sound-read-design.md) is integrated
+and host-tested only; ordinary-app access and native layout remain unqualified.
 
 The [Inputs detail milestone](docs/inputs-detail-milestone.json) adds a native
 two-column source grid and graphite detail pane, matched to the concept. Both TVs
