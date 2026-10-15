@@ -28,6 +28,8 @@ pub mod performance;
 
 pub mod control_reads;
 
+pub mod control_capability;
+
 pub mod pointer_speed;
 
 pub mod pointer_size;
