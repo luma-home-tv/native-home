@@ -89,10 +89,27 @@
     "independent_per_contact_utc_telemetry": false,
     "full_frame_visual_review": {
       "frames_reviewed": 4,
-      "initial_and_removed_header_and_labels_present": true,
-      "refresh_frames_missing_some_header_and_app_label_text": true,
-      "expected_green_and_blue_fixture_regions_present": true,
-      "missing_text_cause_known": false
+      "initial_preview_reading_corrected": true,
+      "missing_text_report_supported_by_raw_pixels": false,
+      "headers_identical_across_all_four": true,
+      "header_region": [
+        96,
+        60,
+        1200,
+        136
+      ],
+      "header_rgb_sha256": "2dc0b0c047b5df14943d3e39e2a8f84ce137112ea25149123eb2cbacb30cdc38",
+      "b_and_c_vs_a_difference_bounds": [
+        758,
+        340,
+        988,
+        570
+      ],
+      "changed_rgb_pixels_each": 52832,
+      "unchanged_rgb_pixels_each": 2020768,
+      "every_pixel_outside_fixture_unchanged": true,
+      "independent_recheck_receipt_sha256": "6aaaff726e600d8709a011d514b13b57f3383c55a1d3a670252ed5256a6cf23c",
+      "original_frames_unchanged": true
     }
   },
   "independent_audit": {

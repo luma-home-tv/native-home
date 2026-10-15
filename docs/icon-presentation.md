@@ -27,12 +27,14 @@ Four build-entrypoint checks also pass.
 The [0.36 C2 proof](artwork-live-036.md) predates this presentation change. Its
 other cards deliberately showed initials because only the owned fixture was
 allowed through the live loader and its synthetic snapshot had no app artwork.
-That is not a C2-specific icon failure. The proof also exposed missing text in
-two refresh captures; complete-view correctness remains open.
+That is not a C2-specific icon failure. The initial missing-text report was
+incorrect: a [direct RGB recheck](artwork-live-036.md#correction-to-the-initial-visual-reading)
+confirms every pixel outside the updated fixture stayed unchanged.
 
-The new presentation still needs an isolated, looked-at native capture with
-transparent and non-square fixtures before normal promotion. Neither retained
-preview has been updated by this change. Production resource startup and
+The [isolated 0.37 G2 capture](icon-presentation-037.md) now qualifies synthetic
+transparent and non-square fixtures with looked-at native frames and clean
+removal. Normal promotion remains separate; neither retained preview has been
+updated by this change. Production resource startup and
 all-app live artwork remain separate work; this style change does not supply
 otherwise inaccessible icons.
 
@@ -57,8 +59,8 @@ placement receipts with integer pixel dimensions. Packaged snapshots, icons,
 branding and fonts are explicitly readable by the ordinary app even when their
 host source files are private.
 
-This candidate still requires a matching frozen ARM package, independent pixel
-checks and looked-at native frames, complete cleanup and preservation evidence.
-Its static fixtures cannot diagnose the earlier dynamic-refresh text loss alone.
+The subsequent [0.37 result](icon-presentation-037.md) records the matching
+frozen ARM package, independent pixels, looked-at frames and cleanup evidence.
+Its static fixtures do not qualify production live artwork or catalogue work.
 Focused Home variants, physical-panel appearance, production artwork startup
 and a retained update remain separate acceptance work.

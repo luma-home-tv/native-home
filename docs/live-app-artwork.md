@@ -10,9 +10,10 @@ The [0.35 resource proof](artwork-transfer-035.md) transferred and decoded one
 real icon from each of five observed installation classes. The
 [0.36 lifecycle proof](artwork-live-036.md) then exercised one owned fixture on
 C2 through same-path replacement, package update, removal and joined shutdown.
-It did not use the root broker. Missing text in two captured refresh frames
-leaves complete-view rendering open. The [startup design](artwork-startup-design.md)
-records the remaining production bootstrap boundary.
+It did not use the root broker. Direct RGB comparison confirms unchanged header
+and label pixels outside the updated fixture; the earlier missing-text reading
+was incorrect. The [startup design](artwork-startup-design.md) records the
+remaining production bootstrap boundary.
 
 Available icons should preserve their aspect ratio, alpha and source shape on
 black, without an added graphite plate. Only missing artwork uses the labelled

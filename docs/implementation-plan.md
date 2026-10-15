@@ -90,8 +90,11 @@ pure cache state has separate ownership/invalidation tests. The
 cache and main-thread textures for an owned fixture, covering initial artwork,
 same-path replacement, package revision, removal and joined shutdown. Other apps
 were deliberately excluded; initials in that test are not a C2 capability failure.
-Missing text in two refresh captures leaves complete-view correctness open.
-Next, qualify icon-only presentation and the production resource startup route,
+A direct RGB recheck withdraws the initial missing-text report: every pixel
+outside the updated fixture was unchanged. The isolated 0.37 G2 capture now
+qualifies synthetic icon-only alpha/aspect/fallback presentation with preserved
+checked state; normal promotion remains separate.
+Next, qualify the production resource startup route,
 then broader artwork coverage and a backed-up retained rollout. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.

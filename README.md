@@ -91,10 +91,10 @@ five real icon transfers and ordinary-process decodes, one per observed
 installation class, with clean removal and preserved checked state. Bounded cache
 state is implemented. The [0.36 isolated C2 lifecycle](docs/artwork-live-036.md)
 then verified an owned fixture through ordinary I/O, worker decode/cache, GL
-refresh and removal, with clean shutdown and preservation. Several text labels
-are absent from two captured refresh frames, so complete-view rendering remains
-unqualified. Production helper startup, all-app artwork and normal delivery
-remain unfinished. G2 retains 0.31.0 and C2 retains 0.20.0.
+refresh and removal, with clean shutdown and preservation. A direct RGB recheck
+confirms every pixel outside the fixture icon stayed unchanged; the initial
+missing-text report was incorrect and is corrected in that record. Production
+helper startup, all-app artwork and normal delivery remain unfinished. G2 retains 0.31.0 and C2 retains 0.20.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from

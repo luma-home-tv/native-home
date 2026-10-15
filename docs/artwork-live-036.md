@@ -72,13 +72,10 @@ interior measurements:
 
 The three captured interiors had distinct digests. Actual fixture PNG bytes and
 known raw RGBA were independently reconstructed; native decoded digests and
-source keys matched them. Root visually inspected lossless copies of all four
-captured frames: A and the removed phase show the full header and app labels,
-while B and C show the expected green/blue icons but omit several main-header
-and app-label texts. The icon-region lifecycle result remains valid; complete
-view rendering is not qualified. The cause of the missing text is not yet
-established. Focus and own preferences stayed unchanged through the
-three image phases. The final receipt reported four uploads, four deletes and
+source keys matched them. Focus and own preferences stayed unchanged through
+the three image phases. A later direct comparison of the original RGB bytes
+also verifies that every pixel outside the fixture icon is unchanged between
+A, B and C; see the correction below. The final receipt reported four uploads, four deletes and
 zero upload, deletion or observed GL errors. The worker joined without panic,
 resolved outstanding work and left no live textures, resident pixels, pending
 results, queued work or in-flight work. The native component reported 18,579 ms;
@@ -105,6 +102,25 @@ cleanup receipts. Its result hash is
 The [scoped milestone record](artwork-live-036-milestone.json) records the artifact
 identities and checks. Raw catalogues, frames, app details and household state
 remain private.
+
+## Correction to the initial visual reading
+
+An earlier reading of repeated image previews incorrectly reported missing
+header and app-label text in B and C. Direct checks of the original P6/RGB
+bytes contradict that reading: each differs from A at exactly 52,832 pixels,
+all inside the fixture rectangle `[758, 340, 988, 570]`. The other 2,020,768
+pixels are identical, including all header, logo and label content. The
+header region `[96, 60, 1200, 136]` is byte-identical across A/B/C/removal and
+all six later 0.37 frames, with SHA-256
+`2dc0b0c047b5df14943d3e39e2a8f84ce137112ea25149123eb2cbacb30cdc38`.
+
+The independent direct-byte recheck and a separate coordinator replay agree;
+the saved recheck receipt SHA-256 is
+`6aaaff726e600d8709a011d514b13b57f3383c55a1d3a670252ed5256a6cf23c`.
+The original frames and 912-check lifecycle audit are unchanged. The missing-text
+report is withdrawn; these bytes do not justify a text-renderer fix. This
+controlled pixel-preservation result is still narrower than complete product
+or physical-panel acceptance.
 
 ## Remaining scope
 
