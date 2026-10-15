@@ -551,6 +551,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut last_performance_snapshot = Duration::ZERO;
     let mut reason = "capture_complete";
     if !capture_only {
+        if interactive {
+            plx_machine::idle::set_enabled(true);
+            plx_machine::idle::wake();
+        }
         reason = "timeout";
         while !session.expired(start.elapsed()) && !shell.should_exit() {
             if performance_proof && start.elapsed() >= Duration::from_secs(240) {
@@ -560,6 +564,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let current = Instant::now();
             let dt = (current - last).as_secs_f32().clamp(0.001, 0.05);
             last = current;
+            if interactive {
+                plx_machine::idle::frame_begin(dt);
+            }
             now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
             #[cfg(target_arch = "arm")]
@@ -573,6 +580,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(m) = &mut performance {
                         m.input(e.key, start.elapsed());
                     }
+                }
+                if interactive && matches!(e.kind, 2..=6 | 9) {
+                    plx_machine::idle::wake();
                 }
                 events = events.saturating_add(1_u32);
                 // Only app-local input wakes this canvas; Home/power/volume stay LG-owned.
@@ -721,7 +731,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         idle_presentations = idle_presentations.saturating_add(1);
                         idle_blanked = true;
                     }
-                } else {
+                } else if !interactive || plx_machine::idle::should_present(now) {
                     let draw_start = Instant::now();
                     shell.draw();
                     let draw_elapsed = draw_start.elapsed();
@@ -748,7 +758,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     if let Some(m) = &mut performance {
                         m.presented(start.elapsed(), draw_elapsed, swap_start.elapsed());
                     }
+                    if interactive {
+                        plx_machine::idle::note_present(now);
+                    }
                     idle_blanked = false;
+                } else if let Some(m) = &mut performance {
+                    m.suspended();
                 }
                 if interactive && !ready_written {
                     let ready = serde_json::json!({"interactive":true,"uid":unsafe{libc::geteuid()},"renderer":window.renderer,"scripted_actions":false,"capture_proof":session_capture,"idle_after_seconds":native_home::session::IDLE_AFTER.as_secs()});

@@ -1001,6 +1001,7 @@ impl Shell {
         }
     }
     fn rebuild(&mut self, page: Page) {
+        plx_machine::idle::invalidate();
         if page != Page::Applications {
             self.menu = None;
         }
@@ -1257,6 +1258,8 @@ impl Shell {
             .refresh(&self.snapshot.applications, &self.snapshot.launch_ids);
         self.refresh_shown_data(&before);
         self.refresh_control_breadcrumb();
+        // Refresh validity/status chrome even when values themselves are unchanged.
+        plx_machine::idle::invalidate();
     }
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
@@ -1276,6 +1279,7 @@ impl Shell {
                         .is_some_and(|rows| rows.iter().any(|r| r.available))
             });
             if due {
+                plx_machine::idle::invalidate();
                 let before = self.snapshot.clone();
                 live::expire(&mut self.snapshot, fresh, now);
                 self.refresh_shown_data(&before);
@@ -1295,6 +1299,7 @@ impl Shell {
         {
             return;
         }
+        plx_machine::idle::invalidate();
         self.control_breadcrumb = match page {
             Some(Page::Picture) if current => cstr(&format!(
                 "{} / {} / {}",
@@ -1390,6 +1395,7 @@ impl Shell {
     }
     pub fn set_clock(&mut self, view: &crate::clock::View) {
         if self.clock != *view {
+            plx_machine::idle::invalidate();
             self.clock_time = cstr(&view.time);
             self.clock_source = cstr(&view.source);
             self.clock = view.clone();
@@ -1479,6 +1485,7 @@ impl Shell {
     }
     fn moved(&mut self, outcome: plx_ui::focus::Outcome<u32>) {
         if let plx_ui::focus::Outcome::Moved { from, to, by } = outcome {
+            plx_machine::idle::invalidate();
             if let Some(index) =
                 category_key(to.elem).filter(|_| self.surface.control_page.is_some())
             {
@@ -2658,6 +2665,9 @@ impl Shell {
         &self.prefs
     }
     pub fn storage_notice(&mut self, message: &str) {
+        if self.status.to_str().ok() != Some(message) {
+            plx_machine::idle::invalidate();
+        }
         self.status = cstr(message);
     }
     pub fn take_preferences_changed(&mut self) -> bool {
