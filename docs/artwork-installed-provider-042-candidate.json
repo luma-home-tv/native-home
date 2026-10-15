@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "date": "2026-10-15",
+  "status": "Proof-only source and ARM compilation candidate; renderer activation/native provider unqualified",
+  "version": "0.42.0",
+  "functional_source_revision": "f70bf827993eb415d1cb48e9f4153be99310d3a8",
+  "ui": {
+    "bytes": 3602896,
+    "name": "home-preview",
+    "sha256": "b16268aa76ae06977294164335fb2fcd3dbd50007dcdf1892a82a27cac7b251a"
+  },
+  "helper": {
+    "bytes": 848056,
+    "name": "artwork-broker-startup-proof",
+    "sha256": "44d1dacd5719ef8ac5955499cd3259b88b9dfadc8df3fc86fc6923714ede5fc0"
+  },
+  "actual_ui_build_receipt_sha256": "0b03a945dd10eac32198d99d6a803e43cf928c75497852969664ed43a7ca0aa1",
+  "actual_helper_build_receipt_sha256": "ddb7869f8c7b023633b8ad0efa4f3ee3b1165038dc91e15ca139f79c7529a76b",
+  "selected_source_inputs": 94,
+  "two_arm_receipts_same_snapshot": true,
+  "host_checks": {
+    "library_tests": 387,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "build_provenance_framework_package_tests": 35,
+    "controlled_provider_tests": 9,
+    "new_runtime_budget_tests": 3,
+    "installed_resource_sequence_test": 1
+  },
+  "source_scope": {
+    "proof_only": true,
+    "installed_reads_per_session": 1,
+    "legacy_operator_read_limit": 5,
+    "fixed_context_gets": 3,
+    "fixed_catalogue_gets": 2,
+    "root_helper_bundled_in_app": false,
+    "boot_hooks_or_service_policy_changes": false
+  },
+  "worker_deadlines_seconds": {
+    "existing_default": 2,
+    "maximum_explicit": 30,
+    "hard_sdk_kernel_or_join_bound_qualified": false
+  },
+  "ordinary_renderer_activated": false,
+  "provider_native_run_performed": false,
+  "new_test_package_installed": false,
+  "normal_retained_version": "0.37.0",
+  "normal_updated": false,
+  "c2_contacted": false,
+  "resource_provider_qualified": false,
+  "production_startup_qualified": false,
+  "physical_input_or_performance_qualified": false,
+  "next_step": "Wire an isolated Proof renderer mode to the actual provider/worker/runtime and admit one combined G2 run with visible real icons, operation evidence and complete cleanup before Preview promotion."
+}

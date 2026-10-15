@@ -52,6 +52,14 @@ positive startup and other rejection/reliability coverage. Historical 0.40/0.41
 carriers and artifacts remain pinned to their source and package. Resource and
 normal loader integration still need their own native qualification.
 
+The 0.42 source in `docs/artwork-installed-provider-042.md` adds one installed
+Proof resource read per session and a worker Provider with joined completion,
+full SourceKey/readback checks and per-instance quarantine. It extends the
+protected Proof Core reader to the two fixed catalogue GETs. Host checks and both
+ARM builds pass; renderer activation and a combined native provider run remain
+pending. No 0.42 package is installed and Preview remains 0.37. Do not promote the
+historical 0.41 guards into proof of the new resource/renderer path.
+
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
 coordinator may run isolated tests under the existing C2 lease, preserving its

@@ -62,7 +62,13 @@ joins, unknown-child quarantine and parser isolation. Runtime tests exercise
 actual worker deadlines and delayed/cancelled results with the bounded decoder.
 These checks do not call HBC or establish device rendering through this provider.
 
-ARM checks must pass before the combined Proof mode can be admitted.
+Both ARM builds pass from functional source
+`f70bf827993eb415d1cb48e9f4153be99310d3a8`, sharing all 94 selected inputs and the
+pinned framework. The [compiled candidate record](artwork-installed-provider-042-candidate.json)
+binds the actual binaries and receipts. The existing target-feature stability
+warning remains. The ordinary provider is not activated in the renderer, and
+these binaries have not been deployed as a 0.42 test package.
+
 That mode must exercise real live catalogue sources through this provider into
 visible native textures, preserve focus and favourites, reconcile helper/child
 completion, and verify full temporary removal. The shipping Preview profile,
