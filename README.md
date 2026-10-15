@@ -102,8 +102,9 @@ helper startup and all-app live artwork delivery remain unfinished. The
 received HBC's bare true response from the ordinary G2 app and passed complete
 isolated removal/preservation checks; it did not launch a broker. The
 [0.40 installed startup component](docs/artwork-startup-040.md) subsequently
-completed one protected Root Identify/Finish exchange. Its harness observation
-failed; separate recovery verified complete cleanup/preservation. It adds no
+completed two serial protected Root Identify/Finish exchanges with fresh process
+identities. The first harness observation failed and separate recovery completed;
+the second corrected driver passed with complete cleanup/preservation. It adds no
 resource access or retained loader. G2 now
 retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)

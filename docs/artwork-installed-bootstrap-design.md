@@ -1,8 +1,9 @@
 # Installed broker startup candidate, 0.39
 
-Status: one [isolated 0.40 native startup/exchange](artwork-startup-040.md)
-qualified, with the operator observation failure and completed recovery recorded
-separately. Production/resource startup remains unfinished. The retained G2
+Status: two serial [isolated 0.40 native startup/exchanges](artwork-startup-040.md)
+qualified with fresh app/helper identities. The first operator observation
+failure and recovery remain recorded separately; the second corrected driver
+passed. Production/resource startup remains unfinished. The retained G2
 dashboard remains 0.37.0. This candidate adds no boot
 hook, Home interception, service registration, LS2 policy or protected TV setter.
 

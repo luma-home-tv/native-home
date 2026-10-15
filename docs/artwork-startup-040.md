@@ -1,12 +1,13 @@
-# Installed startup 0.40: native completion and separate cleanup
+# Installed startup 0.40: two independent serial sessions
 
-One isolated G2 native startup component is now qualified: the ordinary app
-requested its single fixed helper command through existing HBC, independently
-enrolled with the protected Root helper, and completed Identify/Finish, clean
-EOF and matching HBC command completion. The helper's two context snapshots
-qualified all six fixed Core GET children. This establishes this isolated
-startup/exchange; resources, repeated-session reliability and the normal loader
-remain unqualified. The retained G2 dashboard remains **0.37.0**. C2 was untouched.
+Two independent serial G2 startup exchanges are now qualified. In each, the
+ordinary app requested one fixed helper command through existing HBC and
+completed Identify/Finish, clean EOF and matching HBC completion with the
+protected Root helper. Admission came from protected policy and the measured
+kernel peer. Two Root context snapshots qualified all six fixed Core GET
+children per session. Resources, repeated-session reliability and the normal
+loader remain unqualified. The retained G2 dashboard remains **0.37.0**. C2 was
+untouched.
 
 ## Evidence and execution boundary
 
@@ -19,7 +20,7 @@ Helper ELF SHA-256:
 IPK SHA-256:
 `74d00030ff527e2e2c8d8e884b589978522b94cbc0441ac1d8047ff77a05266b`.
 
-The operator bound six raw ordinary-process records and seven raw Root-process
+Each session bound six raw ordinary-process records and seven raw Root-process
 records, including all four UID fields, stable PID/start, actual executable
 hash/path and Root namespace. Root socket/message credentials and the helper's
 own measurements agree with those independent observations. The protected
@@ -32,7 +33,8 @@ Identify and one matching Finish, closed its socket, and exited successfully.
 The ordinary app observed matching Finished, clean EOF, exact HBC String/base64
 output correspondence, the same helper/session in the final report, known
 context-child cleanup, and both actual worker joins. There was one HBC exec
-attempt; no startup retry or alternative privilege route was used.
+attempt per session; no automatic startup retry or alternative privilege route
+was used.
 
 Root code was installed only in a freshly created, separately protected product
 directory, after actual ancestor, free-space, ownership/mode, file/hash/inventory
@@ -42,7 +44,7 @@ exact protected helper and installation/Core pins; it admits only the three
 context GETs. Catalogue access remains denied to this role. See the
 [installed startup design](artwork-installed-bootstrap-design.md).
 
-## The operator run failed an observation race
+## First session: operator observation failed, recovery completed
 
 The original **device driver exited 1**. It checked for the terminal receipt
 before that file appeared, then observed the producer had exited and declared
@@ -67,9 +69,10 @@ the Proof registration, launchpoint, jail, runtime, state, mounts, upload and
 protected Root artifacts were absent. Both the device lease and private recovery
 agent/socket/directory were removed. No external Root PID was signaled.
 
-A new future harness performs one final bounded read of the same receipt after
+A corrected harness performs one final bounded read of the same receipt after
 observing producer absence. Five host regression cases cover that race and true
-missing-receipt cases. It was not used to rerun or rewrite this native session.
+missing-receipt cases. It was used for the separate second session below, without
+rerunning or rewriting the first session.
 
 A separate saved-only audit independently replayed both real ARM receipts,
 committed inputs, raw process records, HBC/base64 and Identify/Finish, both context
@@ -80,18 +83,48 @@ It grades native startup qualified, original operator run failed, and recovery
 complete. Raw evidence and household state remain private; the
 [sanitized milestone](artwork-startup-040-milestone.json) binds the artifacts.
 
+## Second session: independent startup and complete operator run
+
+The same frozen UI, helper, package and protected policy completed a second
+serial session. Its corrected **device driver exited 0**. Independent raw process
+records established fresh ordinary and Root PIDs and start times relative to the
+first session. This was a separate startup, not a retry within either session.
+
+The second session completed its one fixed HBC exec, Identify/Finish, clean EOF,
+matching HBC completion and both worker joins. Two successful Root context
+snapshots accounted for six distinct Core GET children and 16 executable
+measurements. The saved complete process/group and namespace scans independently
+confirmed absence before guarded Root-artifact removal.
+
+All 24 preservation/removal gates passed again. The complete retained 0.37 bundle
+and state preserved bytes, ownership and modes; five checked Core file hashes
+and all 20 sampled domains matched. Proof registration, launchpoint, runtime,
+jail, state, mounts, upload,
+the protected helper/configuration directory, lease and private agent were
+removed. LG Home was current, and no recovery or external Root signal was needed.
+
+A separate saved-only audit passed **29,526 assertions**, binding both ARM
+receipts and 91 committed inputs, the fresh 13 raw process records, complete
+session/child evidence and preservation/cleanup. Result SHA-256:
+`8e63dc6ce031367844aa0697b6dcea6a1600f52f5f7bf6cf84076c0d7af07e85`.
+It pins the first audit and explicitly retains the first operator's exit 1 and
+recovery exit 0. Only sanitized hashes and counts are published here; raw process
+identities and household data remain private.
+
 Host checks passed 369 library tests, five dashboard tests, Clippy with warnings
 denied, 27 build/provenance/framework helper tests, 14 carrier tests and 41 actual
-package-admission cases. Both ARM binaries compiled. The saved Home frame was
-visually inspected through an RGB-identical lossless conversion; this is not a
-physical-input, performance, power or panel qualification.
+package-admission cases. Both ARM binaries compiled. The first saved Home frame
+was visually inspected through an RGB-identical lossless conversion; the second
+session's frame is byte-identical. This is not a physical-input, performance,
+power or panel qualification.
 
 ## Remaining limits
 
-Only one installed Proof session is qualified. Independent sessions, duplicate
-startup, foreign/stale callers, interruption, unavailable HBC and unknown-outcome
-reconciliation still need their own device evidence. Core stdout digests and
-some removal/process-continuity facts remain source/receipt-bound; observations
+Two independent serial Proof sessions are qualified. This is not a reliability
+study. Duplicate/concurrent startup, foreign/stale callers, interruption,
+unavailable HBC and further unknown-outcome cases still need their own device
+evidence. Core stdout digests and some removal/process-continuity facts remain
+source/receipt-bound; observations
 are sequential, not atomic snapshots or an exhaustive system audit.
 
 HBC's existing broad, writable dependencies and pre-main loader/environment
