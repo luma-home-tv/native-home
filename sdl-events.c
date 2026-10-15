@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
+#include <stdio.h>
 typedef struct {uint32_t kind, key, repeat, source; int32_t scan, x, y, wheel; char text[256]; int32_t edit_start, edit_length;} HomeEvent;
 _Static_assert(sizeof(HomeEvent)==296,"HomeEvent ABI");
 #ifdef NATIVE_HOME_WEBOS
@@ -117,4 +118,7 @@ int native_home_test_text_push(const char *text,size_t length) {
 #endif
 }
 
-void native_home_text_trace(void) {SDL_LogSetPriority(SDL_LOG_CATEGORY_INPUT,SDL_LOG_PRIORITY_DEBUG);}
+static void text_trace_output(void *userdata,int category,SDL_LogPriority priority,const char *message) {
+    (void)userdata;fprintf(stderr,"SDL %d/%d: %s\n",category,(int)priority,message?message:"");fflush(stderr);
+}
+void native_home_text_trace(void) {SDL_LogSetOutputFunction(text_trace_output,NULL);SDL_LogSetPriority(SDL_LOG_CATEGORY_INPUT,SDL_LOG_PRIORITY_DEBUG);}

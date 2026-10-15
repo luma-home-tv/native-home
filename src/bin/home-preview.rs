@@ -2163,6 +2163,16 @@ fn text_input_trial(
         shell.focus_drawer_control(2);
         drawer_tap(shell, now);
         shell.text_edit(&plx_machine::machine::TextEdit::Clear);
+        // A real search opens after SDL has pumped startup registry/window events.
+        phase(&format!("drain-{cycle}"))?;
+        for _ in 0..64 {
+            let Some(e) = poll() else {
+                break;
+            };
+            if kinds.len() < 64 {
+                kinds.push(e.kind);
+            }
+        }
         let deadline = Instant::now() + Duration::from_secs(8);
         while window.keyboard_status().focused == 0 && Instant::now() < deadline {
             while let Some(e) = poll() {
