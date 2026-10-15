@@ -97,7 +97,11 @@ outside the updated fixture was unchanged. The isolated 0.37 G2 capture now
 qualifies synthetic icon-only alpha/aspect/fallback presentation with preserved
 checked state. Its [backed-up normal G2 delivery](retained-preview-037.md) then
 verified real packaged artwork and the normal loop across two launches.
-Next, qualify the production resource startup route, then broader live artwork
+The [0.38 read-only capability check](artwork-startup-capability-038.md) now
+qualifies one ordinary native HBC status request with clean isolated removal;
+the retained 0.37 installation and favourites remain untouched. It does not
+qualify a Root child or production startup. Next, qualify the production
+resource startup route, then broader live artwork
 coverage and a separately admitted retained integration. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.

@@ -29,6 +29,11 @@ are recorded in `docs/retained-preview-037.md`. Historical drivers pinned to
 0.31.0 must remain historical; prepare a fresh guarded candidate for later tests
 and preserve the current installation and favourites.
 
+The isolated 0.38.0 check in `docs/artwork-startup-capability-038.md` qualifies one
+ordinary native HBC `checkRoot` request and complete temporary cleanup. It did
+not update the retained app, launch an artwork broker or qualify production
+startup. Keep that boundary explicit when planning subsequent artwork work.
+
 The G2 is the primary device. The user explicitly reopened isolated C2 testing on
 2026-10-15 until 20:30 Europe/London (19:30 UTC). Within that dated window the
 coordinator may run isolated tests under the existing C2 lease, preserving its

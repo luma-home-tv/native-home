@@ -97,7 +97,10 @@ then verified an owned fixture through ordinary I/O, worker decode/cache, GL
 refresh and removal, with clean shutdown and preservation. A direct RGB recheck
 confirms every pixel outside the fixture icon stayed unchanged; the initial
 missing-text report was incorrect and is corrected in that record. Production
-helper startup and all-app live artwork delivery remain unfinished. G2 now
+helper startup and all-app live artwork delivery remain unfinished. The
+[0.38 read-only native capability check](docs/artwork-startup-capability-038.md)
+received HBC's bare true response from the ordinary G2 app and passed complete
+isolated removal/preservation checks; it did not launch a broker. G2 now
 retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
