@@ -64,6 +64,27 @@ pub struct Outcome {
     pub admitted: bool,
     pub verified: bool,
     pub detail: String,
+    pub wire_format: Option<Encoding>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Encoding {
+    Integer,
+    DecimalString,
+}
+impl Encoding {
+    #[cfg(any(test, target_arch = "arm"))]
+    fn encode(self, level: Level) -> Value {
+        match self {
+            Self::Integer => Value::from(level.value()),
+            Self::DecimalString => Value::from(level.value().to_string()),
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Reading {
+    level: Level,
+    encoding: Encoding,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Op {
@@ -72,7 +93,7 @@ pub enum Op {
     Windows,
     Value,
     Descriptor,
-    Set(Level),
+    Set(Level, Encoding),
 }
 pub trait Platform {
     fn call(&mut self, op: Op) -> Result<Value, String>;
@@ -85,7 +106,7 @@ fn get<P: Platform>(p: &mut P, op: Op) -> Result<Value, String> {
     }
     Ok(v)
 }
-fn current(value: &Value) -> Result<Level, String> {
+fn current(value: &Value) -> Result<Reading, String> {
     if value["category"].as_str() != Some("sound")
         || (!value["dimension"].is_null()
             && !value["dimension"].as_object().is_some_and(|o| o.is_empty()))
@@ -93,8 +114,15 @@ fn current(value: &Value) -> Result<Level, String> {
     {
         return Err("Audio description must be off in the global sound scope".into());
     }
-    Level::parse(&value["settings"]["audioDescriptionVolume"])
-        .ok_or("Unknown audio-description level".into())
+    let raw = &value["settings"]["audioDescriptionVolume"];
+    Ok(Reading {
+        level: Level::parse(raw).ok_or("Unknown audio-description level")?,
+        encoding: if raw.is_string() {
+            Encoding::DecimalString
+        } else {
+            Encoding::Integer
+        },
+    })
 }
 fn descriptor(value: &Value) -> Result<(), String> {
     let rows = value["results"]
@@ -175,6 +203,9 @@ fn owner<P: Platform>(p: &mut P, own: &str) -> Result<(), String> {
     Ok(())
 }
 pub fn inspect<P: Platform>(p: &mut P, own: &str) -> Result<Level, String> {
+    inspect_reading(p, own).map(|r| r.level)
+}
+fn inspect_reading<P: Platform>(p: &mut P, own: &str) -> Result<Reading, String> {
     if own != crate::identity::PROOF {
         return Err("Numeric trial requires isolated proof identity".into());
     }
@@ -199,22 +230,25 @@ pub fn apply<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -
         admitted: false,
         verified: false,
         detail: String::new(),
+        wire_format: None,
     };
     let result = (|| {
         if !enabled {
             return Err("Audio-description level write capability is disabled".into());
         }
         let start = std::time::Instant::now();
-        if inspect(p, own)? != change.expected {
+        let initial = inspect_reading(p, own)?;
+        if initial.level != change.expected {
             return Err("Audio-description level changed since selection".into());
         }
         owner(p, own)?;
-        if current(&get(p, Op::Value)?)? != change.expected {
+        if current(&get(p, Op::Value)?)? != initial {
             return Err("Audio-description level changed before commit".into());
         }
         if start.elapsed() > std::time::Duration::from_secs(4) {
             return Err("Audio-description level validation expired".into());
         }
+        out.wire_format = Some(initial.encoding);
         if change.value == change.expected {
             out.verified = true;
             return Ok(());
@@ -223,13 +257,18 @@ pub fn apply<P: Platform>(p: &mut P, own: &str, change: Change, enabled: bool) -
             return Err("Numeric trial permits one step only".into());
         }
         out.attempted = true;
-        let reply = p.call(Op::Set(change.value))?;
+        let reply = p.call(Op::Set(change.value, initial.encoding))?;
         if reply["returnValue"].as_bool() != Some(true) {
             return Err("Audio-description level setter refused".into());
         }
         out.admitted = true;
         for _ in 0..4 {
-            if current(&get(p, Op::Value)?)? == change.value {
+            if current(&get(p, Op::Value)?)?
+                == (Reading {
+                    level: change.value,
+                    encoding: initial.encoding,
+                })
+            {
                 owner(p, own)?;
                 out.verified = true;
                 return Ok(());
@@ -280,9 +319,9 @@ impl Platform for Native {
                 "luna://com.webos.service.settings/getSystemSettingDesc",
                 json!({"category":"sound","keys":["audioDescription","audioDescriptionVolume"]}),
             ),
-            Op::Set(value) => (
+            Op::Set(value, encoding) => (
                 "luna://com.webos.service.settings/setSystemSettings",
-                json!({"category":"sound","settings":{"audioDescriptionVolume":value.value()}}),
+                json!({"category":"sound","settings":{"audioDescriptionVolume":encoding.encode(value)}}),
             ),
         };
         let raw = self
@@ -318,6 +357,9 @@ mod tests {
         changed_before: bool,
         enabled_before: bool,
         gets: usize,
+        encoding: Encoding,
+        set_encodings: Vec<Encoding>,
+        drift_encoding: bool,
     }
     impl Fake {
         fn new() -> Self {
@@ -342,6 +384,9 @@ mod tests {
                 changed_before: false,
                 enabled_before: false,
                 gets: 0,
+                encoding: Encoding::DecimalString,
+                set_encodings: vec![],
+                drift_encoding: false,
             }
         }
     }
@@ -359,6 +404,9 @@ mod tests {
                 Op::Value => {
                     self.gets += 1;
                     if self.gets == 2 {
+                        if self.drift_encoding {
+                            self.encoding = Encoding::Integer;
+                        }
                         if self.changed_before {
                             self.level = Level::new(8).unwrap();
                         }
@@ -366,12 +414,14 @@ mod tests {
                             self.enabled = true;
                         }
                     }
-                    json!({"returnValue":true,"category":"sound","dimension":{},"settings":{"audioDescription":if self.enabled{"on"}else{"off"},"audioDescriptionVolume":self.level.value().to_string()}})
+                    json!({"returnValue":true,"category":"sound","dimension":{},"settings":{"audioDescription":if self.enabled{"on"}else{"off"},"audioDescriptionVolume":self.encoding.encode(self.level)}})
                 }
-                Op::Set(value) => {
+                Op::Set(value, encoding) => {
+                    self.set_encodings.push(encoding);
                     self.sets.push(value);
                     if self.mutate {
                         self.level = value;
+                        self.encoding = encoding;
                     }
                     json!({"returnValue":true})
                 }
@@ -515,6 +565,35 @@ mod tests {
             )
             .verified
         );
+        assert!(p.sets.is_empty());
+    }
+    #[test]
+    fn change_and_restore_preserve_the_original_wire_representation() {
+        for encoding in [Encoding::DecimalString, Encoding::Integer] {
+            let mut p = Fake::new();
+            p.encoding = encoding;
+            let before = p.encoding.encode(p.level);
+            let result = trial(&mut p);
+            assert!(result.verified);
+            assert_eq!(result.wire_format, Some(encoding));
+            let changed = p.encoding.encode(p.level);
+            assert_eq!(changed, encoding.encode(Level::new(11).unwrap()));
+            let restored = apply(
+                &mut p,
+                crate::identity::PROOF,
+                Change {
+                    expected: Level::new(11).unwrap(),
+                    value: Level::new(10).unwrap(),
+                },
+                true,
+            );
+            assert!(restored.verified);
+            assert_eq!(p.encoding.encode(p.level), before);
+            assert_eq!(p.set_encodings, vec![encoding, encoding]);
+        }
+        let mut p = Fake::new();
+        p.drift_encoding = true;
+        assert!(!trial(&mut p).attempted);
         assert!(p.sets.is_empty());
     }
 }
