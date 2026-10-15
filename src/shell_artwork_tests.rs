@@ -274,6 +274,48 @@ fn pixels(red: u8) -> String {
 }
 
 #[test]
+fn replaced_visible_pixels_invalidate_even_when_backend_reuses_the_same_handle() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = shell(&[A]);
+    assert_eq!(controls.started().app_id, A);
+    controls.release(40, 1);
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while value(&shell, "/gl/uploads") < 1 {
+        shell.pump_artwork();
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    let old = texture(&shell, A);
+    assert!(old.0 > 0);
+    shell.artwork_gl.reuse_test_handle(old.0);
+    shell.artwork.as_mut().unwrap().request_refresh(A);
+    shell.pump_artwork();
+    assert_eq!(controls.started().app_id, A);
+    let _ = plx_machine::idle::take_page_damage();
+    controls.release(200, 2);
+    while value(&shell, "/gl/uploads") < 2 {
+        shell.pump_artwork();
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    assert_eq!(
+        texture(&shell, A),
+        old,
+        "a reused numeric handle cannot signal changed pixels"
+    );
+    assert_eq!(
+        shell.artwork_target(A, true).unwrap()["rgba_sha256"],
+        pixels(200)
+    );
+    assert!(
+        plx_machine::idle::take_page_damage(),
+        "new visible pixels must schedule a frame"
+    );
+    let done = shell.finish_live_artwork().unwrap();
+    assert_eq!(done["gpu_cleanup_qualified"], true);
+}
+
+#[test]
 fn asynchronous_pixels_preserve_armed_ok_focus_scroll_and_preferences_with_one_upload_per_tick() {
     let _serial = plx_base::testlock::serial();
     let (mut shell, controls) = shell(&[A, B]);

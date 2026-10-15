@@ -18,6 +18,11 @@ struct Metrics {
     next: u32,
 }
 impl Diagnostics {
+    #[cfg(test)]
+    pub(crate) fn reuse_test_handle(&self, handle: u32) {
+        assert!(handle > 0);
+        self.0.borrow_mut().next = handle - 1;
+    }
     pub fn receipt(&self) -> serde_json::Value {
         serde_json::to_value(&*self.0.borrow()).expect("GL metrics serialize")
     }

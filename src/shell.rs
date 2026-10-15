@@ -2115,7 +2115,7 @@ impl Shell {
                 .unwrap_or_default();
             if card.texture != next {
                 card.texture = next;
-                changed = true;
+                changed |= self.artwork_interest.0.contains(&card.id);
             }
         }
         changed
@@ -2141,6 +2141,7 @@ impl Shell {
         if let Some(key) = frame.changed {
             candidates.insert(0, key.source.app_id);
         }
+        let mut visible_pixels_changed = false;
         if runtime.active() && now >= self.artwork_retry_at {
             for id in candidates {
                 let Some(view) = runtime.resident(&id) else {
@@ -2155,14 +2156,20 @@ impl Shell {
                 }
                 // Exactly one backend upload attempt per frame, including a
                 // retry after a backend allocation failure.
-                if self.live_textures.install(&view).is_err() {
-                    self.artwork_upload_failures += 1;
-                    self.artwork_retry_at = now.saturating_add(5000);
+                match self.live_textures.install(&view) {
+                    Ok(crate::artwork_textures::InstallOutcome::Uploaded { .. }) => {
+                        visible_pixels_changed = self.artwork_interest.0.contains(&id);
+                    }
+                    Err(_) => {
+                        self.artwork_upload_failures += 1;
+                        self.artwork_retry_at = now.saturating_add(5000);
+                    }
+                    _ => {}
                 }
                 break;
             }
         }
-        if self.refresh_artwork_cards() {
+        if self.refresh_artwork_cards() || visible_pixels_changed {
             plx_machine::idle::invalidate();
         }
     }
@@ -2206,7 +2213,9 @@ impl Shell {
             self.live_textures.evict(key);
         }
         self.live_textures.clear();
-        self.refresh_artwork_cards();
+        if self.refresh_artwork_cards() {
+            plx_machine::idle::invalidate();
+        }
         let gl = self.artwork_gl.receipt();
         Some(
             serde_json::json!({"joined":finished.joined,"panicked":finished.panicked,

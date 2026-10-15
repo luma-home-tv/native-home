@@ -167,6 +167,9 @@ pub fn run(
                     shell.draw();
                     window.swap();
                 }
+                // Read the frame we just drew, before EGL can discard or
+                // replace the back buffer during a swap.
+                shell.draw();
                 let graphics = window.graphics_state();
                 if graphics.error != 0 {
                     return Err("Artwork frame has a GL error".into());
@@ -181,6 +184,7 @@ pub fn run(
                 }
                 let name = format!("artwork-target-{phase}.ppm");
                 window.capture(&output.join(&name))?;
+                window.swap();
                 let target = if index < 3 {
                     shell.artwork_target(&marker.target_id, true)
                 } else {
