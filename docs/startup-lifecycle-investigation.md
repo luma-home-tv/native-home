@@ -19,7 +19,28 @@ that focus would have returned. Increasing a startup grace period would therefor
 be speculative. The successful fourth human attempt used the same frozen binary;
 it establishes that the sequence can work, not that cold entry is reliable.
 
-## Next observation
+## Bounded follow-up
+
+The [0.26.0 G2 follow-up](startup-relaunch-milestone.json) now records two planned
+ordinary interactive sessions with independent startup observations. Each reaches
+a fresh focused Home endpoint beyond eight seconds of native runtime. The first
+opens the LG keyboard and leaves through a guarded programmatic LG Home launch;
+the second starts a distinct process from the same installation and unchanged
+saved preferences, then closes its keyboard and exits with network Back. Complete
+proof removal and retained/core/settings preservation were verified.
+
+The first host observer profile stopped after six records because it classified
+LG's exactly typed launch splash as unrelated. No navigation or second session
+followed, and cleanup completed. A separately versioned observer recognizes that
+system window only during the timed launch observation, while preserving strict
+prelaunch and input ownership checks. The window service supplies no target-app
+association; timing is correlation. The failed profile remains unaccepted.
+
+The native binary and its 500 ms departure policy were unchanged between these
+attempts. The earlier rare focus-loss exit did not recur. These two successful
+sessions establish the bounded sequence, rather than general startup reliability,
+continuous focus or the cause of that earlier exit. Further investigations use
+the same observation constraints:
 
 Use an isolated immutable interactive package and the ordinary startup path, with
 the existing passive native observer and a bounded independent host sampler:
@@ -32,8 +53,9 @@ the existing passive native observer and a bounded independent host sampler:
   material stays private. A diagnostic component's scripted captures cannot
   substitute for this actual-loop observation.
 - Preserve the 500 ms departure rule and the existing verified Settings-only
-  exception. Do not raise/relaunch the app, force Home, retain a hidden window
-  indefinitely or change LG services to obtain a passing run.
+  exception. Do not retry a failed entry, force Home as recovery, retain a hidden
+  window indefinitely or change LG services to obtain a passing run. A second
+  predetermined session begins only after a fully verified first departure.
 - Treat intervening use as an external departure. Close/remove only the owned
   proof and verify preserved state; record a partial result if the observation
   did not cover the transition. A run without the rare event cannot explain its

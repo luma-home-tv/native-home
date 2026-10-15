@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "status": "Bounded startup and same-install relaunch qualified in two predetermined ordinary native G2 sessions; broader startup reliability remains open",
+  "source": {
+    "functional_revision": "7f29884be4c5a0c48794e71110744676c78bb371",
+    "proof_version": "0.26.0",
+    "binary_sha256": "d63472f5264f6a2c696b1ef6bdddc2ea811771bfb9174582befd74dad22c71bf",
+    "ipk_sha256": "6bc801a1f5d9d075ff0f32bf5c01541316c33f469d7318a2463b4bd51a0a0565",
+    "native_source_changed_between_failed_and_successful_profiles": false
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "identity": "Isolated ordinary-app Proof identity",
+    "retained_version": "0.21.0",
+    "retained_modified": false
+  },
+  "validation": {
+    "independent_artifact_audit_checks_passed": 212,
+    "planned_sessions": 2,
+    "automatic_retries": 0,
+    "each_producer_live_four_uid_fields_start_identity_and_executable_hash_verified": true,
+    "second_producer_has_distinct_pid_and_start_identity": true,
+    "same_ordinary_identity": true,
+    "same_install_binary_metadata_and_saved_preferences_preserved": true,
+    "second_process_loaded_unchanged_saved_preferences": true,
+    "startup_keyboard_and_input": "No app input before startup observation finished; then guarded network navigation opens one LG keyboard in each session",
+    "sessions": [
+      {
+        "index": 1,
+        "scenario_checks_passed": 23,
+        "native_hold_elapsed_ms": 8105,
+        "sampler_query_records": 36,
+        "sampler_observed_span_seconds": 8.062487250004779,
+        "splash_window_observations": 1,
+        "terminal_exit": "window_hidden",
+        "keyboard": {
+          "opens": 1,
+          "stops": 1,
+          "dismissals": 0,
+          "failures": 0
+        },
+        "preserved_same_install": true
+      },
+      {
+        "index": 2,
+        "scenario_checks_passed": 25,
+        "native_hold_elapsed_ms": 8091,
+        "sampler_query_records": 37,
+        "sampler_observed_span_seconds": 8.035859708004864,
+        "splash_window_observations": 0,
+        "terminal_exit": "back_from_home",
+        "keyboard": {
+          "opens": 1,
+          "stops": 1,
+          "dismissals": 1,
+          "failures": 0
+        },
+        "preserved_same_install": true
+      }
+    ]
+  },
+  "observation_contract": {
+    "native_startup": "Focused visible Home readiness and a later fresh producer endpoint beyond eight seconds of native runtime; no input or editor during this interval",
+    "external_sampler": "Starts before ordinary launch and persists the first completed LG Home read before launch; foreground and window GETs are sequential and bounded",
+    "record_limits": {
+      "configured_seconds": 8,
+      "maximum_independent_queries": 64,
+      "minimum_pause_after_query_pair_seconds": 0.1
+    },
+    "clocks": "Each external query has host monotonic start/finish bounds. Native artifact retrieval has separate host bounds; clocks and service queries are not atomic",
+    "window_roles": "Exact application/window-type pairs for Luma CARD, LG Home CARD, LG screensaver SCREENSAVER and LG launch splash SPLASH; unrelated, unknown and malformed observations stop the profile",
+    "splash": "Rejected during prelaunch admission. One first-session splash window was temporally correlated after ordinary launch began; the reply contains no target-app association metadata",
+    "storage": "Private bounded JSON records are published atomically without clobbering existing files; samplers are joined before transport teardown",
+    "received_input_origin": "native_unclassified"
+  },
+  "departures": {
+    "first": "With the LG editor owned, the guarded host launches LG Home through its ordinary application API. Native window_hidden exit closes its SDK session; all bound processes are absent and Home is quiet before relaunch",
+    "second": "Same installed app starts a new process and loads its saved preferences. Guarded network Back closes the LG keyboard, then ordinary Back navigation exits from Home",
+    "home_interception": false,
+    "physical_home_or_back_test": false
+  },
+  "prior_attempt": {
+    "profile": "v1",
+    "accepted": false,
+    "independent_failure_audit_checks_passed": 42,
+    "first_session_completed_checks": 3,
+    "planned_checks": {
+      "first_session": 23,
+      "second_session": 25
+    },
+    "reason": "The strict initial sampler classified an exact LG splash window as unrelated and stopped after six records. The scenario rejected that partial observation",
+    "native_evidence": "The first producer was live-bound and reached a fresh focused Home endpoint beyond eight native seconds. No app navigation, text or keyboard input had begun",
+    "second_session_started": false,
+    "cleanup_verified": true,
+    "change_for_v2": "A separate versioned host sampler recognizes the exact splash window role and preserves prelaunch rejection and postlaunch time-only correlation. Native binary and frozen package are unchanged",
+    "cause_limit": "This was an observation-policy rejection; no application crash cause or splash target association is established"
+  },
+  "closeout": {
+    "scope": "Each completed test run at its closeout time",
+    "successful_run_preservation_checks_passed": 23,
+    "proof_runtime_package_catalogue_launchpoint_and_state_removed": true,
+    "both_verified_producer_and_all_bound_identity_processes_absent": true,
+    "checked_core_hashes_picture_audio_source_and_settings_preserved": true,
+    "retained_preview_binary_metadata_and_favourites_preserved": true,
+    "original_lg_home_foreground_verified": true,
+    "device_lease_released": true,
+    "private_host_agent_removed": true,
+    "exact_verified_upload_removed": true,
+    "recovery_required": false,
+    "reboot_required": false
+  },
+  "scope_limits": [
+    "Two successful predetermined sessions do not establish general cold-entry reliability or explain the earlier startup focus-loss observation.",
+    "Fresh native endpoints establish survival to at least eight seconds of runtime, not uninterrupted focus or eight seconds after readiness.",
+    "LG splash observations have timing correlation only; no exclusive target-app association, guaranteed cadence or complete compositor coverage is claimed.",
+    "First departure is programmatic LG Home launch; second close and exit use guarded network Back. This profile does not qualify physical input or typing.",
+    "No broader dismissal-race, service-failure transition, performance, reboot persistence, full TV functionality or retained-update admission follows from this profile.",
+    "C2 has not run this startup/relaunch profile."
+  ],
+  "retained_promotion": false
+}

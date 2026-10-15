@@ -106,12 +106,26 @@ The [G2 human record](manual-keyboard-milestone.json) adds current-build typing,
 Done, same-process reopen and Back with `luma` retained and no fallback keypad.
 One closing-key release was drained in the same SDL batch. Pointer, later-batch
 and broader dismissal races remain unqualified, as do C2 physical typing,
-explicit idle stop cause, same-install relaunch, performance and retained promotion.
+explicit idle stop cause, performance and retained promotion.
 One preceding G2 attempt exited on early focus loss before readiness; its cause
 and cold-entry reliability remain unresolved. The
 [startup investigation](startup-lifecycle-investigation.md) records the exact
 event/departure timing and the next bounded observation. The other incomplete attempts and
 the corrected host dismissal-counter mistake remain in the record.
+The [0.26.0 startup/relaunch record](startup-relaunch-milestone.json) now qualifies
+two predetermined G2 sessions through the actual loop: programmatic LG Home
+departure with the LG editor open, then a distinct process loading the same
+installed package and unchanged saved preferences. The second session closes
+the keyboard and exits through network Back. Both native identities, startup
+endpoints, independent window observations and removal/preservation checks pass.
+One earlier observation stopped on LG's splash classification; that failed
+attempt remains separate. No native departure-policy change was needed. The
+original rare focus-loss cause and general reliability remain open, as does
+this particular relaunch profile on C2.
+The next delivery step is the [backed-up G2 preview rollout](preview-rollout-plan.md):
+qualify installer rollback, preserve the retained installation/state and validate
+the normal app identity. The 0.26.0 normal package is prepared, with deployment
+still pending those checks.
 
 The [parallel plan](parallel-development.md) now lists the six broad remaining
 delivery stages, the immediate interactive-loop gate and the next parallel wave.

@@ -99,6 +99,11 @@ also records one safely drained same-batch closing-key release. Broader dismissa
 races, C2 physical typing, performance and retained updates remain separate
 acceptance gates. One G2 attempt exited on early focus loss before readiness;
 cold-entry reliability remains under investigation. The
+[G2 startup/relaunch record](docs/startup-relaunch-milestone.json) now adds two
+planned 0.26.0 sessions: programmatic LG Home departure with the keyboard open,
+then a new process from the same preserved installation and saved preferences.
+Both passed and were removed. This bounded observation does not explain the
+earlier focus loss or establish general cold-entry reliability. The
 [parallel delivery plan](docs/parallel-development.md) assigns implementation,
 independent review and per-TV validation without concurrent device ownership.
 The [guidance-read milestone](docs/guidance-read-milestone.json) adds isolated

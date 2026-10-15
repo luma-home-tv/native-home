@@ -15,9 +15,15 @@ suppression and a second distinct OK action on both. The
 [current G2 human check](manual-keyboard-milestone.json) covers typing/Done,
 same-process reopen/Back and one observed same-batch release drain, with no
 fallback keypad. These are bounded results, not full acceptance: C2 physical
-typing, pointer/later-batch dismissal races, same-install relaunch, performance
+typing, pointer/later-batch dismissal races, performance
 and retained promotion remain open. One failed G2 startup exited on early focus
-loss before readiness; investigate cold-entry reliability before promotion.
+loss before readiness; keep its unresolved cause and broader reliability explicit.
+The [0.26.0 G2 startup/relaunch record](startup-relaunch-milestone.json) now adds
+two planned actual-loop sessions: keyboard-active programmatic Home departure,
+then a new process loading the preserved installation/preferences and completing
+network Back close/exit. This profile remains unperformed on C2. Its successful
+bounded startup observations do not explain the earlier failure or establish
+general cold-entry reliability; no native departure policy was relaxed.
 
 The coordinator owns the interactive implementation and G2 lease. The background
 input/framework lane can review event ordering, fixtures and receipts without
@@ -170,6 +176,14 @@ naming its cause; an aggregate CPU or swap-duration change is not a diagnosis.
 Publish a new receipt tied to the exact source/binary/device and each observed
 scenario, with failures, skips, input origin and cleanup/restoration results.
 Keep raw device material private. Do not retroactively expand the earlier helper
-milestone. A retained-preview update requires the normal interactive acceptance
-above plus its own backed-up update/readback/favourites-preservation procedure;
+milestone. Full release admission requires the applicable interactive acceptance
+above and the remaining integration/performance work. A retained-preview trial
+also needs its own backed-up update/readback/favourites-preservation procedure;
 removing an isolated build proves neither that update nor full dashboard completion.
+
+The [preview rollout plan](preview-rollout-plan.md) defines the finite backed-up
+G2 trial: affected-path evidence, documented unchanged-path history, isolated
+installer rollback admission, fresh retained backups, normal-identity smoke and
+saved-state verification. It keeps broader release qualifications open instead
+of relabelling earlier physical results as new-binary proof. Full dashboard
+completion still requires the remaining acceptance and integration work.

@@ -133,11 +133,20 @@ both device jobs then overlapped under separate leases, followed by independent
 receipt review. Both proof packages were removed and retained previews preserved.
 Native stale/error transitions and retained integration remain separate gates.
 
+The [G2 startup/relaunch record](startup-relaunch-milestone.json) adds two planned
+0.26.0 actual-loop sessions, independent timed window observations and a new
+process loading unchanged saved state after programmatic LG Home departure.
+Implementation, sampler storage, independent review and receipt audit ran in
+parallel around one device owner. A failed first observer profile remains
+recorded; its corrected successor changes only host window classification.
+No native focus-loss policy or OLED protection changed. General startup
+reliability and the equivalent C2 profile remain open.
+
 The next waves are:
 
 | Wave | Coordinator / G2 | C2 validator | Independent review | Host-only implementation |
 | --- | --- | --- | --- | --- |
-| Finish input acceptance | Investigate startup focus-loss observation; qualify remaining dismissal-order and relaunch gaps. | Qualify physical typing when available and repeat relevant new immutable profiles with separate teardown. | Audit actual-loop hooks and receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
+| Finish input acceptance | Retain the startup investigation; qualify remaining dismissal-order gaps and prepare backed-up G2 preview promotion. | Qualify physical typing when available and repeat startup/relaunch independently with separate teardown. | Audit changed paths, rollback admission and actual-loop receipts; distinguish missing observations from passes. | Prepare controls coverage, pointer-size recovery fixtures and small visual proposals without changing the running candidate. |
 | Deliver useful controls and visual improvements | Integrate the next reviewed adapter/UI slice and freeze a new candidate. | Prepare independent regression recipes while host work proceeds; validate only after handoff. | Review fixed operation admission, failure/recovery and visual acceptance. | Implement disjoint operation modules or visual components under explicit ownership; central shell/live wiring has one owner. |
 | Qualify normal use and release | Validate app/Settings/HDMI handoffs and matched performance; perform backed-up rollout after acceptance. | Repeat relevant C2 workloads and preserve its independent source-restoration boundary. | Audit release evidence, limitations, privacy and generic upstream patch separation. | Prepare release documentation and upstream-ready generic framework changes while hardware tests run. |
 
