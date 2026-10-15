@@ -83,6 +83,9 @@ temporary native helper and restricted caller-binding proof. Host checks pass;
 the isolated G2 app/helper were cleanly removed with checked state preserved.
 The helper's anonymous bus registration was refused; the cross-jail exchange
 and privileged artwork operations remain unqualified.
+The [0.34 fixed context reader](docs/broker-context-reader-034.md) addresses that
+registration boundary using three pinned system-client GETs. Its host checks
+pass; native execution and connection qualification are pending.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from

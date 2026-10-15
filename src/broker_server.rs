@@ -1,9 +1,11 @@
 //! Temporary, Identify-only server. Started by the test operator over SSH,
-//! never by the app. It installs no service, reads no icons and executes no commands.
+//! never by the app. Fixed context GETs use the pinned installed system client.
+//! No caller-selected command or resource operation exists.
 #[cfg(any(target_arch = "arm", test))]
 mod proof {
+    use crate::broker_protocol as protocol;
     #[cfg(target_arch = "arm")]
-    use crate::broker_protocol::{self as protocol, Enrollment, PeerEvidence};
+    use crate::broker_protocol::{Enrollment, PeerEvidence};
     #[cfg(target_arch = "arm")]
     use std::fs::File;
     use std::fs::{Metadata, OpenOptions};
@@ -286,53 +288,20 @@ mod proof {
         }
         Ok(hash)
     }
-    #[cfg(target_arch = "arm")]
-    fn context(
-        bus: &plx_platform::webos::ls2::Registration,
-        deadline: std::time::Instant,
-    ) -> serde_json::Value {
-        use serde_json::json;
-        use std::time::{Duration, Instant};
-        let mut values = serde_json::Map::new();
-        for (name, uri, payload) in [
-            (
-                "system_info",
-                "luna://com.webos.service.tv.systemproperty/getSystemInfo",
-                json!({"keys":["modelName","firmwareVersion","sdkVersion"]}),
-            ),
-            (
-                "foreground",
-                "luna://com.webos.applicationManager/getForegroundAppInfo",
-                json!({}),
-            ),
-            (
-                "windows",
-                "luna://com.webos.surfacemanager/getForegroundWindowInfo",
-                json!({}),
-            ),
-        ] {
-            let left = deadline.saturating_duration_since(Instant::now());
-            let value = if left.is_zero() {
-                json!({"deadline":true})
-            } else {
-                match bus.call(
-                    uri,
-                    &payload.to_string(),
-                    left.min(Duration::from_millis(500)),
-                ) {
-                    Ok(raw) if raw.len() <= 65536 => {
-                        serde_json::from_str(&raw).unwrap_or_else(|_| json!({"parse_error":true}))
-                    }
-                    Ok(_) => json!({"oversize":true}),
-                    Err(_) => json!({"unavailable":true}),
-                }
-            };
-            values.insert(name.into(), value);
+    fn check_context(
+        value: &serde_json::Value,
+        expected_sha256: &str,
+    ) -> Result<(), protocol::Error> {
+        let reader = &value["_reader"];
+        if reader["kind"].as_str() != Some("fixed_core_luna_send")
+            || reader["program"].as_str() != Some("/usr/bin/luna-send")
+            || reader["approved"].as_bool() != Some(true)
+            || reader["qualified"].as_bool() != Some(true)
+            || reader["cleanup_known"].as_bool() != Some(true)
+            || reader["executable"]["sha256"].as_str() != Some(expected_sha256)
+        {
+            return Err(protocol::Error::Context);
         }
-        serde_json::Value::Object(values)
-    }
-    #[cfg(target_arch = "arm")]
-    fn check_context(value: &serde_json::Value) -> Result<(), protocol::Error> {
         protocol::validate_context(
             &value["system_info"],
             &value["foreground"],
@@ -455,11 +424,10 @@ mod proof {
         report["enrollment"] = serde_json::to_value(&enrolled)?;
         let before = peer(enrolled.client_pid)?;
         report["peer_at_start"] = serde_json::to_value(&before)?;
-        let bus = plx_platform::webos::ls2::register()
-            .map_err(|error| io::Error::other(error.to_string()))?;
-        let first_context = context(&bus, deadline);
+        let first_context =
+            crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
         report["context_at_start"] = first_context.clone();
-        check_context(&first_context)?;
+        check_context(&first_context, &enrolled.context_reader_sha256)?;
         enrolled.validate(now()?)?;
         let listener = Listener::bind(session)?;
         println!(
@@ -485,9 +453,10 @@ mod proof {
         }
         let before = peer(enrolled.client_pid)?;
         protocol::authorize(&enrolled, &connect, &packet.credentials, &before)?;
-        let before_context = context(&bus, deadline);
+        let before_context =
+            crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
         report["context_before"] = before_context.clone();
-        check_context(&before_context)?;
+        check_context(&before_context, &enrolled.context_reader_sha256)?;
         let after = peer(enrolled.client_pid)?;
         protocol::authorize(&enrolled, &connect, &packet.credentials, &after)?;
         if before != after
@@ -496,9 +465,10 @@ mod proof {
         {
             return Err(invalid("Identity or enrollment changed during Identify").into());
         }
-        let after_context = context(&bus, deadline);
+        let after_context =
+            crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
         report["context_after"] = after_context.clone();
-        check_context(&after_context)?;
+        check_context(&after_context, &enrolled.context_reader_sha256)?;
         let final_peer = peer(enrolled.client_pid)?;
         protocol::authorize(&enrolled, &connect, &packet.credentials, &final_peer)?;
         if after != final_peer {
@@ -535,6 +505,40 @@ mod proof {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn context_requires_the_pinned_reader_and_the_original_proof_policy() {
+            use serde_json::json;
+            let expected = "d".repeat(64);
+            let value = json!({"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"},
+                "foreground":{"returnValue":true,"appId":crate::identity::PROOF},
+                "windows":{"returnValue":true,"windows":[{"appId":crate::identity::PROOF,"windowType":"_WEBOS_WINDOW_TYPE_CARD"}]},
+                "_reader":{"kind":"fixed_core_luna_send","program":"/usr/bin/luna-send","approved":true,"qualified":true,"cleanup_known":true,"executable":{"sha256":expected}}});
+            assert!(check_context(&value, &expected).is_ok());
+            for key in ["approved", "qualified", "cleanup_known"] {
+                let mut bad = value.clone();
+                bad["_reader"][key] = json!(false);
+                assert!(check_context(&bad, &expected).is_err());
+                bad["_reader"].as_object_mut().unwrap().remove(key);
+                assert!(check_context(&bad, &expected).is_err());
+            }
+            for (key, replacement) in [
+                ("kind", json!("anonymous_bus")),
+                ("program", json!("/tmp/luna-send")),
+                ("executable", json!({"sha256":"e".repeat(64)})),
+            ] {
+                let mut bad = value.clone();
+                bad["_reader"][key] = replacement;
+                assert!(check_context(&bad, &expected).is_err());
+            }
+            let mut home = value.clone();
+            home["foreground"]["appId"] = json!("com.webos.app.home");
+            assert!(check_context(&home, &expected).is_err());
+            let mut covered = value.clone();
+            covered["windows"]["windows"].as_array_mut().unwrap().push(
+                json!({"appId":"com.webos.app.hdmi1","windowType":"_WEBOS_WINDOW_TYPE_CARD"}),
+            );
+            assert!(check_context(&covered, &expected).is_err());
+        }
         #[test]
         fn operator_barrier_accepts_only_fixed_complete_token_and_eof() {
             use std::io::Write;

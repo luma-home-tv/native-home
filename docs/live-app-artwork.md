@@ -23,6 +23,9 @@ The next [Identify-only broker candidate](artwork-broker-identify.md) tests a
 temporary operator-started native connection with kernel/process/context binding.
 It has no resource operation or production startup mechanism. Its result must
 precede any privileged artwork-read implementation.
+The subsequent [fixed context reader candidate](broker-context-reader-034.md)
+addresses the measured anonymous-registration refusal without changing the
+existing context authorization or TV permission policy.
 
 ## Admission experiment
 

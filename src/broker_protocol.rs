@@ -114,6 +114,9 @@ pub struct Enrollment {
     pub ui_sha256: String,
     pub broker_sha256: String,
     pub expires_unix: u64,
+    /// Root operator's independently measured installed context client. This
+    /// field is local enrollment data, never a caller-selected executable.
+    pub context_reader_sha256: String,
 }
 impl Enrollment {
     fn validate_identity(&self) -> Result<(), Error> {
@@ -123,6 +126,9 @@ impl Enrollment {
             &self.ui_sha256,
             &self.broker_sha256,
         )?;
+        if !hex(&self.context_reader_sha256, 64) {
+            return Err(Error::Hash);
+        }
         client(self.client_pid, self.client_uid)
     }
     /// Revalidate with a fresh clock before accept AND every RPC. Identity-only
@@ -307,6 +313,7 @@ mod tests {
             ui_sha256: m.ui_sha256,
             broker_sha256: m.broker_sha256,
             expires_unix: 190,
+            context_reader_sha256: "d".repeat(64),
         }
     }
     fn peer() -> PeerEvidence {
@@ -371,6 +378,31 @@ mod tests {
             parse_response(&serde_json::to_vec(&response).unwrap()),
             Ok(response)
         );
+    }
+    #[test]
+    fn root_enrollment_requires_an_exact_installed_context_client_digest() {
+        let mut value = serde_json::to_value(enrollment()).unwrap();
+        value
+            .as_object_mut()
+            .unwrap()
+            .remove("context_reader_sha256");
+        assert!(parse_enrollment(&serde_json::to_vec(&value).unwrap(), 100).is_err());
+        for hash in [
+            json!("d".repeat(63)),
+            json!("D".repeat(64)),
+            json!("g".repeat(64)),
+            json!(true),
+            json!(null),
+        ] {
+            value["context_reader_sha256"] = hash;
+            assert!(parse_enrollment(&serde_json::to_vec(&value).unwrap(), 100).is_err());
+        }
+        value["context_reader_sha256"] = json!("e".repeat(64));
+        assert!(parse_enrollment(&serde_json::to_vec(&value).unwrap(), 100).is_ok());
+        // Wire messages cannot carry this Root-only input or a path/operation.
+        let mut request = json!({"schema":1,"op":"identify","nonce":"a".repeat(32)});
+        request["context_reader_sha256"] = json!("e".repeat(64));
+        assert!(parse_request(&serde_json::to_vec(&request).unwrap()).is_err());
     }
     #[test]
     fn rejects_unknown_fields_operations_types_duplicates_and_extra_json() {
