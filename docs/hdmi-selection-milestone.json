@@ -1,0 +1,210 @@
+{
+  "code_revision": "2de44aa9a505fde4fc8b55c5a807ebf27115e44b",
+  "package_version": "0.19.0",
+  "client_tests": {
+    "passed": 100,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "implementation": [
+    "Inputs and Home source cards emit typed HDMI requests only after capability discovery and fresh input data",
+    "Normal retained source switching is enabled only for OLED55G26LA, firmware 23.25.55 / SDK 9.2.2; C2 remains gated",
+    "Each request revalidates firmware/model, known current-source readback, uncovered dashboard foreground and registered native inputcommon application version 1.0.0",
+    "Closed HDMI 1-4 app mapping is independently joined to EIM metadata; no URI, launch params, service/reset or arbitrary input can be supplied",
+    "Success requires both requested LG foreground app and independent EIM source equality; activate flags are not confirmation"
+  ],
+  "g2_ports": {
+    "1": {
+      "ordinary_uid": 6583,
+      "source_proof": {
+        "ordinary_uid": 6583,
+        "adapter_verified": true,
+        "independent_selected_source_changed": true,
+        "original_source_restored": true,
+        "no_setting_writes": true
+      },
+      "cleanup": {
+        "last_input_restored": true,
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_restored": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_files_byte_identical": true
+    },
+    "2": {
+      "ordinary_uid": 6583,
+      "source_proof": {
+        "ordinary_uid": 6583,
+        "adapter_verified": true,
+        "independent_selected_source_changed": true,
+        "original_source_restored": true,
+        "no_setting_writes": true
+      },
+      "cleanup": {
+        "last_input_restored": true,
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_restored": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_files_byte_identical": true
+    },
+    "3": {
+      "ordinary_uid": 6583,
+      "source_proof": {
+        "ordinary_uid": 6583,
+        "adapter_verified": true,
+        "independent_selected_source_changed": true,
+        "original_source_restored": true,
+        "no_setting_writes": true
+      },
+      "cleanup": {
+        "last_input_restored": true,
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_restored": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_files_byte_identical": true
+    },
+    "4": {
+      "ordinary_uid": 6583,
+      "source_proof": {
+        "ordinary_uid": 6583,
+        "adapter_verified": true,
+        "independent_selected_source_changed": true,
+        "original_source_restored": true,
+        "no_setting_writes": true
+      },
+      "cleanup": {
+        "last_input_restored": true,
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "selected_source_restored": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      },
+      "retained_files_byte_identical": true
+    }
+  },
+  "c2_boundary": {
+    "trial_version": "0.18.0",
+    "ordinary_source_selection_verified": true,
+    "exact_idle_baseline_restored": false,
+    "observations": [
+      "The initial current-input readout was ATV while no input app appeared in the running list and a different last physical input was cached",
+      "Closing the test-created input window did not reproduce that current-input readout; the default LG tuner launch selected DTV",
+      "This trial is not counted as complete source restoration proof",
+      "The recorded last physical preference and Home foreground were then restored through normal LG input launch; checked persistent settings/core files/retained preview and tuner readout were unchanged",
+      "The current-input readout after recovery matches the recorded last physical preference; the initial ATV observation remains unreproduced"
+    ],
+    "trial_cleanup": {
+      "last_input_restored": false,
+      "input_app_set_restored": false,
+      "test_paths_mounts_absent": true,
+      "test_state_absent": true,
+      "catalogue_absent": true,
+      "launchpoint_absent": true,
+      "retained_unchanged": true,
+      "core_unchanged": true,
+      "picture_unchanged": true,
+      "audio_unchanged": true,
+      "selected_source_restored": false,
+      "home_verified": true,
+      "previous_foreground_restored": true,
+      "tuner_getter_unavailable_reply_unchanged": true
+    },
+    "preference_recovery": {
+      "recorded_last_physical_input_restored": true,
+      "home_foreground": true,
+      "core_unchanged": true,
+      "picture_unchanged": true,
+      "audio_unchanged": true,
+      "retained_unchanged": true,
+      "tuner_binding_readout_unchanged": true,
+      "original_idle_current_readout_reproduced": false
+    },
+    "production_switching_enabled": false
+  },
+  "limits": [
+    "Source selection/foreground/readback proof does not establish live HDMI video, HDR, resolution, refresh rate, CEC behaviour or audible output",
+    "Video format remains unavailable; physical input, native numeric sliders, broader native edits, reboot and sustained performance remain incomplete",
+    "No native decoder, Home interception, boot hook, firmware, system library or jail-policy change"
+  ],
+  "privacy": "Raw source/channel states, running inventories, app labels/icons, favourites, proprietary LG source, addresses, credentials and captures remain private.",
+  "source_proof_binary_sha256": "44c6da41087d3e4a30cd3bd8d87bd13acaace9cd05064efd91b16fb5399a1598",
+  "source_proof_revision": "5785e73",
+  "reporting_only_delta": "Final release adds a source-switching capability boolean to the diagnostic/normal exit receipt; source-operation logic is unchanged.",
+  "g2_native_inputs_frame_inspected": true,
+  "deployed_binary_sha256": "2c1219015e26435efebfeb6a934f6d82ab2a70aace31ef664bb648584d849421",
+  "retained_updates": {
+    "g2": {
+      "version": "0.19.0",
+      "ordinary_uid": 5724,
+      "favourites_loaded": true,
+      "state": {
+        "last_input_cache_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "selected_source_unchanged": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      },
+      "no_screenshots": true,
+      "settings_writes": false,
+      "source_switching_enabled": true
+    },
+    "c2": {
+      "version": "0.19.0",
+      "ordinary_uid": 6249,
+      "favourites_loaded": true,
+      "state": {
+        "last_input_cache_unchanged": true,
+        "expanded_settings_unchanged": true,
+        "selected_source_unchanged": true,
+        "core_hashes_unchanged": true,
+        "picture_values_unchanged": true,
+        "audio_values_unchanged": true,
+        "lg_home_verified": true,
+        "previous_foreground_restored": true,
+        "saved_favourites_byte_identical": true
+      },
+      "no_screenshots": true,
+      "settings_writes": false,
+      "source_switching_enabled": false
+    }
+  }
+}

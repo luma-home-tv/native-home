@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.18.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.19.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -99,8 +99,16 @@ page commits only on OK and confirms through a separate read. Both TVs passed
 independent focus-only, temporary change and original-value restoration checks;
 physical pointer tracking remains unmeasured.
 
+The [HDMI selection milestone](docs/hdmi-selection-milestone.json) enables all four
+G2 source cards after separate ordinary-app selection/readback/restoration trials.
+Runtime admission checks firmware, registered inputcommon metadata and uncovered
+dashboard ownership. The C2 remains gated: its idle current-source baseline was
+not exactly reproduced, although its recorded last physical preference, Home,
+checked persistent settings and retained preview were recovered. HDMI video, HDR
+and format remain unverified.
+
 The preview remains isolated from LG Home, firmware, jail policy, media services,
-network configuration and OLED protections. HDMI switching remains gated and
+network configuration and OLED protections. HDMI switching is enabled on the verified G2 and gated on the C2;
 pointer speed has a verified native choice control; other adjustments remain
 read-only or LG-managed. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after

@@ -12,8 +12,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. Version 0.18.0 is installed on both devices; the
-[pointer-control record](pointer-control-milestone.json) is the latest scoped proof;
+current native interface. Version 0.19.0 is installed on both devices; the
+[HDMI selection record](hdmi-selection-milestone.json) is the latest scoped proof;
+the [pointer-control record](pointer-control-milestone.json) covers the first native editable setting;
 the [expanded control-readout record](control-readouts-milestone.json) covers the twenty added readings;
 the [LG Home return record](lg-home-return-milestone.json) covers the explicit rail shortcut;
 the [Inputs detail record](inputs-detail-milestone.json) covers source layout/readback;
@@ -44,7 +45,7 @@ and palette; a black background is not treated as proof of burn-in prevention.
 | Home | Clock/status header, immediate access to favourites and HDMI inputs, control-centre entry and LG Home return | Native Luma identity, clock/calendar, status rail and larger favourites/HDMI shelves and an explicit LG Home return verified on both TVs; view-all shortcuts remain |
 | Apps | Complete actionable app drawer, search/filter, pinning and dashboard-only ordering | Registered visible apps joined to launch points; stubs/hidden/invalid targets excluded; live updates and identity/focus checks pass; normal app launch enabled and isolated native target proof passed; All/Favourites and native keyboard search are implemented and captured on G2; modal pin/order menu and two-launch persistence are verified on both |
 | Favourites | Pin/unpin with held OK, save reliably, retain selection across changes | ARM pin/save/readback/relaunch/unpin verified; bounded background writer; reboot survival remains untested |
-| Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; C2 tuner restoration and live format/playback remain unverified, so production switching stays disabled |
+| Inputs | Four HDMI cards and a detail pane with distinct plug, signal and selected-source states; select through LG's normal source path | Two-column native cards/detail pane and independent EIM selected-source getter verified on both; separate G2 HDMI 4 → HDMI 1 trial confirmed source change and restoration; all four G2 ports now have independent selection/restoration trials and production selection in 0.19.0; C2 exact idle restoration and live format/playback remain unverified, so C2 selection stays gated |
 | Controls | Native category/detail pages, correct context, validated choices/ranges and access to the rest through LG Settings | Six-category/detail composition and read-only picture, sound and network refresh verified on both; all six LG-managed entries and native return proved on both models in 0.13.0; 20 descriptor-validated readouts added in 0.17.0 across Picture, Accessibility, General and Panel Care; native pointer-speed choice/commit/restoration proved on both in 0.18.0; native numeric sliders, broader verified edits and setting coverage remain |
 | Navigation | Remote focus, safe tap/hold, Back hierarchy, pointer and wheel | Shared-machine tests and scripted ARM navigation pass; injected Back reaches SDL and exits; physical remote/pointer/wheel proof remains |
 | Performance | Smooth transitions, bounded memory and render only when needed | Native Mali-G52 rendering and app-local black idle/wake proved; Native injected SDL navigation and bounded submission/CPU/RSS/idle-paint measurements now exist on both; physical latency, GPU/panel timing and stress memory remain unverified |
@@ -74,7 +75,7 @@ request. Physical input and full text/IME coverage remain to verify.
    drawer/shared-OK path now launch an isolated native test target with both
    adapter and independent foreground readback. Normal application launching is
    enabled; personal viewing accounts were not exercised. Finish C2 tuner-source
-   restoration and live HDMI proof before enabling production switching; both
+   restoration and live HDMI proof; G2 source selection is now enabled after its per-port trials; both
    TVs now have verified LG-managed section routes. Keep
    unknown/hidden/self targets, unvalidated operations and extra parameters
    rejected; an acknowledged request is not execution proof.

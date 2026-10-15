@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.18.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.19.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -42,8 +42,13 @@ signal and selected source are separate readings. The selected source comes from
 EIM's independent getter and can persist while another app is foreground. Missing,
 stale or unregistered source IDs are unavailable. Video format remains unavailable.
 The [Inputs detail record](inputs-detail-milestone.json) records native screens on
-both TVs and a separate, restored G2 switch trial. Production HDMI switching
-remains gated. Pointer speed now has a native control; other adjustments remain
+both TVs and an earlier restored G2 switch trial. The newer
+[HDMI selection record](hdmi-selection-milestone.json) enables source selection
+on the G2: focus a source card on Home or Inputs and press OK. LG handles the
+source window; relaunch Luma from LG Home afterward. The C2 remains read-only
+for source selection while exact idle-state restoration is unproven. Its last
+physical preference and LG Home were recovered after the experiment. Source
+selection proof does not establish live HDMI video/HDR, CEC behaviour or format. Pointer speed now has a native control; other adjustments remain
 read-only or LG-managed. Controls now shows a persistent six-category column beside the
 selected detail panel. Arrows preview categories; Right or OK enters the rows.
 Back returns through the category column to Home. Accessibility, General and

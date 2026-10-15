@@ -6,7 +6,7 @@ cards, generous spacing and a clear focus cue. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-Version 0.18.0 moves the running interface closer to those concepts. This is a
+Version 0.19.0 moves the running interface closer to those concepts. This is a
 progress map, not a claim that the complete concept is implemented.
 
 | Element | Native implementation | Remaining gap |
@@ -16,7 +16,7 @@ progress map, not a claim that the complete concept is implemented.
 | Home | Four larger favourite cards across the visible shelf, uncropped artwork, names below cards, four HDMI cards below; separate LG Home return in the rail. | View-all shortcuts and long-title/empty-state polish. |
 | Apps | Native filters/search, three-column drawer beside a modal options panel, pin/unpin and earlier/later favourite ordering; stable focus and save/relaunch proof on both TVs. | Improve partially visible grid rows, long text and full text input; validate physical hold/pointer use. |
 | Header and rail status | TV-local clock/calendar; live network availability and sound-output summary. | Complete stale/error-state and long-status visual review. |
-| Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs. | Live video-format detail, C2 tuner-source handling/restoration and production switching; source artwork. |
+| Inputs | Two-column HDMI cards beside a graphite detail pane; separate cable/signal and independently read selected-source state. Native frames reviewed on both TVs; all four G2 source selections have independent readback/restoration proof and are enabled. | Live video/format, exact C2 idle-state restoration and C2 production switching; source artwork. |
 | Controls | Six categories beside a graphite detail panel, cached Picture context breadcrumb, independent scrolling and read-only Picture/Sound/Network values plus 20 descriptor-validated Picture/Accessibility/General/Panel Care readings; native Back/pointer and all six LG-managed section/entry routes proved on both TVs. | Native numeric sliders, broader verified edits/setting coverage and physical input proof. |
 
 The sound output, TV volume/mute and sound profile are distinct readings. TV
@@ -44,7 +44,7 @@ composition and passive reads on both TVs. A separate G2 test changed from HDMI 
 to HDMI 1 and independently confirmed the selected source, then restored the
 original source and foreground. It had no live HDMI signal. The C2 returned the
 TV tuner as its selected source; Luma leaves that unsupported selection detail
-unavailable. Switching remains disabled in the installed preview.
+unavailable. That record is historical; 0.19.0 enables G2 selection after the newer per-port trials.
 
 The [LG Home return record](lg-home-return-milestone.json) adds the concept's
 separate rail shortcut. It launches only the registered LG Home binary through
@@ -64,7 +64,14 @@ only OK commits. Both TVs passed independent focus-only, change and restoration
 reads, native frame review and complete removal/state checks. Physical Magic
 Remote tracking/acceleration remains unmeasured.
 
-Next design work should complete source actions/format detail and expand contextual native
+The [HDMI selection record](hdmi-selection-milestone.json) adds separate G2
+selection/restoration trials for all four ports. C2 selection remains gated. Its
+trial selected the requested port, but the default tuner return selected DTV
+instead of the original idle ATV readout. The recorded last physical preference
+and LG Home were recovered with the checked persistent state preserved; exact
+idle-state reproduction is unproven. No service reset is part of this change.
+
+Next design work should complete source/format detail and expand contextual native
 controls and read coverage, then review long text and physical navigation on
 both devices. HDMI switching,
 native setting writes, physical input coverage, reboot persistence and sustained
