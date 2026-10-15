@@ -31,7 +31,10 @@ impl Request {
             Action::OpenLgHome => Some(Self::LgHome {}),
             Action::OpenLgSettings => Some(Self::LgSettings {}),
             Action::OpenLgSettingsSection(section) => Some(Self::LgSettingsSection { section }),
-            Action::Inspect(_) => None,
+            Action::Inspect(_)
+            | Action::OpenPointerSpeed
+            | Action::SetPointerSpeed(_)
+            | Action::ClosePointerSpeed => None,
         }
     }
 }

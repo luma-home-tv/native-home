@@ -63,7 +63,7 @@ impl Catalogue {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Page { Home, Applications, Inputs, Controls, Picture, Sound, Network, Accessibility, General, PanelCare }
+pub enum Page { Home, Applications, Inputs, Controls, Picture, Sound, Network, Accessibility, General, PanelCare, PointerSpeed }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {
@@ -71,6 +71,9 @@ pub enum Action {
     RequestApplication(String),
     RequestInput(String),
     OpenLgHome,
+    OpenPointerSpeed,
+    SetPointerSpeed(crate::pointer_speed::Change),
+    ClosePointerSpeed,
     OpenLgSettings,
     OpenLgSettingsSection(SettingsSection),
 }
@@ -182,10 +185,15 @@ pub fn controls_form_for(settings: &[Setting], current: &Context, picture_route:
 }
 
 pub fn controls_form_for_section(settings: &[Setting], current: &Context, section_route: Option<SettingsSection>) -> Form<String, Action, Page> {
+    controls_form_with_pointer(settings,current,section_route,false)
+}
+pub fn controls_form_with_pointer(settings: &[Setting], current: &Context, section_route: Option<SettingsSection>, pointer_enabled:bool) -> Form<String, Action, Page> {
     let mut section = FormSection::new(Message::CurrentSettings.text());
     for setting in settings {
+        let editable=pointer_enabled && section_route==Some(SettingsSection::General) && setting.id=="pointerSpeed" && setting.available && setting.still_current(current)
+            && matches!(&setting.constraint,Some(ControlConstraint::Choices{active:true,values}) if values.len()==3 && crate::pointer_speed::Speed::ALL.iter().all(|s|values.iter().any(|v|v==s.wire())));
         let unavailable = !setting.available || !setting.still_current(current);
-        let detail = if !setting.available { "Reading unavailable".into() }
+        let detail = if editable {"Choose Slow, Normal or Fast".into()} else if !setting.available { "Reading unavailable".into() }
             else if unavailable { Message::UnavailableContext.text().into() }
             else if setting.protected { match &setting.constraint {
                 Some(ControlConstraint::Range {minimum, maximum, active, ..}) if *active => format!("Range {minimum} to {maximum} • LG-managed"),
@@ -195,8 +203,8 @@ pub fn controls_form_for_section(settings: &[Setting], current: &Context, sectio
             else { String::new() };
         let value = if unavailable { "Unavailable" } else { display_value(setting) };
         section = section.item_keyed(setting.id.clone(), RowKey(setting.focus_key), RowKind::Button,
-            Action::Inspect(setting.id.clone()), Row::new(&setting.label).detail(detail).value(value).server_value())
-            .disabled(unavailable || setting.protected);
+            if editable {Action::OpenPointerSpeed} else {Action::Inspect(setting.id.clone())}, Row::new(&setting.label).detail(detail).value(value).server_value().chevron(editable))
+            .disabled(unavailable || (setting.protected && !editable));
     }
     let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(route.focus_key()),
         RowKind::Button, if route == SettingsSection::Picture {Action::OpenLgSettings} else {Action::OpenLgSettingsSection(route)},

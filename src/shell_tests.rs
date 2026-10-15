@@ -1148,3 +1148,157 @@ fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_sett
         );
     }
 }
+
+fn pointer_data() -> serde_json::Value {
+    let mut raw = crate::live::tests::global_raw();
+    raw["replies"]["general_option_values"]["settings"]["pointerSpeed"] = "normal".into();
+    for d in raw["replies"]["general_option_desc"]["results"]
+        .as_array_mut()
+        .unwrap()
+    {
+        if d["key"] == "pointerSpeed" {
+            d["values"]["arrayExt"] = serde_json::json!(crate::pointer_speed::Speed::ALL
+                .map(|s| serde_json::json!({"value":s.wire(),"visible":true,"active":true})));
+        }
+    }
+    raw
+}
+fn pointer_shell() -> Shell {
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.apply_live(
+        &crate::live::parse(&pointer_data(), "com.example.self", 100, false),
+        100,
+    );
+    s.enable_pointer_editor(true);
+    s.open(Page::General);
+    assert!(s.focus_pointer_setting());
+    s
+}
+#[test]
+fn native_pointer_picker_only_commits_on_ok_and_back_or_movement_cancel_old_gestures() {
+    use crate::pointer_speed::{Change, Speed};
+    let _serial = plx_base::testlock::serial();
+    let mut s = pointer_shell();
+    let original = s.preferences().clone();
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    assert_eq!(s.page(), Page::PointerSpeed);
+    assert_eq!(focus(&s), TABLE_BASE + 1501);
+    assert!(s.surface.table.table.sections[0].rows[1].checked);
+    s.focus_pointer_choice(Speed::Slow);
+    assert!(s.take_requests().is_empty());
+    s.press(true, PressFrom::Key);
+    s.direction(Dir::Down);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert!(s.take_requests().is_empty());
+    s.back();
+    assert_eq!(s.page(), Page::General);
+    assert_eq!(focus(&s), TABLE_BASE + 141);
+    assert_eq!(s.preferences(), &original);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    s.focus_pointer_choice(Speed::Slow);
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    assert_eq!(
+        s.take_requests(),
+        vec![Action::SetPointerSpeed(Change {
+            expected: Speed::Normal,
+            value: Speed::Slow
+        })]
+    );
+    assert!(s.pointer_pending);
+    s.back();
+    s.pointer(200., 280., true);
+    assert_eq!(s.page(), Page::PointerSpeed);
+    assert!(s.take_requests().is_empty());
+    s.pointer_reply(
+        &crate::pointer_speed::Outcome {
+            change: Change {
+                expected: Speed::Normal,
+                value: Speed::Slow,
+            },
+            attempted: true,
+            admitted: true,
+            verified: true,
+            detail: String::new(),
+        },
+        350,
+    );
+    assert_eq!(s.page(), Page::General);
+    assert_eq!(s.pointer_value(), Some(Speed::Slow));
+    assert_eq!(s.preferences(), &original);
+}
+#[test]
+fn native_pointer_picker_withdraws_on_stale_metadata_and_rejects_previous_page_hits() {
+    use crate::pointer_speed::Speed;
+    let _serial = plx_base::testlock::serial();
+    let mut s = pointer_shell();
+    s.activate(
+        FocusKey {
+            entry: entry(s.page()),
+            elem: focus(&s),
+        },
+        false,
+    );
+    s.focus_pointer_choice(Speed::Slow);
+    let stale = FocusKey {
+        entry: entry(s.page()),
+        elem: focus(&s),
+    };
+    s.press(true, PressFrom::Key);
+    s.age_live(15_101);
+    s.press(false, PressFrom::Key);
+    settle(&mut s, 300);
+    assert_eq!(s.page(), Page::General);
+    s.activate(stale, false);
+    assert!(s.take_requests().is_empty());
+    assert!(s.pointer_value().is_none());
+}
+#[test]
+fn confirmed_pointer_value_cannot_be_rewound_by_a_read_cycle_started_before_the_commit() {
+    use crate::pointer_speed::{Change, Outcome, Speed};
+    let _serial = plx_base::testlock::serial();
+    let mut s = pointer_shell();
+    s.pointer_reply(
+        &Outcome {
+            change: Change {
+                expected: Speed::Normal,
+                value: Speed::Slow,
+            },
+            attempted: true,
+            admitted: true,
+            verified: true,
+            detail: String::new(),
+        },
+        200,
+    );
+    s.apply_live(
+        &crate::live::parse(&pointer_data(), "com.example.self", 150, false),
+        220,
+    );
+    assert_eq!(s.pointer_value(), Some(Speed::Slow));
+    let mut changed = pointer_data();
+    changed["replies"]["general_option_values"]["settings"]["pointerSpeed"] = "fast".into();
+    s.apply_live(
+        &crate::live::parse(&changed, "com.example.self", 250, false),
+        260,
+    );
+    assert_eq!(s.pointer_value(), Some(Speed::Fast));
+}

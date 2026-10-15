@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
 use crate::model::{
-    controls_form_for_section, Action, Application, Catalogue, Context, Page, Setting,
+    controls_form_with_pointer, Action, Application, Catalogue, Context, Page, Setting,
     SettingsSection,
 };
 
@@ -274,6 +274,7 @@ impl ScreenArg for Page {
             Self::Accessibility => "Accessibility",
             Self::General => "General",
             Self::PanelCare => "Panel care",
+            Self::PointerSpeed => "Pointer speed",
         })
     }
     fn same_instance(&self, other: &Self) -> bool {
@@ -472,7 +473,8 @@ fn root_tab(page: Page) -> Page {
         | Page::Network
         | Page::Accessibility
         | Page::General
-        | Page::PanelCare => Page::Controls,
+        | Page::PanelCare
+        | Page::PointerSpeed => Page::Controls,
         _ => page,
     }
 }
@@ -913,6 +915,10 @@ pub struct Shell {
     clock_source: CString,
     brand_texture: u32,
     navigation_textures: [u32; 4],
+    pointer_enabled: bool,
+    pointer_pending: bool,
+    pointer_expected: Option<crate::pointer_speed::Speed>,
+    pointer_confirmation: Option<(u32, crate::pointer_speed::Speed)>,
 }
 impl Shell {
     pub fn new(snapshot: Snapshot, mut prefs: Preferences) -> Self {
@@ -974,6 +980,10 @@ impl Shell {
             clock_source: cstr("TV time unavailable"),
             brand_texture: 0,
             navigation_textures: [0; 4],
+            pointer_enabled: false,
+            pointer_pending: false,
+            pointer_expected: None,
+            pointer_confirmation: None,
         };
         shell.rebuild(Page::Home);
         shell
@@ -1040,6 +1050,9 @@ impl Shell {
         if page != Page::Applications {
             self.menu = None;
         }
+        if page != Page::PointerSpeed {
+            self.pointer_expected = None;
+        }
         if self.menu.as_ref().is_some_and(|menu| {
             !self
                 .catalogue
@@ -1052,7 +1065,9 @@ impl Shell {
         self.input.cancel_press();
         self.surface = Self::blank(page);
         if root_tab(page) == Page::Controls {
-            if page != Page::Controls {
+            if page == Page::PointerSpeed {
+                self.control_category = Page::General;
+            } else if page != Page::Controls {
                 self.control_category = page;
             }
             self.surface.control_page = Some(self.control_category);
@@ -1085,6 +1100,11 @@ impl Shell {
                 }
             }
             Page::Inputs => "HDMI status • source switching disabled in this preview",
+            Page::PointerSpeed if self.pointer_pending => "Applying pointer speed…",
+            Page::PointerSpeed => "OK apply selection • Back cancel",
+            Page::General if self.pointer_enabled => {
+                "Pointer speed can be adjusted here • more controls in LG Settings"
+            }
             _ => "View only • setting changes remain available in LG Settings",
         });
         match page {
@@ -1141,16 +1161,55 @@ impl Shell {
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
                 self.surface.table.set(
-                    controls_form_for_section(
+                    controls_form_with_pointer(
                         settings,
                         &self.snapshot.context,
                         SettingsSection::from_page(detail),
+                        self.pointer_value().is_some() && !self.pointer_pending,
                     ),
                     None,
                 );
+                if page == Page::PointerSpeed {
+                    let mut choices = FormSection::new("POINTER SPEED");
+                    for (i, value) in crate::pointer_speed::Speed::ALL.into_iter().enumerate() {
+                        let mut row = Row::new(value.label());
+                        row.checked = self.pointer_expected == Some(value);
+                        choices = choices
+                            .item_keyed(
+                                value.wire().into(),
+                                RowKey(1500 + i as u32),
+                                RowKind::Choice,
+                                Action::SetPointerSpeed(crate::pointer_speed::Change {
+                                    expected: self
+                                        .pointer_expected
+                                        .unwrap_or(crate::pointer_speed::Speed::Normal),
+                                    value,
+                                }),
+                                row,
+                            )
+                            .disabled(self.pointer_pending || self.pointer_value().is_none());
+                    }
+                    choices = choices
+                        .item_keyed(
+                            "cancel".into(),
+                            RowKey(1510),
+                            RowKind::Button,
+                            Action::ClosePointerSpeed,
+                            Row::new("Cancel"),
+                        )
+                        .disabled(self.pointer_pending);
+                    self.surface.table.set(Form::new().section(choices), None);
+                }
                 // Known read-only state stays legible. The shared form binding remains
                 // disabled, so changing ink never enables an LG-managed operation.
-                if let Some(section) = self.surface.table.table.sections.first_mut() {
+                if let Some(section) = self
+                    .surface
+                    .table
+                    .table
+                    .sections
+                    .first_mut()
+                    .filter(|_| page != Page::PointerSpeed)
+                {
                     for (row, setting) in section.rows.iter_mut().zip(settings) {
                         if setting.protected
                             && setting.available
@@ -1315,12 +1374,29 @@ impl Shell {
         let before = self.snapshot.clone();
         let mut fresh = self.live_state.take().unwrap_or_default();
         live::merge(&mut self.snapshot, update, &mut fresh);
+        if let Some((stamp, value)) = self.pointer_confirmation {
+            if Freshness::current(Some(stamp), now)
+                && now.wrapping_sub(update.observed_ms) > now.wrapping_sub(stamp)
+            {
+                if let Some(row) = self
+                    .snapshot
+                    .settings
+                    .get_mut("general")
+                    .and_then(|rows| rows.iter_mut().find(|r| r.id == "pointerSpeed"))
+                {
+                    row.value = value.wire().into();
+                }
+            } else {
+                self.pointer_confirmation = None;
+            }
+        }
         self.live_state = Some(fresh);
         self.live_now = now;
         self.live_updates += 1;
         self.catalogue
             .refresh(&self.snapshot.applications, &self.snapshot.launch_ids);
         self.refresh_shown_data(&before);
+        self.validate_pointer_picker();
         self.refresh_control_breadcrumb();
         // Refresh validity/status chrome even when values themselves are unchanged.
         plx_machine::idle::invalidate();
@@ -1376,10 +1452,15 @@ impl Shell {
                 self.refresh_shown_data(&before);
             }
         }
+        self.validate_pointer_picker();
         self.refresh_control_breadcrumb();
     }
     fn refresh_control_breadcrumb(&mut self) {
-        let page = self.surface.control_page;
+        let page = if self.surface.page == Page::PointerSpeed {
+            Some(Page::PointerSpeed)
+        } else {
+            self.surface.control_page
+        };
         let current = self
             .live_state
             .as_ref()
@@ -1402,6 +1483,10 @@ impl Shell {
             Some(Page::Sound) => cstr("Sound readings • view only"),
             Some(Page::Network) => cstr("Connection status • view only"),
             Some(Page::PanelCare) => cstr("OLED protections stay managed by LG"),
+            Some(Page::PointerSpeed) => cstr("Choose a value • press OK to apply"),
+            Some(Page::General) if self.pointer_enabled => {
+                cstr("Pointer speed can be adjusted here")
+            }
             Some(Page::Accessibility) => cstr("Accessibility readings • LG-managed controls"),
             Some(_) => cstr("General readings • LG-managed controls"),
             None => cstr(""),
@@ -1477,6 +1562,102 @@ impl Shell {
             if input { fresh.inputs } else { fresh.catalogue },
             self.live_now,
         )
+    }
+    pub fn enable_pointer_editor(&mut self, enabled: bool) {
+        self.pointer_enabled = enabled;
+        self.control_caption_page = None;
+        self.rebuild(self.surface.page);
+    }
+    pub fn pointer_value(&self) -> Option<crate::pointer_speed::Speed> {
+        if !self.pointer_enabled
+            || !self.live_state.as_ref().is_some_and(|f| {
+                Freshness::current(
+                    f.controls
+                        .get(&crate::control_reads::Section::General)
+                        .copied(),
+                    self.live_now,
+                )
+            })
+        {
+            return None;
+        }
+        let row = self.snapshot.settings.get("general")?.iter().find(|r| {
+            r.id == "pointerSpeed" && r.available && r.still_current(&self.snapshot.context)
+        })?;
+        if !matches!(&row.constraint,Some(crate::model::ControlConstraint::Choices{active:true,values}) if values.len()==3 && crate::pointer_speed::Speed::ALL.iter().all(|s|values.iter().any(|v|v==s.wire())))
+        {
+            return None;
+        }
+        crate::pointer_speed::Speed::parse(&serde_json::json!(row.value))
+    }
+    pub fn focus_pointer_setting(&mut self) -> bool {
+        if self.surface.control_page != Some(Page::General)
+            || self.surface.page == Page::PointerSpeed
+            || self.pointer_value().is_none()
+        {
+            return false;
+        }
+        self.focus_special(TABLE_BASE + 141, GroupId(1));
+        true
+    }
+    pub fn focus_pointer_choice(&mut self, value: crate::pointer_speed::Speed) -> bool {
+        if self.surface.page != Page::PointerSpeed || self.pointer_pending {
+            return false;
+        }
+        let i = crate::pointer_speed::Speed::ALL
+            .iter()
+            .position(|s| *s == value)
+            .unwrap();
+        self.focus_special(TABLE_BASE + 1500 + i as u32, GroupId(1));
+        true
+    }
+    fn open_pointer_picker(&mut self) {
+        if let Some(value) = self.pointer_value() {
+            self.pointer_expected = Some(value);
+            self.rebuild(Page::PointerSpeed);
+            self.focus_pointer_choice(value);
+        }
+    }
+    fn close_pointer_picker(&mut self) {
+        self.pointer_expected = None;
+        self.rebuild(Page::General);
+        self.focus_pointer_setting();
+    }
+    fn validate_pointer_picker(&mut self) {
+        if self.surface.page == Page::PointerSpeed
+            && !self.pointer_pending
+            && self.pointer_expected != self.pointer_value()
+        {
+            self.close_pointer_picker();
+            self.status = cstr("Pointer speed changed • choose again");
+        }
+    }
+    pub fn pointer_reply(&mut self, outcome: &crate::pointer_speed::Outcome, now: u32) {
+        self.pointer_pending = false;
+        if outcome.verified {
+            if let Some(row) = self
+                .snapshot
+                .settings
+                .get_mut("general")
+                .and_then(|rows| rows.iter_mut().find(|r| r.id == "pointerSpeed"))
+            {
+                row.value = outcome.change.value.wire().into();
+            }
+            self.pointer_confirmation = Some((now, outcome.change.value));
+            self.status = cstr("Pointer speed updated");
+        } else {
+            self.pointer_enabled = false;
+        }
+        if self.surface.page == Page::PointerSpeed {
+            self.close_pointer_picker();
+        } else {
+            self.rebuild(self.surface.page);
+        }
+        self.status = cstr(if outcome.verified {
+            "Pointer speed updated"
+        } else {
+            "Pointer speed could not be confirmed • use LG Settings"
+        });
     }
     pub fn enable_home_launches(&mut self, enabled: bool) {
         self.home_launches_enabled = enabled;
@@ -1659,6 +1840,9 @@ impl Shell {
         }
     }
     pub fn direction(&mut self, dir: Dir) {
+        if self.pointer_pending {
+            return;
+        }
         self.input.hit.note_dpad();
         let owner = InputOwner::Entry(entry(self.surface.page));
         let cx = Cx::<HomeHost> {
@@ -1737,6 +1921,9 @@ impl Shell {
         self.input.note_alive(self.now);
     }
     pub fn press(&mut self, down: bool, from: PressFrom) {
+        if self.pointer_pending {
+            return;
+        }
         if down {
             if let Some(key) = self
                 .input
@@ -1763,6 +1950,13 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        if self.pointer_pending {
+            return;
+        }
+        if self.surface.page == Page::PointerSpeed {
+            self.close_pointer_picker();
+            return;
+        }
         if self.surface.control_page.is_some() {
             let current = self
                 .input
@@ -1805,6 +1999,9 @@ impl Shell {
         }
     }
     pub fn pointer(&mut self, x: f32, y: f32, click: bool) {
+        if self.pointer_pending {
+            return;
+        }
         let owner = InputOwner::Entry(entry(self.surface.page));
         let kind = if click {
             plx_ui::hit::PointerKind::Click
@@ -1913,6 +2110,28 @@ impl Shell {
             {
                 match self.surface.table.activate(i) {
                     Some(plx_ui::form::Activation::Push(p)) => self.rebuild(p),
+                    Some(plx_ui::form::Activation::Action(Action::OpenPointerSpeed)) => {
+                        self.open_pointer_picker();
+                    }
+                    Some(plx_ui::form::Activation::Action(Action::ClosePointerSpeed)) => {
+                        self.close_pointer_picker();
+                    }
+                    Some(plx_ui::form::Activation::Action(Action::SetPointerSpeed(change))) => {
+                        if self.surface.page == Page::PointerSpeed
+                            && !self.pointer_pending
+                            && self.pointer_expected == Some(change.expected)
+                            && self.pointer_value() == Some(change.expected)
+                        {
+                            if change.value == change.expected {
+                                self.close_pointer_picker();
+                            } else {
+                                self.pointer_pending = true;
+                                self.status = cstr("Applying pointer speed…");
+                                self.pending.push(Action::SetPointerSpeed(change));
+                                self.rebuild(Page::PointerSpeed);
+                            }
+                        }
+                    }
                     Some(plx_ui::form::Activation::Action(a)) => {
                         self.status = cstr("View only — use LG Settings for changes");
                         self.pending.push(a);
@@ -1973,6 +2192,9 @@ impl Shell {
         }
     }
     fn select_control_category(&mut self, index: usize) {
+        if self.pointer_pending {
+            return;
+        }
         let Some((page, _)) = CATEGORIES.get(index) else {
             return;
         };
@@ -2386,7 +2608,12 @@ impl Shell {
                 }
                 p.rrect(DETAIL_PANEL, 28.0, 28.0, theme::SURFACE_PANEL);
                 Label::new(
-                    cstr(category.title().unwrap_or("Settings")).as_ptr(),
+                    cstr(if self.surface.page == Page::PointerSpeed {
+                        "Pointer speed"
+                    } else {
+                        category.title().unwrap_or("Settings")
+                    })
+                    .as_ptr(),
                     theme::size::HEADLINE,
                     theme::TEXT_PRIMARY,
                 )

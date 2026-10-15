@@ -23,6 +23,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let pointer_ui_proof = assets.join("pointer-ui-proof.json").exists();
+    if pointer_ui_proof
+        && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
+    {
+        return Err("Pointer UI proof requires isolated diagnostic identity".into());
+    }
     let pointer_proof = assets.join("pointer-proof.json").exists();
     if pointer_proof
         && (!device || interactive || plx_base::paths::app_id() != native_home::identity::PROOF)
@@ -44,6 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "preferences-hold-probe.json",
             "native-read-probe.json",
             "pointer-proof.json",
+            "pointer-ui-proof.json",
         ]
         .iter()
         .any(|name| assets.join(name).exists())
@@ -167,6 +174,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
         )?);
     }
+    #[allow(unused_mut)]
+    let mut pointer_worker: Option<native_home::pointer_speed::Worker> = None;
+    #[cfg(target_arch = "arm")]
+    if device && (plx_base::paths::app_id() == native_home::identity::PREVIEW || pointer_ui_proof) {
+        pointer_worker = Some(native_home::pointer_speed::Worker::native(
+            plx_base::paths::app_id().into(),
+        )?);
+    }
+    let mut pointer_actions = Vec::new();
     let mut action_receipts = Vec::new();
     let state_path = if device {
         native_home::identity::preferences_dir(plx_base::paths::app_id())
@@ -217,6 +233,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for _ in 0..45 {
                 now += 17;
                 poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+                poll_pointer(
+                    &pointer_worker,
+                    &mut shell,
+                    live_origin,
+                    &mut pointer_actions,
+                );
                 #[cfg(target_arch = "arm")]
                 if let Some(reply) = clock_worker.poll() {
                     clock.accept(reply);
@@ -525,6 +547,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     shell.open(Page::Home);
     let mut requests = Vec::new();
+    #[allow(unused_mut)]
+    let mut pointer_ui_receipt: Option<serde_json::Value> = None;
+    #[cfg(target_arch = "arm")]
+    if pointer_ui_proof {
+        pointer_ui_receipt = Some(pointer_ui_trial(
+            &mut shell,
+            &window,
+            &output,
+            &pointer_worker,
+            &live_worker,
+            live_origin,
+            &mut live_history,
+            &mut pointer_actions,
+            &mut now,
+        )?);
+    }
     let mut proof_request = None;
     if let Some(request) = launch_proof {
         match &request {
@@ -572,6 +610,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     dispatch_requests(
         &mut shell,
         &action_worker,
+        &pointer_worker,
         proof_request.as_ref(),
         &mut requests,
         &mut settings_handoff,
@@ -607,6 +646,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             plx_machine::idle::frame_begin(dt);
             now = now.wrapping_add((dt * 1000.0) as u32);
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+            poll_pointer(
+                &pointer_worker,
+                &mut shell,
+                live_origin,
+                &mut pointer_actions,
+            );
             #[cfg(target_arch = "arm")]
             if let Some(reply) = clock_worker.poll() {
                 clock.accept(reply);
@@ -744,6 +789,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             dispatch_requests(
                 &mut shell,
                 &action_worker,
+                &pointer_worker,
                 proof_request.as_ref(),
                 &mut requests,
                 &mut settings_handoff,
@@ -855,6 +901,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(worker) = action_worker {
         action_receipts.extend(worker.finish());
     }
+    if let Some(worker) = pointer_worker {
+        pointer_actions.extend(worker.finish());
+    }
     if let Some(worker) = live_worker {
         worker.finish();
     }
@@ -901,10 +950,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive,"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["pointer_proof"] = serde_json::json!(pointer_proof_receipt);
+    report["pointer_ui_proof"] = serde_json::json!(pointer_ui_receipt);
+    report["pointer_actions"] = serde_json::json!(pointer_actions);
     report["setting_writes"] = report["pointer_proof"]["change"]["attempted"]
         .as_bool()
         .unwrap_or(false)
         .into();
+    report["setting_writes"] = (report["setting_writes"].as_bool() == Some(true)
+        || pointer_actions.iter().any(|r| r.attempted))
+    .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
     report["performance"] = performance
         .as_ref()
@@ -974,12 +1028,41 @@ fn poll_live(
 fn dispatch_requests(
     shell: &mut Shell,
     worker: &Option<native_home::actions::Worker>,
+    pointer_worker: &Option<native_home::pointer_speed::Worker>,
     proof_request: Option<&native_home::actions::Request>,
     unexecuted: &mut Vec<String>,
     handoff: &mut native_home::session::SettingsHandoff,
     now: Duration,
 ) {
     for action in shell.take_requests() {
+        if let native_home::model::Action::SetPointerSpeed(change) = action {
+            if let Some(worker) = pointer_worker {
+                if let Err(message) = worker.queue(change) {
+                    shell.pointer_reply(
+                        &native_home::pointer_speed::Outcome {
+                            change,
+                            attempted: false,
+                            admitted: false,
+                            verified: false,
+                            detail: message,
+                        },
+                        now.as_millis() as u32,
+                    );
+                }
+            } else {
+                shell.pointer_reply(
+                    &native_home::pointer_speed::Outcome {
+                        change,
+                        attempted: false,
+                        admitted: false,
+                        verified: false,
+                        detail: "Pointer-speed worker unavailable".into(),
+                    },
+                    now.as_millis() as u32,
+                );
+            }
+            continue;
+        }
         let Some(request) = native_home::actions::Request::from_action(action.clone()) else {
             unexecuted.push(format!("{action:?}"));
             continue;
@@ -1135,4 +1218,162 @@ fn pointer_write_proof(folder: &std::path::Path) -> serde_json::Value {
     .into();
     let _ = stage(&receipt);
     receipt
+}
+
+fn poll_pointer(
+    worker: &Option<native_home::pointer_speed::Worker>,
+    shell: &mut Shell,
+    origin: Instant,
+    receipts: &mut Vec<native_home::pointer_speed::Outcome>,
+) {
+    if let Some(worker) = worker {
+        if let Some(ready) = worker.ready() {
+            shell.enable_pointer_editor(ready);
+        }
+        for outcome in worker.poll() {
+            shell.pointer_reply(&outcome, origin.elapsed().as_millis() as u32);
+            receipts.push(outcome);
+        }
+    }
+}
+#[cfg(target_arch = "arm")]
+#[allow(clippy::too_many_arguments)]
+fn pointer_ui_trial(
+    shell: &mut Shell,
+    window: &Window,
+    output: &std::path::Path,
+    worker: &Option<native_home::pointer_speed::Worker>,
+    live: &Option<native_home::live::Worker>,
+    origin: Instant,
+    history: &mut Vec<serde_json::Value>,
+    receipts: &mut Vec<native_home::pointer_speed::Outcome>,
+    now: &mut u32,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    use native_home::{
+        model::Action,
+        pointer_speed::{Change, Speed},
+    };
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while shell.pointer_value().is_none() && Instant::now() < deadline {
+        poll_live(live, shell, origin, history);
+        poll_pointer(worker, shell, origin, receipts);
+        *now += 17;
+        shell.tick(*now, 1.0 / 60.0);
+        shell.draw();
+        window.swap();
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let original = shell.pointer_value().ok_or("Pointer editor not eligible")?;
+    let target = if original == Speed::Slow {
+        Speed::Normal
+    } else {
+        Speed::Slow
+    };
+    shell.open(Page::General);
+    if !shell.focus_pointer_setting() {
+        return Err("No pointer-speed row".into());
+    }
+    drawer_tap(shell, now);
+    if shell.page() != Page::PointerSpeed {
+        return Err("Pointer choice page did not open".into());
+    }
+    drawer_capture(shell, window, output, "pointer-choices", now)?;
+    shell.focus_pointer_choice(target);
+    drawer_capture(shell, window, output, "pointer-focus-only", now)?;
+    if !shell.take_requests().is_empty() {
+        return Err("Pointer movement emitted an operation".into());
+    }
+    let phase = |stage: &str| -> Result<(), Box<dyn std::error::Error>> {
+        let tmp = output.join("pointer-ui-next.json");
+        let file = std::fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&tmp)?;
+        serde_json::to_writer(
+            file,
+            &serde_json::json!({"stage":stage,"original":original,"target":target}),
+        )?;
+        std::fs::rename(tmp, output.join("pointer-ui-current.json"))?;
+        Ok(())
+    };
+    phase("focused")?;
+    // A bounded observation window lets the host independently verify focus makes no write.
+    let until = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < until {
+        poll_live(live, shell, origin, history);
+        poll_pointer(worker, shell, origin, receipts);
+        *now += 17;
+        shell.tick(*now, 1.0 / 60.0);
+        shell.draw();
+        window.swap();
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    for (expected, value, stage) in [
+        (original, target, "changed"),
+        (target, original, "restored"),
+    ] {
+        if stage == "restored" {
+            shell.open(Page::General);
+            if !shell.focus_pointer_setting() {
+                return Err("Restoration row unavailable".into());
+            }
+            drawer_tap(shell, now);
+            shell.focus_pointer_choice(value);
+        }
+        drawer_tap(shell, now);
+        let requests = shell.take_requests();
+        if requests != vec![Action::SetPointerSpeed(Change { expected, value })] {
+            return Err("Pointer UI produced a different request".into());
+        }
+        worker
+            .as_ref()
+            .ok_or("Pointer worker missing")?
+            .queue(Change { expected, value })?;
+        let before = receipts.len();
+        let deadline = Instant::now() + Duration::from_secs(7);
+        while receipts.len() == before && Instant::now() < deadline {
+            poll_live(live, shell, origin, history);
+            poll_pointer(worker, shell, origin, receipts);
+            *now += 17;
+            shell.tick(*now, 1.0 / 60.0);
+            shell.draw();
+            window.swap();
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        if !receipts
+            .last()
+            .is_some_and(|r| r.change == Change { expected, value } && r.verified)
+        {
+            return Err("Pointer UI change or restoration unverified".into());
+        }
+        phase(stage)?;
+        drawer_capture(
+            shell,
+            window,
+            output,
+            if stage == "changed" {
+                "pointer-changed"
+            } else {
+                "pointer-restored"
+            },
+            now,
+        )?;
+        if stage == "changed" {
+            let until = Instant::now() + Duration::from_secs(8);
+            while Instant::now() < until {
+                poll_live(live, shell, origin, history);
+                poll_pointer(worker, shell, origin, receipts);
+                *now += 17;
+                shell.tick(*now, 1.0 / 60.0);
+                shell.draw();
+                window.swap();
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+    }
+    Ok(
+        serde_json::json!({"focus_only_no_request":true,"round_trip_verified":true,"change_count":2}),
+    )
 }

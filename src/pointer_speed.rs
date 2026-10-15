@@ -260,6 +260,85 @@ impl Platform for Native {
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
 }
+/// The GL/input thread only exchanges bounded typed messages with this worker.
+pub struct Worker {
+    requests: std::sync::mpsc::SyncSender<(std::time::Instant, Change)>,
+    replies: std::sync::mpsc::Receiver<Outcome>,
+    ready: std::sync::mpsc::Receiver<bool>,
+    thread: std::thread::JoinHandle<()>,
+}
+impl Worker {
+    #[cfg(target_arch = "arm")]
+    pub fn native(own: String) -> std::io::Result<Self> {
+        let (requests, receive) = std::sync::mpsc::sync_channel::<(std::time::Instant, Change)>(1);
+        let (send, replies) = std::sync::mpsc::channel();
+        let (ready_send, ready) = std::sync::mpsc::channel();
+        let thread = std::thread::Builder::new()
+            .name("pointer-control".into())
+            .spawn(move || {
+                let mut p = Native::new().ok();
+                let mut supported = false;
+                if let Some(p) = p.as_mut() {
+                    for _ in 0..10 {
+                        if inspect(p, &own).is_ok() {
+                            supported = true;
+                            break;
+                        }
+                        p.wait();
+                    }
+                }
+                let _ = ready_send.send(supported);
+                while let Ok((queued, change)) = receive.recv() {
+                    let result = if queued.elapsed() > std::time::Duration::from_secs(2) {
+                        Outcome {
+                            change,
+                            attempted: false,
+                            admitted: false,
+                            verified: false,
+                            detail: "Pointer-speed gesture expired".into(),
+                        }
+                    } else {
+                        match p.as_mut() {
+                            Some(p) => apply(p, &own, change, supported),
+                            None => Outcome {
+                                change,
+                                attempted: false,
+                                admitted: false,
+                                verified: false,
+                                detail: "Pointer-speed service unavailable".into(),
+                            },
+                        }
+                    };
+                    if send.send(result).is_err() {
+                        break;
+                    }
+                }
+            })?;
+        Ok(Self {
+            requests,
+            replies,
+            ready,
+            thread,
+        })
+    }
+    pub fn queue(&self, change: Change) -> Result<(), String> {
+        self.requests
+            .try_send((std::time::Instant::now(), change))
+            .map_err(|_| "Pointer-speed change already pending".into())
+    }
+    pub fn ready(&self) -> Option<bool> {
+        self.ready.try_iter().last()
+    }
+    pub fn poll(&self) -> Vec<Outcome> {
+        self.replies.try_iter().collect()
+    }
+    pub fn finish(self) -> Vec<Outcome> {
+        drop(self.requests);
+        let _ = self.thread.join();
+        self.replies.try_iter().collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
