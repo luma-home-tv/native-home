@@ -54,7 +54,7 @@ fn base64(bytes: &[u8]) -> String {
 /// The inspected installed HBC uses String plus base64 representations, not
 /// JSON-encoded stdout strings. Refusals preserve output for child reconciliation.
 #[cfg(any(target_arch = "arm", test))]
-fn parse_exec_reply(raw: &str) -> Result<Value, String> {
+pub(crate) fn parse_exec_reply(raw: &str) -> Result<Value, String> {
     if raw.len() > REPLY_LIMIT {
         return Err("Oversized SDK exec reply".into());
     }
@@ -131,7 +131,7 @@ fn parse_exec_reply(raw: &str) -> Result<Value, String> {
     )
 }
 
-fn save(path: &Path, value: &Value) -> Result<(), String> {
+pub(crate) fn save(path: &Path, value: &Value) -> Result<(), String> {
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -146,7 +146,7 @@ fn save(path: &Path, value: &Value) -> Result<(), String> {
 }
 
 #[cfg(target_arch = "arm")]
-mod native {
+pub(crate) mod native {
     use super::*;
     use crate::{
         artwork_transfer as wire, broker_probe as probe, broker_protocol as protocol,
@@ -154,7 +154,7 @@ mod native {
     };
     use std::sync::mpsc::{self, Sender};
 
-    fn invoke(marker: &Marker, cancel: &AtomicBool, started: Sender<()>) -> Value {
+    pub(crate) fn invoke(marker: &Marker, cancel: &AtomicBool, started: Sender<()>) -> Value {
         let mut report = json!({"uri":EXEC_URI,"command":COMMAND,"attempts":0,
             "capability":null,"context":null,"own_at_call":null,"raw":null,
             "raw_bytes":0,"raw_truncated":false,"parsed":null,"error":null});

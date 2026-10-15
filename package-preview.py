@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.40.0' if main == 'home-preview' else '0.1.0'
+version = '0.41.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -42,11 +42,20 @@ live_artwork_proof = os.environ.get('NATIVE_HOME_LIVE_ARTWORK_PROOF') == '1'
 icon_presentation_proof = os.environ.get('NATIVE_HOME_ICON_PRESENTATION_PROOF') == '1'
 startup_capability_proof = os.environ.get('NATIVE_HOME_STARTUP_CAPABILITY_PROOF') == '1'
 broker_startup_proof = os.environ.get('NATIVE_HOME_BROKER_STARTUP_PROOF') == '1'
+broker_negative_proof = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_PROOF') == '1'
+broker_negative_case = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_CASE', '')
+if broker_negative_proof:
+    if broker_startup_proof or broker_negative_case not in ('wrong_identify_nonce', 'wrong_finish_nonce'):
+        raise ValueError('Refusal proof requires one explicit fixed case and no positive mode')
+elif broker_negative_case:
+    raise ValueError('Refusal case requires explicit isolated refusal mode')
 broker_startup_marker = None
+broker_negative_marker = None
 broker_startup_helper = None
 broker_startup_pins_sha256 = None
-if broker_startup_proof:
-    allowed = {'NATIVE_HOME_BROKER_STARTUP_PROOF','NATIVE_HOME_BROKER_STARTUP_PINS'}
+if broker_startup_proof or broker_negative_proof:
+    allowed = {'NATIVE_HOME_BROKER_STARTUP_PINS',
+               'NATIVE_HOME_BROKER_NEGATIVE_PROOF' if broker_negative_proof else 'NATIVE_HOME_BROKER_STARTUP_PROOF'}
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
               (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and k not in allowed]
     if main != 'home-preview' or not test_identity or interactive or others or artwork_target_fixture:
@@ -75,6 +84,9 @@ if broker_startup_proof:
         helper_build['binary']['sha256']!=pins['broker_sha256'] or helper_build['snapshot']!=build_receipt['snapshot']):
         raise ValueError('Root helper must share actual UI source/framework build context')
     broker_startup_marker={'schema':1,'nonce':pins['rendezvous_nonce'],'ui_sha256':pins['ui_sha256'],'broker_sha256':pins['broker_sha256']}
+    if broker_negative_proof:
+        broker_negative_marker={'schema':1,'scenario':broker_negative_case,'marker':broker_startup_marker}
+        broker_startup_marker=None
     broker_startup_helper={'binary_sha256':pins['broker_sha256'],'build_receipt_sha256':hashlib.sha256(helper_receipt.read_bytes()).hexdigest(),'build_source_revision':helper_build['git_revision']}
     broker_startup_pins_sha256=hashlib.sha256(pins_raw).hexdigest()
 elif any(os.environ.get(k) for k in ('NATIVE_HOME_BROKER_STARTUP_PINS','NATIVE_HOME_STARTUP_BROKER_BINARY')):
@@ -180,6 +192,10 @@ if main == 'home-preview':
     if broker_startup_marker is not None:
         marker_path=stage/'broker-startup-proof.json'
         marker_path.write_text(json.dumps(broker_startup_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
+    if broker_negative_marker is not None:
+        marker_path=stage/'broker-negative-proof.json'
+        marker_path.write_text(json.dumps(broker_negative_marker,separators=(',',':'))+'\n')
         marker_path.chmod(0o644)
     if startup_capability_proof:
         marker_path = stage / 'startup-capability-proof.json'
@@ -320,6 +336,8 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'icon_presentation_proof': icon_presentation_proof,
            'startup_capability_proof': startup_capability_proof,
            'broker_startup_proof': broker_startup_proof,
+           'broker_negative_proof': broker_negative_proof,
+           'broker_negative_case': broker_negative_case or None,
            'broker_startup_helper': broker_startup_helper,
            'broker_startup_root_pins_sha256': broker_startup_pins_sha256,
            'artwork_target_fixture': artwork_target_fixture or None,

@@ -104,8 +104,11 @@ qualify a Root child or production startup. The subsequent
 [0.40 installed startup component](artwork-startup-040.md) qualifies two serial
 protected Root Identify/Finish exchanges with fresh app/helper identities. The
 first operator observation failed and needed separate recovery; the second
-corrected driver passed with full cleanup/preservation. Next, qualify negative
-and duplicate startup sessions, the resource route, then broader live artwork
+corrected driver passed with full cleanup/preservation. The isolated
+[0.41 nonce-refusal candidate](artwork-startup-refusal-041.md) adds separate
+expected-refusal checks without extending the helper's policy; host checks pass,
+native cases remain pending. Next, qualify these negative and duplicate startup
+sessions, the resource route, then broader live artwork
 coverage and a separately admitted retained integration. The
 [production startup design](artwork-startup-design.md) separates the
 operator-started helper from an independently qualified bootstrap.

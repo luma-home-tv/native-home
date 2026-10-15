@@ -61,6 +61,7 @@ pub mod artwork_worker;
 pub mod broker_bootstrap;
 pub mod broker_context;
 pub mod broker_installation;
+pub mod broker_negative_proof;
 pub mod broker_probe;
 pub mod broker_protocol;
 pub mod broker_server;
