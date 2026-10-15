@@ -65,7 +65,7 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.17.0 is installed on both the OLED65C26LD C2
+package modes and removal. Version 0.18.0 is installed on both the OLED65C26LD C2
 and OLED55G26LA G2. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
@@ -90,12 +90,19 @@ both TVs checked clean removal, core hashes, picture/audio and saved favourites.
 The [expanded control-readout milestone](docs/control-readouts-milestone.json)
 adds 20 descriptor-validated settings across Picture, Accessibility, General and
 Panel Care. Native values matched independent LG reads on both TVs. Range, enum,
-profile and freshness checks protect the readouts; all added adjustments remain
-LG-managed and no native setting-write action exists.
+profile and freshness checks protect the readouts; those readings remain LG-managed
+unless a separate fixed control adapter has passed its own operation proof.
+
+The [pointer-control milestone](docs/pointer-control-milestone.json) adds the first
+editable native setting: Controls → General → Pointer speed. The shared choice
+page commits only on OK and confirms through a separate read. Both TVs passed
+independent focus-only, temporary change and original-value restoration checks;
+physical pointer tracking remains unmeasured.
 
 The preview remains isolated from LG Home, firmware, jail policy, media services,
 network configuration and OLED protections. HDMI switching remains gated and
-native settings remain read-only. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
+pointer speed has a verified native choice control; other adjustments remain
+read-only or LG-managed. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
 closing its overlay. Version 0.13.0 validates both TVs and all six section entry points. Private TV details and native household captures
 stay outside tracked source. The [responsiveness milestone](docs/responsiveness-milestone.json)

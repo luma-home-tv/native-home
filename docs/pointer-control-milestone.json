@@ -1,0 +1,178 @@
+{
+  "code_revision": "9c3d624ebf1853ef3ea145e58c0d319071dc1b1a",
+  "package_metadata_revision": "539a268",
+  "package_version": "0.18.0",
+  "binary_sha256": "fef06c4b95826db9085357044406d1422423602c5202e6d4497977909457f74d",
+  "client_tests": {
+    "passed": 98,
+    "failed": 0,
+    "ignored": 0
+  },
+  "clippy": "passed, all targets / hostsim, warnings denied",
+  "arm_release": "passed with existing unstable neon target-feature warning",
+  "control": {
+    "path": "Controls / General / Pointer speed",
+    "values": [
+      "slow",
+      "normal",
+      "fast"
+    ],
+    "api": "com.webos.service.settings/setSystemSettings",
+    "fixed_category": "option",
+    "fixed_key": "pointerSpeed",
+    "privilege": "Ordinary app identity; installed permission registry listed public setter surface. Both commercial TVs independently admitted the fixed operation and returned the requested value. No root helper or policy change.",
+    "guards": [
+      "Known G2/C2 model, firmware 23.25.55 and SDK 9.2.2 checked for each commit",
+      "Unique active/visible global non-account non-volatile descriptor with exactly three known active/visible enum choices",
+      "Owned foreground card and no overlay before validation and before commit",
+      "Expected old value checked twice, bounded validation time, queue age limit and one pending UI operation",
+      "One fixed setter; acknowledgement and independent value readback tracked separately; failure disables native editor for the session",
+      "No generic category/key/service/flags/string command input"
+    ]
+  },
+  "interface": [
+    "Shared PlxNative FormTable and Choice rows, separate current-value checkmark and foreground focus",
+    "Arrows and pointer focus do not emit a write; OK commits; Back/Cancel returns to the parent row",
+    "Busy control refuses repeated activation/navigation while its bounded worker completes",
+    "Stale/changed metadata withdraws the picker; previous-page hits cannot become another setting action",
+    "Post-commit confirmed value cannot be rewound by a background read cycle started before the commit",
+    "Native calls run on a separate worker; no optimistic value/checkmark update"
+  ],
+  "native": {
+    "g2": {
+      "model": "OLED55G26LA",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6583,
+      "proof": {
+        "ordinary_uid": 6583,
+        "independent_change_seen": true,
+        "independent_restoration_seen": true,
+        "focus_only_unchanged": true,
+        "native_change_verified": true,
+        "native_restore_verified": true,
+        "ui_round_trip_verified": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_state_absent": true,
+          "catalogue_absent": true,
+          "launchpoint_absent": true,
+          "retained_unchanged": true,
+          "core_unchanged": true,
+          "picture_unchanged": true,
+          "audio_unchanged": true,
+          "expanded_settings_restored": true,
+          "pointer_restored": true,
+          "source_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        }
+      },
+      "native_choice_and_changed_frames_inspected": true,
+      "retained_files_byte_identical_during_proof": true,
+      "retained_update": {
+        "version": "0.18.0",
+        "ordinary_uid": 5724,
+        "favourites_loaded": true,
+        "state": {
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    },
+    "c2": {
+      "model": "OLED65C26LD",
+      "firmware": "23.25.55",
+      "webos": "9.2.2-61",
+      "ordinary_uid": 6432,
+      "proof": {
+        "ordinary_uid": 6432,
+        "independent_change_seen": true,
+        "independent_restoration_seen": true,
+        "focus_only_unchanged": true,
+        "native_change_verified": true,
+        "native_restore_verified": true,
+        "ui_round_trip_verified": true,
+        "cleanup": {
+          "test_paths_mounts_absent": true,
+          "test_state_absent": true,
+          "catalogue_absent": true,
+          "launchpoint_absent": true,
+          "retained_unchanged": true,
+          "core_unchanged": true,
+          "picture_unchanged": true,
+          "audio_unchanged": true,
+          "expanded_settings_restored": true,
+          "pointer_restored": true,
+          "source_unchanged": true,
+          "home_verified": true,
+          "previous_foreground_restored": true
+        }
+      },
+      "native_choice_and_changed_frames_inspected": true,
+      "retained_files_byte_identical_during_proof": true,
+      "retained_update": {
+        "version": "0.18.0",
+        "ordinary_uid": 6249,
+        "favourites_loaded": true,
+        "state": {
+          "expanded_settings_unchanged": true,
+          "selected_source_unchanged": true,
+          "core_hashes_unchanged": true,
+          "picture_values_unchanged": true,
+          "audio_values_unchanged": true,
+          "lg_home_verified": true,
+          "previous_foreground_restored": true,
+          "saved_favourites_byte_identical": true
+        },
+        "no_screenshots": true,
+        "settings_writes": false
+      }
+    }
+  },
+  "earlier_component_proof": {
+    "revision": "9cb20de",
+    "binary_sha256": "c480990448be8e0445b81dc08eabfb43bc0caa1c2067b48c85436833f994eb2e",
+    "model": "OLED55G26LA",
+    "result": {
+      "ordinary_uid": 6583,
+      "independent_change_seen": true,
+      "independent_restoration_seen": true,
+      "native_change_verified": true,
+      "native_restore_verified": true,
+      "cleanup": {
+        "test_paths_mounts_absent": true,
+        "test_state_absent": true,
+        "catalogue_absent": true,
+        "launchpoint_absent": true,
+        "retained_unchanged": true,
+        "core_unchanged": true,
+        "picture_unchanged": true,
+        "audio_unchanged": true,
+        "expanded_settings_restored": true,
+        "pointer_restored": true,
+        "source_unchanged": true,
+        "home_verified": true,
+        "previous_foreground_restored": true
+      }
+    }
+  },
+  "earlier_ui_trial": {
+    "scope": "G2 change and restoration were independently observed, but the host expected a final receipt after one Back from General. It therefore stopped the test before the normal exit receipt. Pointer/core restoration and own package/path removal were checked privately. The corrected diagnostic returns to Home before its final Back. This earlier trial is not counted as full UI proof."
+  },
+  "limits": [
+    "Settings-service change/readback and native scripted focus/press/frame proof; not a physical Magic Remote tracking/acceleration measurement",
+    "No native edit for other settings; protected controls remain LG-managed, including OLED protections, boot/Home behaviour, network, firmware and calibration",
+    "HDMI live playback/format, physical input coverage, native numeric sliders, full text input, reboot and sustained performance remain incomplete",
+    "Earlier performance measurements do not establish performance of this larger interface"
+  ],
+  "privacy": "Native household frames, inventories, raw settings, favourites, addresses, credentials and detailed receipts remain private."
+}

@@ -97,8 +97,8 @@ pub enum ControlConstraint {
     Choices { values: Vec<String>, active: bool },
 }
 
-/// No setting-write action exists in this pilot. A future broker cannot acquire write authority
-/// merely because a settings descriptor was returned successfully.
+/// Registry metadata does not grant write authority. Pointer speed uses a separate fixed
+/// adapter with operation-specific validation and readback.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Setting {
     #[serde(default, skip_serializing_if = "Option::is_none")]

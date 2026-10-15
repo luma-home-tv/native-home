@@ -76,7 +76,7 @@
         "General",
         "Panel Care"
       ],
-      "pilot": "Read-only; no setting-write action exists"
+      "pilot": "Native pointer-speed enum control with per-operation metadata/context/readback validation; other adjustments read-only or LG-managed"
     }
   },
   "interaction": {

@@ -1,7 +1,7 @@
 # Interactive preview
 
 The installed app is **Luma Home Preview**, package
-`com.ash.nativehome.preview`, version **0.17.0 on both the G2 and C2**.
+`com.ash.nativehome.preview`, version **0.18.0 on both the G2 and C2**.
 Both devices are authorised for development again. It is a normal native app in LG's
 Home app list. It does not become the Home-button destination or start at boot.
 
@@ -43,15 +43,15 @@ EIM's independent getter and can persist while another app is foreground. Missin
 stale or unregistered source IDs are unavailable. Video format remains unavailable.
 The [Inputs detail record](inputs-detail-milestone.json) records native screens on
 both TVs and a separate, restored G2 switch trial. Production HDMI switching
-remains gated, and native controls are read-only
-or LG-managed. Controls now shows a persistent six-category column beside the
+remains gated. Pointer speed now has a native control; other adjustments remain
+read-only or LG-managed. Controls now shows a persistent six-category column beside the
 selected detail panel. Arrows preview categories; Right or OK enters the rows.
 Back returns through the category column to Home. Accessibility, General and
 Panel Care now show verified current readings, alongside eight more picture-profile
 values such as colour depth, sharpness, tint, colour temperature, gamut and gamma.
 Bounds/options come from LG descriptors; numeric offsets are not presented as
 physical colour temperature or measured picture output. Known read-only values
-remain legible but cannot activate an adjustment. Panel protections stay
+remain legible; the verified pointer-speed row opens a native choice page. Panel protections stay
 LG-managed. The [readout record](control-readouts-milestone.json) documents
 ordinary-app proof and independently matched values on both TVs. The cached Picture breadcrumb
 uses the TV settings profile context and becomes unavailable when stale.
@@ -66,7 +66,7 @@ to Luma. Luma keeps only its own underlying window alive behind a verified
 Settings overlay and stops painting while covered; LG continues to own its controls.
 Other departures retain the preview's existing teardown behaviour. The
 [handoff record](settings-handoff-milestone.json) describes native/injected-Back
-proof and runtime firmware checks. No native setting-write action is available.
+proof and runtime firmware checks. Pointer speed uses a separate fixed adapter; no generic settings-write action is available.
 The dashboard is still a development
 preview; complete controls, physical input, performance and reboot persistence
 remain unfinished. The [deployment record](deployment-milestone.json) identifies
@@ -93,6 +93,23 @@ remaining differences from the concepts. API research used the
 [official webOS OSE LS2 reference](https://www.webosose.org/docs/reference/ls2-api/com-webos-service-systemservice/);
 commercial-TV compatibility is based on the recorded ordinary-app device tests.
 
+## Pointer speed
+
+Open **Controls → General → Pointer speed**. The checkmark shows the current
+setting. Move focus between Slow, Normal and Fast, then press OK to apply.
+Back or Cancel returns without changing it. Luma waits for a separate value
+readback before showing success; it does not change the checkmark optimistically.
+The control is unavailable when firmware, descriptor, foreground/window ownership,
+expected old value or freshness cannot be validated. Failure leaves the rest of
+LG Settings available. A bounded worker runs the native calls outside the draw
+thread, and older background reads cannot rewind a confirmed change.
+
+The [pointer-control record](pointer-control-milestone.json) covers scripted native
+focus/press, independent service change/restoration reads and clean removal on
+both TVs. This proves the stored setting path, not measured physical Magic Remote
+tracking or acceleration. Boot/Home behaviour, OLED protections, network,
+firmware and calibration stay LG-managed.
+
 ## Package modes
 
 Set `NATIVE_HOME_INTERACTIVE_SESSION=1` when using `package-preview.py` to create
@@ -101,8 +118,8 @@ and the selected device's private snapshot/icons through the documented
 `NATIVE_HOME_*` environment variables. Never commit those private assets or
 distribute a household package as a generic release.
 
-Normal interactive packages have no capture markers and no scripted navigation,
-hold, launch or capability probes. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
+Normal interactive packages have no capture markers or scripted navigation,
+hold, launch, capability or pointer-write proof actions. `NATIVE_HOME_SESSION_CAPTURE_PROOF=1` adds
 explicit development captures of initial Home, idle black and wake. It must be
 used only in a scoped device test and removed afterward. Without interactive
 mode, the existing diagnostic package keeps its captures and 30-second lifetime.
