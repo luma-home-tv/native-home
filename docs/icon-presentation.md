@@ -18,7 +18,11 @@ framework artwork tests, warnings-denied Clippy and 23 provenance/framework
 verifier tests. The artwork tests check square/wide/tall containment, invalid
 geometry, stable content identity, no server artwork requests, and recorded draw
 commands: one plain texture at rest, with one hollow outline on focus. These
-checks do not measure native framebuffer alpha or physical appearance.
+checks do not measure native framebuffer alpha or physical appearance. The ARM
+release build also passes for source `6c75306b749f3fa1261123ad224f92228bf73498`;
+its ELF SHA-256 is
+`636d10cbc4ad5aef7026fc6de2fd865f9c2a8202fc80c113a12695cf6ad7183a`.
+Four build-entrypoint checks also pass.
 
 The [0.36 C2 proof](artwork-live-036.md) predates this presentation change. Its
 other cards deliberately showed initials because only the owned fixture was
