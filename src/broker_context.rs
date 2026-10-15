@@ -65,6 +65,16 @@ impl ReadSet {
     }
 }
 
+#[cfg(any(all(target_os = "linux", target_arch = "arm"), test))]
+fn helper_scope(path: &std::path::Path, set: ReadSet, installed_authority: bool) -> bool {
+    path.file_name()
+        .is_some_and(|name| name == "artwork-broker-proof")
+        || (matches!(set, ReadSet::Context)
+            && installed_authority
+            && path
+                == std::path::Path::new(&crate::broker_installation::Profile::Proof.helper_path()))
+}
+
 fn unavailable() -> Value {
     json!({"unavailable":true})
 }
@@ -811,12 +821,25 @@ mod core {
             report["_reader"]["error"] = json!("invalid_expected_core_hash");
             return;
         }
-        if unsafe { libc::getuid() } != 0
-            || unsafe { libc::geteuid() } != 0
-            || std::env::current_exe()
-                .ok()
-                .and_then(|p| p.file_name().map(|s| s == "artwork-broker-proof"))
-                != Some(true)
+        let path = std::env::current_exe().ok();
+        let root = unsafe { libc::getuid() } == 0 && unsafe { libc::geteuid() } == 0;
+        // The new installed role is admitted only through protected policy and
+        // its exact kernel executable, and only for these three context GETs.
+        // The historical operator helper keeps its separately qualified scope.
+        let installed_authority = root
+            && matches!(set, ReadSet::Context)
+            && path.as_deref()
+                == Some(std::path::Path::new(
+                    &crate::broker_installation::Profile::Proof.helper_path(),
+                ))
+            && crate::broker_installation::Installation::load(
+                crate::broker_installation::Profile::Proof,
+            )
+            .is_ok_and(|installation| installation.pins().context_reader_sha256 == expected_sha256);
+        if !root
+            || path
+                .as_deref()
+                .is_none_or(|path| !helper_scope(path, set, installed_authority))
         {
             report["_reader"]["error"] = json!("standalone_root_helper_required");
             return;
@@ -950,6 +973,29 @@ mod core {
     #[cfg(test)]
     mod tests {
         use super::*;
+        #[test]
+        fn installed_context_role_needs_exact_protected_authority_and_never_catalogue() {
+            let path = crate::broker_installation::Profile::Proof.helper_path();
+            let path = std::path::Path::new(&path);
+            assert!(helper_scope(path, ReadSet::Context, true));
+            assert!(!helper_scope(path, ReadSet::Context, false));
+            assert!(!helper_scope(path, ReadSet::Catalogue, true));
+            assert!(!helper_scope(
+                std::path::Path::new("/tmp/artwork-broker-startup-proof"),
+                ReadSet::Context,
+                true
+            ));
+            assert!(helper_scope(
+                std::path::Path::new("/tmp/operator/artwork-broker-proof"),
+                ReadSet::Catalogue,
+                false
+            ));
+            assert!(!helper_scope(
+                std::path::Path::new("/tmp/home-preview"),
+                ReadSet::Context,
+                true
+            ));
+        }
         fn spawn(script: &str) -> Child {
             let mut c = Command::new("/bin/sh");
             c.args(["-c", script])

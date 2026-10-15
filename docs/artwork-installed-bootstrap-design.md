@@ -4,6 +4,11 @@ Status: implementation and host checks; native command execution is not yet
 qualified. The retained G2 dashboard remains 0.37.0. This candidate adds no boot
 hook, Home interception, service registration, LS2 policy or protected TV setter.
 
+The first [0.39 device attempt](artwork-startup-039.md) refused at the legacy
+context-reader helper-name guard and was fully recovered. The 0.40 correction
+requires protected installed authority for the exact new helper and admits only
+context GETs. It does not broaden the role to catalogue/resource operations.
+
 The [0.38 status check](artwork-startup-capability-038.md) established ordinary
 native access to HBC's read-only Root-status method. It did not qualify `/exec`,
 a Root child, installed authorization or automatic resource access.
