@@ -78,10 +78,14 @@ The [Identify-only candidate](artwork-broker-identify.md) now separates that
 route's caller/transport qualification from icon reads and production startup.
 The subsequent [fixed context reader](broker-context-reader-034.md) qualified one
 restricted native G2 exchange and clean removal with checked state preserved.
-Next, derive artwork sources from the helper's own admitted live catalogue,
-qualify bounded reads across the observed root classes, and transfer encoded
-images for ordinary-worker decoding and main-thread texture updates. The
-operator-started helper is still separate from production enrollment/startup.
+The [0.35 isolated resource test](artwork-transfer-035.md) now qualifies a real
+icon transfer and ordinary-process bounded decode from each of five observed
+installation classes, with complete removal and preserved checked state. Its
+pure cache state has separate ownership/invalidation tests. Next, connect that
+state to one bounded I/O/decode worker and main-thread texture updates, then
+exercise owned app installation, same-path icon replacement, removal, stale
+results and focus/favourites preservation. The operator-started helper is still
+separate from production enrollment/startup and retained rollout.
 HDMI format/status and missing Sound/Accessibility readings remain subsequent
 bounded, read-only inventory work. Existing verified source selection and LG
 routes remain available throughout.

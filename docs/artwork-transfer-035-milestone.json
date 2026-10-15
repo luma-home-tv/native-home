@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "version": "0.35.0",
+  "source_revision": "8414fc640ea5a631bd1c0e2de319197cce376f41",
+  "scope": "Isolated G2 encoded icon transfer and ordinary bounded decode; pure cache groundwork",
+  "ui_sha256": "b4ed71455579cf67381976ad1e28f5a90f07d8cf9ee6c22eb8b03c8e2ad1a856",
+  "helper_sha256": "e4c46a245661fae76f2320e279350fd4d141794b895b9417967f779f29712d72",
+  "candidate_sha256": "9f145de89186ebccc144df74f2cb2cae09f12be48bdfe9faca3cfdfb9ee46466",
+  "ipk_sha256": "f44d81c1faf06c9dfe25ff271ceec15e6a1b30e39652b01ab5b9f167dc0bd207",
+  "compile_inputs": 77,
+  "host_tests": {
+    "library": 295,
+    "dashboard_binary": 5,
+    "clippy_warnings_denied": true,
+    "build_provenance": 14,
+    "framework_verifier": 13,
+    "actual_package_cases": 16,
+    "private_harness": 107
+  },
+  "device": {
+    "model": "OLED55G26LA",
+    "webos_generation": 24,
+    "sdk": "9.2.2",
+    "firmware": "23.25.55",
+    "root_actual_terminal_exit": 0,
+    "helper_ssh_exit": 0,
+    "selected_classes": 5,
+    "completed_transfers": 5,
+    "ordinary_decodes": 5,
+    "finished_and_clean_eof": true,
+    "sample_classes": [
+      "lg_system",
+      "encrypted_apps",
+      "developer_apps",
+      "system_apps",
+      "optional_content"
+    ],
+    "context_catalogue_snapshots": 22,
+    "successful_fixed_get_children": 56,
+    "core_client_measurements": 156,
+    "post_exit_observed_processes": 330,
+    "reported_pids_and_groups_absent": true,
+    "positive_preservation_gates": 24,
+    "preservation_domains": 20,
+    "isolated_app_removed": true,
+    "helper_endpoint_files_removed": true,
+    "upload_lease_private_agent_removed": true,
+    "home_current": true,
+    "reboot_required": false,
+    "native_elapsed_seconds": 30.24619764,
+    "artwork_probe_elapsed_ms": 6382
+  },
+  "independent_audit": {
+    "assertions": 1088,
+    "script_sha256": "f38f2cb21994ea5aca778ed7d107fdceca92c51b659d65e7a048856656889203",
+    "result_sha256": "a7b245563e78899a30e4411a78975467f3f8b489d9b9f6480d84f6834fcc1b6b"
+  },
+  "boundaries": {
+    "root_catalogue_independently_recomputed": false,
+    "raw_encoded_rgba_cli_output_digests_independently_recomputed": false,
+    "raw_per_packet_cmsg_replayed": false,
+    "source_bound_packet_credential_acceptance": true,
+    "live_child_executables_independently_measured": false,
+    "class_wide_access_qualified": false,
+    "gl_texture_qualified": false,
+    "normal_loader_qualified": false,
+    "production_startup_qualified": false,
+    "ui_speedup_qualified": false,
+    "full_release_qualified": false
+  },
+  "retained_g2_version": "0.31.0",
+  "retained_updated": false,
+  "c2_contacted": false,
+  "next": [
+    "Bounded worker and main-thread texture integration",
+    "Owned app icon replacement/removal and stale-result tests",
+    "Production resource startup qualification",
+    "Separate retained rollout"
+  ]
+}

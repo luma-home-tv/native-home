@@ -99,7 +99,7 @@ is not a UI performance or physical-input latency result.
 The ordinary native collector exited at its bounded timeout after 30.14 seconds,
 saved 13 frames, and was removed. All 24 positive preservation checks passed,
 including checked retained-preview/favourites bytes and metadata, five selected
-Core hashes, Core-client metadata, 20 explicit settings domains, input/last-input
+Core hashes, Core-client metadata, 20 explicit preservation domains, input/last-input
 and checked audio profiles. LG Home was current. Proof processes/runtime/jail/
 state/catalogue/launchpoint, helper/endpoint, known child groups, two staged files,
 empty directory, upload, lease and private SSH agent were verified absent.

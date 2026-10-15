@@ -75,8 +75,9 @@ across assignments. More simultaneous sessions are useful only when there are
 more independent outputs; shared shell/input integration remains one owner's work.
 
 Use waves rather than keeping every agent on a permanent role. During device
-validation, the coordinator owns G2, a second validator owns C2, a reviewer audits
-evidence and a host-only worker prepares the next independent feature. During
+validation, the coordinator owns G2, a reviewer audits evidence and host-only
+workers prepare independent modules or adversarial fixtures. C2 has no active
+device lane under the current goal. During
 implementation, reassign the device validator to a bounded UI or test module.
 This keeps hardware tests running alongside development without asking two
 agents to integrate the same event loop. Give each assignment one deliverable,
@@ -94,10 +95,18 @@ proposals need not invalidate the artifact already under test.
 
 | Owner | Immediate work | Owned outputs and boundary |
 | --- | --- | --- |
-| Coordinator: native integration and G2 | Finish the normal Search → LG keyboard → Done/Back flow, explicit Luma-keypad fallback, compatibility/failure gates and long-query rendering. Reconcile reviews, build the shared candidate, validate it on G2, then review and publish qualified results. | Sole owner of `src/bin/home-preview.rs`, `src/shell.rs`, `src/shell_tests.rs`, `src/live.rs`, app-level keyboard/drawer state, packaging, dependency-lock reconciliation and central milestone/plan updates. Owns the G2 device lane. |
-| Background 1: firmware, ABI and text review | Independently review actual webOS24 SDL layouts and event semantics, preedit/caret handling, literal commits versus predictions, font/script limits and generic widget behaviour. Produce specific findings and proposed isolated changes. | Own review notes and focused ABI/framework fixtures. During active integration, shared files are read-only. After explicit handoff, may own `sdl-events.c`, `src/runtime.rs` or the external framework patch as an exclusive bounded unit; never concurrently with the coordinator. Generic widget improvements retain PlxNative authorship/licences and an upstream-suitable patch. No TV calls unless separately assigned a device lease. |
-| Background 2: controls coverage and next adapter | Maintain the concrete capability inventory, refine availability/context presentation, audit pointer size as the next candidate, and specify missing read groups and admission tests. | Own `docs/controls-coverage-next.md` and new operation-specific design/fixture files. A new fixed adapter can be assigned its own module after review. Shared model/live/shell/action changes remain coordinator-owned and are proposed as an interface contract. No arbitrary setter, protected operation or TV testing by this lane. |
-| Background 3: independent C2 validation | Review the candidate's C2 gates and prepare the separate state-preserving test recipe. Once a stable, explicitly admitted candidate is available, independently qualify C2 behaviour, capture scoped evidence, remove the isolated package and restore state. | Own C2-specific private harness/output paths and a proposed public validation record. Sole C2 device owner during its lease. Does not change shared app code, copy G2 conclusions, override rollout gates or update the retained preview autonomously. |
+| Coordinator: native integration and G2 | Integrate the artwork contracts, freeze matching source/build/package inputs, run serial checks and the isolated G2 test, and reconcile independent audits. | Owns shared live/shell/packaging integration, all builds, the device lease and central public records. Retained updates remain a separate qualification. |
+| Background 1: bounded resource interface | Implement an explicitly assigned metadata/transport module with fixed operations, strict identities, byte limits and refusal semantics. After handoff, prepare a new private test driver while the coordinator integrates source. | Owns only named files until handoff. No builds, TV calls, policy edits or production startup changes. Reusable framework changes retain upstream authorship and licences. |
+| Background 2: cache and integration review | Implement pure scheduling, ownership, invalidation and memory-capacity tests. After handoff, independently review the resource flow, context/refusal handling and candidate harness. | Owns a new isolated cache module during implementation; shared worker, GL and focus code stays read-only. Findings go to the integration owner. |
+| Background 3: adversarial fixtures and saved-evidence audit | Prepare package-mode tests, synthetic transfer/decoder receipt regressions and an independent saved-result audit alongside the driver work. | Owns new private test/audit files. No TV calls, shared source edits or build-target competition. Distinguishes reported digests from independently rehashed saved bytes. |
+
+The [0.35 artwork candidate](artwork-transfer-035.md) uses this division. Cache,
+transport and fixed catalogue readers were implemented independently, then handed
+to one integration owner. Harness fixtures and the saved-evidence audit proceed
+alongside the final ARM builds and package checks. Device qualification stays on
+the critical path; increasing agent count does not admit a moving source tree or
+concurrent access to the same TV. Later waves can reassign these slots to controls,
+visual review or reliability work after the current slice is reconciled.
 
 File ownership is an assignment, not a suggestion. Before editing, inspect the
 current worktree, active processes and owner messages. The coordinator records

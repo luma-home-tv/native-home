@@ -85,8 +85,12 @@ The helper's anonymous bus registration was refused; the cross-jail exchange
 and privileged artwork operations remain unqualified.
 The [0.34 fixed context reader](docs/broker-context-reader-034.md) addresses that
 registration boundary using three pinned system-client GETs. One native G2
-Identify exchange and complete isolated cleanup/state checks pass. Artwork reads
-and a production helper startup path remain unfinished.
+Identify exchange and complete isolated cleanup/state checks pass.
+The [0.35 isolated artwork transfer](docs/artwork-transfer-035.md) then qualified
+five real icon transfers and ordinary-process decodes, one per observed
+installation class, with clean removal and preserved checked state. Bounded cache
+state is implemented; live worker/texture integration, production helper startup
+and normal delivery remain unfinished. The retained G2 preview stays on 0.31.0.
 The [historical G2 timing/resource profile](docs/current-performance-milestone.json)
 measures the frozen 0.26.0 isolated dashboard, including real idle/wake and
 preserved state. It records continuing Apps repaints and is separate from
