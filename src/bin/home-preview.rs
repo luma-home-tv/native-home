@@ -728,7 +728,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut text_receipt = None::<serde_json::Value>;
     #[cfg(target_arch = "arm")]
     if text_probe {
-        text_receipt = Some(text_input_trial(
+        let result = text_input_trial(
             &mut shell,
             &window,
             &output,
@@ -736,7 +736,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             live_origin,
             &mut live_history,
             &mut now,
-        )?);
+        );
+        match result {
+            Ok(value) => text_receipt = Some(value),
+            Err(error) => {
+                let file = std::fs::OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .mode(0o600)
+                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                    .open(output.join("text-input-failure.json"))?;
+                serde_json::to_writer_pretty(
+                    file,
+                    &serde_json::json!({"stage":"failed","error":error.to_string()}),
+                )?;
+                return Err(error);
+            }
+        }
         shell.open(Page::Home);
     }
     let mut proof_request = None;
@@ -2099,6 +2115,7 @@ fn text_input_trial(
         std::fs::rename(tmp, output.join("text-input-current.json"))?;
         Ok(())
     };
+    phase("starting")?;
     for cycle in 1..=2 {
         shell.open(Page::Applications);
         shell.focus_drawer_control(2);
@@ -2122,6 +2139,12 @@ fn text_input_trial(
             phase("unavailable")?;
             return Err("SDL text input could not acquire the app window".into());
         }
+        statuses.push(serde_json::json!({"cycle":cycle,"started":window.keyboard_status()}));
+        std::fs::write(
+            output.join("text-input-runtime.json"),
+            serde_json::to_vec(&statuses)?,
+        )?;
+        phase(&format!("started-{cycle}"))?;
         for text in ["É", "cran"] {
             if !window.diagnostic_text(text) {
                 return Err("Native-only text injection refused".into());
@@ -2150,6 +2173,12 @@ fn text_input_trial(
             window.swap();
             std::thread::sleep(Duration::from_millis(10));
         }
+        std::fs::write(
+            output.join("text-input-decode.json"),
+            serde_json::to_vec(
+                &serde_json::json!({"commits":commits,"kinds":kinds,"editing":shell.drawer_state().editing,"query_bytes":shell.drawer_state().query().len()}),
+            )?,
+        )?;
         if shell.drawer_state().query() != "Écran" {
             return Err("Native SDL commit boundary did not reach the owned draft".into());
         }
