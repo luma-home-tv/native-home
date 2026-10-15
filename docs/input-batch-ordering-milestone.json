@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "status": "host_input_regressions_passed_native_physical_workflow_incomplete",
+  "source_revision": "c57be2f66942a7a31a51335e0abc837403ee07b5",
+  "candidate_version": "0.29.0",
+  "binary_sha256": "db503cd2dcc99f39b9e85dcf4786e35747d8bb31d6f71d2c533f79894d962faf",
+  "isolated_ipk_sha256": "c28e8b02aa6c83bb722793b9e04856ba730a6e8951b912cb6c013a92e6eb73cc",
+  "host": {
+    "library_tests_passed": 193,
+    "home_preview_binary_tests_passed": 5,
+    "clippy_all_targets_warnings_denied": true,
+    "arm_release_compiled": true,
+    "corrected_harness_tests_passed": 15
+  },
+  "native": {
+    "scope": "G2 isolated ordinary Proof only",
+    "attempts": 2,
+    "first_human_apps_open_report": true,
+    "first_native_pointer_click_and_apps_page": true,
+    "first_terminal": "host_ack_filename_mismatch_and_phase_timeout",
+    "second_terminal": "phase_timeout_awaiting_input",
+    "completed_physical_workflow": false,
+    "failure_closeout_checks_each_all_true": 30,
+    "isolated_app_state_and_mounts_removed": true,
+    "retained_normal_version": "0.28.0",
+    "retained_normal_package_preferences_metadata_preserved": true,
+    "normal_update_attempted": false,
+    "c2_touched": false
+  },
+  "unqualified": [
+    "wheel workflow",
+    "remote-key hold/menu cancellation",
+    "pointer Search/LG keyboard Back",
+    "physical event timestamps and hold threshold",
+    "full settings coverage",
+    "full dashboard release"
+  ]
+}
