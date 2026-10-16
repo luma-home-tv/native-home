@@ -52,7 +52,8 @@ exited 1 at the bounded frame-command wait. Both 16+8 preparation batches and
 the exact supplied 24-key body union pass saved regrading and byte-identical
 replay. Ordinary browsing/full-key drawing remain unqualified. Separate recovery
 verified exact057 restoration and scoped cleanup under the original lease and
-deadline; the recovery saved audit is pending. Preserve all failed attempts.
+deadline; independent recovery saved audit and byte-identical replay pass.
+Preserve all failed attempts.
 Future carriers must include source-declared `session-idle.ppm` and
 `session-awake.ppm` in their literal output allowlist, with the existing mapped
 identity/hash guards; never wildcard the session output names. Fresh sessions,

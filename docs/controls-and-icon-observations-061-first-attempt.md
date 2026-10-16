@@ -30,9 +30,10 @@ continuation added that literal filename, verified the previously removed
 diagnostic leaves, and removed the remaining mapped runtime, 24 cache entries
 and staging. Its actual exit was 0; lease and private host-agent removal passed.
 
-The recovery's raw saved-evidence audit is still pending. The original failed
-run and each recovery attempt remain separate. Neither retained installation
-was promoted; the C2 was not contacted.
+The recovery's independent raw saved-evidence audit and byte-identical replay
+pass. The coordinator separately rehashed all 25,476 bound inputs. The original
+failed run and each recovery attempt remain separate. Neither retained
+installation was promoted; the C2 was not contacted.
 
 The restore mount observation retained the original sequence as an exact
 prefix and measured six appended read-only SDK rows, within the three-launch
@@ -54,3 +55,5 @@ is `76117505dd837ead35e16a550ae194185ef3acfd`; the dashboard ELF is
 `1ab6ab8340fae8bee1d4d3da721cf131f4a9b3aa21a9aa4d3be30198dd82c71c`.
 The producer-only saved report and its replay have SHA-256
 `8f7a5d2edcc72251273ca25ad7b922f393959c03a816b9ff54cd289e1b509536`.
+The separate recovery report and replay have SHA-256
+`b6f3738e58ef4f71febb19b267507bdf287c45c537d143fde067b1442d2342a2`.

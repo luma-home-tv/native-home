@@ -90,7 +90,7 @@ per-key cached drawing ledger. Host validation passes. Its
 [first temporary G2 attempt](controls-and-icon-observations-061-first-attempt.md)
 now has independently reproduced two-batch preparation and exact supplied
 24-key body coverage. The ordinary browsing test timed out; separate restoration
-and cleanup completed, with their saved audit pending. Ordinary full-key drawing,
+and cleanup pass independent saved audit and replay. Ordinary full-key drawing,
 current-build performance, daily flows and retained delivery remain open.
 
 Split host work into independent streams, with one coordinator admitting frozen
