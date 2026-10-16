@@ -43,6 +43,11 @@ the [Inputs detail record](inputs-detail-milestone.json) covers source layout/re
 the [responsiveness record](responsiveness-milestone.json) retains the bounded
 performance evidence from 0.14.0.
 
+The [0.59 explicit preparation path](artwork-catalogue-preparation-059.md) now has
+host checks, matching ARM builds and local package/ABI inspection. Native
+preparation, ordinary consumer coverage and retained delivery are still pending.
+This component does not complete the dashboard or qualify a new normal release.
+
 The [0.53 exclusive departure-test recipe](artwork-context-qualification-053.md)
 now has host, strict-package, independent source-review and matching ARM-build
 evidence. Its two real ReadAfter/Finish native cases and independently replayed
@@ -52,7 +57,8 @@ retained app.
 
 ## Near-term release and parallel work
 
-The next coherent standalone release uses the existing packaged icons. Prioritise
+Keep packaged icons usable while qualifying the separate ordinary cache path.
+Choose one coherent normal-release artifact and prioritise
 normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
 The recorded normal sessions establish Home/Apps/Back and idle/wake within their
@@ -61,9 +67,12 @@ Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
 
-The next cache delivery steps are to review the SDK mount-row comparison against
-fresh state, expand preparation beyond the bounded six-entry observation, and
-qualify invalidation/failure behavior and a backed-up normal delivery. Measure
+The next cache delivery step is a fresh, reviewed 0.59 native batch and ordinary
+Root-free consumer trial, with per-attempt disposition and known restoration.
+The SDK mount comparison now preserves all measured aliases; it still needs a
+fresh native baseline. Follow with multiple batches where needed, final current
+per-key body/decode coverage, invalidation/failure behavior and a backed-up normal
+delivery. A cursor, index Ready or aggregate GL count is not all-app coverage. Measure
 current-artifact cold preparation and ordinary warm navigation separately before
 claiming a performance gain. Eviction/stale-writer recovery and C2 qualification
 remain open; normal interaction must keep Root artwork off.
@@ -76,8 +85,23 @@ artifacts and serialising each TV's tests:
 | Interface and input | Empty/long/localised/stale states, focus/menu/dismissal acceptance matrix | Physical remote and IME outcomes need a current available TV window |
 | Packaged icons and performance | Coverage by app identity, bounded startup/decode review, matched current-build workload | New/revised apps can lack snapshot artwork; a metadata path alone grants no byte access |
 | Read-only controls and inputs | Missing-value inventory and consistent native/read-only/LG-managed labels | Each additional setter or C2 source change needs its own capability, context and restoration proof |
-| Live artwork | Ordinary surface prerequisite, real negative cases and interactive transition evidence | Ordered lifecycle, actual Preview role and responsiveness gates precede backed normal activation |
+| Live artwork | Explicit finite preparation, per-key publication/body coverage and ordinary cache consumption | Actual Preview role, per-attempt helper/child/pending closure and known restoration; normal navigation keeps Root off |
 | Integration and release | Known update/removal, fresh preference preservation and a scoped release record | Current source, package and native receipts must agree; unknown outcomes retain their barriers |
+
+Release acceptance must also cover the practical daily loop on that same normal
+artifact: Home/Apps/Inputs/Controls, Search and one LG keyboard, physical menu
+hold/release, owned-app launch and explicit return, LG Settings handoff/return,
+idle/wake and repeated entry. Use an owned Target for reversible favourites and
+preserve the original preference semantics and bytes; inverse reordering alone
+can materialise a previously absent order vector. Fresh SDK relaunch is not
+automatic app return, and selected HDMI source is not actual video/format proof.
+
+Complete the intended control inventory as verified native read/edit, explicit
+LG handoff, protected or unavailable. Missing/stale/partial presentation and
+long/localised labels can advance in parallel with cache work. New setters need
+their own capability/context/effect/readback/restoration evidence. Measure the
+selected normal artifact's total resource cost and warm navigation separately
+from cold preparation and diagnostic capture overhead before claiming speedups.
 
 The pre-0.54 packaged startup loader visited only the first 64 catalogue entries
 and checked size/dimensions after reading/decoding. The current 0.54 source adds
@@ -102,9 +126,10 @@ The [0.54 G2 keyboard record](keyboard-observer-054.md) now corroborates two
 human/native Done/reopen/Back cycles with no extra keypad. Its final-exit reserve
 and empty-file parser failures remain explicit; later known cleanup and full
 preservation do not promote the failed original operator. The next
-[0.55 source](drawer-empty-states.md) distinguishes empty favourites, search misses
-and unavailable app data, with host checks and matching ARM builds but no native
-delivery yet.
+[0.55 source](drawer-empty-states.md) introduced distinct empty-favourites,
+search-miss and unavailable-data copy. Its separate
+[normal delivery](g2-retained-preview055.md) qualifies bounded sessions; every
+individual empty/error layout remains unqualified on the TV.
 
 ## Direction
 

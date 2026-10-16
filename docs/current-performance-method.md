@@ -11,7 +11,8 @@ The roughly 199-second run collected 73 process/native samples. The old
 [0.14 record](responsiveness-milestone.json) remains historical evidence, not
 current dashboard performance proof. The later
 [0.28.0 profile and normal delivery](apps-scroll-rest-milestone.json) records the
-next independent result. G2 now retains [0.47.0](g2-retained-preview047.md);
+next independent result. G2's last verified retained version is
+[0.57.0](g2-retained-preview057.md);
 neither those older measurements nor the [0.54 icon-rendering
 test](packaged-icon-native-054.md) qualify its current performance. The separate
 0.54 performance-only result above binds its own artifact and workload.

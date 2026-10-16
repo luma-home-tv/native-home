@@ -1,7 +1,7 @@
 # G2 retained native preview, 0.55
 
 The G2 received the ordinary **0.55.0 preview** in this historical delivery.
-The current retained version is [0.56](g2-retained-preview056.md).
+The last verified retained version is [0.57](g2-retained-preview057.md).
 Its backed-up update from
 0.47 completed three fresh normal sessions, exact preference preservation,
 checked TV-state preservation and temporary-file/lease cleanup. LG Home remains
