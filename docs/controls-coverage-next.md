@@ -1,10 +1,11 @@
 # Control-centre coverage and next work
 
-Current application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
-The [latest retained-update record](retained-preview-031-milestone.json) establishes G2
-0.31.0 after a backed-up normal-package upgrade and guarded network UI smoke;
-C2 remains at its separately recorded 0.20.0. This document update reads source
-and saved evidence, not fresh TV state. Normal G2 Home/Apps/Search/keyboard/General smoke
+Coverage-audit application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
+Latest retained deliveries are [G2 0.55](g2-retained-preview055.md) and
+[C2 0.48](c2-retained-preview-048.md), with their own scoped normal-session checks.
+Those deliveries do not qualify new control edits. This coverage matrix reads
+source and saved evidence, not a fresh inventory of every webOS24 setting.
+Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
 The [isolated 0.31.0 readability qualification](read-only-values-031-milestone.json)
 improves current protected-value contrast without enabling activation. It preserves

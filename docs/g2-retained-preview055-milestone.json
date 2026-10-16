@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "status": "bounded_normal_G2_055_delivery_verified",
+  "compiled_source_revision": "46f431cd3f601810a41d76c929b9d7392d223ae1",
+  "selected_build_inputs": 111,
+  "dashboard_sha256": "9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a",
+  "normal_ipk_sha256": "69d7b71354eba0361819f31e37078c3c876347dc12c124066bcbcf14a5eb30a7",
+  "retained_version": "0.55.0",
+  "previous_version": "0.47.0",
+  "supported_same_ID_update": true,
+  "rollback047_verified_staged_unused": true,
+  "retained_uninstall_requested": false,
+  "actual_operator_exit": 0,
+  "actual_operator_terminal": "7d0280",
+  "native_sessions": 3,
+  "session_kinds": [
+    "idle",
+    "relaunch",
+    "search"
+  ],
+  "installed_bundle": {
+    "entries": 32,
+    "files": 30,
+    "original_resources_unchanged": 28,
+    "only_changes": [
+      "home-preview",
+      "appinfo version"
+    ]
+  },
+  "original_private_preferences": {
+    "all_bytes_owners_modes_preserved": true,
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "content_writes_queued": 0
+  },
+  "observations": {
+    "frame_count": 27,
+    "SDK_key_requests": 21,
+    "accepted_fresh_whole_BMP_OK": 4,
+    "withheld_changed_image_OK": 1,
+    "idle_hold_seconds": 125.51561199998832,
+    "idle_black_capture": {
+      "dark_fraction": 1.0,
+      "mean_rgb": 0.0
+    },
+    "empty_Search_injected_Back": {
+      "opens": 1,
+      "stops": 1,
+      "dismissals": 1,
+      "failures": 0,
+      "text_injection": false,
+      "second_keypad_seen": false
+    },
+    "packaged_textures_each_session": {
+      "uploads": 7,
+      "deletes": 7,
+      "remaining": 0,
+      "backend_errors": 0,
+      "worker_joined": true
+    }
+  },
+  "preservation": {
+    "Core_file_digests_matched": 5,
+    "reply_domains_matched": 19,
+    "normal_Root_artwork": false,
+    "normal_runtime_old_bytes_rehashed": false,
+    "normal_runtime_logs_receipts_intentionally_retained": true,
+    "TV_staging_captures_absent": true,
+    "lease_released": true,
+    "host_agent_closed": true
+  },
+  "earlier_attempt": {
+    "actual_exit": 1,
+    "before_install_launch_input_staging": true,
+    "reason": "Quiet-Home predicate refused exactly LG Home plus its screensaver",
+    "separate_known_unused_lease_closeout_exit": 0,
+    "closeout_terminal": "c54fd8",
+    "original_failure_reclassified": false
+  },
+  "independent_saved_audit": {
+    "source_sha256": "8b12ce02c828c7e0a6e66f366dffd889f46b00f212d201405674b4bba1b63c93",
+    "report_sha256": "0560e227b60464fabf0103c0ea3ce87f7f1551559ace06ae991b5044798ed597",
+    "actual_exit": 0,
+    "actual_terminal": "89de67",
+    "coordinator_replay_actual_exit": 0,
+    "coordinator_replay_terminal": "3a68e1",
+    "coordinator_report_byte_identical": true,
+    "coordinator_adaptation": "Only report destination; original source identity retained",
+    "first_reader_exit": 1,
+    "first_reader_correction": "Anchor exact tree-label filenames rather than matching similarly named cleanup records",
+    "new_TV_run_for_reader_correction": false
+  },
+  "unqualified": [
+    "physical typing on this executable",
+    "Target app launch/return",
+    "settings handoff",
+    "favourite mutations/reordering",
+    "normal performance",
+    "all-app artwork",
+    "all native empty/error-state typography",
+    "C2 behavior",
+    "normal Root artwork activation"
+  ]
+}

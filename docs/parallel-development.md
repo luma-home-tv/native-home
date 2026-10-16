@@ -6,14 +6,14 @@ and application changes through one integration owner. This extends the
 [implementation plan](implementation-plan.md) and uses the
 [controls coverage audit](controls-coverage-next.md) as the control-centre backlog.
 It does not change device authorisation or the protections in `AGENTS.md`.
-G2 remains primary. The latest user authorization reopens both TVs for autonomous
-isolated tests from 00:00 Europe/London on 16 October 2026, superseding the earlier
-C2 cutoff. The overnight operators use the stricter new-start cutoff of 08:00
-BST and finish all contact/cleanup before 08:30 BST on 16 October; these are dated
-limits, not recurring authorization. All TV access stays with the coordinator,
-with distinct leases and private agents. Current retained deliveries are
-[G2 0.47](g2-retained-preview047.md) and [C2 0.48](c2-retained-preview-048.md),
-with device-specific resources, saved preferences and two fresh normal sessions.
+G2 remains primary and the user has explicitly made it always available. C2 is
+available only from 00:00–06:00 Europe/London or when explicitly made available
+by the user. This supersedes the earlier dated availability windows; historical
+operators retain their own expired execution limits and cannot be reused as
+current admission. All TV access stays with the coordinator, with distinct
+leases, current foreground/baseline checks and private agents. Current retained deliveries are
+[G2 0.55](g2-retained-preview055.md) and [C2 0.48](c2-retained-preview-048.md),
+with device-specific resources, saved preferences and fresh normal sessions.
 C2's ordinary-owner metadata roundtrip/restoration precedes its retained result;
 G2 evidence never establishes C2 permissions. The isolated 0.44 C2 static result
 and its preserved 0.20 baseline remain historical evidence.
@@ -94,7 +94,7 @@ to this source.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 retains 0.47.0 and
+   framework changes for possible upstream contribution. G2 retains 0.55.0 and
    C2 retains 0.48.0 after their own separate normal qualifications. Neither
    result qualifies C2 IME, normal Root artwork or full release acceptance.
    Component tests alone do not admit a retained update.

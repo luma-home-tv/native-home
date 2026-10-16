@@ -32,8 +32,11 @@ the helper is `4839b70a5c1e6a9a1ae99a9230631afa8f309305dc540e1869078413e65894cc`
 The unchanged ARM configuration emits the known unstable `neon` feature warning.
 The helper was not run.
 
-These are host/source and compilation checks. Native empty-state typography and
-retained delivery remain separate; neither TV has received this source version.
+The [G2 normal 0.55 delivery](g2-retained-preview055.md) now verifies three fresh
+sessions, including empty Search open/Back and black idle/wake, with original
+preferences preserved. The individual empty/error-state typography cases remain
+host-tested; that delivery did not exercise every case. C2 has not received this
+source version.
 The [0.54 performance](current-performance-054.md) and
 [keyboard](keyboard-observer-054.md) observations stay bound to their own frozen
 executable.

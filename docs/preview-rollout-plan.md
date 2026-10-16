@@ -1,6 +1,6 @@
 # Backed-up G2 preview rollout
 
-Current retained deliveries are [G2 0.47](g2-retained-preview047.md) and
+Current retained deliveries are [G2 0.55](g2-retained-preview055.md) and
 [C2 0.48](c2-retained-preview-048.md). Each used its own backed-up normal identity,
 resources and preservation checks. C2's latest two-session trial excluded
 Search/IME; neither delivery enables normal Root artwork or qualifies physical

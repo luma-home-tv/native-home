@@ -26,7 +26,19 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The latest verified retained G2 installation is 0.47.0, with dashboard ELF
+The latest verified retained G2 installation is 0.55.0, with dashboard ELF
+SHA-256 `9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`
+from frozen functional source `46f431cd3f601810a41d76c929b9d7392d223ae1`.
+`docs/g2-retained-preview055.md` records the backed-up same-ID update, two fresh
+base sessions and a third empty Search open/Back cycle, black idle/wake, exact
+private preferences, full bundle and sampled Core preservation, and complete
+owned staging/lease/agent cleanup. The first pre-mutation refusal stays exit 1,
+with a separate known unused-lease closeout. The final operator and saved audit
+pass. Runtime logs/session receipts remain; old runtime bytes were not rehashed.
+Normal Root artwork stays off. No new physical typing, Target/settings/favourite
+mutation, all-app artwork, C2 or normal performance qualification is implied.
+
+The earlier retained G2 installation was 0.47.0, with dashboard ELF
 SHA-256 `72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb`
 from frozen functional source `be6c06a341d72be1d06e92819a1be6c71ed52048`.
 Its two fresh normal sessions, original private preferences, full bundle/Core20
@@ -138,8 +150,10 @@ cycle observations do not qualify normal Preview, C2 or general IME behavior.
 
 The 0.55 source in `docs/drawer-empty-states.md` adds drawer empty-state copy and
 existing-control recovery hints. Host checks and matching SDK ARM builds pass;
-native/retained results remain unqualified for that source. Keep its package version distinct from frozen
-0.54 artifacts and preserve the attributed framework unchanged.
+the separate normal G2 delivery above qualifies its bounded sessions. The
+individual empty/error-state typography cases remain unqualified on the TV.
+Keep its package version distinct from frozen 0.54 artifacts and preserve the
+attributed framework unchanged.
 
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
@@ -215,11 +229,13 @@ never uninstall/reset the retained Preview or clear an old pending record. Actua
 Preview permissions, retained promotion and keyboard/departure recovery remain
 unqualified until their separate evidence is complete.
 
-The G2 is primary. After the earlier overnight window, the user confirmed both
-TVs free for autonomous isolated testing on 16 October and offered G2 physical
-input when needed. That later instruction replaces the earlier overnight cutoff
-and C2 window. Check fresh foreground/availability before a new native run; old
-dated carriers and expired device leases do not become valid again.
+The G2 is primary and the user has now explicitly made it always available.
+Do not repeatedly ask for G2 availability. C2 is available only between 00:00
+and 06:00 Europe/London, or when the user explicitly makes it available. This
+supersedes older all-day and overnight windows. Check fresh foreground and the
+actual per-device baseline before a new native run; availability never replaces
+process/scene/input guards. Old dated carriers and expired leases do not become
+valid again.
 Only the coordinator contacts TVs, with distinct per-device leases and private
 agents and preserved retained installations/favourites. Refresh C2's actual
 model, firmware, app version and complete bundle/state baseline before changes;

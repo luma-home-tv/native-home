@@ -8,7 +8,7 @@ fallbacks and controls. PlxNative supplies the attributed
 native rendering, UI and input framework. Luma owns its dashboard composition,
 branding, preferences and TV adapters; it contains no Plex client features.
 
-G2 retains [0.47.0](g2-retained-preview047.md) and C2 now retains
+G2 retains [0.55.0](g2-retained-preview055.md) and C2 now retains
 [0.48.0](c2-retained-preview-048.md), with each TV's own packaged artwork and
 preserved preferences. Available images keep their shape and alpha on black;
 initials remain the fallback for missing artwork. C2's two-session Home/Apps and

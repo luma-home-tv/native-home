@@ -44,9 +44,9 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
-Current retained normal deliveries are [G2 0.47](docs/g2-retained-preview047.md)
+Current retained normal deliveries are [G2 0.55](docs/g2-retained-preview055.md)
 and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
-saved preferences and two-session device evidence. The C2 trial omitted
+saved preferences and native-session device evidence. The C2 trial omitted
 Search/IME. Normal Root artwork remains off. The separate
 [0.49 isolated G2 scheduling result](docs/artwork-transition-049.md) does not
 activate that provider in either retained app.
