@@ -24,10 +24,10 @@ index 3b681c7..681f55d 100644
  name = "untrusted"
  version = "0.9.0"
 diff --git a/rust-modules/gfx/src/img.rs b/rust-modules/gfx/src/img.rs
-index 36c2799..fbce6dd 100644
+index 36c2799..099d9e9 100644
 --- a/rust-modules/gfx/src/img.rs
 +++ b/rust-modules/gfx/src/img.rs
-@@ -106,6 +106,92 @@ pub fn img_decode_owned(data: &[u8]) -> Option<(u32, u32, Vec<u8>)> {
+@@ -106,6 +106,243 @@ pub fn img_decode_owned(data: &[u8]) -> Option<(u32, u32, Vec<u8>)> {
      }
  }
  
@@ -117,10 +117,161 @@ index 36c2799..fbce6dd 100644
 +    (raw.len() == rgba_len).then_some((width, height, raw))
 +}
 +
++
++/// Opt-in bounded thumbnail for worker-side consumers. Existing decode APIs and
++/// their poster defaults stay unchanged. Output never upscales; aspect ratio is
++/// retained within integer-pixel rounding. No GL, path, file or service access.
++///
++/// BOTH source native pixels and source RGBA8 are bounded before full pixel
++/// decode/conversion through the existing bounded decoder. A separate smaller
++/// output bound applies before allocation. Codec/header bookkeeping and allocator
++/// failure retain the limitations documented on img_decode_owned_bounded: these
++/// limits are NOT a total-heap, OOM, codec-time or shutdown guarantee.
++///
++/// Resampling allocates only the bounded output, without a full-size float or
++/// premultiplied intermediate. Each disjoint integer source box contributes
++/// alpha-weighted RGB and mean alpha; transparent texels cannot colour an opaque
++/// neighbour. This is an integer box approximation, not linear-light filtering
++/// or exact fractional-area/GPU emulation. No EXIF orientation transform is added.
++pub fn img_decode_owned_thumbnail_bounded(
++    data: &[u8],
++    max_input_axis: u32,
++    max_input_rgba_bytes: u64,
++    max_output_axis: u32,
++    max_output_rgba_bytes: u64,
++) -> Option<(u32, u32, Vec<u8>)> {
++    if data.is_empty() {
++        return None;
++    }
++    let limits = owned_decode_limits(max_input_axis, max_input_rgba_bytes)?;
++    owned_decode_limits(max_output_axis, max_output_rgba_bytes)?;
++    catch_unwind(AssertUnwindSafe(|| {
++        let mut reader = image::ImageReader::new(std::io::Cursor::new(data))
++            .with_guessed_format()
++            .ok()?;
++        reader.limits(limits.clone());
++        let decoder = reader.into_decoder().ok()?;
++        decode_thumbnail_bounded_decoder(
++            decoder, max_input_axis, max_input_rgba_bytes,
++            max_output_axis, max_output_rgba_bytes, limits,
++        )
++    }))
++    .ok()
++    .flatten()
++}
++
++fn thumbnail_dimensions(
++    width: u32, height: u32, max_axis: u32, max_rgba_bytes: u64,
++) -> Option<(u32, u32, usize)> {
++    if width == 0 || height == 0 || max_axis == 0 {
++        return None;
++    }
++    let longest = width.max(height);
++    let (out_width, out_height) = if longest <= max_axis {
++        (width, height)
++    } else {
++        let scaled = |side: u32| -> Option<u32> {
++            u32::try_from((u64::from(side).checked_mul(u64::from(max_axis))?
++                / u64::from(longest)).max(1)).ok()
++        };
++        (scaled(width)?, scaled(height)?)
++    };
++    let bytes = bounded_rgba_len(out_width, out_height, max_axis, max_rgba_bytes)?;
++    Some((out_width, out_height, bytes))
++}
++
++fn decode_thumbnail_bounded_decoder(
++    decoder: impl image::ImageDecoder,
++    max_input_axis: u32,
++    max_input_rgba_bytes: u64,
++    max_output_axis: u32,
++    max_output_rgba_bytes: u64,
++    limits: image::Limits,
++) -> Option<(u32, u32, Vec<u8>)> {
++    let (width, height) = decoder.dimensions();
++    let (out_width, out_height, output_len) =
++        thumbnail_dimensions(width, height, max_output_axis, max_output_rgba_bytes)?;
++    // This existing seam rejects source dimensions/native bytes/RGBA bytes
++    // BEFORE DynamicImage's full pixel allocation. Output limits do not grant
++    // a larger source allocation; input and output budgets are independent.
++    let (actual_width, actual_height, rgba) =
++        decode_owned_bounded_decoder(decoder, max_input_axis, max_input_rgba_bytes, limits)?;
++    if actual_width != width || actual_height != height
++        || rgba.capacity() as u64 > max_input_rgba_bytes
++    {
++        return None;
++    }
++    if (width, height) == (out_width, out_height) {
++        return ((rgba.capacity() as u64) <= max_output_rgba_bytes)
++            .then_some((width, height, rgba));
++    }
++    let output = thumbnail_rgba_boxes(
++        &rgba, width, height, out_width, out_height, output_len, max_output_rgba_bytes,
++    )?;
++    Some((out_width, out_height, output))
++}
++
++fn thumbnail_rgba_boxes(
++    source: &[u8], width: u32, height: u32,
++    out_width: u32, out_height: u32, output_len: usize, max_output_bytes: u64,
++) -> Option<Vec<u8>> {
++    // All dimensions are prevalidated. Keep an explicit boundary for this helper
++    // so a future caller cannot hand it inconsistent buffers or upscale work.
++    let source_len = bounded_rgba_len(width, height, width.max(height), source.len() as u64)?;
++    if source_len != source.len() || out_width == 0 || out_height == 0
++        || out_width > width || out_height > height
++        || bounded_rgba_len(out_width, out_height, out_width.max(out_height), max_output_bytes)? != output_len
++    {
++        return None;
++    }
++    let mut output = Vec::new();
++    output.try_reserve_exact(output_len).ok()?;
++    if output.capacity() as u64 > max_output_bytes {
++        return None;
++    }
++    output.resize(output_len, 0);
++    for oy in 0..out_height {
++        let y0 = u64::from(oy) * u64::from(height) / u64::from(out_height);
++        let y1 = u64::from(oy + 1) * u64::from(height) / u64::from(out_height);
++        for ox in 0..out_width {
++            let x0 = u64::from(ox) * u64::from(width) / u64::from(out_width);
++            let x1 = u64::from(ox + 1) * u64::from(width) / u64::from(out_width);
++            let count = (x1 - x0).checked_mul(y1 - y0)?;
++            if count == 0 {
++                return None;
++            }
++            // A generic caller may supply larger caps than Luma; prove each
++            // channel accumulator's maximum before adding any texels.
++            count.checked_mul(65_153)?; // Includes channel-sum rounding headroom.
++            let mut alpha = 0_u64;
++            let mut colors = [0_u64; 3];
++            for y in y0..y1 {
++                for x in x0..x1 {
++                    let at = usize::try_from((y * u64::from(width) + x) * 4).ok()?;
++                    let a = u64::from(source[at + 3]);
++                    alpha += a;
++                    for channel in 0..3 {
++                        colors[channel] += u64::from(source[at + channel]) * a;
++                    }
++                }
++            }
++            let at = usize::try_from((u64::from(oy) * u64::from(out_width) + u64::from(ox)) * 4).ok()?;
++            let averaged_alpha = ((alpha + count / 2) / count) as u8;
++            output[at + 3] = averaged_alpha;
++            if averaged_alpha != 0 && alpha != 0 {
++                for channel in 0..3 {
++                    output[at + channel] = ((colors[channel] + alpha / 2) / alpha) as u8;
++                }
++            }
++        }
++    }
++    Some(output)
++}
++
  /// The first six bytes as hex, for a failure line only — never built on the success path.
  fn magic(data: &[u8]) -> String {
      data.iter().take(6).map(|b| format!("{b:02x}")).collect()
-@@ -198,3 +284,153 @@ pub fn img_upload_rgba(px: *const c_uchar, w: c_int, h: c_int) -> c_uint {
+@@ -198,3 +435,417 @@ pub fn img_upload_rgba(px: *const c_uchar, w: c_int, h: c_int) -> c_uint {
      }
      crate::gfx::upload_rgba(0, w, h, px)
  }
@@ -273,6 +424,270 @@ index 36c2799..fbce6dd 100644
 +        assert!(img_decode_owned_bounded(&encoded, 1, 4).is_none());
 +        assert_eq!(img_decode_owned(&encoded), Some((2, 1, pixels.to_vec())));
 +    }
++
++    #[test]
++    fn thumbnail_synthetic_1079_jpeg_is_supported_with_bounded_512_output() {
++        let mut encoded = Vec::new();
++        image::codecs::jpeg::JpegEncoder::new(&mut encoded)
++            .write_image(&[200, 40, 20].repeat(1079 * 1079), 1079, 1079, ExtendedColorType::Rgb8)
++            .unwrap();
++        assert!(encoded.len() < 1024 * 1024);
++        assert!(img_decode_owned_bounded(&encoded, 512, 1024 * 1024).is_none());
++        let (width, height, rgba) = img_decode_owned_thumbnail_bounded(
++            &encoded, 2048, 8 * 1024 * 1024, 512, 1024 * 1024,
++        ).unwrap();
++        assert_eq!((width, height, rgba.len()), (512, 512, 1024 * 1024));
++        assert!(rgba.capacity() <= 1024 * 1024);
++        assert!(rgba.chunks_exact(4).all(|p| p[3] == 255 && p[0] > 180 && p[1] < 60 && p[2] < 40));
++    }
++
++    #[test]
++    fn thumbnail_tiny_rgba_is_byte_exact_not_upscaled_or_hidden_rgb_changed() {
++        let pixels = [1, 2, 3, 0, 240, 200, 160, 128];
++        let encoded = png(2, 1, &pixels);
++        assert_eq!(img_decode_owned_thumbnail_bounded(&encoded, 2048, 8 * 1024 * 1024, 512, 1024 * 1024),
++            Some((2, 1, pixels.to_vec())));
++    }
++
++    #[test]
++    fn thumbnail_output_aspect_and_cap_are_separate_from_input_limits() {
++        for (width, height, expected) in [(1079, 540, (512, 256)), (540, 1079, (256, 512)), (1, 2048, (1, 512))] {
++            let source = [10, 20, 30, 255].repeat((width * height) as usize);
++            let encoded = png(width, height, &source);
++            let (w, h, rgba) = img_decode_owned_thumbnail_bounded(&encoded, 2048, 8 * 1024 * 1024, 512, 1024 * 1024).unwrap();
++            assert_eq!((w, h), expected);
++            assert_eq!(rgba.len(), (w * h * 4) as usize);
++            assert!(rgba.len() <= 1024 * 1024 && rgba.capacity() <= 1024 * 1024);
++            assert!(rgba.chunks_exact(4).all(|p| p == [10, 20, 30, 255]));
++        }
++    }
++
++    #[test]
++    fn thumbnail_alpha_weighting_ignores_transparent_blue_not_opaque_red() {
++        let encoded = png(2, 1, &[255, 0, 0, 255, 0, 0, 255, 0]);
++        assert_eq!(img_decode_owned_thumbnail_bounded(&encoded, 2, 8, 1, 4),
++            Some((1, 1, vec![255, 0, 0, 128])));
++        let encoded = png(2, 1, &[255, 0, 0, 128, 0, 0, 255, 0]);
++        assert_eq!(img_decode_owned_thumbnail_bounded(&encoded, 2, 8, 1, 4),
++            Some((1, 1, vec![255, 0, 0, 64])));
++        let encoded = png(2, 1, &[255, 0, 0, 0, 0, 0, 255, 0]);
++        assert_eq!(img_decode_owned_thumbnail_bounded(&encoded, 2, 8, 1, 4),
++            Some((1, 1, vec![0, 0, 0, 0])));
++    }
++
++    #[test]
++    fn thumbnail_source_axis_native_and_rgba_caps_still_reject_before_pixel_decode() {
++        for (width, height, color, axis, bytes) in [
++            (2049, 1, image::ColorType::Rgb8, 2048, 8 * 1024 * 1024),
++            (2048, 2048, image::ColorType::Rgb8, 2048, 8 * 1024 * 1024),
++            (1079, 1079, image::ColorType::Rgba16, 2048, 8 * 1024 * 1024),
++            (1079, 1079, image::ColorType::Rgb8, 2048, 4_656_963),
++        ] {
++            let called = Cell::new(false);
++            let decoder = ProbeDecoder { width, height, color, read_called: &called };
++            let limits = owned_decode_limits(axis, bytes).unwrap();
++            assert!(decode_thumbnail_bounded_decoder(decoder, axis, bytes, 512, 1024 * 1024, limits).is_none());
++            assert!(!called.get(), "thumbnail output fit never excuses oversized source buffers");
++        }
++    }
++
++    #[test]
++    fn thumbnail_invalid_output_budget_rejects_before_pixel_decode() {
++        for (axis, bytes) in [(0, 4), (512, 3), (512, 1024 * 1024 - 1)] {
++            let called = Cell::new(false);
++            let decoder = ProbeDecoder { width: 1079, height: 1079, color: image::ColorType::Rgb8, read_called: &called };
++            let limits = owned_decode_limits(2048, 8 * 1024 * 1024).unwrap();
++            assert!(decode_thumbnail_bounded_decoder(decoder, 2048, 8 * 1024 * 1024, axis, bytes, limits).is_none());
++            assert!(!called.get());
++        }
++    }
++
++    #[test]
++    fn thumbnail_bomb_header_and_truncated_data_refuse_without_big_fixture_image() {
++        let encoded = png(1, 1, &[1, 2, 3, 4]);
++        let mut bomb = encoded.clone();
++        bomb[16..20].copy_from_slice(&65_535_u32.to_be_bytes());
++        bomb[20..24].copy_from_slice(&65_535_u32.to_be_bytes());
++        let crc = crc32(&bomb[12..29]);
++        bomb[29..33].copy_from_slice(&crc.to_be_bytes());
++        assert!(bomb.len() < 1024);
++        assert!(img_decode_owned_thumbnail_bounded(&bomb, 2048, 8 * 1024 * 1024, 512, 1024 * 1024).is_none());
++        for end in [0, 1, 8, 16, 24, 32] {
++            assert!(img_decode_owned_thumbnail_bounded(&encoded[..end], 2048, 8 * 1024 * 1024, 512, 1024 * 1024).is_none());
++        }
++        assert!(img_decode_owned_thumbnail_bounded(b"not image bytes", 2048, 8 * 1024 * 1024, 512, 1024 * 1024).is_none());
++    }
++
++    #[test]
++    fn thumbnail_disjoint_opaque_source_boxes_cover_every_source_pixel() {
++        // Four input columns into two: complete boxes, no duplicated/omitted edge.
++        let encoded = png(4, 1, &[0, 0, 0, 255, 100, 0, 0, 255, 0, 100, 0, 255, 0, 0, 100, 255]);
++        assert_eq!(img_decode_owned_thumbnail_bounded(&encoded, 4, 16, 2, 8),
++            Some((2, 1, vec![50, 0, 0, 255, 0, 50, 50, 255])));
++    }
++
++
++    // Independent source geometry: 1079x719 ->512x341, neither axis divides
++    // evenly. The generator uses per-texel predicates; the oracle integrates
++    // continuous source rectangles, NOT floor-selected integer source bins.
++    const QUALITY_SOURCE: (u32, u32) = (1079, 719);
++    const QUALITY_OUTPUT: (u32, u32) = (512, 341);
++    fn quality_source() -> Vec<u8> {
++        let mut rgba = Vec::new();
++        for y in 0..QUALITY_SOURCE.1 {
++            for x in 0..QUALITY_SOURCE.0 {
++                rgba.extend_from_slice(&[
++                    if x < 300 { 240 } else { 16 },
++                    if y < 216 { 224 } else { 24 },
++                    if x < 811 { 32 } else { 208 },
++                    if x < 500 { 127 } else { 255 },
++                ]);
++            }
++        }
++        rgba
++    }
++    fn quality_cell(x: u32, y: u32) -> [f64; 4] {
++        [f64::from(x) * 1079.0 / 512.0, f64::from(y) * 719.0 / 341.0,
++         f64::from(x + 1) * 1079.0 / 512.0, f64::from(y + 1) * 719.0 / 341.0]
++    }
++    fn quality_overlap(a: f64, z: f64, lo: f64, hi: f64) -> f64 {
++        (z.min(hi) - a.max(lo)).max(0.0)
++    }
++    fn quality_reference(cell: [f64; 4]) -> [f64; 4] {
++        // A piecewise-constant field integrated by physical rectangle overlap.
++        // Values here are independent literals, not generated via candidate
++        // pixel selection or even via quality_source(). Alpha is integrated in
++        // premultiplied form and then unpremultiplied to straight output RGB.
++        let columns = [(0.0, 300.0, 240.0, 32.0, 127.0),
++                       (300.0, 500.0, 16.0, 32.0, 127.0),
++                       (500.0, 811.0, 16.0, 32.0, 255.0),
++                       (811.0, 1079.0, 16.0, 208.0, 255.0)];
++        let rows = [(0.0, 216.0, 224.0), (216.0, 719.0, 24.0)];
++        let area = (cell[2] - cell[0]) * (cell[3] - cell[1]);
++        let mut alpha = 0.0;
++        let mut colors = [0.0; 3];
++        for (x0, x1, red, blue, a) in columns {
++            for (y0, y1, green) in rows {
++                let weight = quality_overlap(cell[0], cell[2], x0, x1)
++                    * quality_overlap(cell[1], cell[3], y0, y1);
++                alpha += weight * a;
++                colors[0] += weight * a * red;
++                colors[1] += weight * a * green;
++                colors[2] += weight * a * blue;
++            }
++        }
++        [colors[0] / alpha, colors[1] / alpha, colors[2] / alpha, alpha / area]
++    }
++    fn quality_exact_step(lo: f64, hi: f64, split: f64, a: u8, z: u8) -> Option<u8> {
++        if hi <= split { Some(a) } else if lo >= split { Some(z) } else { None }
++    }
++    #[derive(Debug)]
++    struct QualityObservation {
++        exact_interior_violations: usize,
++        source_range_violations: usize,
++        fractional_edge_components: usize,
++        max_channel_error: f64,
++        mean_absolute_channel_error: f64,
++        root_mean_square_channel_error: f64,
++        analytical_mean_absolute_bound: f64,
++    }
++    fn quality_observe(rgba: &[u8]) -> QualityObservation {
++        assert_eq!(rgba.len(), (QUALITY_OUTPUT.0 * QUALITY_OUTPUT.1 * 4) as usize);
++        let mut out = QualityObservation { exact_interior_violations: 0, source_range_violations: 0,
++            fractional_edge_components: 0, max_channel_error: 0.0,
++            mean_absolute_channel_error: 0.0, root_mean_square_channel_error: 0.0,
++            analytical_mean_absolute_bound: 0.0 };
++        let ranges = [(16, 240), (24, 224), (32, 208), (127, 255)];
++        let mut l1 = 0.0;
++        let mut l2 = 0.0;
++        let mut bound = 0.0;
++        for y in 0..QUALITY_OUTPUT.1 {
++            for x in 0..QUALITY_OUTPUT.0 {
++                let cell = quality_cell(x, y);
++                let expected = quality_reference(cell);
++                let exact = [quality_exact_step(cell[0], cell[2], 300.0, 240, 16),
++                             quality_exact_step(cell[1], cell[3], 216.0, 224, 24),
++                             quality_exact_step(cell[0], cell[2], 811.0, 32, 208),
++                             quality_exact_step(cell[0], cell[2], 500.0, 127, 255)];
++                let at = ((y * QUALITY_OUTPUT.0 + x) * 4) as usize;
++                for c in 0..4 {
++                    let observed = rgba[at + c];
++                    if observed < ranges[c].0 || observed > ranges[c].1 {
++                        out.source_range_violations += 1;
++                    }
++                    if let Some(value) = exact[c] {
++                        out.exact_interior_violations += usize::from(observed != value);
++                    } else {
++                        out.fractional_edge_components += 1;
++                        // Edge values have no arbitrary per-pixel fit threshold.
++                        // Their maximum possible error is the known source
++                        // channel contrast. All other components must be exact.
++                        bound += f64::from(ranges[c].1 - ranges[c].0);
++                    }
++                    let error = (f64::from(observed) - expected[c]).abs();
++                    out.max_channel_error = out.max_channel_error.max(error);
++                    l1 += error;
++                    l2 += error * error;
++                }
++            }
++        }
++        let count = rgba.len() as f64;
++        out.mean_absolute_channel_error = l1 / count;
++        out.root_mean_square_channel_error = (l2 / count).sqrt();
++        out.analytical_mean_absolute_bound = bound / count;
++        out
++    }
++    fn quality_control(rgba: &[u8], kind: &str) -> Vec<u8> {
++        let (w, h) = QUALITY_OUTPUT;
++        let mut result = vec![0; rgba.len()];
++        for y in 0..h {
++            for x in 0..w {
++                let (sx, sy) = match kind {
++                    "flip_x" => (w - x - 1, y), "flip_y" => (x, h - y - 1),
++                    "right_one" => (x.saturating_sub(1), y),
++                    "left_one" => ((x + 1).min(w - 1), y),
++                    "down_one" => (x, y.saturating_sub(1)),
++                    "up_one" => (x, (y + 1).min(h - 1)),
++                    "omit_lower_right" => (x, y),
++                    _ => panic!("closed quality-control set"),
++                };
++                let target = ((y * w + x) * 4) as usize;
++                let source = ((sy * w + sx) * 4) as usize;
++                if kind != "omit_lower_right" || x < w / 2 || y < h / 2 {
++                    result[target..target + 4].copy_from_slice(&rgba[source..source + 4]);
++                }
++            }
++        }
++        result
++    }
++    #[test]
++    fn thumbnail_nonconstant_noninteger_geometry_matches_interiors_and_rejects_wrong_placement() {
++        let source = quality_source();
++        let encoded = png(QUALITY_SOURCE.0, QUALITY_SOURCE.1, &source);
++        assert!(encoded.len() <= 1024 * 1024);
++        let (w, h, rgba) = img_decode_owned_thumbnail_bounded(
++            &encoded, 2048, 8 * 1024 * 1024, 512, 1024 * 1024,
++        ).unwrap();
++        assert_eq!((w, h), QUALITY_OUTPUT);
++        assert!(rgba.len() <= 1024 * 1024 && rgba.capacity() <= 1024 * 1024);
++        let observed = quality_observe(&rgba);
++        assert_eq!(observed.exact_interior_violations, 0, "asymmetric source geometry/colour/alpha interiors");
++        assert_eq!(observed.source_range_violations, 0, "no invented colour/alpha or erased region");
++        assert_eq!(observed.fractional_edge_components, 341 * 3 + 512);
++        // A design-derived whole-image bound, not a threshold fitted to the
++        // implementation: sum(edge-component-count * source-contrast) / all
++        // components. Floating oracle roundoff gets only an arithmetic epsilon.
++        assert!(observed.mean_absolute_channel_error <= observed.analytical_mean_absolute_bound + 1e-9);
++        eprintln!("Independent continuous-area observation: {observed:?}");
++        // Zero residual is allowed: a future better fractional-area filter is
++        // not required to reproduce this integer-box approximation's error.
++        for control in ["flip_x", "flip_y", "right_one", "left_one", "down_one", "up_one", "omit_lower_right"] {
++            let wrong = quality_observe(&quality_control(&rgba, control));
++            assert!(wrong.exact_interior_violations > 0 || wrong.source_range_violations > 0,
++                "wrong placement/omitted-region control must violate the same exact oracle: {control}: {wrong:?}");
++        }
++    }
++
 +}
 diff --git a/rust-modules/ui/Cargo.toml b/rust-modules/ui/Cargo.toml
 index 787cc67..8dd86af 100644

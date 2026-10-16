@@ -228,9 +228,7 @@ fn process<P: Provider>(provider: &mut P, job: &Job) -> (FetchResult, Status) {
     {
         return (FetchResult::Unchanged(fingerprint), Status::Unchanged);
     }
-    let Some((width, height, rgba)) =
-        plx_gfx::img::img_decode_owned_bounded(&file.bytes, MAX_AXIS, MAX_IMAGE_BYTES as u64)
-    else {
+    let Some((width, height, rgba)) = crate::icon_decode::decode(&file.bytes) else {
         return (FetchResult::Failed, Status::DecodeFailed);
     };
     if let Some(status) = interrupted(job.deadline, &job.cancellation) {
@@ -647,6 +645,59 @@ mod tests {
         assert!(report.joined && !report.panicked && report.outstanding.is_none());
     }
     #[test]
+    fn actual_worker_downsamples_nonconstant_rgba_and_keeps_original_provenance() {
+        use crate::icon_decode_test_support::{assert_scaled_pattern, patterned_png};
+        for (width, height) in [(640, 160), (160, 640)] {
+            let bytes = patterned_png(width, height);
+            let expected_digest = plx_base::sha256::sha256(&bytes);
+            let expected_identity = identity(bytes.len());
+            let (mut cache, work, source) = fixture("fixture.thumbnail");
+            let expected_source = source.key().clone();
+            let (mut worker, calls) = worker(bytes);
+            worker.try_submit(work.clone(), source, deadline()).unwrap();
+            let done = wait(&mut worker);
+            assert_eq!(done.work, work);
+            assert_eq!(done.work.source(), &expected_source);
+            assert_eq!(done.status, Status::Decoded);
+            // Synthetic image success never invents privileged session closure.
+            assert_eq!(done.settlement, SessionSettlement::Unknown);
+            let FetchResult::Decoded { fingerprint, image } = &done.result else {
+                panic!("actual decoded RGBA")
+            };
+            assert_eq!(fingerprint.content_sha256, expected_digest);
+            assert_eq!(fingerprint.file_identity, expected_identity);
+            assert_scaled_pattern(image.width, image.height, &image.rgba);
+            assert!(image.rgba.capacity() <= MAX_IMAGE_BYTES);
+            assert_eq!(
+                cache.submit_result(done.work, done.result),
+                SubmitOutcome::Queued
+            );
+            assert!(cache.apply_next(0).unwrap().changed.is_some());
+            assert!(cache.shutdown().in_flight.is_none());
+            assert_eq!(calls.load(Ordering::SeqCst), 1);
+            let end = worker.finish();
+            assert!(end.joined && !end.panicked && end.outstanding.is_none());
+        }
+    }
+    #[test]
+    fn actual_worker_keeps_tiny_transparent_hidden_rgb_byte_exact() {
+        let bytes = crate::icon_decode_test_support::tiny_alpha_png();
+        let (_, work, source) = fixture("fixture.alpha");
+        let (mut worker, _) = worker(bytes.clone());
+        worker.try_submit(work, source, deadline()).unwrap();
+        let done = wait(&mut worker);
+        assert_eq!(done.status, Status::Decoded);
+        let FetchResult::Decoded { fingerprint, image } = done.result else {
+            panic!("tiny decoded PNG")
+        };
+        assert_eq!((image.width, image.height), (2, 1));
+        assert_eq!(image.rgba, [10, 20, 30, 0, 40, 50, 60, 128]);
+        assert_eq!(fingerprint.content_sha256, plx_base::sha256::sha256(&bytes));
+        assert_eq!(fingerprint.file_identity.bytes, bytes.len() as u64);
+        let end = worker.finish();
+        assert!(end.joined && !end.panicked && end.outstanding.is_none());
+    }
+    #[test]
     fn non_send_provider_init_fetch_and_drop_are_same_worker_thread() {
         struct Local {
             local: Rc<Cell<u8>>,
@@ -870,8 +921,8 @@ mod tests {
         w.finish();
     }
     #[test]
-    fn invalid_or_oversize_image_decode_fails_soft() {
-        for bytes in [b"not image bytes".to_vec(), png(513, 1)] {
+    fn invalid_or_over_input_axis_image_decode_fails_soft() {
+        for bytes in [b"not image bytes".to_vec(), png(2049, 1)] {
             let (mut w, _) = worker(bytes);
             let (_, work, source) = fixture("fixture.decode");
             w.try_submit(work, source, deadline()).unwrap();

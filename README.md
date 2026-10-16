@@ -36,6 +36,10 @@ dimming a valid current value. Unavailable and inactive rows retain dim styling.
 An opt-in bounded image decoder checks dimensions and per-image pixel-buffer
 sizes before decoding; existing decoder defaults remain unchanged. Codec memory
 limits are additional safeguards, not a total-heap or OOM guarantee.
+The [0.60 icon policy](docs/bounded-icon-decoding-060.md) adds an opt-in bounded
+thumbnail API shared by all three worker decode paths, preserving transparency
+and the existing renderer output limits. Its source and host checks pass;
+matching ARM and native qualification remain pending.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
@@ -106,6 +110,11 @@ publication/decode accounting and drain-before-join. All 747 Rust host tests,
 84 Python checks and strict Clippy pass. Matching ARM builds and independently
 reviewed local package/ABI inspection also pass; native execution, all-catalogue
 readiness and retained deployment remain unqualified.
+The later [temporary G2 batch](docs/artwork-catalogue-preparation-059-native.md)
+prepared 15 of 16 images and skipped the consumer after an oversized decode.
+Its original exit 1 remains preserved; exact 0.57 restoration and known cleanup
+pass independent saved audit and coordinator replay. The 0.60 source above
+addresses that decoder limit without promoting a new retained build.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.

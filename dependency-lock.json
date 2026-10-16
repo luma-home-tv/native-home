@@ -21,7 +21,8 @@
     "Shared staged signed range state and native editor geometry",
     "Grapheme-aware bounded text buffer and clipped native preedit/caret field",
     "Shared read-only form bindings with normal value ink and unchanged activation blocking",
-    "Generic caller-bounded image decoder with strict dimensions and per-image pixel-buffer limits"
+    "Generic caller-bounded image decoder with strict dimensions and per-image pixel-buffer limits",
+    "Opt-in worker thumbnail decode with independent bounded source/output buffers and alpha-weighted downsampling"
   ],
   "excluded_application_crates": [
     "plxnative-modules",
@@ -36,7 +37,7 @@
   "boundary": "External upstream checkout is ignored, explicitly attributed and only used as a framework dependency. No Plex application source is tracked in this repository.",
   "patched_file_sha256": {
     "rust-modules/Cargo.lock": "a0711531756f3ef9751fe17e9a41520b2216764d35826afce0a8c24824f3ed92",
-    "rust-modules/gfx/src/img.rs": "fa0c03f9fc9772c8e4d7ec075e1b8ba4f9a32dcfa076c627fe7e3a459e5c89cc",
+    "rust-modules/gfx/src/img.rs": "91b13fe4ca2d5d151f7a6cda939f2cab85fb906b14846251b2af876fadb618ff",
     "rust-modules/ui/Cargo.toml": "13890a62b2c6791b2893b5208c843c539dd87680a1c115756ce216a90616ed9e",
     "rust-modules/ui/src/cards/grid.rs": "470b8010186e173ce53438b96be6a7907e063fd403db67feaf66f94f0fb732f9",
     "rust-modules/ui/src/form.rs": "de8d2527dfe4cb34c9522efe695ed4e0123540a61a5ab52f15148c7e2e4ccc9a",
@@ -46,5 +47,5 @@
     "rust-modules/ui/src/widgets.rs": "ea45c467a72b4398010d640a12caf79503d8496c6f78903620517780017af631",
     "rust-modules/ui/src/widgets_art_crop_tests.rs": "596eae78a70f5e5ec8182440557a429095c5aa2a7b422b3b674bcbb5b91cf78c"
   },
-  "integration_patch_sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf"
+  "integration_patch_sha256": "7b43608310e690063abf59a5814611467d82b2946c7f57b54cf1826106a50b3d"
 }

@@ -702,3 +702,55 @@ fn changed_writer_temp_is_retained_instead_of_unlinked_by_drop() {
     assert_eq!(fs::metadata(&path).unwrap().mode() & 0o7777, 0o640);
     assert!(f.cache.snapshot().is_err());
 }
+
+#[test]
+fn actual_cached_decode_scales_patterns_preserves_source_association_and_withdrawal() {
+    use crate::icon_decode_test_support::{assert_scaled_pattern, patterned_png};
+    for (width, height) in [(640, 160), (160, 640)] {
+        let mut f = Fixture::new(Config::default());
+        let src = source("1", "pattern.png", IconKind::Icon);
+        let bytes = patterned_png(width, height);
+        let original_digest = digest(&bytes);
+        let mut payload = f.payload(bytes.clone());
+        payload.png_dimensions = Some([width, height]);
+        let identity = payload.identity.clone();
+        f.cache.publish(&src, &payload, producer()).unwrap();
+        let snapshot = f.cache.snapshot().unwrap();
+        let generation = snapshot.generation();
+        let cached = snapshot.decode(demand(&snapshot, &src)).unwrap();
+        assert_eq!(cached.observed_source_identity(), identity);
+        assert_eq!(cached.record.encoded_sha256, original_digest);
+        let selected = snapshot.lookup(&src, &producer());
+        assert!(matches!(selected, Lookup::Ready(_)));
+        let decoded = cached.admit(&generation, &src, &producer()).unwrap();
+        assert_scaled_pattern(decoded.width, decoded.height, &decoded.rgba);
+        assert!(decoded.rgba.capacity() <= MAX_RGBA_BYTES);
+        // The persisted record still describes original encoded bytes, not the
+        // smaller RGBA result; independently checked read_entry rehashes body.
+        let cached_again = snapshot.decode(demand(&snapshot, &src)).unwrap();
+        assert_eq!(
+            cached_again.observed_source_identity().bytes,
+            bytes.len() as u64
+        );
+        assert_eq!(cached_again.record.encoded_sha256, original_digest);
+        assert_eq!(f.cache.stats().unwrap().encoded_bytes, bytes.len() as u64);
+        generation.withdraw();
+        assert!(cached_again.admit(&generation, &src, &producer()).is_none());
+    }
+}
+#[test]
+fn actual_cached_decode_refuses_valid_complete_source_over_input_axis() {
+    let mut f = Fixture::new(Config::default());
+    let src = source("1", "large.png", IconKind::Icon);
+    let bytes = crate::icon_decode_test_support::patterned_png(2049, 1);
+    assert!(plx_gfx::img::img_decode_owned_bounded(&bytes, 2049, 1024 * 1024).is_some());
+    let mut payload = f.payload(bytes);
+    payload.png_dimensions = Some([2049, 1]);
+    f.cache.publish(&src, &payload, producer()).unwrap();
+    let snapshot = f.cache.snapshot().unwrap();
+    assert!(matches!(
+        snapshot.lookup(&src, &producer()),
+        Lookup::Ready(_)
+    ));
+    assert!(snapshot.decode(demand(&snapshot, &src)).is_err());
+}

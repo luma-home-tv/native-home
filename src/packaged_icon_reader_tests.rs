@@ -169,14 +169,14 @@ fn crc(bytes: &[u8]) -> u32 {
     !crc
 }
 #[test]
-fn malformed_and_valid_crc_oversized_headers_fail_bounded_decode() {
+fn malformed_or_over_input_axis_headers_fail_bounded_decode() {
     for variant in [0, 1, 2] {
         let f = Fixture::new();
         let mut bytes = png();
         match variant {
             0 => bytes = b"not a PNG or JPEG".to_vec(),
             1 => {
-                bytes[16..20].copy_from_slice(&513_u32.to_be_bytes());
+                bytes[16..20].copy_from_slice(&2049_u32.to_be_bytes());
             }
             _ => {
                 bytes[16..20].copy_from_slice(&512_u32.to_be_bytes());
@@ -299,4 +299,34 @@ fn held_root_anchor_does_not_claim_external_name_continuity() {
     let got = r.read(&path());
     fs::rename(&moved, &f.0).unwrap();
     assert_eq!(got.unwrap().bytes, b"held bundle");
+}
+
+#[test]
+fn actual_packaged_reader_scales_patterns_and_retains_encoded_fd_identity() {
+    use crate::icon_decode_test_support::{assert_scaled_pattern, patterned_png};
+    for (width, height) in [(640, 160), (160, 640)] {
+        let f = Fixture::new();
+        let bytes = patterned_png(width, height);
+        fs::write(f.icon(), &bytes).unwrap();
+        let reader = f.reader();
+        let original = reader.read(&path()).unwrap();
+        assert_eq!(original.bytes, bytes);
+        let decoded = reader.decode(&path()).unwrap();
+        assert_scaled_pattern(decoded.width, decoded.height, &decoded.rgba);
+        assert!(decoded.rgba.capacity() <= MAX_RGBA_BYTES);
+        assert_eq!(decoded.encoded_identity, original.identity);
+        assert_eq!(decoded.encoded_identity.bytes, bytes.len() as u64);
+    }
+}
+#[test]
+fn actual_packaged_reader_refuses_valid_complete_source_over_input_axis() {
+    let f = Fixture::new();
+    let bytes = crate::icon_decode_test_support::patterned_png(2049, 1);
+    // A separate legacy decode proves this is a complete valid image, rather
+    // than a short body with a forged oversized header/CRC.
+    assert!(plx_gfx::img::img_decode_owned_bounded(&bytes, 2049, 1024 * 1024).is_some());
+    fs::write(f.icon(), &bytes).unwrap();
+    let reader = f.reader();
+    assert_eq!(reader.read(&path()).unwrap().bytes, bytes);
+    assert!(reader.decode(&path()).is_err());
 }

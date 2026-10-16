@@ -95,3 +95,8 @@ pub mod preferences_migration_proof;
 pub mod artwork_closed_negative_proof;
 
 pub mod caption_reads;
+
+pub mod icon_decode;
+
+#[cfg(test)]
+pub(crate) mod icon_decode_test_support;

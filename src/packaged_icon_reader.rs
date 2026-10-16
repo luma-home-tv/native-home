@@ -250,9 +250,7 @@ impl PackagedIconReader {
         })
     }
     pub fn decode(&self, path: &RelativeIconPath) -> io::Result<DecodedIcon> {
-        self.decode_using(path, |bytes| {
-            plx_gfx::img::img_decode_owned_bounded(bytes, MAX_AXIS, MAX_RGBA_BYTES as u64)
-        })
+        self.decode_using(path, crate::icon_decode::decode)
     }
     fn decode_using(
         &self,

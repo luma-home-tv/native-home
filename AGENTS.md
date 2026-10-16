@@ -207,6 +207,17 @@ isolated host codec evidence only and is not integrated or ARM-qualified.
 Normal Root artwork stays off, C2 was not contacted, and the product goal remains
 incomplete. Future native work requires fresh state, leases and matching artifacts.
 
+`docs/bounded-icon-decoding-060.md` records the shared three-path thumbnail policy
+and generic attributed PlxNative API. All744 library/10UI/84Python, strict Luma
+Clippy and17 actual framework decoder tests pass;134 selected inputs match.
+Preserve the first old513-axis fixture failure and separate framework-wide strict
+lint failures; no blanket upstream lint-clean claim. Encoded1MiB/inputaxis2048/
+native+sourceRGBA each8MiB are independent from unchanged output512/1MiB.
+Original encoded provenance, generations, cancellation, worker/GL ownership and
+Root protocol remain unchanged. Bounds are not total-heap/OOM/time guarantees;
+native memory/latency and matching ARM/package/native evidence remain pending.
+No060 retained promotion or C2 contact follows from these source checks.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
