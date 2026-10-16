@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "status": "G2_normal057_caption_readout_retained_independently_replayed",
+  "functional_source_revision": "da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0",
+  "selected_source_inputs": 117,
+  "ELF_sha256": "a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590",
+  "IPK_sha256": "280846fde1cf58f2ea86cd091e6f4a0ef486c002c04000f7712285a7325da7e3",
+  "package_receipt_sha256": "96b2a39844c6e9d30a95827f727734ec339ebbb0b0b14eaefd9d539c150f0d7b",
+  "actual056_rollback_IPK_sha256": "219a2a74cd8704fb90f4d9acb60b6ad14813a5a5ff0c7435befce75cd0ccefc1",
+  "actual_operator_exit": 0,
+  "actual_operator_terminal": "06ecfa",
+  "admitted_driver_sha256": "ad9bd6969a89415a58f36e181d683166f176ec5b76c4878d334b14237fe490e9",
+  "validator_sha256": "f6bd74336a55331ccda66c433681f60ae4ecd35476c02e1384aef48ba562bcc6",
+  "host_guard_fixtures": 13,
+  "native_sessions": [
+    "caption_readonly",
+    "fresh_Home_Apps_Home_Back"
+  ],
+  "actual_compositor_frames": 28,
+  "actual_key_requests": 23,
+  "accepted_sidebar_rail_OKs": 2,
+  "withheld_changed_image_OK_commands": 2,
+  "caption_label_visually_attested": "TV caption preference",
+  "caption_value_published": false,
+  "independent_external_GETs_before_after_and_at_review_match": true,
+  "exact_asynchronous_native_reply_identity_qualified": false,
+  "separate_probe_permission_transferred": false,
+  "settings_or_favourites_or_keyboard_actions": false,
+  "packaged_worker_shutdowns": [
+    {
+      "uploads": 4,
+      "deletes": 4,
+      "worker_joined": true,
+      "remaining_textures": 0,
+      "GL_errors": 0
+    },
+    {
+      "uploads": 7,
+      "deletes": 7,
+      "worker_joined": true,
+      "remaining_textures": 0,
+      "GL_errors": 0
+    }
+  ],
+  "preservation": {
+    "full_bundle_entries": 32,
+    "full_bundle_files": 30,
+    "unchanged_packaged_resources": 28,
+    "fresh_private_preferences_bytes_and_metadata": true,
+    "Core_file_digests": 5,
+    "sampled_reply_domains": 19,
+    "old_runtime_bytes_rehashed": false,
+    "normal_logs_and_immutable_session_receipts_intentionally_retained": true,
+    "normal_Root_artwork": false,
+    "rollback_used": false,
+    "retained_Preview_uninstalled": false
+  },
+  "cleanup": {
+    "all_owned_remote_captures": true,
+    "both_staged_IPKs": true,
+    "staging_directory": true,
+    "lease_released": true,
+    "host_agent_closed": true
+  },
+  "independent_audit": {
+    "source_sha256": "ef1373e643ac24b148ecdce71b412dae6471630ca67035003ad069c6b3426dca",
+    "report_sha256": "8c515fc73aefbe354f98d357bed9904dd3c6e538b1dccad1dfe414b9327151f5",
+    "actual_exit": 0,
+    "actual_terminal": "1f51c8",
+    "Root_replay_exit": 0,
+    "Root_replay_terminal": "a663df",
+    "byte_identical": true,
+    "bound_files": 10199
+  },
+  "C2_contacted": false,
+  "unqualified": [
+    "active captions / UK DVB / app subtitles / setter permission",
+    "native failure and expiry presentation",
+    "physical input and keyboard",
+    "all-app icons and Root artwork",
+    "broad controls, HDMI live content, performance and reliability",
+    "C2057"
+  ]
+}

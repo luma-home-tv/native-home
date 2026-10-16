@@ -1,7 +1,7 @@
 # Control-centre coverage and next work
 
 Coverage-audit application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
-Latest retained deliveries are [G2 0.56](g2-retained-preview056.md) and
+Latest retained deliveries are [G2 0.57](g2-retained-preview057.md) and
 [C2 0.48](c2-retained-preview-048.md), with their own scoped normal-session checks.
 Those deliveries do not qualify new control edits. This coverage matrix reads
 source and saved evidence, not a fresh inventory of every webOS24 setting.
@@ -11,7 +11,8 @@ retains the original coverage audit's scope rather than implying a new full audi
 The [isolated ordinary caption GET](caption-read-native.md) now adds successful
 stored-preference access from a separate native identity with complete removal.
 The [0.57 source](caption-read-057.md) adds a protected Accessibility row with
-host checks; ordinary Preview access and native presentation remain unqualified.
+host checks and a separate [normal G2 delivery](g2-retained-preview057.md).
+The captured row and fresh relaunch are verified; native failure/expiry remain open.
 Neither result establishes UK/DVB or application subtitle semantics.
 Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
@@ -43,7 +44,7 @@ safety to write it.
 | Picture | None | Picture mode, OLED pixel brightness, contrast, black level; descriptor-validated colour depth, sharpness, tint, colour temperature on LG's scale, gamut, gamma, dynamic contrast, peak brightness | Picture overview handoff verified on both models. All edits remain LG-managed. Active video/HDR pipeline and per-input applicability are not established by a default settings profile. Motion, aspect ratio, noise reduction, game-specific and other picture controls lack registry coverage. Calibration/service controls remain protected. |
 | Sound | G2-only signed audio-description level, -15 to 15, when description is off and the fixed operation's gates pass | TV output, TV volume, mute; optional sound mode/profile input when output context agrees. Later isolated proof adds global balance, description enablement and description level as protected read-only rows on both | Sound overview handoff verified on both. Master volume/mute, sound mode, output/routing, balance, description enablement, equalisation, delay and eARC/format edits have no Luma adapter. Volume does not measure an external amplifier. Audible mixing behaviour is unverified; C2 numeric writes remain gated. |
 | Network | None | Internet availability, separate wired/Wi-Fi connection states, valid addresses and connected Wi-Fi name when supplied | Network entry via General is verified on both. Route priority and throughput are not measured. Reconfiguration, credentials, link enablement, DNS and addressing remain protected/LG-managed; no Luma network write is proposed. |
-| Accessibility | Audio-description level as above, presented here | Audio guidance, high contrast, screen magnification, menu transparency; later isolated proof adds guidance volume, pitch and speed | Accessibility overview handoff verified on both. These seven readings remain read-only. Captions/subtitles and other accessibility options lack native coverage. Do not disable an accessibility aid to create a convenient test context. |
+| Accessibility | Audio-description level as above, presented here | Audio guidance, high contrast, screen magnification, menu transparency; later isolated proof adds guidance volume, pitch and speed | Accessibility overview handoff verified on both. These seven readings remain read-only. The later [0.57 delivery](g2-retained-preview057.md) adds a protected stored caption-preference row; UK/DVB/app subtitle behavior and other accessibility options remain unqualified. Do not disable an accessibility aid to create a convenient test context. |
 | General | Pointer speed: Slow/Normal/Fast, individually guarded on both models | Quick Start+, pointer speed, pointer size, LG Home auto launch, LG Home promotions | General overview handoff verified on both. Pointer size is read-only. Quick Start+ and Home auto launch affect preserved startup/Home behaviour and stay LG-managed. Promotions have no write adapter. The [0.30.0 isolated G2 component](language-region-read-milestone.json) adds protected menu/audio-language and TV/services-country readings with focused native scrolling; [retained G2 delivery](retained-preview-030-milestone.json) is now verified, while C2 qualification remains pending. Time/timers, storage/app management, external-device/CEC/Bluetooth and tuner/channel settings still lack a native inventory or adapter. |
 | Panel Care | None | Screen Move, logo brightness adjustment, energy saving | OLED Care overview handoff verified on both. OLED protections and compensation scheduling remain protected; no native edit, pixel-cleaning action or service shortcut is proposed. Firmware, reset and service/calibration functions remain protected regardless of where LG places them. |
 | Inputs, adjacent to Controls | G2 HDMI selection through LG's application/source path; C2 production selection remains gated | Four HDMI identities, plug/signal flags and independently read selected source | G2 per-port selection/restoration is recorded. Live video/format/HDR and C2 exact idle tuner restoration remain open. No decoder, HDMI, audio or DRM service replacement. |

@@ -12,7 +12,7 @@ by the user. This supersedes the earlier dated availability windows; historical
 operators retain their own expired execution limits and cannot be reused as
 current admission. All TV access stays with the coordinator, with distinct
 leases, current foreground/baseline checks and private agents. Current retained deliveries are
-[G2 0.56](g2-retained-preview056.md) and [C2 0.48](c2-retained-preview-048.md),
+[G2 0.57](g2-retained-preview057.md) and [C2 0.48](c2-retained-preview-048.md),
 with device-specific resources, saved preferences and fresh normal sessions.
 C2's ordinary-owner metadata roundtrip/restoration precedes its retained result;
 G2 evidence never establishes C2 permissions. The isolated 0.44 C2 static result
@@ -27,8 +27,9 @@ public-API read, independent caller/report evidence and full removal/preservatio
 Its source/build, carrier and independent audit were prepared in parallel around
 one device owner. The [0.57 row integration](caption-read-057.md) followed the
 same split: private implementation, independent review and coordinator-run checks,
-with a separate native carrier lane. Normal caption presentation and regional
-semantics remain open.
+with a separate native carrier lane. The [normal057 G2 delivery](g2-retained-preview057.md)
+now verifies captured presentation and closure with an independently replayed audit.
+Regional semantics and native failure/expiry remain open.
 The [0.49 isolated G2 scheduling component](artwork-transition-049.md) now adds
 queued-work/local-intent/Back and known provider closure, with seven helper
 sessions and complete cleanup. Actual LG keyboard/external-app transition,
@@ -106,7 +107,7 @@ to this source.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 retains 0.56.0 and
+   framework changes for possible upstream contribution. G2 retains 0.57.0 and
    C2 retains 0.48.0 after their own separate normal qualifications. Neither
    result qualifies C2 IME, normal Root artwork or full release acceptance.
    Component tests alone do not admit a retained update.

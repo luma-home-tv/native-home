@@ -24,9 +24,10 @@ settings-database scope, active programme, UK/DVB subtitles, app subtitles or
 caption rendering. LG Settings remains the managed route.
 
 The [isolated ordinary GET](caption-read-native.md) establishes compatibility for
-its separate probe identity only. Normal Preview permission, actual row
-presentation, native failure/expiry behavior and C2 remain separate qualification
-work. The retained G2 is still [0.56](g2-retained-preview056.md).
+its separate probe identity only. The separate [normal G2 0.57 delivery](g2-retained-preview057.md) now verifies
+the captured row under Preview and a fresh normal session, with preservation and
+cleanup independently replayed. Native failure/expiry behavior, regional meaning
+and C2 remain separate qualification work.
 
 Eight new tests cover the fixed request, typed values, malformed/mixed failures,
 independent withdrawal, first all-failed presentation, expiry and the actual

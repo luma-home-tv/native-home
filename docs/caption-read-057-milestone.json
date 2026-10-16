@@ -64,5 +64,7 @@
     "selected_source_inputs_verified_at_Git_revision": 117,
     "native_qualified": false,
     "python_literal_escape_warning": "saved; no functional reader failure"
-  }
+  },
+  "later_native_qualification": "g2-retained-preview057-milestone.json",
+  "record_scope": "Historical source/build stage before the separate normal057 delivery; native-pending and retained056 fields describe that stage, not current TV state."
 }

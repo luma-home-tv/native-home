@@ -26,7 +26,22 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The latest verified retained G2 installation is 0.56.0, with dashboard ELF
+The latest verified retained G2 installation is 0.57.0, with dashboard ELF
+SHA-256 `a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590`
+from functional source `da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0`.
+`docs/g2-retained-preview057.md` records the backed-up actual056→057 update,
+captured protected caption-preference row against fresh external fixed GETs,
+source-correct Back and separate fresh Home/Apps/Back session. Original operator,
+independent saved audit and Root replay pass. Full bundle/private preferences,
+all 28 resources and sampled Core state are preserved, all owned remote captures,
+staging, lease and host agent removed. Normal runtime logs/session receipts remain;
+old bytes were not rehashed. Normal Root artwork stays off. This is stored caption
+preference, not active captions/UK DVB/app subtitles or write authority. Native
+failure/expiry, physical input, broad controls/performance/reliability and C2 remain
+open. Future backup/rollback must use actual057 and fresh state; older056-baseline
+carriers must not run against057.
+
+The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
 `docs/g2-retained-preview056.md` records the backed-up same-ID 055→056 update,
@@ -38,8 +53,9 @@ and saved audit/Root replay pass; one saved-reader inventory-window failure is
 preserved separately. No form row was activated; synchronous native-reply binding
 was not established. Normal Root artwork stays off. Physical input, native failure
 states, normal performance, all-app artwork, broad controls and C2 remain open.
-Use the actual056 archive and a fresh baseline for any future backup/rollback;
-older055/047 update operators must not run against current056. Normal runtime
+That historical update used the actual055 archive for rollback. The current057
+baseline above supersedes its future-update instructions; do not reuse its
+055→056 carrier against057. Normal runtime
 logs and immutable session receipts remain; old runtime bytes were not rehashed.
 
 `docs/caption-read-native.md` records a separate ordinary headless one-GET probe
@@ -54,7 +70,8 @@ by this result. Native source uses a separate `0700` report parent/PID directory
 `0600` reports, plus possible independently mapped framework `1777`/log `0640` paths. The
 wrapper's String is lossy/postallocation and Drop exposes no unregister status.
 OS exit status, UK/DVB/app subtitle semantics, Preview permission, normal UI,
-performance and C2 remain unqualified. Retained G2 remains 0.56; this probe is removed.
+performance and C2 were unqualified by that probe. It closed on retained0.56 and
+was removed; the separate normal057 delivery above provides later row evidence.
 
 The 0.57 source in `docs/caption-read-057.md` adds one protected TV caption
 preference row and one fixed public GET in the existing ordinary read worker.
@@ -62,8 +79,8 @@ It has no setter/editor/activation. All eight Accessibility rows are replaced
 per cycle; failed peers stay unavailable and all-failed withdraws freshness.
 Keep stored-preference meaning distinct from UK/DVB/app subtitle behavior.
 Host checks and source review do not transfer the isolated probe's permission
-to Preview or qualify native presentation. Current retained G2 stays 0.56 until
-a separate backed-up update and ordinary Preview observation are complete.
+to Preview. The separate retained057 delivery above now qualifies actual normal
+row presentation. Native failure/expiry and regional semantics remain open.
 
 The earlier verified retained G2 installation was 0.55.0, with dashboard ELF
 SHA-256 `9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`
