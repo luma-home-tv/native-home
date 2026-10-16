@@ -44,7 +44,7 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
-Current retained normal deliveries are [G2 0.55](docs/g2-retained-preview055.md)
+Current retained normal deliveries are [G2 0.56](docs/g2-retained-preview056.md)
 and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
 saved preferences and native-session device evidence. The C2 trial omitted
 Search/IME. Normal Root artwork remains off. The separate
@@ -58,7 +58,7 @@ original operator remains failed; the later continuation is recorded separately.
 
 The [0.56 TV-information source](docs/device-information-056.md) adds native
 read-only model, software and SDK-version rows under General using existing
-readings. Host checks pass; it has not been deployed to either TV.
+readings. Host checks and the bounded G2 delivery pass; C2 has not received it.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.

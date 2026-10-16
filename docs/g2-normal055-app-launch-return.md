@@ -53,5 +53,7 @@ No retained Preview install/uninstall, settings or favourite mutation, Root
 artwork helper, household app launch, Home interception or boot change was
 requested. C2 was not contacted. Physical input, automatic return, arbitrary-app
 compatibility, performance and general reliability remain unqualified. The
-retained [G2 delivery](g2-retained-preview055.md) stays at 0.55; the
-[0.56 TV-information source](device-information-056.md) has not been deployed.
+retained [G2 delivery at this observation](g2-retained-preview055.md) stayed at
+0.55. The later [0.56 delivery](g2-retained-preview056.md) has separate native
+presentation and preservation evidence; this launch result does not transfer
+to its new executable.

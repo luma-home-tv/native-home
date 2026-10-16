@@ -30,6 +30,11 @@ matched to that revision. Its SHA-256 is
 The existing unstable `neon` configuration warning is unchanged. The helper was
 neither rebuilt nor run for this display-only change.
 
-Native presentation remains unqualified. Neither TV has received this source.
-The [G2 retained delivery](g2-retained-preview055.md)
-remains 0.55, with its own frozen executable and evidence.
+The [G2 retained 0.56 delivery](g2-retained-preview056.md) now adds captured
+presentation of all three complete rows, matching fresh external system-info
+reads, and a separate fresh Home/Apps session. Backed-up installation, exact
+preferences/resources, sampled Core preservation and complete staging/lease
+cleanup passed with independent saved-evidence replay. No form row was activated.
+The asynchronous ordinary reply that populated each displayed value was not
+independently identified. Native failure/expiry presentation and C2 remain
+unqualified; the earlier 0.55 evidence stays bound to its own executable.

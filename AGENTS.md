@@ -26,7 +26,23 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The latest verified retained G2 installation is 0.55.0, with dashboard ELF
+The latest verified retained G2 installation is 0.56.0, with dashboard ELF
+SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
+from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
+`docs/g2-retained-preview056.md` records the backed-up same-ID 055→056 update,
+three complete General info rows visually matched to fresh external reads,
+source-correct form/category/Home Back, a separate fresh Home/Apps session and
+complete staging/lease/agent cleanup. Exact original preferences/metadata, all
+28 packaged resources and sampled Core state were preserved. The actual operator
+and saved audit/Root replay pass; one saved-reader inventory-window failure is
+preserved separately. No form row was activated; synchronous native-reply binding
+was not established. Normal Root artwork stays off. Physical input, native failure
+states, normal performance, all-app artwork, broad controls and C2 remain open.
+Use the actual056 archive and a fresh baseline for any future backup/rollback;
+older055/047 update operators must not run against current056. Normal runtime
+logs and immutable session receipts remain; old runtime bytes were not rehashed.
+
+The earlier verified retained G2 installation was 0.55.0, with dashboard ELF
 SHA-256 `9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`
 from frozen functional source `46f431cd3f601810a41d76c929b9d7392d223ae1`.
 `docs/g2-retained-preview055.md` records the backed-up same-ID update, two fresh
@@ -171,8 +187,9 @@ The 0.56 source in `docs/device-information-056.md` adds three read-only General
 rows from the already-collected system_info reply. Host checks and the matching
 SDK ARM dashboard build pass; no new TV service call,
 setter, permission or display-to-capability admission is added. Preserve mixed
-failure withdrawal and the existing pointer/keyboard gates. Native presentation
-remains unqualified for this source; retained G2 remains frozen 0.55.
+failure withdrawal and the existing pointer/keyboard gates. The separate retained
+G2 delivery above qualifies bounded native presentation; native failure/expiry
+presentation and C2 remain unqualified.
 
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.

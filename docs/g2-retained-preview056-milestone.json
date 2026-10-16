@@ -1,0 +1,108 @@
+{
+  "schema": 1,
+  "status": "bounded_normal_G2_056_General_delivery_independently_replayed",
+  "compiled_source_revision": "87945205e21393f5ef93d40a780b0c7e23d9acd8",
+  "selected_build_inputs": 114,
+  "dashboard_sha256": "e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9",
+  "normal_ipk_sha256": "219a2a74cd8704fb90f4d9acb60b6ad14813a5a5ff0c7435befce75cd0ccefc1",
+  "retained_version": "0.56.0",
+  "previous_version": "0.55.0",
+  "supported_same_ID_update": true,
+  "rollback055_verified_staged_unused": true,
+  "retained_uninstall_requested": false,
+  "actual_operator_exit": 0,
+  "actual_operator_terminal": "b76dc3",
+  "native_sessions": [
+    "general",
+    "relaunch"
+  ],
+  "installed_bundle": {
+    "entries": 32,
+    "files": 30,
+    "unchanged_original_resources": 28,
+    "only_changes": [
+      "home-preview",
+      "appinfo version"
+    ]
+  },
+  "General_observation": {
+    "labels": [
+      "TV model",
+      "Software version",
+      "webOS SDK version"
+    ],
+    "all_three_complete_rows_Root_reviewed": true,
+    "fresh_external_system_info_agreed": true,
+    "synchronous_ordinary_reply_identity_qualified": false,
+    "native_terminal_alone_proves_visibility": false,
+    "form_row_activated": false,
+    "Back_path": [
+      "form",
+      "category",
+      "Home",
+      "natural exit"
+    ]
+  },
+  "fresh_relaunch": [
+    "Home",
+    "Apps",
+    "Home",
+    "natural exit"
+  ],
+  "original_private_preferences": {
+    "all_bytes_owners_modes_preserved": true,
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "native_content_write_attempts": 0
+  },
+  "observations": {
+    "compositor_frames": 32,
+    "SDK_key_requests": 28,
+    "accepted_fresh_whole_BMP_rail_OK": 2,
+    "withheld_changed_image_OK": 1,
+    "packaged_texture_uploads_and_deletions": [
+      4,
+      7
+    ],
+    "packaged_workers_joined": true,
+    "packaged_textures_remaining": 0,
+    "packaged_icon_backend_errors": 0
+  },
+  "preservation": {
+    "Core_file_digests_matched": 5,
+    "reply_domains_matched": 19,
+    "normal_Root_artwork": false,
+    "old_runtime_bytes_rehashed": false,
+    "normal_runtime_logs_receipts_intentionally_retained": true,
+    "TV_staging_captures_absent": true,
+    "lease_released": true,
+    "host_agent_closed": true,
+    "C2_contacted": false
+  },
+  "independent_saved_audit": {
+    "source_sha256": "66e60e5f9ff89158f6d495a87d572106ff1ac1835d643d250fc6584c7e2fd769",
+    "report_sha256": "b7e1e60c7fae1d8ab250b020e7f4b2377e585ce66517aec908d951859ff34547",
+    "bound_evidence_files": 9071,
+    "actual_exit": 0,
+    "actual_terminal": "f0bb82",
+    "coordinator_replay_actual_exit": 0,
+    "coordinator_replay_terminal": "4023f0",
+    "coordinator_report_byte_identical": true,
+    "coordinator_adaptation": "Only AST report destination; original source identity retained",
+    "first_reader_exit": 1,
+    "first_reader_correction": "Select the closest actual inventories around this exact member interval; exclude the next tree inventory",
+    "TV_rerun_for_reader_correction": false
+  },
+  "unqualified": [
+    "physical input on this executable",
+    "native unavailable/error/expiry presentation",
+    "keyboard or external-app launch on this executable",
+    "settings handoff or new setters",
+    "favourite mutations/reordering",
+    "normal performance or general reliability",
+    "all-app artwork or normal Root artwork",
+    "C2 behavior",
+    "full control-centre coverage",
+    "TV clock versus LG display comparison"
+  ]
+}

@@ -1,10 +1,13 @@
 # Control-centre coverage and next work
 
 Coverage-audit application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
-Latest retained deliveries are [G2 0.55](g2-retained-preview055.md) and
+Latest retained deliveries are [G2 0.56](g2-retained-preview056.md) and
 [C2 0.48](c2-retained-preview-048.md), with their own scoped normal-session checks.
 Those deliveries do not qualify new control edits. This coverage matrix reads
 source and saved evidence, not a fresh inventory of every webOS24 setting.
+The separate 0.56 source/delivery adds three protected TV-information rows under
+General with captured native presentation; it adds no setter. The matrix below
+retains the original coverage audit's scope rather than implying a new full audit.
 Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
 The [isolated 0.31.0 readability qualification](read-only-values-031-milestone.json)

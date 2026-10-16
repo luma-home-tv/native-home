@@ -12,7 +12,7 @@ by the user. This supersedes the earlier dated availability windows; historical
 operators retain their own expired execution limits and cannot be reused as
 current admission. All TV access stays with the coordinator, with distinct
 leases, current foreground/baseline checks and private agents. Current retained deliveries are
-[G2 0.55](g2-retained-preview055.md) and [C2 0.48](c2-retained-preview-048.md),
+[G2 0.56](g2-retained-preview056.md) and [C2 0.48](c2-retained-preview-048.md),
 with device-specific resources, saved preferences and fresh normal sessions.
 C2's ordinary-owner metadata roundtrip/restoration precedes its retained result;
 G2 evidence never establishes C2 permissions. The isolated 0.44 C2 static result
@@ -99,7 +99,7 @@ to this source.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 retains 0.55.0 and
+   framework changes for possible upstream contribution. G2 retains 0.56.0 and
    C2 retains 0.48.0 after their own separate normal qualifications. Neither
    result qualifies C2 IME, normal Root artwork or full release acceptance.
    Component tests alone do not admit a retained update.
