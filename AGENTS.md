@@ -125,6 +125,18 @@ unqualified. Retain the early 183.667 ms draw outlier and metric boundaries;
 normal Preview total cost, physical latency/smoothness, C2 and retained promotion
 remain open. Neither retained installation changed; normal Root artwork stays off.
 
+`docs/keyboard-observer-054.md` records two observed human/native keyboard cycles
+and separate cleanup. Preserve original exit1/full-workflow nonqualification:
+the manual exit reserve expired, then the metadata parser rejected the source's
+zero-byte owner-file spelling. Known later cleanup used the same original lease
+and a size-zero-only parser adapter; it is not generic HOLD recovery. The two
+cycle observations do not qualify normal Preview, C2 or general IME behavior.
+
+The 0.55 source in `docs/drawer-empty-states.md` adds drawer empty-state copy and
+existing-control recovery hints. Host checks pass; no ARM/native/retained result
+is qualified for that source. Keep its package version distinct from frozen
+0.54 artifacts and preserve the attributed framework unchanged.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

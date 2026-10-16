@@ -1973,6 +1973,42 @@ impl Shell {
             self.clock = view.clone();
         }
     }
+    /// Empty-result copy reflects the current filter and reading validity.
+    /// This changes no focus target, catalogue, action or persistence state.
+    fn drawer_empty_copy(&self) -> Option<(&'static std::ffi::CStr, &'static std::ffi::CStr)> {
+        if self.surface.page != Page::Applications || !self.surface.cards.items.is_empty() {
+            return None;
+        }
+        if self
+            .live_state
+            .as_ref()
+            .is_some_and(|fresh| !Freshness::current(fresh.catalogue, self.live_now))
+        {
+            return Some((
+                c"Apps unavailable",
+                c"Use the sidebar to open Home, Inputs or Controls.",
+            ));
+        }
+        if self.catalogue.applications.is_empty() {
+            return Some((c"No apps to show", c"Use the sidebar to return Home."));
+        }
+        let searching = !self.drawer.query().trim().is_empty();
+        match (self.drawer.favourites_only, searching) {
+            (true, false) => Some((
+                c"No favourites yet",
+                c"Choose All apps, then hold OK on an app to add it.",
+            )),
+            (true, true) => Some((
+                c"No matching favourites",
+                c"Choose All apps to search the full list.",
+            )),
+            (false, _) => Some((
+                c"No matching apps",
+                c"Change your search or clear it with Keypad.",
+            )),
+        }
+    }
+
     fn reading_label(&self) -> String {
         let shown = self.surface.control_page.unwrap_or(self.surface.page);
         let Some(fresh) = &self.live_state else {
@@ -3993,13 +4029,11 @@ impl Shell {
                     );
                 }
             }
-            if self.surface.cards.items.is_empty() {
-                Label::new(
-                    c"No matching apps".as_ptr(),
-                    theme::size::BODY,
-                    theme::TEXT_SECONDARY,
-                )
-                .draw(p, Rect::new(480.0, 390.0, 1344.0, 120.0));
+            if let Some((title, hint)) = self.drawer_empty_copy() {
+                Label::new(title.as_ptr(), theme::size::BODY, theme::TEXT_PRIMARY)
+                    .draw(p, Rect::new(480.0, 390.0, 1344.0, 52.0));
+                Label::new(hint.as_ptr(), theme::size::CAPTION, theme::TEXT_SECONDARY)
+                    .draw(p, Rect::new(480.0, 448.0, 1344.0, 72.0));
             }
             if self.drawer.editing && !self.drawer.system_keyboard() {
                 for (i, label) in KEYS.iter().enumerate() {
@@ -4708,3 +4742,7 @@ mod artwork_tests;
 #[cfg(test)]
 #[path = "shell_packaged_tests.rs"]
 mod packaged_tests;
+
+#[cfg(test)]
+#[path = "shell_empty_state_tests.rs"]
+mod empty_state_tests;

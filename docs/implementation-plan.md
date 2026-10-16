@@ -82,6 +82,13 @@ Its earlier observer-limited attempt remains unqualified. The completed run
 retains a 183.667 ms draw outlier already present in the earliest Home sample;
 normal Preview cost, physical input/smoothness and C2 remain separate checks.
 
+The [0.54 G2 keyboard record](keyboard-observer-054.md) now corroborates two
+human/native Done/reopen/Back cycles with no extra keypad. Its final-exit reserve
+and empty-file parser failures remain explicit; later known cleanup and full
+preservation do not promote the failed original operator. The next
+[0.55 source](drawer-empty-states.md) distinguishes empty favourites, search misses
+and unavailable app data, with host checks and no native delivery yet.
+
 ## Direction
 
 The agreed visual direction is the Apple TV / tvOS feel that PlxNative interprets

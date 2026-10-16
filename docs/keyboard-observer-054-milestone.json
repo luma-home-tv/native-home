@@ -1,0 +1,127 @@
+{
+  "schema": 1,
+  "status": "two_observed_human_native_cycles_with_separate_known_cleanup",
+  "date": "2026-10-16",
+  "version": "0.54.0",
+  "compiled_source_revision": "3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb",
+  "package_marker_declared_revision": "ee3d924768b2061656512a561965d013aea109af",
+  "binary_sha256": "a1bd31cc4e3ce7b9141f3e33a7db81392f4d0e7893d6a0c8e77193b6e90ae418",
+  "package_sha256": "547c7f9fb7e950667bcb953b48010f033493f451d04334be50a64bf53490fde5",
+  "profile_markers": [
+    "interactive-session.json",
+    "keyboard-observer.json"
+  ],
+  "accepted_raw_observer_packets": 89,
+  "observed_stages": [
+    {
+      "closed_fixture": "lu",
+      "closed_native_ms": 83647,
+      "keyboard": {
+        "dismissals": 0,
+        "failures": 0,
+        "opens": 1,
+        "stops": 1
+      },
+      "native_origin": "native_unclassified",
+      "opened_fixture": "empty",
+      "opened_native_ms": 37353,
+      "round": 1,
+      "separate_human_confirmation": true
+    },
+    {
+      "closed_fixture": "luma",
+      "closed_native_ms": 154094,
+      "keyboard": {
+        "dismissals": 1,
+        "failures": 0,
+        "opens": 2,
+        "stops": 2
+      },
+      "native_origin": "native_unclassified",
+      "opened_fixture": "lu",
+      "opened_native_ms": 93717,
+      "round": 2,
+      "separate_human_confirmation": true
+    }
+  ],
+  "native_event_origin": "native_unclassified",
+  "human_confirmation_recorded_separately": true,
+  "human_reported_no_additional_keypad": true,
+  "original_operator": {
+    "actual_exit_code": 1,
+    "full_workflow_qualified": false,
+    "navigation_requests": 9,
+    "supported_own_close_requests": 1,
+    "remove_requests": 0,
+    "failures": [
+      "Manual final-exit reserve expired after returning Home; one supported own close followed.",
+      "Cleanup rejected Linux stat spelling regular empty file for the source-created zero-byte owner file."
+    ],
+    "terminal_receipt_sha256": "a781de1f6e44ccb9ef27c3035625c2ce636f7e9b24a320ecb3012310991acc5c"
+  },
+  "separate_cleanup": {
+    "actual_exit_code": 0,
+    "same_original_lease": true,
+    "new_install_launch_or_input_requests": 0,
+    "supported_remove_requests": 1,
+    "recorded_operator_unlinks": 8,
+    "empty_owner_identity_bytes_metadata_verified": true,
+    "test_paths_registrations_mounts_staging_absent": true,
+    "own_lease_and_host_agent_closed": true,
+    "terminal_receipt_sha256": "6778c5b4152dba58cdf14e4f356b4b2c5c5f490ae189ccae237203536456d8f5"
+  },
+  "native_final_exit_reason": "window_closed",
+  "packaged_shutdown_after_supported_close": {
+    "completed": 8,
+    "discarded": 0,
+    "gl": {
+      "deletes": 8,
+      "deletion_failures": 0,
+      "last_gl_error": 0,
+      "observed_gl_errors": 0,
+      "upload_failures": 0,
+      "uploads": 8
+    },
+    "remaining_textures": 0,
+    "submitted": 8,
+    "texture_bytes_before_cleanup": 1240784,
+    "unavailable_sources": 0,
+    "worker_joined": true,
+    "worker_panicked": false
+  },
+  "preserved_tree_counts": {
+    "bundle": {
+      "entries": 32,
+      "files": 30
+    },
+    "normal-runtime": {
+      "entries": 113,
+      "files": 75
+    },
+    "state": {
+      "entries": 2,
+      "files": 1
+    }
+  },
+  "preserved_getter_reply_groups": 19,
+  "preserved_protected_file_hashes": 5,
+  "independent_saved_audit": {
+    "source_sha256": "9b9ff51786b86e280fc4d36bf9c762a2850f5967a204feed8ab4b3828da40c35",
+    "report_sha256": "57a662e89b3caa9db3f2c29dac17ffd918d5c786bcfef2160c6159e971afebae",
+    "Root_replay_byte_identical": true,
+    "Root_replay_receipt_sha256": "2f0b07580f625066145281acd9c161cd3db57300db2887acdf2c7a4ab0aea08c"
+  },
+  "retained_installations_updated": false,
+  "Root_broker_or_HBC_session_started": false,
+  "C2_or_normal_Preview_qualified": false,
+  "limits": [
+    "Positive scope is two same-process observed native cycles plus separate human confirmations and later cleanup, never the failed original complete operator workflow.",
+    "Native event origins remain native_unclassified; human attribution is separately supplied by human/Root confirmation, not inferred from SDL text events.",
+    "Done explicit stop and Back implicit dismissal are corroborated by counters/draft and external LG overlay observations; no physical latency or exhaustive event ordering/composition guarantee.",
+    "Exact fixed lu/luma fixtures only, no general Unicode/prediction/IME/physical-hold or C2/normal promotion claim.",
+    "Late observer/shell terminal says window_closed after one supported close, not natural Back exit or measured OS exit status.",
+    "Compiled source3833 and marker-declared ee3 are distinct identities; marker is not measured executable provenance.",
+    "Complete before/final retained fingerprints and Core20 equality are sampled readbacks, not atomic no-change guarantees.",
+    "SDK internal removal behavior is opaque; actual ACK, UID/registry/path/mount closure and recorded exact operator unlinks are separate evidence."
+  ]
+}

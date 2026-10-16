@@ -185,6 +185,11 @@ completes an isolated navigation/idle/wake workload and cleanup, retaining its
 early draw outlier. Normal Preview input/performance qualification remains open.
 Normal Root artwork stays off.
 
+The [0.54 G2 keyboard check](docs/keyboard-observer-054.md) records two observed
+human typing cycles and separate verified cleanup, preserving its original
+driver failure. The [0.55 empty-state source](docs/drawer-empty-states.md) improves
+drawer messages and recovery hints; it has host checks but no TV delivery yet.
+
 ## Layout
 
 | Path | Ownership and purpose |
