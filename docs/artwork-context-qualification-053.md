@@ -25,7 +25,7 @@ be counted as a successful negative case. There is no automatic retry.
 
 The recipe submits exactly one current Target source from the actual catalogue.
 It uses no normal artwork scheduler, preference writer, keyboard or setting
-action. Every departure immediately latches off drawing and buffer swaps while
+action. Every observed departure immediately latches off drawing and buffer swaps while
 the already started worker is drained and joined. SDL focus loss alone does not
 identify the foreground app: the device operator must independently bind the
 actual Target launch, foreground and window records.
