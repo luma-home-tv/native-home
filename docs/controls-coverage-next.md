@@ -8,6 +8,9 @@ source and saved evidence, not a fresh inventory of every webOS24 setting.
 The separate 0.56 source/delivery adds three protected TV-information rows under
 General with captured native presentation; it adds no setter. The matrix below
 retains the original coverage audit's scope rather than implying a new full audit.
+The [isolated ordinary caption GET](caption-read-native.md) now adds successful
+stored-preference access from a separate native identity with complete removal.
+It does not yet add a normal Accessibility row or establish UK/DVB semantics.
 Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
 The [isolated 0.31.0 readability qualification](read-only-values-031-milestone.json)

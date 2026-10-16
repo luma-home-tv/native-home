@@ -42,6 +42,20 @@ Use the actual056 archive and a fresh baseline for any future backup/rollback;
 older055/047 update operators must not run against current056. Normal runtime
 logs and immutable session receipts remain; old runtime bytes were not rehashed.
 
+`docs/caption-read-native.md` records a separate ordinary headless one-GET probe
+from `probes/caption-read` at source `a9dbb9535474f88277fb994d3e5f4b66d25fab67`.
+The original native operator passes with complete known removal, exact retained 0.56
+bundle/preferences, sampled Core preservation and closed lease/agent. Independent
+saved audit and Root replay agree byte-for-byte. Preserve the local getauxval
+link failure and first saved-reader suffix-glob failure; neither was a failed
+native run or required a TV retry. Use only the plain anonymous fixed public
+caption GET; no call_as_app, fallback, setter or normal integration is admitted
+by this result. Native source uses a separate `0700` report parent/PID directory and
+`0600` reports, plus possible independently mapped framework `1777`/log `0640` paths. The
+wrapper's String is lossy/postallocation and Drop exposes no unregister status.
+OS exit status, UK/DVB/app subtitle semantics, Preview permission, normal UI,
+performance and C2 remain unqualified. Retained G2 remains 0.56; this probe is removed.
+
 The earlier verified retained G2 installation was 0.55.0, with dashboard ELF
 SHA-256 `9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`
 from frozen functional source `46f431cd3f601810a41d76c929b9d7392d223ae1`.

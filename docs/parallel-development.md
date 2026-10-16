@@ -22,6 +22,10 @@ one real drawer launch and a later explicitly launched fresh Luma session, with
 independently replayed cleanup and preservation. The original operator remains
 exit1; its same-lease continuation observed removal completion without retry.
 Automatic return, arbitrary-app compatibility and broader reliability remain open.
+The separate [ordinary caption getter](caption-read-native.md) adds one fixed
+public-API read, independent caller/report evidence and full removal/preservation.
+Its source/build, carrier and independent audit were prepared in parallel around
+one device owner. Normal caption presentation and regional semantics remain open.
 The [0.49 isolated G2 scheduling component](artwork-transition-049.md) now adds
 queued-work/local-intent/Back and known provider closure, with seven helper
 sessions and complete cleanup. Actual LG keyboard/external-app transition,
