@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "milestone": "C2 native047 failure and separate old20 current-state restoration",
+  "date": "2026-10-16",
+  "device_class": "LG C2 / webOS24",
+  "firmware": "23.25.55",
+  "sdk": "9.2.2",
+  "status": "old20_bundle_and_state_restored_native_migration_unqualified",
+  "historical_build": {
+    "source_revision": "be6c06a341d72be1d06e92819a1be6c71ed52048",
+    "selected_input_count": 101,
+    "ui_sha256": "72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb",
+    "ui_bytes": 3879936,
+    "build_receipt_sha256": "581a7f64ee47c548eb1a98038465f3fd8c5ff9ea7ad18b17465312979145abd7",
+    "later_source_equivalence_claimed": false
+  },
+  "executions": [
+    {
+      "operation": "native_trial",
+      "host_tool_session_id": 92831,
+      "actual_exit_code": 1,
+      "scope": "SDK install terminal and launch acknowledgement; no bound native producer or receipt",
+      "root_terminal_attestation_sha256": "f47dbc07c5bb31227d24a41ddadc0f7df3222a02eda0e3d8d3a563e9904f5cea"
+    },
+    {
+      "operation": "empty_context_refusal",
+      "host_tool_session_id": 65944,
+      "actual_exit_code": 1,
+      "scope": "No restoration attempted",
+      "root_terminal_attestation_sha256": "a76e386becd5acd6e9fc07174edef5e3fc3aa25f47cbdb6ce2d2f07f6eeff22f"
+    },
+    {
+      "operation": "unreachable_lease_maintenance",
+      "host_tool_session_id": 81201,
+      "actual_exit_code": 1,
+      "scope": "No renewal attempted",
+      "root_terminal_attestation_sha256": "a0661091b5cd45efe046075af9aee01234ea8c7a91b8f21b6cc22595987c3823"
+    },
+    {
+      "operation": "read_only_current_state_observation",
+      "host_tool_session_id": 93299,
+      "actual_exit_code": 0,
+      "scope": "Recorded current state and HDMI1 context; no restoration",
+      "root_terminal_attestation_sha256": "c236ab4082aff214d1de38c1352a3087bbf16769cc47088138ac628fa75d60e9"
+    },
+    {
+      "operation": "unsupported_jail_root_assumption",
+      "host_tool_session_id": 89567,
+      "actual_exit_code": 1,
+      "scope": "Stopped before Home or supported restoration",
+      "root_terminal_attestation_sha256": "cdc9a258e9ff51e666473d2f0849ae03f1d7219a846823ee2a3786cbded2018f"
+    },
+    {
+      "operation": "unreachable_restorer",
+      "host_tool_session_id": 83790,
+      "actual_exit_code": 1,
+      "scope": "Stopped before owner verification, Home or supported restoration",
+      "root_terminal_attestation_sha256": "a3cbc9692d415e6628ba2222b99b840a8bf08c2f8c9a2b5e825a4814a7bbb25e"
+    },
+    {
+      "operation": "separate_home_preparation",
+      "host_tool_session_id": 16199,
+      "actual_exit_code": 0,
+      "scope": "Standard LG Home navigation and post-Home baseline; lease held",
+      "root_terminal_attestation_sha256": "683637b1e2c493f29b5b51a64a8afc4bb381cffc1e44f4258b2a371f6dbd3cde"
+    },
+    {
+      "operation": "active_only_power_refusal",
+      "host_tool_session_id": 12695,
+      "actual_exit_code": 1,
+      "scope": "Actual Screen Saver reply; stopped before upload or supported restoration",
+      "root_terminal_attestation_sha256": "25bb7e9acd0ac2e73be8a7f3ada09a9156624e67e9818c6aaaac1d78fbfc0fe2"
+    },
+    {
+      "operation": "separate_existing_state_restoration",
+      "host_tool_session_id": 54058,
+      "actual_exit_code": 0,
+      "scope": "Exact old20 bundle/state restored; post-Home baseline and cleanup verified",
+      "root_terminal_attestation_sha256": "91f7b69186ca8fe9892ad75e61729ce41d1ba061e7e9631b1a5c587e5b3e1543"
+    }
+  ],
+  "execution_identifier_scope": "Host tool sessions, not TV process IDs",
+  "native_trial": {
+    "sdk_install_known_terminal": true,
+    "sdk_launch_request_accepted": true,
+    "fresh_runtime_observed_at_checked_host_path": false,
+    "independently_bound_native_producer": false,
+    "native_migration_receipt_obtained": false,
+    "execution_history": "unknown",
+    "no_native_API_attempt_qualified": false,
+    "G2_argument_observation_explains_C2_failure": false
+  },
+  "separate_restoration": {
+    "operator_sha256": "7744320722582fc2e3ead9a6d70e6d29856aba2b8d49aa2049bef6d9e60c94bf",
+    "restored_version": "0.20.0",
+    "restoration_ipk_sha256": "d8566b390fac2f93f99626b79725e61e85ed66cfdf17ace9a16249c3f53bbc20",
+    "full_original_bundle_entries": 42,
+    "full_original_bundle_files": 40,
+    "original_preference_bytes": 216,
+    "all_recorded_bytes_ownership_modes_equal": true,
+    "legacy_bundle_modes": "0777",
+    "legacy_state_directory_file_modes": [
+      "0777",
+      "0777"
+    ],
+    "legacy_modes_recommended_for_modern_store": false,
+    "old_UI_execution_tested": false,
+    "same_positively_verified_handoff_lease_only": true,
+    "lease_acquisition_or_renewal_requested": false,
+    "navigation_or_candidate_launch_requested": false,
+    "input_requested": false,
+    "retained_uninstall_requested": false,
+    "direct_chmod_chown_requested": false,
+    "preference_content_write_requested": false,
+    "setting_or_input_setter_requested": false,
+    "power_raw_states": [
+      "Screen Saver"
+    ],
+    "power_read_count": 8,
+    "screensaver_dismissal_or_wake_requested_by_restorer": false,
+    "preservation_baseline": "explicit separately observed post-Home baseline",
+    "preservation_domains": 20,
+    "Core_files_hashed": 5,
+    "typed_read_domains": 19,
+    "original_pre_network_domain_equality_claimed": false,
+    "reboot_or_tmp_loss_or_network_loss_cause_qualified": false,
+    "new_verified_upload_and_staging_directory_removed": true,
+    "old_upload_paths_observed_absent_not_removed": true,
+    "same_lease_release_verified": true,
+    "host_agent_cleanup_verified": true,
+    "closeout_errors": {},
+    "old_runtime_contents_rehashed": false
+  },
+  "saved_audit": {
+    "auditor_sha256": "d91bad01a14b9a86a74e044f4722e4ff3676d71d2aa83b6268e1653d38b84e0d",
+    "report_sha256": "2b65596aac651ade9eb0584342ace6adf37092f34f9f988f78adfd93b6622186",
+    "artifact_bindings": 1425,
+    "binding_count_is_test_coverage_metric": false,
+    "Root_replay_actual_exit_code": 0,
+    "Root_replay_report_byte_identical": true,
+    "Root_replay_receipt_sha256": "0e238fa04cf260de6a38150cc5ef335ba4b5fe39161f139bde4dbb6293c3e398",
+    "TV_rerun_for_audit_corrections": false,
+    "preserved_local_audit_failures": [
+      "Version1 rejected known OpenSSH warning under empty-stderr assumption; version2 binds exact warning bytes.",
+      "Initial Root replay rejected wrong CLI argument before reading evidence; corrected replay passed."
+    ]
+  },
+  "qualifications": {
+    "restoration_of_recorded_old20_bundle_and_state": true,
+    "native_forward_reverse_API_roundtrip": false,
+    "same_version_replacement_component_included": false,
+    "normal047_upgrade": false,
+    "Root_artwork": false,
+    "physical_input": false,
+    "performance": false,
+    "SDK_launch_queue_empty": false,
+    "continuous_no_autolaunch": false,
+    "actual_native_private_namespace": false,
+    "complete_TV_feature_coverage": false
+  },
+  "limits": [
+    "Tree metadata, runtime membership, cleanup syscall ordering and owner/agent closure originate in pinned operator receipts; saved bytes and original replies independently replayed.",
+    "Host inactive jail observations do not qualify actual native private namespaces.",
+    "Lease owner absence is raw; complete coordination-directory removal is source-bound to the original token release protocol."
+  ],
+  "related_public_records": [
+    "preferences-migration-047.md",
+    "c2-retained-installer-047.md",
+    "c2-installer-metadata-045.md"
+  ]
+}

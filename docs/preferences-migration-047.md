@@ -100,3 +100,7 @@ original metadata before normal package restoration. Any uncertain stage instead
 exercises HOLD, not guessed cleanup. Keep runtime recovery, same-identity
 rollback, production activation, physical input and performance unqualified
 until their respective evidence exists.
+
+The subsequent [C2 native trial and separate restoration](c2-native-preferences-047.md)
+records a failed native attempt and an independently replayed return to the
+complete old installation. Native forward/reverse migration remains unqualified.

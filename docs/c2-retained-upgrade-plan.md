@@ -55,3 +55,7 @@ After known process and installer closure, the reverse state transaction may res
 Bundle metadata needs its own explicit decision. Compare the supported rollback's actual bundle against both the original archive manifest and the historical installed manifest. If the installer normalizes modes, byte equality alone is not full historical restoration. An optional, separately scoped restoration contract may restore only the fixed own-bundle entries from the backup after exact inventory, byte, type, owner and link checks bound to their descriptors. It must not become a general recursive chmod, parent-directory repair or Core modification. Without that qualified contract, report the remaining metadata difference honestly and retain the recovery evidence.
 
 No Root artwork helper or weakened helper trust boundary is needed for this plan. Permission migration, installer metadata behavior, real packaged-icon rendering and normal-session acceptance are separate admission checks; none alone establishes the whole upgrade.
+
+The [0.47 native trial and separate restoration](c2-native-preferences-047.md)
+preserve an unsuccessful native attempt and the verified old-bundle/state
+restoration. They do not qualify the permission transaction or normal upgrade.
