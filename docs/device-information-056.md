@@ -23,6 +23,13 @@ mixed failures, expiry/recovery, stable row identities, presentation context and
 actual form behavior. Integration passed **627 library tests, eight UI tests,
 64 Python packaging tests and Clippy**. The framework is unchanged.
 
-ARM compilation and native presentation remain separate checks. Neither TV has
-received this source. The [G2 retained delivery](g2-retained-preview055.md)
+The SDK ARM dashboard build also passed from source
+`87945205e21393f5ef93d40a780b0c7e23d9acd8`, with all 114 selected source inputs
+matched to that revision. Its SHA-256 is
+`e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`.
+The existing unstable `neon` configuration warning is unchanged. The helper was
+neither rebuilt nor run for this display-only change.
+
+Native presentation remains unqualified. Neither TV has received this source.
+The [G2 retained delivery](g2-retained-preview055.md)
 remains 0.55, with its own frozen executable and evidence.
