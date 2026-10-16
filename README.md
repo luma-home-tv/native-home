@@ -51,6 +51,10 @@ Search/IME. Normal Root artwork remains off. The separate
 [0.49 isolated G2 scheduling result](docs/artwork-transition-049.md) does not
 activate that provider in either retained app.
 
+The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
+is host-tested and builds for ARM, but has no native execution qualification.
+It prepares two one-job artwork-withdrawal cases; normal loading remains off.
+
 The following component records retain their historical versions and scopes.
 The [text-input milestone](docs/text-input-milestone.json) records isolated G2
 system-keyboard typing/lifecycle work and the single-keyboard design. The retained

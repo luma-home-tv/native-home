@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "date": "2026-10-16",
+  "candidate_version": "0.53.0",
+  "functional_revision": "324d016a248d8c5d84b0b4fe89766d79bf3b54c5",
+  "scope": "Host and ARM build qualification of exclusive one-job Proof context-withdrawal recipe; no native execution",
+  "checks": {
+    "rust_library": 576,
+    "rust_ui": 7,
+    "python": 64,
+    "clippy_warnings_denied": true,
+    "arm_ui_exit": 0,
+    "arm_proof_helper_exit": 0,
+    "matching_source_inputs": 105
+  },
+  "artifacts": {
+    "home-preview": {
+      "sha256": "1e70ea41940b8c7d9db277e9cd436ad9715bdbb00d36f38fdc1bfbdc7c95d176",
+      "bytes": 4086984,
+      "build_receipt_sha256": "0c7e6ab0bac064ca89b8bff48cf26fdc71abdb8272349f028b8e42701f50a520"
+    },
+    "artwork-broker-startup-proof": {
+      "sha256": "c1b93088d1443c550f07470642d26505c3a4da4d12e8b3a6d307a43fca9c9719",
+      "bytes": 908160,
+      "build_receipt_sha256": "9402e12d116a2bd011b55c3144872d2ac1b78b68c44c384651606acc2d29241b"
+    }
+  },
+  "private_evidence_sha256": {
+    "host_root_receipt": "285389f8f04d446054fcb0e732e348867a41d993a0a778dc0cf4887149a77dad",
+    "integrated_independent_review": "0105e95b8769f5ae48425d290772da1583279892c9ecaad35548494d869fc29d",
+    "freeze_verification": "962290efc5b93529de9d4af2f71eccb6d3defaca58711f16d4fccc057fd39847",
+    "ui_actual_build": "c2c685b22f7ad848de9878ec084c5869a182a242938777a22eec1083256b1fda",
+    "helper_actual_build": "75a95d3bddebd60eb74208fed0c4f6bedc12fd9d87b20857dda6a4e519bc87da"
+  },
+  "implemented": {
+    "strict_case_marker_and_exclusive_arm_proof_package": true,
+    "empty_packaged_catalogue_actual_live_target_source": true,
+    "one_job_no_scheduler_or_retry": true,
+    "ordinary_private_state_creation_without_preference_save": true,
+    "render_swap_stop_latched_on_departure": true,
+    "fixed_protected_read_after_plan_revalidated": true,
+    "finish_client_hold_after_actual_complete": true,
+    "positive_timing_miss_discarded_before_decode": true,
+    "selected_case_matches_actual_failure_stage": true,
+    "generic_negative_ticket_grader_unchanged": true
+  },
+  "native_cases": {
+    "read_after": "pending",
+    "finish": "pending"
+  },
+  "native_IPK_created": false,
+  "TV_contact_for_053": false,
+  "normal_root_artwork_enabled": false,
+  "retained_versions": {
+    "G2": "0.47.0 unchanged",
+    "C2": "0.48.0 unchanged"
+  },
+  "preserved_failure_history": [
+    "First focused host compile exited101 for ErrorKind-to-box conversion; mechanical io::Error conversion fixed it.",
+    "First Clippy run exited101 for redundant typed io::Error conversion; removed it and repeated the full Rust suite.",
+    "Initial artifact-freeze wrapper exited1 only on final source-input count print after files were saved; separate frozen-byte verification exited0."
+  ],
+  "not_qualified": [
+    "native ReadAfter or Finish withdrawal",
+    "actual Target foreground timing",
+    "independent native saved-evidence audit or removal",
+    "normal Root artwork activation or retained promotion",
+    "C2 Root access",
+    "arbitrary app or keyboard departure",
+    "hard blocked-call shutdown bound",
+    "old pending-record recovery",
+    "power-loss or crash recovery",
+    "performance or OLED protection"
+  ]
+}

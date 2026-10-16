@@ -35,6 +35,12 @@ the [Inputs detail record](inputs-detail-milestone.json) covers source layout/re
 the [responsiveness record](responsiveness-milestone.json) retains the bounded
 performance evidence from 0.14.0.
 
+The [0.53 exclusive departure-test recipe](artwork-context-qualification-053.md)
+now has host, strict-package, independent source-review and matching ARM-build
+evidence. Its two real ReadAfter/Finish native cases and independently replayed
+removal still precede normal artwork activation. This host work does not extend
+the overnight device window or update either retained app.
+
 ## Direction
 
 The agreed visual direction is the Apple TV / tvOS feel that PlxNative interprets

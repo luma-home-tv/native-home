@@ -335,3 +335,14 @@ outputs instead of competing publication histories. The independent Luma app
 continues to contain no Plex client features, while generic native UI/input
 improvements remain in the attributed PlxNative integration patch for possible
 upstream contribution.
+
+## Artwork departure qualification wave
+
+For [0.53](artwork-context-qualification-053.md), one agent owned the protected
+Installation/server hook and tests, a second owned the ordinary one-job UI/provider
+recipe and tests, and a third independently reviewed their composition while
+the coordinator owned package admission, integration, serial checks and builds.
+Private handoffs were frozen before copying; initial failures and reviewed fixes
+remain distinct. An independent saved-receipt validator can proceed alongside
+the next carrier preparation. The native cases stay serial on the G2; this
+parallel work creates no C2 Root authority or additional device window.

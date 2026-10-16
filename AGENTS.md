@@ -88,6 +88,18 @@ Post-unlink sync failure remains Unknown and may leave no marker; it grants no
 power-loss or crash-recovery claim. Native cases require a separately reviewed
 isolated design and a fresh permitted device window.
 
+The 0.53 source in `docs/artwork-context-qualification-053.md` adds an exclusive
+one-job Proof recipe, fixed protected ReadAfter plan and client Finish hold.
+Host/Python/Clippy and matching ARM builds pass; neither native case is qualified.
+Keep its package catalogue empty and use only the fresh actual owned Target
+source. Ordinary Proof creates only its own private state directory without
+saving preferences; never initialize it through Root or clear an old pending
+record. Stop drawing/swapping on departure and drain the existing worker.
+Positive timing misses release no image; selected-case classification must match
+the actual failure stage. Preserve G2 0.47/C2 0.48 and keep normal Root artwork off.
+No 0.53 package has been installed or run; the next native carrier needs its own
+reviewed artifacts, external Target/process/child/namespace evidence and cleanup.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 
