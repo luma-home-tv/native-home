@@ -41,6 +41,37 @@ evidence. Its two real ReadAfter/Finish native cases and independently replayed
 removal still precede normal artwork activation. This host work does not extend
 the overnight device window or update either retained app.
 
+## Near-term release and parallel work
+
+The next coherent standalone release uses the existing packaged icons. Prioritise
+normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
+app launch and LG Settings return, reversible favourites and repeated entry/idle.
+The latest retained G2 0.47/C2 0.48 normal sessions establish Home/Apps/Back and
+idle/wake; they did not exercise Search or dispatch app/settings/input actions.
+Earlier isolated results remain useful component evidence. Qualify the relevant
+normal flows using the retained artifacts where possible, then change source only
+for an observed gap. C2 keyboard and input results require their own evidence.
+
+Split host work into independent streams, with one coordinator admitting frozen
+artifacts and serialising each TV's tests:
+
+| Stream | Useful next output | Dependency |
+| --- | --- | --- |
+| Interface and input | Empty/long/localised/stale states, focus/menu/dismissal acceptance matrix | Physical remote and IME outcomes need a current available TV window |
+| Packaged icons and performance | Coverage by app identity, bounded startup/decode review, matched current-build workload | New/revised apps can lack snapshot artwork; a metadata path alone grants no byte access |
+| Read-only controls and inputs | Missing-value inventory and consistent native/read-only/LG-managed labels | Each additional setter or C2 source change needs its own capability, context and restoration proof |
+| Live artwork | Ordinary surface prerequisite, real negative cases and interactive transition evidence | Ordered lifecycle, actual Preview role and responsiveness gates precede backed normal activation |
+| Integration and release | Known update/removal, fresh preference preservation and a scoped release record | Current source, package and native receipts must agree; unknown outcomes retain their barriers |
+
+For packaged icons, the current startup loader visits only the first 64 catalogue
+entries and checks encoded size and image dimensions after reading/decoding.
+Review bounded reads/decode and demand-driven coverage separately from the Root
+provider. The retained trials establish no over-64 failure or measured memory
+fault. Measure normal navigation and return flows with the exact current artifact;
+the [surface preparation record](native-surface-scene-prerequisite.md) explains
+why old positive Root helper timings cannot qualify release responsiveness.
+Keep normal Root artwork off while its independent feature work continues.
+
 ## Direction
 
 The agreed visual direction is the Apple TV / tvOS feel that PlxNative interprets
