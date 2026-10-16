@@ -87,7 +87,8 @@ human/native Done/reopen/Back cycles with no extra keypad. Its final-exit reserv
 and empty-file parser failures remain explicit; later known cleanup and full
 preservation do not promote the failed original operator. The next
 [0.55 source](drawer-empty-states.md) distinguishes empty favourites, search misses
-and unavailable app data, with host checks and no native delivery yet.
+and unavailable app data, with host checks and matching ARM builds but no native
+delivery yet.
 
 ## Direction
 

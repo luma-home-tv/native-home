@@ -24,7 +24,15 @@ Clippy. A final hint-only wording change passed the four focused fixtures and
 Clippy again. The upstream framework remains byte-identical to its prior pinned
 working tree after unrelated formatter changes were restored and verified.
 
-This is host logic/source validation. ARM, native empty-state typography and
+Matching SDK ARM dashboard and helper builds also passed from source
+`46f431cd3f601810a41d76c929b9d7392d223ae1`, with identical 111 selected source
+inputs and framework snapshots. The frozen dashboard SHA-256 is
+`9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`;
+the helper is `4839b70a5c1e6a9a1ae99a9230631afa8f309305dc540e1869078413e65894cc`.
+The unchanged ARM configuration emits the known unstable `neon` feature warning.
+The helper was not run.
+
+These are host/source and compilation checks. Native empty-state typography and
 retained delivery remain separate; neither TV has received this source version.
 The [0.54 performance](current-performance-054.md) and
 [keyboard](keyboard-observer-054.md) observations stay bound to their own frozen

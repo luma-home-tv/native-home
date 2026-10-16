@@ -10,6 +10,10 @@ transparency without a graphite backing plate; missing-art fallbacks and control
 may use graphite surfaces. Build and verify the standalone dependency graph; host checks do not
 prove TV rendering, physical input or performance.
 
+Format only changed client files, with Rustfmt child-module traversal disabled.
+`cargo fmt --all` also traverses the pinned framework path dependencies; preserve
+their verified bytes and integration patch instead of reformatting them.
+
 TV details, credentials, actual app inventories/icons and household captures
 must stay outside tracked source. Device work requires the existing device lock,
 an isolated package and complete removal/state restoration. LG Home, boot hooks,
@@ -133,8 +137,8 @@ and a size-zero-only parser adapter; it is not generic HOLD recovery. The two
 cycle observations do not qualify normal Preview, C2 or general IME behavior.
 
 The 0.55 source in `docs/drawer-empty-states.md` adds drawer empty-state copy and
-existing-control recovery hints. Host checks pass; no ARM/native/retained result
-is qualified for that source. Keep its package version distinct from frozen
+existing-control recovery hints. Host checks and matching SDK ARM builds pass;
+native/retained results remain unqualified for that source. Keep its package version distinct from frozen
 0.54 artifacts and preserve the attributed framework unchanged.
 
 The following earlier component records describe their historical baselines;
