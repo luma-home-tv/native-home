@@ -6,6 +6,11 @@ records remain unchanged. Ordinary interactive Root artwork remains disabled.
 The [0.51 host foundation](artwork-attempt-foundation-051.md) now implements
 typed attempt metadata and narrow helper withdrawal/endpoint-closure candidates.
 It adds no negative grader or recovery, and has no native execution qualification.
+The later [0.52 source](artwork-closed-negative-052.md) now implements the scoped
+grader, shared typed Finish/EOF handling, consuming body discard, joined observer
+and sealed current-Ticket resolution. All 17 host groups and both ARM builds
+pass. The contract below is implemented source behavior; its isolated native
+qualification and normal activation remain open.
 
 The first supported closed-negative cases should be a context change after a
 prepared image read or while checking Finish, following a valid authenticated
@@ -42,8 +47,9 @@ successful Finished; do not manufacture Finished after policy withdrawal.
 
 `artwork_installed_provider.rs` now retains a typed attempt trace independently
 of the optional Proof observation writer. That JSON remains diagnostic and cannot
-be its authority. Finish failure still lacks a typed observed-EOF distinction;
-complete that shared receiver path before supporting Finish recovery.
+be its authority. The earlier 0.51 Finish path lacked a typed observed-EOF
+distinction; 0.52 now supplies that shared path for its narrow Finish case.
+Earlier frozen source and executables retain their own limitations.
 Preserve authenticated Identify, actual kernel credentials, request sequence,
 validated packet progress and exact EOF through a failed exchange. For that
 narrow candidate, join the single already-started HBC observer within its finite

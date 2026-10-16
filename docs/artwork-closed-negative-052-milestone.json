@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "version": "0.52.0",
+  "status": "All 17 host groups, full regressions and ARM compilation pass; native qualification and normal activation remain open",
+  "functional_source_revision": "bdc9cc6054fc712f339c679fd8466a773d21e9d3",
+  "selected_source_inputs": 104,
+  "artifacts": {
+    "dashboard": {
+      "name": "home-preview",
+      "sha256": "e0701b9f574578252b4aea381389a36dc69e6fd31e99a803e446baf0d3b7bb1c",
+      "bytes": 4002500,
+      "build_receipt_sha256": "8ee940ad80e44f2f3ca9ad3a66fb7e62db5d304aca1628887d402b787586a712"
+    },
+    "installed_Proof_helper": {
+      "name": "artwork-broker-startup-proof",
+      "sha256": "4958808342ad4ea06d2a75c5397f6fd1f5f11df3d95800ae2a495f6c167a1fbf",
+      "bytes": 874176,
+      "build_receipt_sha256": "de456c9daf6cdb65f796dffdf2c058b7ad9a3cbb3d5bf5718e4890119e1f6508"
+    },
+    "same_source_snapshot": true,
+    "deployable_UI_ipk_produced": false
+  },
+  "host_checks": {
+    "rust_library_tests": 556,
+    "dashboard_tests": 7,
+    "rust_total": 563,
+    "new_test_methods": 35,
+    "required_group_contracts": 17,
+    "python_tests": 58,
+    "clippy_warnings_denied": true,
+    "arm_dashboard_exit": 0,
+    "arm_Proof_helper_exit": 0,
+    "root_host_receipt_sha256": "743e6a1960018095fcf003230c06eec4910d0bdce7b56b3b4fbb0060236d52fa",
+    "prior_failed_full_test_run_preserved": true,
+    "fixture_repair": "Retarget only named PID fields, preserving encoded request bytes",
+    "prior_failed_lint_run_preserved": true,
+    "runtime_validation_weakened": false,
+    "simulated_storage_failure_is_actual_TV_fault_injection": false
+  },
+  "implementation": {
+    "accepted_stages": [
+      "ReadAfter1 with consumed fullbody/digest witness",
+      "Finish2 after actual validated Complete"
+    ],
+    "known_child_journal_counts": {
+      "ReadAfter": 13,
+      "Finish": 16
+    },
+    "new_privileged_operations": false,
+    "Root_file_writes_added": false,
+    "legacy_public_wire_behavior_preserved": true,
+    "positive_conditions_preserved": true,
+    "strict_raw_HBC_reparse_required": true,
+    "full_Core_measurement_schema_required": true,
+    "actual_final_peer_and_own_after_required": true,
+    "single_existing_observer_join_required": true,
+    "per_fetch_nonserialized_seal": true,
+    "opaque_proof_Clone_or_serializable": false,
+    "only_current_captured_Ticket_may_clear": true,
+    "sync_success_required_before_known_settlement": true,
+    "negative_result_exports_encoded_file": false,
+    "diagnostic_flags_are_authority": false
+  },
+  "boundaries": {
+    "native_052_execution_qualified": false,
+    "normal_Root_artwork_enabled": false,
+    "actual_keyboard_or_external_app_handoff_qualified": false,
+    "C2_Root_permission_qualified": false,
+    "older_unknown_pending_recovery_implemented": false,
+    "post_unlink_sync_failure_guarantees_marker_survival": false,
+    "power_loss_or_crash_recovery_qualified": false,
+    "hard_blocked_native_call_lifetime_qualified": false,
+    "performance_or_general_reliability_qualified": false,
+    "retained_G2_version": "0.47.0",
+    "retained_C2_version": "0.48.0",
+    "either_retained_TV_updated_by_this_slice": false,
+    "prior_native_evidence_transferred": false
+  }
+}

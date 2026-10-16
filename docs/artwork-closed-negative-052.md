@@ -53,6 +53,15 @@ after helper mutations. The first full run exposed a test fixture that rewrote
 request byte 123 while retargeting PIDs; the fixture is corrected, and failed
 logs/private candidates remain preserved. No runtime check was weakened.
 
+Both ARM executables compiled from frozen source
+`bdc9cc6054fc712f339c679fd8466a773d21e9d3`, with matching 104-input snapshots.
+Dashboard SHA-256 is
+`e0701b9f574578252b4aea381389a36dc69e6fd31e99a803e446baf0d3b7bb1c`;
+installed Proof helper is
+`4958808342ad4ea06d2a75c5397f6fd1f5f11df3d95800ae2a495f6c167a1fbf`.
+The [milestone](artwork-closed-negative-052-milestone.json) binds these artifacts,
+build receipts and host results. No deployable 0.52 TV package was produced.
+
 These are host/source results. Isolated native ReadAfter/Finish cases, actual
 LG-keyboard/external-app handoffs, Preview-role delivery, C2 Root permission,
 performance, reliability and recovery from old unknown operations remain

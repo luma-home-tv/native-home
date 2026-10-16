@@ -47,6 +47,12 @@ compilation. A separate strict negative grader and current-Ticket settlement
 remain future work under the [closure plan](artwork-context-closure-next.md).
 This overlap shortens host work; it does not remove the later native acceptance
 gate or make a reported closure sufficient authority for recovery.
+The follow-on [0.52 composition](artwork-closed-negative-052.md) completed that
+host grader/resolver slice with separate provider, grader and independent-review
+owners. Root integrated the reviewed interfaces, repaired test fixtures, ran all
+563 Rust/58 Python checks and Clippy, and froze both matching ARM builds. Native
+ReadAfter/Finish qualification remains a separate wave; neither TV was updated
+to this source.
 
 ## Broad remaining delivery steps
 
