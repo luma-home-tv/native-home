@@ -65,6 +65,18 @@ metadata. Cache population and normal integration are future work; matching
 current executable/positive-transfer qualification remains necessary. Normal
 Root artwork stays off.
 
+`docs/durable-icon-cache-foundation.md` records the unintegrated ordinary cache
+module: 22 real-file cases, all 665 Rust host tests, strict Clippy and a matching
+ARM build pass. Preserve the initial lint failure and independent final-scan race
+repair. The exclusive writer slot covers the final capacity scan. Cache data and
+producer hashes grant no Root authority; publication requires a future matching
+positive/joined/current-Ticket-closed producer. No UI/provider/worker callsite or
+native cache execution is qualified. Consumer integration must preserve complete
+SourceKey, expected producer and generation/selection through late-result admission,
+withdraw on independent catalogue failure/expiry, and keep all I/O/codec work off
+the render thread. Automatic eviction/old-version retirement after restart and
+stale-slot recovery remain open. Retained057 and normal Root-off state are unchanged.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

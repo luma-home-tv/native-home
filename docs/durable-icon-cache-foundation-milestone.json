@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "status": "ordinary_durable_icon_cache_foundation_host_ARM_pass_native_unqualified",
+  "functional_source_revision": "ad6221258111c44561c2d4ba0b97a4388efcecec",
+  "sources": {
+    "src/durable_icon_cache.rs": {
+      "sha256": "76dfc5067b01cf8069c6cec2def4b101d74e500863490f3d1b073fb61d8aba82",
+      "bytes": 32839
+    },
+    "src/durable_icon_cache_tests.rs": {
+      "sha256": "65ce6863d1a463fb32e1c6a67ac4bad61c0670a2b7d43812f67d368c54b37e57",
+      "bytes": 26015
+    },
+    "src/lib.rs": {
+      "sha256": "7264c20951460fe1e2245ec31b26a756e68d743b083741c5b5417a44d0cc7019",
+      "bytes": 1687
+    }
+  },
+  "frozen_original_proposal": {
+    "manifest_sha256": "17456ea57d6a5556569ac47addd17937d372fa8cebd6a60df4686edcf7a0f9f7",
+    "core_sha256": "7187cdf2d2ddf61516361814b1780b884e9718d049e84b4d985e4b87650f708b",
+    "tests_sha256": "b7c384cfcd69239fe40e07491a8840838eff7607ef5548fa887997a30c487b6b"
+  },
+  "checks": {
+    "initial_cache_real_file_tests": 22,
+    "initial_cache_tests_actual_exit": 0,
+    "initial_cache_tests_terminal": "942dfa",
+    "final_strict_clippy_actual_exit": 0,
+    "final_strict_clippy_terminal": "2166cf",
+    "independent_source_review": "clear_after_writer_slot_fix",
+    "host_receipt_sha256": "0d3c590cd8506e9977ec157386c3ddc5eb1e332b2c2d6c63b341c591c3d6e0c9",
+    "ARM_actual_exit": 0,
+    "ARM_terminal": "ecce7a",
+    "selected_inputs_and_matching_Git_blobs": 119,
+    "ARM_build_receipt_sha256": "a8700ba36f24a37bd932ea00ad5a9251c0c1dbbc65d51692d086132c8382dea7",
+    "SDK_readelf_actual_exit": 0,
+    "source_ELF_audit_terminal": "ba6ad4",
+    "source_ELF_audit_receipt_sha256": "01373bc3eb70cc2cc5dc31b0229eeda3b016ab9a78d4e392bc321450e411a729",
+    "existing_unstable_neon_warning_retained": true,
+    "final_library_Rust_tests": 657,
+    "final_library_tests_actual_exit": 0,
+    "final_library_tests_terminal": "194202",
+    "final_all_target_Rust_tests": 665,
+    "final_UI_tests": 8,
+    "final_all_target_tests_actual_exit": 0,
+    "final_all_target_tests_terminal": "730a98",
+    "final_all_target_tests_command": "cargo test --locked --features hostsim --all-targets --quiet",
+    "all_target_host_receipt_sha256": "27ba621d2d6e054a0ca411465100d2db2b5c5e8822bca4451f18ab44c4534f8b"
+  },
+  "ELF": {
+    "bytes": 4187324,
+    "name": "home-preview",
+    "sha256": "4b023cb1b6209023d95e29e1a422ba833d02272e57775fdf01e9b3e9979891b3"
+  },
+  "bounds": {
+    "default_entries": 256,
+    "default_encoded_payload_bytes": 16777216,
+    "max_entries": 512,
+    "max_encoded_payload_bytes": 67108864,
+    "max_encoded_file_bytes": 1048576,
+    "max_header_bytes": 8192,
+    "filesystem_quota": false,
+    "same_config_cooperating_writers_serialized": true,
+    "filesystem_overhead_metadata_and_one_temp_additional": true
+  },
+  "preserved_initial_strict_clippy_failure": {
+    "actual_exit": 101,
+    "terminal": "77deec",
+    "findings": [
+      "int_plus_one inventory guard",
+      "large Lookup enum"
+    ]
+  },
+  "independent_review_repair": "Final capacity scan now remains inside the held exclusive writer slot; original release-before-scan proposal preserved.",
+  "framework_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+  "framework_patch_sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf",
+  "existing_packaged_reader_worker_provider_and_guard_changed": false,
+  "normal_UI_or_provider_cache_callsite": false,
+  "normal_Root_artwork": false,
+  "package_created": false,
+  "TV_contacted": false,
+  "retained_G2": "0.57.0 unchanged",
+  "retained_C2": "0.48.0 not contacted",
+  "unqualified": [
+    "ARM cache execution and actual fixed storage role",
+    "ordinary worker/controller and catalogue freshness integration",
+    "independent expected producer artifact configuration",
+    "matching positive-transfer diagnostic cache population",
+    "automatic eviction, old-version retirement after restart and stale-slot recovery",
+    "native pixels, zero-Root cache-hit behavior, keyboard/app lifecycle and performance",
+    "C2"
+  ]
+}

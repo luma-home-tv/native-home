@@ -373,3 +373,12 @@ an ordinary durable cache during normal interaction and separately qualified
 privileged preparation. A source/architecture review identified the per-icon
 session cost and early Unknown cases before any normal activation; the existing
 broker and guard remain reusable, with no weakened closure or Ticket recovery.
+
+The [ordinary cache foundation](durable-icon-cache-foundation.md) now passes the
+coordinator's real-file/full Rust/Clippy checks and matching ARM build. Its owner
+authored the isolated module/tests, independent review found the final-scan writer
+race, and the coordinator repaired, integrated and executed the final checks.
+The next parallel lanes cover ordinary worker/controller consumption and an
+optional diagnostic publisher with independently packaged producer association.
+Both stay private until reviewed; main/UI activation, package admission and all
+native checks remain coordinator-owned. No cache code has run on either TV.

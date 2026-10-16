@@ -2,9 +2,11 @@
 
 Normal interaction should read a bounded ordinary icon cache. Privileged fill
 and refresh should run through a separate, explicitly admitted operation, rather
-than starting a Root helper on each interactive miss. This is the chosen design
-direction, not implemented or enabled behavior. Retained G2 0.57 continues to use
-packaged art with normal Root artwork off.
+than starting a Root helper on each interactive miss. The
+[ordinary storage foundation](durable-icon-cache-foundation.md) now has passing
+host checks and a matching ARM build; worker/UI integration and qualified population
+remain unfinished. Retained G2 0.57 continues to use packaged art with normal
+Root artwork off.
 
 The current installed broker admits one image per session. Historical non-first
 helper intervals were 2.562–2.875 seconds; they are not complete-fetch timings or
@@ -72,8 +74,10 @@ It informs departure/teardown behavior for an active privileged refresh without
 qualifying that refresh. A prefilled ordinary cache needs no Root session merely
 to render.
 
-Then implement and test the ordinary cache bridge with the existing producer
-kept diagnostic-only. Matching executable/positive-transfer qualification remains
+The ordinary cache storage/lookup/decoder foundation is now implemented and
+host-tested, with no callsite enabled. Next connect it to the existing ordinary
+worker and independently fresh catalogue, and add only an explicit diagnostic
+producer. Matching executable/positive-transfer qualification remains
 a prerequisite to native cache population. Native acceptance must establish normal
 Home/Apps/keyboard/owned-app behavior with **zero Root dispatch on cache hits**,
 SourceKey invalidation, stale-result discard and joined texture shutdown.
