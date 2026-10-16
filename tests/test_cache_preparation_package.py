@@ -58,7 +58,7 @@ class CachePreparationPackageTests(unittest.TestCase):
         self.assertEqual(set(files), {'appinfo.json', 'home-preview', 'snapshot.json',
             'appfont.ttf', 'appfont-bold.ttf', 'OFL.txt', 'icon.png',
             'preview-artwork-admission.json', 'artwork-cache-producer.json', MARKER})
-        self.assertEqual(json.loads(files['appinfo.json'][1])['version'], '0.60.0')
+        self.assertEqual(json.loads(files['appinfo.json'][1])['version'], '0.61.0')
         self.assertNotIn('interactive-session.json', files)
         self.assertNotIn('artwork-broker', files)
         self.assertEqual(receipt['cache_preparation_marker_sha256'], BASE.BASE.sha(expected))

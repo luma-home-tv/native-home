@@ -1633,6 +1633,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut idle_presentations = 0_u32;
     let mut ready_written = false;
     let mut session_cache_captures = SessionCacheCaptures::default();
+    let mut session_cache_observations = (ordinary_current_cache_selected && session_capture)
+        .then(native_home::session_cache_observation::Ledger::default);
     let mut last_settings_observation = Duration::ZERO;
     let mut settings_returns = 0_u32;
     let mut capture_settings_return = false;
@@ -1787,6 +1789,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 keyboard.active() || !keyboard.accepts_input(now),
             );
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
+            if let Some(ledger) = &mut session_cache_observations {
+                let status = shell.session_cache_catalogue_status();
+                ledger.catalogue(
+                    status
+                        .as_ref()
+                        .map(|(keyset, count, adoption)| (keyset.as_str(), *count, *adoption)),
+                );
+            }
             pump_description(
                 &description_worker,
                 &mut shell,
@@ -2161,29 +2171,53 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     // Observation only: do not wait/pump/refresh to create a hit.
                     // This branch is unreachable for ordinary release sessions
                     // without the explicit pre-existing session-proof marker.
-                    if let Some(site) = session_cache_captures.pending(
-                        ordinary_current_cache_selected && session_capture,
-                        shell.page(),
-                    ) {
+                    if ordinary_current_cache_selected && session_capture {
+                        // Input/draw can stall after the loop's live poll. Expire
+                        // stale sources before sampling, without a new GET.
+                        shell.age_live(live_origin.elapsed().as_millis() as u32);
+                        let observation_status = shell.session_cache_catalogue_status();
+                        if let Some(ledger) = &mut session_cache_observations {
+                            ledger.catalogue(observation_status.as_ref().map(
+                                |(keyset, count, adoption)| (keyset.as_str(), *count, *adoption),
+                            ));
+                        }
                         if let Some((_, mut metadata)) = shell.session_cache_frame() {
-                            metadata["draw_sequence"] = serde_json::json!(loop_counters.draws);
-                            metadata["elapsed_ms"] =
-                                serde_json::json!(start.elapsed().as_millis() as u64);
-                            metadata["capture_file"] = serde_json::json!(site.ppm());
-                            metadata["metadata_file"] = serde_json::json!(site.json());
-                            metadata["sampled_after_draw_before_swap"] = serde_json::json!(true);
-                            metadata["framebuffer_size"] = serde_json::json!([1920, 1080]);
-                            let bytes = bounded_cache_frame_json(&metadata)?;
-                            window.capture(&output.join(site.ppm()))?;
-                            let mut file = std::fs::OpenOptions::new()
-                                .write(true)
-                                .create_new(true)
-                                .mode(0o600)
-                                .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-                                .open(output.join(site.json()))?;
-                            file.write_all(&bytes)?;
-                            file.sync_all()?;
-                            session_cache_captures.completed(site);
+                            if let Some(ledger) = &mut session_cache_observations {
+                                if let Some((keyset, count, _)) = &observation_status {
+                                    let mut observation = metadata.clone();
+                                    observation["catalogue_keyset_sha256"] =
+                                        serde_json::json!(keyset);
+                                    observation["eligible_preferred"] = serde_json::json!(count);
+                                    ledger.observe(
+                                        &observation,
+                                        loop_counters.draws,
+                                        start.elapsed().as_millis() as u64,
+                                    );
+                                } else {
+                                    ledger.catalogue(None);
+                                }
+                            }
+                            if let Some(site) = session_cache_captures.pending(true, shell.page()) {
+                                metadata["draw_sequence"] = serde_json::json!(loop_counters.draws);
+                                metadata["elapsed_ms"] =
+                                    serde_json::json!(start.elapsed().as_millis() as u64);
+                                metadata["capture_file"] = serde_json::json!(site.ppm());
+                                metadata["metadata_file"] = serde_json::json!(site.json());
+                                metadata["sampled_after_draw_before_swap"] =
+                                    serde_json::json!(true);
+                                metadata["framebuffer_size"] = serde_json::json!([1920, 1080]);
+                                let bytes = bounded_cache_frame_json(&metadata)?;
+                                window.capture(&output.join(site.ppm()))?;
+                                let mut file = std::fs::OpenOptions::new()
+                                    .write(true)
+                                    .create_new(true)
+                                    .mode(0o600)
+                                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                                    .open(output.join(site.json()))?;
+                                file.write_all(&bytes)?;
+                                file.sync_all()?;
+                                session_cache_captures.completed(site);
+                            }
                         }
                     }
                     if capture_settings_return
@@ -2371,6 +2405,33 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         )?;
     }
     let packaged_icon_shutdown = shell.finish_packaged_icons();
+    if let Some(ledger) = &mut session_cache_observations {
+        // Join can outlast catalogue freshness. Recheck its original live-clock
+        // stamp after joining; this is not a new service reply or a live texture.
+        let now_ms = live_origin.elapsed().as_millis() as u32;
+        shell.age_live(now_ms);
+        let status = packaged_icon_shutdown.as_ref().and_then(|shutdown| {
+            if shutdown["worker_joined"] != true || shutdown["worker_panicked"] != false {
+                return None;
+            }
+            let plan = native_home::artwork_cache_preparation::Plan::from_current(
+                shell.cache_preparation_catalogue(),
+                now_ms,
+            )
+            .ok()?;
+            Some((
+                plan.keyset_sha256().to_owned(),
+                plan.eligible_preferred(),
+                shutdown["cache_adoptions"].as_u64()?,
+            ))
+        });
+        ledger.catalogue(
+            status
+                .as_ref()
+                .map(|(keyset, count, adoption)| (keyset.as_str(), *count, *adoption)),
+        );
+    }
+    let ordinary_cache_observations = session_cache_observations.map(|ledger| ledger.finish());
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
@@ -2387,6 +2448,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
     report["packaged_icon_shutdown"] = serde_json::json!(packaged_icon_shutdown);
     report["ordinary_current_cache_selected"] = serde_json::json!(ordinary_current_cache_selected);
+    report["ordinary_cache_observations"] = serde_json::json!(ordinary_cache_observations);
     report["diagnostic_cache_population_selected"] =
         serde_json::json!(diagnostic_cache_population_selected);
     report["diagnostic_catalogue_preparation_selected"] =

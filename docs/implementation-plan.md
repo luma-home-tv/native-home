@@ -84,6 +84,12 @@ current-artifact cold preparation and ordinary warm navigation separately before
 claiming a performance gain. Eviction/stale-writer recovery and C2 qualification
 remain open; normal interaction must keep Root artwork off.
 
+The [0.61 source](controls-and-icon-observations-061.md) moves each existing LG
+category shortcut before long native readings and adds a bounded, session-only
+per-key cached drawing ledger. Host validation passes. It closes the first-frame
+observation limit in source; native multi-batch continuity, full-key comparison
+and retained delivery still need their own matching evidence.
+
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:
 

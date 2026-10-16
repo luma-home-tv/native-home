@@ -1,5 +1,16 @@
 //! Behaviour checks for the real focus/press machines, without a GL context or TV actions.
 use super::*;
+fn control_rows(shell: &Shell) -> &[Row] {
+    &shell
+        .surface
+        .table
+        .table
+        .sections
+        .iter()
+        .find(|section| section.header == crate::strings::Message::CurrentSettings.text())
+        .expect("native readout section")
+        .rows
+}
 fn fixture() -> Snapshot {
     let apps = (0..12)
         .map(|i| Application {
@@ -325,11 +336,13 @@ fn changed_picture_context_and_failed_audio_never_reuse_fresh_control_values() {
     let mut s = Shell::new(data, Preferences::default());
     s.open(Page::Sound);
     s.apply_live(&live_update(100), 100);
-    assert_eq!(s.surface.table.activate(0), None);
     assert_eq!(
-        s.surface.table.table.sections[0].rows[0].value.as_deref(),
-        Some("Unavailable")
+        s.surface
+            .table
+            .activate(s.surface.table.index_of(&"volume".into()).unwrap()),
+        None
     );
+    assert_eq!(control_rows(&s)[0].value.as_deref(), Some("Unavailable"));
     let mut update = live_update(110);
     let crate::live::Reading::Value(ref mut picture) = update.picture else {
         unreachable!()
@@ -348,16 +361,15 @@ fn changed_picture_context_and_failed_audio_never_reuse_fresh_control_values() {
     s.open(Page::Picture);
     s.apply_live(&update, 110);
     assert_eq!(s.snapshot.context.dynamic_range, "hdr");
-    assert_eq!(
-        s.surface.table.table.sections[0].rows[0].value.as_deref(),
-        Some("70")
-    );
+    assert_eq!(control_rows(&s)[0].value.as_deref(), Some("70"));
     s.age_live(15111);
-    assert_eq!(s.surface.table.activate(0), None);
     assert_eq!(
-        s.surface.table.table.sections[0].rows[0].value.as_deref(),
-        Some("Unavailable")
+        s.surface
+            .table
+            .activate(s.surface.table.index_of(&"brightness".into()).unwrap()),
+        None
     );
+    assert_eq!(control_rows(&s)[0].value.as_deref(), Some("Unavailable"));
 }
 #[test]
 fn sound_and_network_failures_withdraw_rows_and_staleness_rebuilds_the_visible_form() {
@@ -376,30 +388,16 @@ fn sound_and_network_failures_withdraw_rows_and_staleness_rebuilds_the_visible_f
     ]);
     shell.apply_live(&update, 100);
     shell.open(Page::Sound);
+    assert_eq!(control_rows(&shell)[1].value.as_deref(), Some("10"));
     assert_eq!(
-        shell.surface.table.table.sections[0].rows[1]
-            .value
-            .as_deref(),
-        Some("10")
-    );
-    assert_eq!(
-        shell.surface.table.table.sections[0].rows[3]
-            .value
-            .as_deref(),
+        control_rows(&shell)[3].value.as_deref(),
         Some("Unavailable")
     );
     shell.open(Page::Network);
-    assert_eq!(
-        shell.surface.table.table.sections[0].rows[1]
-            .value
-            .as_deref(),
-        Some("Connected")
-    );
+    assert_eq!(control_rows(&shell)[1].value.as_deref(), Some("Connected"));
     shell.age_live(15101);
     assert_eq!(
-        shell.surface.table.table.sections[0].rows[1]
-            .value
-            .as_deref(),
+        control_rows(&shell)[1].value.as_deref(),
         Some("Unavailable")
     );
     update.observed_ms = 15200;
@@ -444,7 +442,12 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
         (7, 32, "audioDescriptionVolume", "3"),
     ] {
         for _ in 0..10 {
-            if s.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+            if s.focused_item().as_deref()
+                == Some(&format!(
+                    "control-row-{}",
+                    s.surface.table.index_of(&id.to_owned()).unwrap()
+                ))
+            {
                 break;
             }
             s.direction(Dir::Down);
@@ -458,13 +461,12 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
         assert_eq!(row["focused"], true);
         assert_eq!(row["disabled"], true);
         assert_eq!(row["fully_visible"], true);
-        assert_eq!(
-            s.surface.table.table.sections[0].rows[index]
-                .value
-                .as_deref(),
-            Some(expected)
-        );
-        assert!(s.surface.table.activate(index).is_none());
+        assert_eq!(control_rows(&s)[index].value.as_deref(), Some(expected));
+        assert!(s
+            .surface
+            .table
+            .activate(s.surface.table.index_of(&id.to_owned()).unwrap())
+            .is_none());
         tap(&mut s);
         assert!(s.take_requests().is_empty());
         assert_eq!(s.page(), Page::Sound);
@@ -476,14 +478,8 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
     s.apply_live(&update, now);
     assert_eq!(s.input.engine.current(owner), focus_before);
     assert!(s.reading_label().contains("some readings unavailable"));
-    assert_eq!(
-        s.surface.table.table.sections[0].rows[1].value.as_deref(),
-        Some("Unavailable")
-    );
-    assert_eq!(
-        s.surface.table.table.sections[0].rows[5].value.as_deref(),
-        Some("-4")
-    );
+    assert_eq!(control_rows(&s)[1].value.as_deref(), Some("Unavailable"));
+    assert_eq!(control_rows(&s)[5].value.as_deref(), Some("-4"));
     update.observed_ms = now + 1;
     update.sound = live::Reading::Value(vec![("volume".into(), "12".into())]);
     update.controls.insert(
@@ -492,11 +488,8 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
     );
     s.apply_live(&update, now + 1);
     assert_eq!(s.input.engine.current(owner), focus_before);
-    assert_eq!(
-        s.surface.table.table.sections[0].rows[1].value.as_deref(),
-        Some("12")
-    );
-    assert!(s.surface.table.table.sections[0].rows[5..8]
+    assert_eq!(control_rows(&s)[1].value.as_deref(), Some("12"));
+    assert!(control_rows(&s)[5..8]
         .iter()
         .all(|r| r.value.as_deref() == Some("Unavailable")));
     assert!(s.reading_label().contains("some readings unavailable"));
@@ -544,8 +537,7 @@ fn sound_status_is_unavailable_when_fresh_optional_envelopes_contain_no_readings
         assert!(shell.snapshot.settings["sound"]
             .iter()
             .all(|row| !row.available));
-        assert!(shell.surface.table.table.sections[0]
-            .rows
+        assert!(control_rows(&shell)
             .iter()
             .all(|row| row.value.as_deref() == Some("Unavailable")));
         assert_eq!(
@@ -561,12 +553,7 @@ fn sound_status_is_unavailable_when_fresh_optional_envelopes_contain_no_readings
         );
         shell.apply_live(&crate::live::parse(&data, "self", 300, simulated), 300);
         assert!(shell.reading_label().contains("some readings unavailable"));
-        assert_eq!(
-            shell.surface.table.table.sections[0].rows[5]
-                .value
-                .as_deref(),
-            Some("-4")
-        );
+        assert_eq!(control_rows(&shell)[5].value.as_deref(), Some("-4"));
         assert!(shell.take_requests().is_empty());
     }
 }
@@ -1000,9 +987,12 @@ fn controls_master_detail_uses_category_identity_and_back_hierarchy() {
     s.direction(Dir::Down);
     assert_eq!(focus(&s), CATEGORY_BASE + 1);
     assert_eq!(s.control_category(), Some(Page::Sound));
-    assert_eq!(s.surface.table.key_at(0), Some(RowKey(20)));
+    assert_eq!(
+        s.surface.table.key_at(0),
+        Some(RowKey(SettingsSection::Sound.focus_key()))
+    );
     s.direction(Dir::Right);
-    assert_eq!(focus(&s), TABLE_BASE + 20);
+    assert_eq!(focus(&s), TABLE_BASE + SettingsSection::Sound.focus_key());
     s.back();
     assert_eq!(focus(&s), CATEGORY_BASE + 1);
     assert_eq!(s.control_category(), Some(Page::Sound));
@@ -1092,11 +1082,13 @@ fn controls_root_rebuilds_live_selected_detail_without_reusing_stale_values() {
     assert_eq!(s.page(), Page::Controls);
     s.age_live(15_101);
     assert_eq!(focus(&s), selected);
+    assert_eq!(control_rows(&s)[1].value.as_deref(), Some("Unavailable"));
     assert_eq!(
-        s.surface.table.table.sections[0].rows[1].value.as_deref(),
-        Some("Unavailable")
+        s.surface
+            .table
+            .activate(s.surface.table.index_of(&"wiredState".into()).unwrap()),
+        None
     );
-    assert_eq!(s.surface.table.activate(1), None);
     update.observed_ms = 15_200;
     update.network = crate::live::Reading::Failed("Denied".into());
     s.apply_live(&update, 15_200);
@@ -1147,7 +1139,7 @@ fn stale_pointer_frame_cannot_leave_focus_on_a_removed_detail_row_or_escape_a_ne
     s.pointer(1100.0, 660.0, true);
     assert_eq!(focus(&s), CATEGORY_BASE);
     s.direction(Dir::Right);
-    assert_eq!(focus(&s), TABLE_BASE + 1);
+    assert_eq!(focus(&s), TABLE_BASE + SettingsSection::Picture.focus_key());
     assert!(s.take_requests().is_empty());
     s.open(Page::Applications);
     let app = FocusKey {
@@ -1297,19 +1289,16 @@ fn new_global_native_pages_rebuild_on_updates_and_expiry_without_emitting_a_sett
     );
     for page in [Page::Accessibility, Page::General, Page::PanelCare] {
         s.open(page);
-        let first = s.surface.table.table.sections[0].rows[0].value.clone();
+        let first = control_rows(&s)[0].value.clone();
         assert_eq!(first.as_deref(), Some("On"));
-        assert!(!s.surface.table.table.sections[0].rows[0].dim);
-        assert!(s.surface.table.activate(0).is_none());
+        assert!(!control_rows(&s)[0].dim);
+        assert!(s.surface.table.activate(1).is_none());
         let owner = InputOwner::Entry(entry(s.page()));
         let before = s.input.engine.current(owner);
         s.age_live(15_101);
-        assert_eq!(
-            s.surface.table.table.sections[0].rows[0].value.as_deref(),
-            Some("Unavailable")
-        );
+        assert_eq!(control_rows(&s)[0].value.as_deref(), Some("Unavailable"));
         assert_eq!(s.input.engine.current(owner), before);
-        assert!(s.surface.table.table.sections[0].rows[0].dim);
+        assert!(control_rows(&s)[0].dim);
         assert!(s.take_requests().is_empty());
         s.apply_live(
             &crate::live::parse(&data, "com.example.self", 15_200, false),
@@ -1339,7 +1328,12 @@ fn guidance_rows_scroll_into_read_only_focus_and_return_without_actions() {
         (6, "audioGuidanceSpeed"),
     ] {
         for _ in 0..9 {
-            if s.focused_item().as_deref() == Some(&format!("control-row-{index}")) {
+            if s.focused_item().as_deref()
+                == Some(&format!(
+                    "control-row-{}",
+                    s.surface.table.index_of(&id.to_owned()).unwrap()
+                ))
+            {
                 break;
             }
             s.direction(Dir::Down);
@@ -1349,7 +1343,10 @@ fn guidance_rows_scroll_into_read_only_focus_and_return_without_actions() {
             s.tick(now, 0.017);
         }
         let row = s.control_row_layout(id).unwrap();
-        assert_eq!(row["index"], index);
+        assert_eq!(
+            row["index"],
+            s.surface.table.index_of(&id.to_owned()).unwrap()
+        );
         assert_eq!(row["key"], 100 + index);
         assert_eq!(row["focused"], true);
         assert_eq!(row["disabled"], true);
@@ -2038,7 +2035,10 @@ fn fallback_observation_counts_effective_registered_targets_not_an_editing_const
 struct RestoreDrawerIdle(bool, bool);
 impl RestoreDrawerIdle {
     fn start() -> Self {
-        let saved=Self(plx_machine::idle::enabled(),plx_machine::idle::video_plane_bound());
+        let saved = Self(
+            plx_machine::idle::enabled(),
+            plx_machine::idle::video_plane_bound(),
+        );
         plx_machine::idle::set_enabled(true);
         plx_machine::idle::note(plx_machine::present::PresentEvent::VideoPlane(false));
         saved
@@ -2048,9 +2048,11 @@ impl Drop for RestoreDrawerIdle {
     fn drop(&mut self) {
         use plx_machine::idle;
         idle::frame_begin(1.0 / 60.0);
-        let now=idle::now_ms();
-        if idle::should_present(now) {idle::note_present(now);}
-        let _=idle::take_page_damage();
+        let now = idle::now_ms();
+        if idle::should_present(now) {
+            idle::note_present(now);
+        }
+        let _ = idle::take_page_damage();
         idle::note(plx_machine::present::PresentEvent::VideoPlane(self.1));
         idle::set_enabled(self.0);
     }
@@ -2072,15 +2074,17 @@ fn drawer_gate_fixture() -> Shell {
     shell.open(Page::Applications);
     shell
 }
-fn drawer_gate_tick(shell:&mut Shell)->(bool,bool) {
+fn drawer_gate_tick(shell: &mut Shell) -> (bool, bool) {
     use plx_machine::idle;
-    idle::frame_begin(1.0/60.0);
-    let now=idle::now_ms();
-    shell.tick(now,1.0/60.0);
-    let moving=idle::present_moving();
-    let present=idle::should_present(now);
-    if present {idle::note_present(now);}
-    (present,moving)
+    idle::frame_begin(1.0 / 60.0);
+    let now = idle::now_ms();
+    shell.tick(now, 1.0 / 60.0);
+    let moving = idle::present_moving();
+    let present = idle::should_present(now);
+    if present {
+        idle::note_present(now);
+    }
+    (present, moving)
 }
 
 #[test]
@@ -2088,10 +2092,17 @@ fn apps_six_arrow_replay_stops_subvisible_scroll_tail_presentations() {
     use plx_machine::idle;
     let _serial = plx_base::testlock::serial();
     let _restore = RestoreDrawerIdle::start();
-    let mut shell=drawer_gate_fixture();
+    let mut shell = drawer_gate_fixture();
     const DT: f32 = 1.0 / 60.0;
     const WAIT_FRAMES: usize = 120;
-    let arrows = [Dir::Right, Dir::Right, Dir::Down, Dir::Left, Dir::Up, Dir::Left];
+    let arrows = [
+        Dir::Right,
+        Dir::Right,
+        Dir::Down,
+        Dir::Left,
+        Dir::Up,
+        Dir::Left,
+    ];
     let mut trace = Vec::new();
     let mut last_second_presents = 0;
     let mut last_second_settled_damage = 0;
@@ -2136,15 +2147,24 @@ fn apps_six_arrow_replay_stops_subvisible_scroll_tail_presentations() {
             "pos_changed":pos!=before,"idle_settled":settled,"moving":moving,
             "tick_page_damage":damage,"dirty":dirty,"present":present}));
     }
-    println!("LUMA_APPS_GATE_REPLAY {}", serde_json::json!({
+    println!(
+        "LUMA_APPS_GATE_REPLAY {}",
+        serde_json::json!({
         "dt":DT,"app_count":70,"arrows":["Right","Right","Down","Left","Up","Left"],
         "frames_per_key_wait":WAIT_FRAMES,"actual_idle_gate":true,"draw_or_gl_invoked":false,
         "observed_nonzero_scroll_target":observed_nonzero_target,
         "last_second_presents":last_second_presents,
         "last_second_settled_numeric_scroll_damage":last_second_settled_damage,
-        "frames":trace}));
-    assert!(observed_nonzero_target, "replay did not exercise drawer scrolling");
-    assert!(shell.take_requests().is_empty(), "arrow-only replay emitted a TV action");
+        "frames":trace})
+    );
+    assert!(
+        observed_nonzero_target,
+        "replay did not exercise drawer scrolling"
+    );
+    assert!(
+        shell.take_requests().is_empty(),
+        "arrow-only replay emitted a TV action"
+    );
     assert!(
         last_second_presents <= 2,
         "settled Apps drawer kept selecting {last_second_presents}/60 frames in the last second; \
@@ -2155,70 +2175,90 @@ fn apps_six_arrow_replay_stops_subvisible_scroll_tail_presentations() {
 
 #[test]
 fn drawer_exact_rest_handoff_presents_final_target_then_goes_quiet() {
-    let _serial=plx_base::testlock::serial();
-    let _restore=RestoreDrawerIdle::start();
-    let mut shell=drawer_gate_fixture();
-    for _ in 0..360 {drawer_gate_tick(&mut shell);}
-    assert_eq!(shell.drawer_scroll_target,0.0);
-    shell.drawer_scroll.pos=0.0005;
-    shell.drawer_scroll.vel=0.0;
-    let (present,moving)=drawer_gate_tick(&mut shell);
-    assert!(present,"the exact final target must get a selected frame");
-    assert!(plx_machine::idle::present_dirty(),"the final frame must carry damage, not only a keepalive");
+    let _serial = plx_base::testlock::serial();
+    let _restore = RestoreDrawerIdle::start();
+    let mut shell = drawer_gate_fixture();
+    for _ in 0..360 {
+        drawer_gate_tick(&mut shell);
+    }
+    assert_eq!(shell.drawer_scroll_target, 0.0);
+    shell.drawer_scroll.pos = 0.0005;
+    shell.drawer_scroll.vel = 0.0;
+    let (present, moving) = drawer_gate_tick(&mut shell);
+    assert!(present, "the exact final target must get a selected frame");
+    assert!(
+        plx_machine::idle::present_dirty(),
+        "the final frame must carry damage, not only a keepalive"
+    );
     assert!(!moving);
-    assert_eq!(shell.drawer_scroll.pos,0.0);
-    assert_eq!(shell.drawer_scroll.vel,0.0);
-    assert_eq!(drawer_gate_tick(&mut shell),(false,false));
+    assert_eq!(shell.drawer_scroll.pos, 0.0);
+    assert_eq!(shell.drawer_scroll.vel, 0.0);
+    assert_eq!(drawer_gate_tick(&mut shell), (false, false));
     assert!(shell.take_requests().is_empty());
 }
 
 #[test]
 fn drawer_rest_handoff_does_not_discard_velocity_or_prevent_retargeting() {
-    let _serial=plx_base::testlock::serial();
-    let _restore=RestoreDrawerIdle::start();
-    let mut shell=drawer_gate_fixture();
-    for _ in 0..360 {drawer_gate_tick(&mut shell);}
+    let _serial = plx_base::testlock::serial();
+    let _restore = RestoreDrawerIdle::start();
+    let mut shell = drawer_gate_fixture();
+    for _ in 0..360 {
+        drawer_gate_tick(&mut shell);
+    }
     // The analytic step lands near its target with substantial velocity. A
     // position-only rest check would incorrectly discard that momentum.
-    let dt=1.0/60.0;
-    let velocity=200.0;
-    shell.drawer_scroll.pos=-velocity*dt/(1.0+plx_ui::consts::K_SCROLL.sqrt()*dt);
-    shell.drawer_scroll.vel=velocity;
-    shell.surface.grid.set_page(340.0,shell.drawer_scroll.pos);
-    let (present,moving)=drawer_gate_tick(&mut shell);
-    assert!(present&&moving);
-    assert!(shell.drawer_scroll.pos.abs()<0.001);
-    assert!(!plx_machine::idle::settled(shell.drawer_scroll.pos,shell.drawer_scroll_target,shell.drawer_scroll.vel));
-    assert_ne!(shell.drawer_scroll.vel,0.0);
+    let dt = 1.0 / 60.0;
+    let velocity = 200.0;
+    shell.drawer_scroll.pos = -velocity * dt / (1.0 + plx_ui::consts::K_SCROLL.sqrt() * dt);
+    shell.drawer_scroll.vel = velocity;
+    shell.surface.grid.set_page(340.0, shell.drawer_scroll.pos);
+    let (present, moving) = drawer_gate_tick(&mut shell);
+    assert!(present && moving);
+    assert!(shell.drawer_scroll.pos.abs() < 0.001);
+    assert!(!plx_machine::idle::settled(
+        shell.drawer_scroll.pos,
+        shell.drawer_scroll_target,
+        shell.drawer_scroll.vel
+    ));
+    assert_ne!(shell.drawer_scroll.vel, 0.0);
     assert!(shell.focus_application("com.example.app69"));
-    for _ in 0..20 {drawer_gate_tick(&mut shell);}
-    assert!(shell.drawer_scroll_target>0.0&&shell.drawer_scroll.pos>0.0);
-    let old_target=shell.drawer_scroll_target;
+    for _ in 0..20 {
+        drawer_gate_tick(&mut shell);
+    }
+    assert!(shell.drawer_scroll_target > 0.0 && shell.drawer_scroll.pos > 0.0);
+    let old_target = shell.drawer_scroll_target;
     assert!(shell.focus_application("com.example.app00"));
-    for _ in 0..360 {drawer_gate_tick(&mut shell);}
-    assert!(shell.drawer_scroll_target<old_target);
-    assert_eq!(shell.drawer_scroll.pos,shell.drawer_scroll_target);
-    assert_eq!(shell.drawer_scroll.vel,0.0);
+    for _ in 0..360 {
+        drawer_gate_tick(&mut shell);
+    }
+    assert!(shell.drawer_scroll_target < old_target);
+    assert_eq!(shell.drawer_scroll.pos, shell.drawer_scroll_target);
+    assert_eq!(shell.drawer_scroll.vel, 0.0);
     assert!(shell.take_requests().is_empty());
 }
 
 #[test]
 fn drawer_nonzero_rest_preserves_end_visibility_and_stops_repeated_damage() {
-    let _serial=plx_base::testlock::serial();
-    let _restore=RestoreDrawerIdle::start();
-    let mut shell=drawer_gate_fixture();
+    let _serial = plx_base::testlock::serial();
+    let _restore = RestoreDrawerIdle::start();
+    let mut shell = drawer_gate_fixture();
     assert!(shell.focus_application("com.example.app69"));
-    for _ in 0..360 {drawer_gate_tick(&mut shell);}
-    let target=shell.drawer_scroll_target;
-    assert!(target>0.0);
-    assert_eq!(shell.drawer_scroll.pos,target);
-    assert_eq!(shell.drawer_scroll.vel,0.0);
-    let (rect,clip)=shell.drawer_focus_bounds().unwrap();
-    assert!(rect.y>=clip.y-1.0&&rect.y+rect.h<=clip.y+clip.h+1.0);
-    let frames=(0..60).filter(|_|drawer_gate_tick(&mut shell).0).count();
-    assert!(frames<=1,"resting nonzero target kept selecting frames");
-    assert_eq!(shell.drawer_scroll.pos,target,"content-end target drifted");
-    assert_eq!(shell.drawer_scroll.vel,0.0);
+    for _ in 0..360 {
+        drawer_gate_tick(&mut shell);
+    }
+    let target = shell.drawer_scroll_target;
+    assert!(target > 0.0);
+    assert_eq!(shell.drawer_scroll.pos, target);
+    assert_eq!(shell.drawer_scroll.vel, 0.0);
+    let (rect, clip) = shell.drawer_focus_bounds().unwrap();
+    assert!(rect.y >= clip.y - 1.0 && rect.y + rect.h <= clip.y + clip.h + 1.0);
+    let frames = (0..60).filter(|_| drawer_gate_tick(&mut shell).0).count();
+    assert!(frames <= 1, "resting nonzero target kept selecting frames");
+    assert_eq!(
+        shell.drawer_scroll.pos, target,
+        "content-end target drifted"
+    );
+    assert_eq!(shell.drawer_scroll.vel, 0.0);
     assert!(shell.take_requests().is_empty());
 }
 
@@ -2316,30 +2356,40 @@ fn pointer_click_miss_cancels_keyboard_press_but_same_card_hover_keeps_it() {
     }
 }
 
-
 #[test]
 fn home_back_blocks_a_later_pointer_activation_in_the_same_input_batch() {
     let _serial = plx_base::testlock::serial();
     let mut shell = Shell::new(fixture(), Preferences::default());
     shell.enable_app_launches(true);
-    let key = FocusKey { entry: entry(Page::Home), elem: focus(&shell) };
+    let key = FocusKey {
+        entry: entry(Page::Home),
+        elem: focus(&shell),
+    };
     assert_eq!(shell.focused_item().as_deref(), Some("com.example.app00"));
     let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
     shell.input.hit.fill(vec![Stop {
-        key, rect, rest_rect: rect, clip: CONTENT,
-        hover: Hover::Focus, activate: Activate::Press,
+        key,
+        rect,
+        rest_rect: rect,
+        clip: CONTENT,
+        hover: Hover::Focus,
+        activate: Activate::Press,
     }]);
     shell.input.hit.swap();
     let before = shell.preferences().clone();
-    shell.input_frame(400, 0.016, |shell| {
-        shell.back();
-        assert!(shell.should_exit());
-        shell.pointer(rect.cx(), rect.cy(), true);
-        Ok::<(), ()>(())
-    }).unwrap();
+    shell
+        .input_frame(400, 0.016, |shell| {
+            shell.back();
+            assert!(shell.should_exit());
+            shell.pointer(rect.cx(), rect.cy(), true);
+            Ok::<(), ()>(())
+        })
+        .unwrap();
     assert!(shell.should_exit());
     assert_eq!(shell.page(), Page::Home);
     assert_eq!(shell.preferences(), &before);
-    assert!(shell.take_requests().is_empty(),
-        "Back from Home is terminal; a later queued click must not launch an application");
+    assert!(
+        shell.take_requests().is_empty(),
+        "Back from Home is terminal; a later queued click must not launch an application"
+    );
 }

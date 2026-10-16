@@ -236,13 +236,39 @@ pub fn controls_form_with_numeric(settings:&[Setting],current:&Context,section_r
             Row::new("Audio-description level").detail(if description.is_some(){"Signed level • stage then Apply"}else{"Adjust in LG Settings"})
                 .value(description.map(|v|v.value().to_string()).unwrap_or_else(||"LG-managed".into())).chevron(description.is_some())).disabled(description.is_none());
     }
-    let lg = if let Some(route) = section_route { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-settings".to_owned(), RowKey(route.focus_key()),
-        RowKind::Button, if route == SettingsSection::Picture {Action::OpenLgSettings} else {Action::OpenLgSettingsSection(route)},
-        Row::new(if route == SettingsSection::Network {"Open LG Network entry"} else {Message::OpenLgSettings.text()})) }
-        else { FormSection::new(Message::MoreSettings.text()).item_keyed("lg-managed".to_owned(), RowKey(1001),
-            RowKind::Button, Action::Inspect("lg-managed".into()),
-            Row::new("More controls").detail("Open LG Settings from LG Home").value("LG-managed")).disabled(true) };
-    Form::new().section(section).section(lg)
+    // Keep LG management reachable before long or unavailable native readouts.
+    let lg = if let Some(route) = section_route {
+        let (label, detail) = match route {
+            SettingsSection::Picture => ("Open LG Picture", "Opens the Picture overview"),
+            SettingsSection::Sound => ("Open LG Sound", "Opens the Sound overview"),
+            SettingsSection::Network => (
+                "Open LG Network entry",
+                "Opens General for network settings",
+            ),
+            SettingsSection::Accessibility => (
+                "Open LG Accessibility",
+                "Opens the Accessibility overview",
+            ),
+            SettingsSection::General => ("Open LG General", "Opens the General overview"),
+            SettingsSection::PanelCare => ("Open LG OLED Care", "Opens the OLED Care overview"),
+        };
+        FormSection::new(Message::MoreSettings.text()).item_keyed(
+            "lg-settings".to_owned(), RowKey(route.focus_key()), RowKind::Button,
+            if route == SettingsSection::Picture {
+                Action::OpenLgSettings
+            } else {
+                Action::OpenLgSettingsSection(route)
+            },
+            Row::new(label).detail(detail),
+        )
+    } else {
+        FormSection::new(Message::MoreSettings.text()).item_keyed(
+            "lg-managed".to_owned(), RowKey(1001), RowKind::Button,
+            Action::Inspect("lg-managed".into()),
+            Row::new("More controls").detail("Open LG Settings from LG Home").value("LG-managed"),
+        ).disabled(true)
+    };
+    Form::new().section(lg).section(section)
 }
 
 #[cfg(test)]
@@ -290,39 +316,39 @@ mod tests {
         let settings = [setting("panel-protection", true), setting("brightness", false)];
         let mut table = FormTable::new(2000);
         table.set(controls_form(&settings, &context()), None);
-        assert_eq!(table.activate(0), None);
-        assert_eq!(table.activate(1), Some(Activation::Action(Action::Inspect("brightness".into()))));
+        assert_eq!(table.activate(1), None);
+        assert_eq!(table.activate(2), Some(Activation::Action(Action::Inspect("brightness".into()))));
         let mut hdr = context(); hdr.dynamic_range = "hdr".into();
         table.set(controls_form(&settings, &hdr), None);
-        assert_eq!(table.activate(1), None);
-        assert_eq!(table.table.sections[0].rows[1].value.as_deref(), Some("Unavailable"));
-        assert_eq!(table.activate(2), Some(Activation::Action(Action::OpenLgSettings)));
+        assert_eq!(table.activate(2), None);
+        assert_eq!(table.table.sections[1].rows[1].value.as_deref(), Some("Unavailable"));
+        assert_eq!(table.activate(0), Some(Activation::Action(Action::OpenLgSettings)));
     }
 
     #[test]
     fn displayed_labels_preserve_raw_state_and_never_hide_staleness() {
         let mut output=setting("soundOutput",false);output.value="external_optical".into();
         let mut table=FormTable::new(2000);table.set(controls_form(&[output.clone()],&context()),None);
-        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("Optical"));
+        assert_eq!(table.table.sections[1].rows[0].value.as_deref(),Some("Optical"));
         assert_eq!(output.value,"external_optical");
         let mut changed=context();changed.input="HDMI_2".into();table.set(controls_form(&[output],&changed),None);
-        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("Unavailable"));assert_eq!(table.activate(0),None);
+        assert_eq!(table.table.sections[1].rows[0].value.as_deref(),Some("Unavailable"));assert_eq!(table.activate(1),None);
     }
 
     #[test]
     fn control_descriptions_explain_current_readings_without_enabling_edits() {
         let mut table=FormTable::new(2000);
         table.set(controls_form(&[setting("brightness",false)],&context()),None);
-        let row=&table.table.sections[0].rows[0];
+        let row=&table.table.sections[1].rows[0];
         assert_eq!(row.value.as_deref(),Some("50"));
         assert_eq!(row.detail,"Adjust in LG Settings");
-        assert_eq!(table.activate(0),Some(Activation::Action(Action::Inspect("brightness".into()))));
+        assert_eq!(table.activate(1),Some(Activation::Action(Action::Inspect("brightness".into()))));
         let mut panel=setting("screenShift",true);panel.value="on".into();
         table.set(controls_form_for_section(&[panel],&context(),Some(SettingsSection::PanelCare)),None);
-        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("On"));
-        assert_eq!(table.table.sections[0].rows[0].detail,"Protected • view only");
-        assert_eq!(table.activate(0),None);
-        assert_eq!(table.activate(1),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::PanelCare))));
+        assert_eq!(table.table.sections[1].rows[0].value.as_deref(),Some("On"));
+        assert_eq!(table.table.sections[1].rows[0].detail,"Protected • view only");
+        assert_eq!(table.activate(1),None);
+        assert_eq!(table.activate(0),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::PanelCare))));
     }
 
     #[test]
@@ -331,14 +357,14 @@ mod tests {
         level.constraint=Some(ControlConstraint::Range{minimum:-15,maximum:15,step:1,active:true});
         let mut table=FormTable::new(2000);
         table.set(controls_form_with_numeric(&[level.clone()],&context(),Some(SettingsSection::Sound),false,None),None);
-        assert_eq!(table.table.sections[0].rows[0].detail,"Range -15 to 15 • Adjust in LG Settings");
-        assert_eq!(table.activate(0),None);
+        assert_eq!(table.table.sections[1].rows[0].detail,"Range -15 to 15 • Adjust in LG Settings");
+        assert_eq!(table.activate(1),None);
         let mut other=context();other.input="HDMI_2".into();
         table.set(controls_form_for_section(&[level],&other,Some(SettingsSection::Sound)),None);
-        assert_eq!(table.table.sections[0].rows[0].value.as_deref(),Some("Unavailable"));
-        assert_eq!(table.table.sections[0].rows[0].detail,"Unavailable in this context");
-        assert_eq!(table.activate(0),None);
-        assert_eq!(table.activate(1),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::Sound))));
+        assert_eq!(table.table.sections[1].rows[0].value.as_deref(),Some("Unavailable"));
+        assert_eq!(table.table.sections[1].rows[0].detail,"Unavailable in this context");
+        assert_eq!(table.activate(1),None);
+        assert_eq!(table.activate(0),Some(Activation::Action(Action::OpenLgSettingsSection(SettingsSection::Sound))));
     }
 
     #[test]
@@ -375,23 +401,23 @@ mod tests {
             for (index, (id, key, value)) in expected.iter().enumerate() {
                 assert!(settings[index].available && settings[index].protected);
                 assert!(settings[index].constraint.is_none());
-                let binding = table.binding_at(index).unwrap();
+                let binding = table.binding_at(index + 1).unwrap();
                 assert_eq!(binding.id, *id);
                 assert_eq!(binding.key, RowKey(*key));
                 assert!(binding.disabled);
                 assert_eq!(binding.action, Action::Inspect((*id).into()));
-                let row = &table.table.sections[0].rows[index];
+                let row = &table.table.sections[1].rows[index];
                 assert_eq!(row.value.as_deref(), Some(*value));
                 assert!(!row.dim, "a current protected reading must retain normal ink");
                 assert_eq!(row.detail, "Protected • view only");
                 assert!(row.ticon.is_none(), "readings must not advertise a drill-in editor");
-                assert_eq!(table.activate(index), None);
+                assert_eq!(table.activate(index + 1), None);
             }
-            let route = table.binding_at(5).unwrap();
+            let route = table.binding_at(0).unwrap();
             assert_eq!(route.id, "lg-settings");
             assert_eq!(route.key, RowKey(1040));
             assert!(!route.disabled);
-            assert_eq!(table.activate(5), Some(Activation::Action(
+            assert_eq!(table.activate(0), Some(Activation::Action(
                 Action::OpenLgSettingsSection(SettingsSection::General)
             )));
         }
@@ -416,14 +442,115 @@ mod tests {
         let mut table = FormTable::new(2000);
         table.set(controls_form_with_numeric(&rows, &current,
             Some(SettingsSection::General), true, None), None);
-        assert!(!table.table.sections[0].rows[0].dim);
+        assert!(!table.table.sections[1].rows[0].dim);
         for index in 0..4 {
-            assert!(table.binding_at(index).unwrap().disabled);
-            assert_eq!(table.activate(index), None);
-            assert_eq!(table.table.sections[0].rows[index].dim, index != 0);
+            assert!(table.binding_at(index + 1).unwrap().disabled);
+            assert_eq!(table.activate(index + 1), None);
+            assert_eq!(table.table.sections[1].rows[index].dim, index != 0);
         }
-        assert_eq!(table.table.sections[0].rows[1].value.as_deref(), Some("Unavailable"));
-        assert_eq!(table.table.sections[0].rows[2].value.as_deref(), Some("Unavailable"));
+        assert_eq!(table.table.sections[1].rows[1].value.as_deref(), Some("Unavailable"));
+        assert_eq!(table.table.sections[1].rows[2].value.as_deref(), Some("Unavailable"));
+    }
+
+    #[test]
+    fn every_category_keeps_its_existing_lg_route_first_when_readings_fail() {
+        let _serial = plx_base::testlock::serial();
+        let mut unavailable = setting("unavailable", true);
+        unavailable.available = false;
+        let mut stale = setting("stale", true);
+        stale.focus_key = 3;
+        stale.context.input = "HDMI_4".into();
+        let cases = [
+            (
+                SettingsSection::Picture, "Open LG Picture",
+                "Opens the Picture overview", Action::OpenLgSettings,
+            ),
+            (
+                SettingsSection::Sound, "Open LG Sound",
+                "Opens the Sound overview", Action::OpenLgSettingsSection(SettingsSection::Sound),
+            ),
+            (
+                SettingsSection::Network, "Open LG Network entry",
+                "Opens General for network settings", Action::OpenLgSettingsSection(SettingsSection::Network),
+            ),
+            (
+                SettingsSection::Accessibility, "Open LG Accessibility",
+                "Opens the Accessibility overview", Action::OpenLgSettingsSection(SettingsSection::Accessibility),
+            ),
+            (
+                SettingsSection::General, "Open LG General",
+                "Opens the General overview", Action::OpenLgSettingsSection(SettingsSection::General),
+            ),
+            (
+                SettingsSection::PanelCare, "Open LG OLED Care",
+                "Opens the OLED Care overview", Action::OpenLgSettingsSection(SettingsSection::PanelCare),
+            ),
+        ];
+        let mut route_keys = BTreeSet::new();
+        for (route, label, detail, action) in cases {
+            let mut table = FormTable::new(2000);
+            table.set(controls_form_for_section(
+                &[unavailable.clone(), stale.clone()], &context(), Some(route),
+            ), None);
+            let binding = table.binding_at(0).unwrap();
+            assert_eq!(binding.id, "lg-settings");
+            assert_eq!(binding.key, RowKey(route.focus_key()));
+            assert!(route_keys.insert(binding.key.0));
+            assert!(!binding.disabled);
+            assert_eq!(table.activate(0), Some(Activation::Action(action)));
+            assert_eq!(table.table.sections[0].rows.len(), 1);
+            assert_eq!(table.table.sections[0].rows[0].label, label);
+            assert_eq!(table.table.sections[0].rows[0].detail, detail);
+            for index in 1..=2 {
+                assert_eq!(table.activate(index), None);
+                assert_eq!(
+                    table.table.sections[1].rows[index - 1].value.as_deref(),
+                    Some("Unavailable"),
+                );
+            }
+        }
+        let mut table = FormTable::new(2000);
+        table.set(controls_form_for_section(&[], &context(), None), None);
+        assert!(table.binding_at(0).unwrap().disabled);
+        assert_eq!(table.activate(0), None);
+    }
+
+    #[test]
+    fn leading_lg_route_does_not_change_pointer_or_description_editor_admission() {
+        let _serial = plx_base::testlock::serial();
+        let mut pointer = setting("pointerSpeed", true);
+        pointer.focus_key = 141;
+        pointer.value = "normal".into();
+        pointer.constraint = Some(ControlConstraint::Choices {
+            values: vec!["slow".into(), "normal".into(), "fast".into()], active: true,
+        });
+        let mut table = FormTable::new(2000);
+        for enabled in [false, true] {
+            table.set(controls_form_with_pointer(
+                &[pointer.clone()], &context(), Some(SettingsSection::General), enabled,
+            ), None);
+            assert_eq!(table.binding_at(1).unwrap().key, RowKey(141));
+            assert_eq!(table.activate(1), if enabled {
+                Some(Activation::Action(Action::OpenPointerSpeed))
+            } else { None });
+            assert_eq!(table.activate(0), Some(Activation::Action(
+                Action::OpenLgSettingsSection(SettingsSection::General),
+            )));
+        }
+        let level = crate::description_level::Level::new(0).unwrap();
+        for admitted in [None, Some(level)] {
+            table.set(controls_form_with_numeric(
+                &[], &context(), Some(SettingsSection::Accessibility), false, admitted,
+            ), None);
+            assert_eq!(table.binding_at(1).unwrap().id, "audioDescriptionVolume");
+            assert_eq!(table.binding_at(1).unwrap().key, RowKey(1580));
+            assert_eq!(table.activate(1), admitted.map(|_| {
+                Activation::Action(Action::OpenDescriptionLevel)
+            }));
+            assert_eq!(table.activate(0), Some(Activation::Action(
+                Action::OpenLgSettingsSection(SettingsSection::Accessibility),
+            )));
+        }
     }
 
     #[test]

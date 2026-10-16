@@ -128,11 +128,14 @@ fn actual_accessibility_form_displays_value_without_activation_or_write_constrai
         None,
     );
     assert_eq!(
-        table.table.sections[0].rows[7].label,
+        table.table.sections[1].rows[7].label,
         "TV caption preference"
     );
-    assert_eq!(table.table.sections[0].rows[7].value.as_deref(), Some("On"));
-    assert_eq!(table.activate(7), None);
+    assert_eq!(table.table.sections[1].rows[7].value.as_deref(), Some("On"));
+    assert_eq!(
+        table.activate(table.index_of(&"captionEnable".into()).unwrap()),
+        None
+    );
     let mut other = snapshot.context.clone();
     other.input = "HDMI_2".into();
     table.set(
@@ -144,10 +147,13 @@ fn actual_accessibility_form_displays_value_without_activation_or_write_constrai
         None,
     );
     assert_eq!(
-        table.table.sections[0].rows[7].value.as_deref(),
+        table.table.sections[1].rows[7].value.as_deref(),
         Some("Unavailable")
     );
-    assert_eq!(table.activate(7), None);
+    assert_eq!(
+        table.activate(table.index_of(&"captionEnable".into()).unwrap()),
+        None
+    );
     expire(&mut snapshot, &fresh, 15_101);
     table.set(
         crate::model::controls_form_for_section(
@@ -158,8 +164,11 @@ fn actual_accessibility_form_displays_value_without_activation_or_write_constrai
         None,
     );
     assert_eq!(
-        table.table.sections[0].rows[7].value.as_deref(),
+        table.table.sections[1].rows[7].value.as_deref(),
         Some("Unavailable")
     );
-    assert_eq!(table.activate(7), None);
+    assert_eq!(
+        table.activate(table.index_of(&"captionEnable".into()).unwrap()),
+        None
+    );
 }

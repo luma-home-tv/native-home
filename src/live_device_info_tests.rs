@@ -94,17 +94,18 @@ fn actual_general_form_keeps_information_inert_and_existing_routes_intact() {
             None,
         );
         for (index, setting) in rows.iter().enumerate().skip(10) {
-            let binding = form.binding_at(index).unwrap();
+            let position = form.index_of(&setting.id).unwrap();
+            let binding = form.binding_at(position).unwrap();
             assert_eq!(binding.id, setting.id);
             assert_eq!(binding.action, Action::Inspect(setting.id.clone()));
             assert!(binding.disabled);
-            assert_eq!(form.activate(index), None);
-            let row = &form.table.sections[0].rows[index];
+            assert_eq!(form.activate(position), None);
+            let row = &form.table.sections[1].rows[index];
             assert_eq!(row.value.as_deref(), Some(setting.value.as_str()));
             assert!(!row.dim && row.ticon.is_none());
         }
         assert_eq!(
-            form.activate(1),
+            form.activate(form.index_of(&"pointerSpeed".into()).unwrap()),
             if pointer_enabled {
                 Some(Activation::Action(Action::OpenPointerSpeed))
             } else {
@@ -112,7 +113,7 @@ fn actual_general_form_keeps_information_inert_and_existing_routes_intact() {
             }
         );
         assert_eq!(
-            form.activate(13),
+            form.activate(form.index_of(&"lg-settings".into()).unwrap()),
             Some(Activation::Action(Action::OpenLgSettingsSection(
                 SettingsSection::General
             )))
@@ -167,7 +168,10 @@ fn valid_info_cannot_resurrect_a_failed_pointer_or_locale_read() {
         None,
     );
     assert!(form.binding_at(1).unwrap().disabled);
-    assert_eq!(form.activate(1), None);
+    assert_eq!(
+        form.activate(form.index_of(&"pointerSpeed".into()).unwrap()),
+        None
+    );
 }
 
 #[test]

@@ -100,3 +100,5 @@ pub mod icon_decode;
 
 #[cfg(test)]
 pub(crate) mod icon_decode_test_support;
+
+pub mod session_cache_observation;

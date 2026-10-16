@@ -258,6 +258,20 @@ rehashed.118diagnostic samples maxRSS44408KiB/HWM51344KiB;36ordinary samples
 complete raw7 reads, not terminal/after-final-decode/GPU/helper/totalmemory,
 96MiBfit/OOM/leak/performance proof. Do not reuse these as matched release metrics.
 
+`docs/controls-and-icon-observations-061.md` records the 0.61 source: existing
+LG category handoffs precede native readouts, with the same keys/actions/editor
+gates. A session-marker-only bounded per-full-key cached drawing ledger extends
+observation beyond the first Home/Apps captures without changing their format.
+Normal release sessions create no ledger/new worker/Root runtime. Preserve sticky
+catalogue/adoption withdrawal, transactional whole-frame validation and final
+live-clock ageing after image join. Historical observations/count equality grant
+no all-catalogue, source-file freshness, residency, pixels, authority or performance
+proof. Limits512keys/64rows/128KiB compactframe/1MiB compactreport; parent pretty
+printing adds whitespace. All756library+10UI+84Python and strict Luma Clippy pass
+against136 inputs; synthetic host Controls captures/navigation also pass. Preserve
+the two initial old-position fixture failures. New matching ARM/package/native
+evidence still precedes promotion; retainedG2 remains057 and normalRoot off.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

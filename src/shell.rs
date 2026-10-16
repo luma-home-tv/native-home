@@ -4350,6 +4350,26 @@ impl Shell {
     }
     /// Session-proof observation only. The Main caller gates this by actual
     /// ordinary Preview + session capture, after draw and before swap.
+    /// This separate status also permits withdrawal while no eligible card is
+    /// drawn. It performs no I/O and grants no source-file or Root authority.
+    #[doc(hidden)]
+    pub fn session_cache_catalogue_status(&self) -> Option<(String, usize, u64)> {
+        if !self.current_icon_cache {
+            return None;
+        }
+        let plan = crate::artwork_cache_preparation::Plan::from_current(
+            self.cache_preparation_catalogue(),
+            self.live_now,
+        )
+        .ok()?;
+        let controller = self.packaged_icons.as_ref()?;
+        Some((
+            plan.keyset_sha256().to_owned(),
+            plan.eligible_preferred(),
+            controller.stats().cache_adoptions,
+        ))
+    }
+    /// Session-proof observation only; Main samples after draw and before swap.
     #[doc(hidden)]
     pub fn session_cache_frame(&self) -> Option<(Page, serde_json::Value)> {
         let controller = self.packaged_icons.as_ref()?;
