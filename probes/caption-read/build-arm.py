@@ -101,8 +101,16 @@ def main():
                CARGO_TARGET_DIR=str(output / 'cargo'),
                CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABI_LINKER=str(cc),
                CAPTION_PROBE_SOURCE_SHA256=manifest['files']['src/main.rs']['sha256'])
+    # The older TV libc lacks getauxval, which current Rust std requires.
+    # Reuse the pinned, attributed ARM32 fallback already used by the dashboard.
+    auxv_object = output / 'getauxval-arm.o'
+    subprocess.run([str(cc), '--sysroot=' + str(sysroot), '-c',
+                    str(framework / 'src/compat/getauxval.c'), '-fPIC', '-O2',
+                    '-o', str(auxv_object)], check=True)
+    auxv_before = observe(auxv_object)
     flags = ['-C target-cpu=cortex-a9', '-C target-feature=-neon',
-             '-C link-arg=--sysroot=' + str(sysroot)]
+             '-C link-arg=--sysroot=' + str(sysroot),
+             '-C link-arg=' + str(auxv_object)]
     flags += ['-C link-arg=-l' + name for name in ('luna-service2', 'glib-2.0')]
     flags += ['-C link-arg=-Wl,-rpath-link,' + str(sysroot / name) for name in ('usr/lib', 'lib')]
     env['RUSTFLAGS'] = ' '.join(flags)
@@ -117,13 +125,14 @@ def main():
     compiler_after = dict(observe(cc.resolve(strict=True)), path=str(cc), realpath=str(cc.resolve(strict=True)))
     if compiler_after != compiler_before:
         raise RuntimeError('SDK compiler changed during build')
-    if before != after or observe(HERE / 'Cargo.lock') != lock:
+    if before != after or observe(HERE / 'Cargo.lock') != lock or observe(auxv_object) != auxv_before:
         raise RuntimeError('Build input changed during compile')
     binary = output / 'cargo/arm-unknown-linux-gnueabi/release/caption-read-proof'
     save(output / 'build-result.json', {
         'schema': 1, 'source_manifest_sha256': args.manifest_sha256,
         'source_inputs': before, 'private_lock': lock, 'toolchain': toolchain,
         'sdk_compiler': compiler_before, 'command': command, 'rustflags': flags,
+        'auxv_compat_object': dict(auxv_before, path=str(auxv_object)),
         'binary': dict(observe(binary), path=str(binary)),
         'inherited_override_policy': 'presence_rejected_even_empty',
         'forbidden_override_keys': list(FORBIDDEN_OVERRIDES),

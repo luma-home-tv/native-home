@@ -26,6 +26,11 @@ excludes setup, cancellation and unregistration. Drop exposes no unregister
 success result and can produce a separate framework event log. Read the source
 and preserve these boundaries when interpreting a result.
 
+The build also links PlxNative's unchanged, attributed ARM32 `getauxval`
+compatibility source, as the dashboard does. Current Rust's standard library
+needs it with the older TV libc. It reads only the process's own auxiliary vector;
+it is not used to make security decisions.
+
 This is an independent Cargo workspace. Its lock uses a subset of the main
 project's registry versions/checksums. The framework must first be prepared and
 verified using the main project's documented procedure. `build-arm.py` verifies

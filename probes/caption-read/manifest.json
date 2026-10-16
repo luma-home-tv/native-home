@@ -399,6 +399,10 @@
       "bytes": 7056,
       "sha256": "d4b7c846ead2671de2943bc227621a4ea3e4b5b5f4bdab008af9627d2b502cb2"
     },
+    ".dependencies/plx-native/src/compat/getauxval.c": {
+      "bytes": 3306,
+      "sha256": "a0de7e139aea7764e02c2c2d29b2b9d5daab4b952f2e83a3941d114903367447"
+    },
     "Cargo.lock": {
       "bytes": 18174,
       "sha256": "8d5dc2fa4800e49bdb9cdf8aac005d254934066f5b32f5e8a9a6f44be7986ed6"
@@ -430,16 +434,16 @@
       "sha256": "fb981668c18a279e285fc4d83fba1e836cc84dd4daa73c9697d3cfd2d8aca6e0"
     },
     "README.md": {
-      "bytes": 2450,
-      "sha256": "30b54aeaf5eec155037346815c6b6af133d1400324d83eefeeded05618c4aa2f"
+      "bytes": 2727,
+      "sha256": "893113581f522c7a342c6dad8d808c6bebc5bc9d830b450151ce0ed7b6b75904"
     },
     "appinfo.json": {
       "bytes": 341,
       "sha256": "0f4f848afbc0402dc96294c84434a50f7dc0a540912b87a2a492ca7aa10e02c9"
     },
     "build-arm.py": {
-      "bytes": 6935,
-      "sha256": "b6fb48487183b5c9d83a8b9eec5fe49a3e8cf6822b94647e1f715e360fd1cd7d"
+      "bytes": 7533,
+      "sha256": "965654306626b38b2de1d20bb8bf917d30ee621e2922d95792c853791e38cae3"
     },
     "build.rs": {
       "bytes": 585,
@@ -469,7 +473,7 @@
     "ready.json",
     "result.json"
   ],
-  "revision": "public_probe_relative_paths_and_before_call_clone",
+  "revision": "public_probe_with_attributed_ARM32_auxv_compat",
   "root_reviewed": true,
   "runtime_leaf": "caption-<actualPID>",
   "runtime_parent": "/tmp/luma-caption-read-proof",
