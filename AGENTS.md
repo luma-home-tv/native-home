@@ -41,6 +41,25 @@ failure/expiry, physical input, broad controls/performance/reliability and C2 re
 open. Future backup/rollback must use actual057 and fresh state; older056-baseline
 carriers must not run against057.
 
+`probes/native-surface` now preserves the ordinary held-window prerequisite,
+with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
+build and independent SDK archive/ELF/source audit. Its new six-file font-bearing
+package is `f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736`;
+ELF2195 is reproduced byte-for-byte. This source wave made no TV contact and
+establishes no native scene or Root authority. The new ordinary carrier must
+preserve actual057 and fresh state; older047/V7 dates and owner records cannot
+be reused. Natural Home/screensaver admission never broadens sole-Proof readiness
+or both-live sole-Target qualification. Component nonqualification and known
+ordinary cleanup remain distinct; unknown ownership/transport retains barriers.
+
+`docs/artwork-responsive-cache-next.md` chooses ordinary durable icon reads for
+normal interaction, with separately qualified privileged preparation. Preserve
+the current broker, source checks and pending guard. Do not merely remove its
+input wait, clear old Tickets or infer Root authority from app-writable cache
+metadata. Cache population and normal integration are future work; matching
+current executable/positive-transfer qualification remains necessary. Normal
+Root artwork stays off.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
