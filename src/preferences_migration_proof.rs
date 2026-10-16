@@ -5,6 +5,34 @@ use serde_json::Value;
 use std::{io, path::Path};
 
 const MAX_MARKER: usize = 1024;
+
+pub const MAX_OPAQUE_SDK_ARGUMENT_BYTES: usize = 4096;
+
+/// Validate the process argument shape only; this grants no migration authority.
+pub fn validate_launch_arguments(argv: &[String]) -> io::Result<()> {
+    let invalid = || {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Expected executable plus at most one bounded opaque JSON object",
+        )
+    };
+    if !(1..=2).contains(&argv.len()) || argv[0].is_empty() {
+        return Err(invalid());
+    }
+    if let Some(argument) = argv.get(1) {
+        if argument.is_empty() || argument.len() > MAX_OPAQUE_SDK_ARGUMENT_BYTES {
+            return Err(invalid());
+        }
+        let value: serde_json::Value = serde_json::from_str(argument).map_err(|_| invalid())?;
+        if !value.is_object() {
+            return Err(invalid());
+        }
+        // Intentionally discard every field. In particular, a string resembling
+        // a direction, command, path, profile, UID or hash is never interpreted.
+    }
+    Ok(())
+}
+
 #[cfg(target_arch = "arm")]
 const MARKER_NAME: &str = "preferences-migration-proof.json";
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -480,7 +508,9 @@ mod native {
                     if admitted {
                         None
                     } else {
-                        Some("Controlled proof requires the exact original bytes and both requested metadata steps")
+                        Some(
+                            "Controlled proof requires the exact original bytes and both requested metadata steps",
+                        )
                     }
                 }
                 Err(error) => {
@@ -528,6 +558,106 @@ pub fn run(assets: &Path) -> Result<Value, Box<dyn std::error::Error>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn argv(tail: &[&str]) -> Vec<String> {
+        std::iter::once("home-preview")
+            .chain(tail.iter().copied())
+            .map(str::to_owned)
+            .collect()
+    }
+    #[test]
+    fn executable_only_and_one_object_are_admitted() {
+        assert!(validate_launch_arguments(&argv(&[])).is_ok());
+        assert!(validate_launch_arguments(&argv(&["{}"])).is_ok());
+        assert!(validate_launch_arguments(&argv(&[
+            " \n{\"reason\":\"launch\",\"nested\":{\"items\":[1,true,null]}} \t"
+        ]))
+        .is_ok());
+    }
+    #[test]
+    fn flags_and_raw_paths_are_not_sdk_objects() {
+        for argument in [
+            "--session",
+            "--help",
+            "-x",
+            "/tmp/anything",
+            "../preferences.json",
+            "file:///tmp/anything",
+            "luna://service/method",
+            "direction=reverse",
+            "",
+        ] {
+            assert!(
+                validate_launch_arguments(&argv(&[argument])).is_err(),
+                "{argument}"
+            );
+        }
+    }
+    #[test]
+    fn extra_arguments_and_absent_executable_are_refused() {
+        for arguments in [
+            argv(&["{}", "{}"]),
+            argv(&["{}", "--session"]),
+            Vec::new(),
+            vec![String::new()],
+        ] {
+            assert!(validate_launch_arguments(&arguments).is_err());
+        }
+    }
+    #[test]
+    fn nonobjects_malformed_and_trailing_payloads_are_refused() {
+        for argument in [
+            "[]",
+            "null",
+            "true",
+            "1",
+            "\"/tmp/path\"",
+            "{",
+            "{}{}",
+            "{} --session",
+            "{\"key\":NaN}",
+            "{\"key\":true,}",
+            "{}\u{0}",
+        ] {
+            assert!(
+                validate_launch_arguments(&argv(&[argument])).is_err(),
+                "{argument:?}"
+            );
+        }
+    }
+    #[test]
+    fn bound_counts_utf8_bytes_not_characters() {
+        let exact = format!(
+            "{{\"x\":\"{}\"}}",
+            "a".repeat(MAX_OPAQUE_SDK_ARGUMENT_BYTES - 8)
+        );
+        assert_eq!(exact.len(), MAX_OPAQUE_SDK_ARGUMENT_BYTES);
+        assert!(validate_launch_arguments(&argv(&[&exact])).is_ok());
+        let too_large = format!(
+            "{{\"x\":\"{}\"}}",
+            "a".repeat(MAX_OPAQUE_SDK_ARGUMENT_BYTES - 7)
+        );
+        assert!(validate_launch_arguments(&argv(&[&too_large])).is_err());
+        let unicode = format!(
+            "{{\"x\":\"{}\"}}",
+            "é".repeat(MAX_OPAQUE_SDK_ARGUMENT_BYTES / 2)
+        );
+        assert!(unicode.chars().count() < MAX_OPAQUE_SDK_ARGUMENT_BYTES);
+        assert!(validate_launch_arguments(&argv(&[&unicode])).is_err());
+    }
+    #[test]
+    fn authority_looking_fields_are_only_discarded_data() {
+        // This function returns unit. No field reaches Marker, Request, paths,
+        // the migration API, a command dispatcher or environment variables.
+        let ignored = r#"{"direction":"reverse","path":"/etc/passwd","command":"anything","uid":0,"profile":"proof"}"#;
+        assert!(validate_launch_arguments(&argv(&[ignored])).is_ok());
+    }
+    #[test]
+    fn bounded_but_excessively_nested_json_is_not_accepted() {
+        let nested = format!("{{\"x\":{}{}}}", "[".repeat(256), "]".repeat(256));
+        assert!(nested.len() < MAX_OPAQUE_SDK_ARGUMENT_BYTES);
+        assert!(validate_launch_arguments(&argv(&[&nested])).is_err());
+    }
+
     fn marker() -> Value {
         serde_json::json!({"schema":1,"direction":"forward","expected_preferences_sha256":"a".repeat(64),"ui_sha256":"b".repeat(64),"expected_uid":6249,"expected_gid":5000})
     }

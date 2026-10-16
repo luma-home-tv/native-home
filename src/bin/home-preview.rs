@@ -72,10 +72,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             || interactive
             || plx_base::paths::app_id() != native_home::identity::PREVIEW
             || unsafe { libc::geteuid() } < 1000
-            || args.len() != 1
+            || native_home::preferences_migration_proof::validate_launch_arguments(&args).is_err()
         {
             return Err(
-                "Preference migration requires ordinary native Preview without arguments".into(),
+                "Preference migration requires ordinary native Preview with at most one opaque SDK JSON object".into(),
             );
         }
         const MIGRATION_FILES: &[&str] = &[
