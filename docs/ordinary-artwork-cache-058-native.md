@@ -54,6 +54,14 @@ captures, and the branding region matched the direct internal Home/Apps PPM capt
 These byte comparisons established no rendering or compositor defect. They also do not
 qualify the physical panel or prove cached icon content identity.
 
+A later [independent icon comparison](ordinary-artwork-cache-058-pixels.md) adds
+numeric content evidence for four opaque, unfocused Apps icons, including exact
+constant-region pixels and separate wrong-image/geometry controls. Its scope is
+distinct from the earlier static-region comparison and from general pixel,
+transparency or physical-panel qualification. The
+[mount observer](preview-mount-observation.md) records the separately host-tested
+operator correction; it has not run on the TV.
+
 The [milestone](ordinary-artwork-cache-058-native-milestone.json) records
 source/artifact and terminal hashes. The composite report SHA-256 is
 `ed564ab34cfd42a5591aa4945b4c28547083967bb8a8726b854a6b562f58745c`. It replays the

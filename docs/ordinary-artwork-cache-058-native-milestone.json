@@ -107,5 +107,36 @@
     "physical_panel_qualified": false,
     "performance_improvement_qualified": false,
     "whole_original_operator_success": false
+  },
+  "independent_saved_Apps_pixel_analysis": {
+    "status": "bounded_four_opaque_unfocused_integer_quads_content_consistent",
+    "analysis_source_sha256": "6bd113bc1a0b11eca57d594161453c7aa663599d4396df229f2c054964abcd51",
+    "report_sha256": "e44908aace43b2d26ae4f46740748ce287385a9b6e409724140a254373251cff",
+    "coordinator_replay_byte_identical": true,
+    "composite_input_crosscheck": true,
+    "decoded_payloads": 6,
+    "rendered_Apps_icons": 4,
+    "native_CPU_RGBA_witnesses_matched": 3,
+    "rendered_icon_native_CPU_digest_unobserved": 1,
+    "whole_quad_pixels_compared": 211600,
+    "exact_constant_region_pixels": 183988,
+    "nonmodal_constant_pixel_counts": [
+      3061,
+      925,
+      988,
+      152
+    ],
+    "coverage_floor_500_met": [
+      true,
+      true,
+      true,
+      false
+    ],
+    "coverage_floor_500_used_as_gate": false,
+    "thresholds_retrospective": true,
+    "alignment_search_or_fit": false,
+    "SDK_icon_crops_equal_internal_PPM": true,
+    "focused_Home_transparency_all_app_physical_performance_qualified": false,
+    "TV_contact": false
   }
 }

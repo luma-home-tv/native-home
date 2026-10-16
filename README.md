@@ -89,6 +89,8 @@ all-app, physical-panel and performance qualification remain open. The earlier
 stopped before an explicit launch request on an installer diagnostic check; a
 separate verified restore returned the complete retained G2 installation to 0.57.
 C2 was untouched by both attempts.
+A [saved icon-content comparison](docs/ordinary-artwork-cache-058-pixels.md)
+independently matches four opaque Apps icons; broader coverage remains open.
 A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequisite.md)
 now passes with independent saved replay; it grants no 0.58 execution or cache
 permission qualification.

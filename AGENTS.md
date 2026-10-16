@@ -136,6 +136,19 @@ all-app/pixel/physical/performance qualification or C2 contact follows. Raw BMP,
 PNG and internal PPM byte comparisons withdrew an apparent missing-UI impression;
 verify raw pixels before proposing renderer fixes from preview appearance.
 
+`docs/ordinary-artwork-cache-058-pixels.md` adds independently decoded saved
+content evidence for four opaque unfocused integer Apps quads: 183,988 constant
+pixels match exactly, whole-quad residuals and wrong-image/flip/shift controls
+are recorded, three native CPU digests match and one is unobserved. Coordinator
+replay is byte-identical. This retrospective analysis preserves its schema and
+arbitrary-coverage-floor failures, reports the fourth image's sub-500 nonmodal
+count, and grants no broad pixel/alpha/focused/physical/performance authority.
+`tools/sdk_mount_observation.py` preserves all four measured same-App mount roots
+with an exact bounded read-only canonical SDK-pair exception. Nine public
+synthetic tests and private 35+15 host fixtures/offline checks pass. Preserve the
+failed canonical-only parser; do not shrink scope by dropping mirrored mounts.
+The carrier remains undated/unadmitted and no new TV execution follows.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
