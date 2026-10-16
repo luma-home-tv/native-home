@@ -25,6 +25,8 @@ use plx_ui::widgets::{
 use plx_ui::{theme, Env, Painter, Rect, View};
 use serde::{Deserialize, Serialize};
 
+use crate::artwork_runtime::TransitionReadiness;
+use crate::artwork_transition::{Anchor as ArtworkAnchor, PauseReason, PauseReasons};
 use crate::drawer::{Drawer, KEYS};
 use crate::live::{self, Freshness, Update};
 use crate::model::{
@@ -1054,6 +1056,10 @@ pub struct Shell {
     live_textures: crate::artwork_textures::ArtworkTextures<crate::artwork_gl::Backend>,
     artwork_gl: crate::artwork_gl::Diagnostics,
     artwork: Option<crate::artwork_runtime::Runtime>,
+    artwork_ever_enabled: bool,
+    artwork_pause: PauseReasons,
+    artwork_external_held: bool,
+    artwork_queued_anchor: Option<(crate::actions::Request, ArtworkAnchor)>,
     artwork_filter: Option<BTreeSet<String>>,
     artwork_origin: std::time::Instant,
     artwork_interest: (Vec<String>, Vec<String>),
@@ -1143,6 +1149,10 @@ impl Shell {
             live_textures,
             artwork_gl,
             artwork: None,
+            artwork_ever_enabled: false,
+            artwork_pause: PauseReasons::default(),
+            artwork_external_held: false,
+            artwork_queued_anchor: None,
             artwork_filter: None,
             artwork_origin: std::time::Instant::now(),
             artwork_interest: (Vec::new(), Vec::new()),
@@ -2058,15 +2068,129 @@ impl Shell {
         filter: Option<BTreeSet<String>>,
     ) {
         let _ = self.finish_live_artwork();
+        self.artwork_ever_enabled = true;
         self.artwork = Some(runtime);
         self.artwork_filter = filter;
         self.artwork_origin = std::time::Instant::now();
         self.artwork_retry_at = 0;
         self.artwork_interest = (Vec::new(), Vec::new());
+        self.reconcile_artwork_pause();
     }
+    /// Compatibility/manual ownership only: true cannot clear any other owner.
     pub fn set_artwork_active(&mut self, active: bool) {
+        self.set_artwork_pause(PauseReason::Manual, !active);
+    }
+    pub fn artwork_transition_enabled(&self) -> bool {
+        self.artwork_ever_enabled
+    }
+    pub fn set_artwork_pause(&mut self, reason: PauseReason, paused: bool) {
+        if reason == PauseReason::Quarantine && !paused {
+            return;
+        }
+        self.artwork_pause.set(reason, paused);
+        self.reconcile_artwork_pause();
+    }
+    pub fn artwork_pauses(&self) -> PauseReasons {
+        self.artwork_pause
+    }
+    pub fn set_artwork_external_held(&mut self, held: bool) {
+        self.artwork_external_held = held;
+        self.reconcile_artwork_pause();
+    }
+    fn reconcile_artwork_pause(&mut self) {
+        self.artwork_pause
+            .set(PauseReason::KeyboardIntent, self.drawer.system_keyboard());
+        self.artwork_pause.set(
+            PauseReason::ExternalIntent,
+            self.artwork_external_held
+                || self
+                    .pending
+                    .iter()
+                    .any(|a| crate::actions::Request::from_action(a.clone()).is_some()),
+        );
         if let Some(runtime) = &mut self.artwork {
-            runtime.set_active(active);
+            if runtime.transition_readiness() == TransitionReadiness::BlockedUnknown {
+                self.artwork_pause.set(PauseReason::Quarantine, true);
+            }
+            runtime.set_active(self.artwork_pause.is_empty());
+        }
+    }
+    pub fn artwork_transition_readiness(&self) -> TransitionReadiness {
+        if self.artwork_pause.contains(PauseReason::Quarantine) {
+            TransitionReadiness::BlockedUnknown
+        } else {
+            self.artwork
+                .as_ref()
+                .map_or(TransitionReadiness::Disabled, |r| r.transition_readiness())
+        }
+    }
+    fn artwork_context_ready(&self) -> bool {
+        !self.artwork_pause.contains(PauseReason::ForegroundLost)
+            && !self.artwork_pause.contains(PauseReason::Idle)
+            && !self.artwork_pause.contains(PauseReason::Quarantine)
+    }
+    pub fn keyboard_transition_ready(&mut self) -> bool {
+        if !self.artwork_ever_enabled {
+            return true;
+        }
+        self.reconcile_artwork_pause();
+        self.artwork_context_ready()
+            && !self.artwork_pause.contains(PauseReason::ExternalIntent)
+            && matches!(
+                self.artwork_transition_readiness(),
+                TransitionReadiness::Ready | TransitionReadiness::Disabled
+            )
+    }
+    pub fn external_transition_ready(&mut self) -> bool {
+        if !self.artwork_ever_enabled {
+            return true;
+        }
+        self.reconcile_artwork_pause();
+        self.artwork_context_ready()
+            && !self.artwork_pause.contains(PauseReason::KeyboardIntent)
+            && !self.artwork_pause.contains(PauseReason::KeyboardActive)
+            && matches!(
+                self.artwork_transition_readiness(),
+                TransitionReadiness::Ready | TransitionReadiness::Disabled
+            )
+    }
+    pub fn artwork_intent_anchor(&self) -> ArtworkAnchor {
+        ArtworkAnchor {
+            page: self.surface.page,
+            focused: self.focused_item(),
+            key: self
+                .input
+                .engine
+                .current(InputOwner::Entry(entry(self.surface.page)))
+                .map(|k| k.elem),
+        }
+    }
+    pub fn external_request_current(&self, request: &crate::actions::Request) -> bool {
+        use crate::actions::Request;
+        match request {
+            Request::Application { id } => {
+                self.app_launches_enabled
+                    && self.request_is_current(false)
+                    && self.catalogue.applications.iter().any(|app| &app.id == id)
+            }
+            Request::Input { id } => {
+                self.input_launches_enabled
+                    && self.request_is_current(true)
+                    && input_key(id).is_some()
+                    && self.snapshot.inputs.iter().any(|input| &input.id == id)
+            }
+            Request::LgHome {} => self.home_launches_enabled,
+            Request::LgSettings {} | Request::LgSettingsSection { .. } => {
+                request.settings_section().is_some_and(|section| {
+                    section.page() == self.surface.page
+                        && self
+                            .surface
+                            .table
+                            .index_of_key(RowKey(section.focus_key()))
+                            .and_then(|i| self.surface.table.binding_at(i))
+                            .is_some_and(|binding| !binding.disabled)
+                })
+            }
         }
     }
     fn artwork_visible(&self) -> Vec<String> {
@@ -2132,6 +2256,7 @@ impl Shell {
         changed
     }
     fn pump_artwork(&mut self) {
+        self.reconcile_artwork_pause();
         if self.artwork.is_none() {
             return;
         }
@@ -2146,6 +2271,9 @@ impl Shell {
         }
         let now = self.artwork_origin.elapsed().as_millis() as u64;
         let frame = runtime.frame(now);
+        if runtime.transition_readiness() == TransitionReadiness::BlockedUnknown {
+            self.artwork_pause.set(PauseReason::Quarantine, true);
+        }
         for key in &frame.evicted {
             self.live_textures.evict(key);
         }
@@ -2188,7 +2316,7 @@ impl Shell {
         let textures = self.live_textures.stats();
         serde_json::json!({"runtime":self.artwork.as_ref().map(|r|r.receipt()),
             "textures":{"entries":textures.entries,"rgba_bytes_estimate":textures.rgba_bytes_estimate},
-            "gl":self.artwork_gl.receipt(),"upload_failures":self.artwork_upload_failures})
+            "gl":self.artwork_gl.receipt(),"upload_failures":self.artwork_upload_failures,"pause_reasons":self.artwork_pause.bits(),"transition_readiness":format!("{:?}",self.artwork_transition_readiness())})
     }
     pub fn artwork_target(&mut self, id: &str, hash_pixels: bool) -> Option<serde_json::Value> {
         let runtime = self.artwork.as_mut()?;
@@ -2220,6 +2348,9 @@ impl Shell {
     pub fn finish_live_artwork(&mut self) -> Option<serde_json::Value> {
         let mut runtime = self.artwork.take()?;
         let finished = runtime.finish();
+        if finished.settlement == crate::artwork_worker::SessionSettlement::Unknown {
+            self.artwork_pause.set(PauseReason::Quarantine, true);
+        }
         for key in &finished.evicted {
             self.live_textures.evict(key);
         }
@@ -2230,7 +2361,7 @@ impl Shell {
         let gl = self.artwork_gl.receipt();
         Some(
             serde_json::json!({"joined":finished.joined,"panicked":finished.panicked,
-            "outstanding_resolved":finished.outstanding_resolved,"closed":true,
+            "outstanding_resolved":finished.outstanding_resolved,"closed":true,"settlement":format!("{:?}",finished.settlement),
             "gpu_cleanup_qualified":gl["deletion_failures"]==0 && gl["observed_gl_errors"]==0,
             "remaining_live_textures":self.live_textures.stats().entries,
             "runtime":runtime.receipt(),"gl":gl}),
@@ -2463,6 +2594,10 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        if self.artwork_ever_enabled {
+            self.pending
+                .retain(|a| crate::actions::Request::from_action(a.clone()).is_none());
+        }
         if self.pointer_pending || self.range.as_ref().is_some_and(|r| r.pending) {
             return;
         }
@@ -2701,7 +2836,7 @@ impl Shell {
                 "LG Home return is unavailable in this preview"
             });
             if self.home_launches_enabled {
-                self.pending.push(Action::OpenLgHome);
+                self.queue_external_action(Action::OpenLgHome);
             }
             return;
         }
@@ -2753,7 +2888,7 @@ impl Shell {
                     }
                     Some(plx_ui::form::Activation::Action(a)) => {
                         self.status = cstr("View only — use LG Settings for changes");
-                        self.pending.push(a);
+                        self.queue_external_action(a);
                     }
                     None => {}
                 }
@@ -2807,7 +2942,7 @@ impl Shell {
             } else {
                 "Application launching is unavailable in this preview"
             });
-            self.pending.push(if input {
+            self.queue_external_action(if input {
                 Action::RequestInput(id)
             } else {
                 Action::RequestApplication(id)
@@ -2888,7 +3023,7 @@ impl Shell {
             MenuAction::Open => {
                 if self.app_launches_enabled && self.request_is_current(false) {
                     self.close_app_menu();
-                    self.pending.push(Action::RequestApplication(id));
+                    self.queue_external_action(Action::RequestApplication(id));
                     self.status = cstr("Opening application…");
                 }
                 return;
@@ -2939,7 +3074,6 @@ impl Shell {
     }
     pub fn tick(&mut self, ms: u32, dt: f32) {
         self.now = ms;
-        self.pump_artwork();
         for event in self.input.tick(ms, dt) {
             match event {
                 PressEvent::Commit(_, _, k) => self.activate(k, false),
@@ -3077,6 +3211,10 @@ impl Shell {
             .table
             .table
             .update(dt, self.surface.table_area().h);
+        // Input-batch cancellation and tick-derived activation finish before
+        // intent reasons suppress dispatch; paused frames still poll results.
+        self.reconcile_artwork_pause();
+        self.pump_artwork();
     }
     /// Diagnostic geometry for an existing control binding; never grants activation.
     /// Values and app inventory are intentionally excluded.
@@ -4168,7 +4306,29 @@ impl Shell {
     pub fn take_preferences_changed(&mut self) -> bool {
         std::mem::take(&mut self.preferences_changed)
     }
+    fn queue_external_action(&mut self, action: Action) {
+        if self.artwork_ever_enabled {
+            if let Some(request) = crate::actions::Request::from_action(action.clone()) {
+                // Capture origin at activation, not after a later input in the
+                // same batch moves focus/page. Only the latest typed intent wins.
+                self.artwork_queued_anchor = Some((request, self.artwork_intent_anchor()));
+            }
+        }
+        self.pending.push(action);
+    }
+    pub fn take_transition_requests(
+        &mut self,
+    ) -> (
+        Vec<Action>,
+        Option<(crate::actions::Request, ArtworkAnchor)>,
+    ) {
+        (
+            std::mem::take(&mut self.pending),
+            self.artwork_queued_anchor.take(),
+        )
+    }
     pub fn take_requests(&mut self) -> Vec<Action> {
+        self.artwork_queued_anchor = None;
         std::mem::take(&mut self.pending)
     }
     pub fn description_value(&self) -> Option<crate::description_level::Level> {

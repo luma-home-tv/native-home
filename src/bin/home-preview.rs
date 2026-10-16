@@ -1,4 +1,6 @@
 //! Native interactive shell or bounded proof, with ordinary-app reads and gated launches.
+use native_home::artwork_runtime::TransitionReadiness;
+use native_home::artwork_transition::{DeferredExternal, PauseReason};
 use native_home::keyboard_observer as observation;
 use native_home::{
     model::Page,
@@ -1528,10 +1530,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut keyboard = native_home::keyboard::Controller::default();
     let mut settings_handoff = native_home::session::SettingsHandoff::default();
+    let mut deferred_external = DeferredExternal::default();
     let mut external_action_attempts = dispatch_requests(
         &mut shell,
-        &action_worker,
-        &pointer_worker,
+        &mut deferred_external,
+        DispatchWorkers {
+            action: action_worker.as_ref(),
+            pointer: pointer_worker.as_ref(),
+        },
         proof_request.as_ref(),
         &mut requests,
         &mut settings_handoff,
@@ -1675,7 +1681,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             last = current;
             plx_machine::idle::frame_begin(dt);
             now = now.wrapping_add((dt * 1000.0) as u32);
-            shell.set_artwork_active(hidden_at.is_none() && !session.idle(start.elapsed()));
+            shell.set_artwork_pause(PauseReason::ForegroundLost, hidden_at.is_some());
+            shell.set_artwork_pause(PauseReason::Idle, session.idle(start.elapsed()));
+            shell.set_artwork_pause(
+                PauseReason::KeyboardActive,
+                keyboard.active() || !keyboard.accepts_input(now),
+            );
             poll_live(&live_worker, &mut shell, live_origin, &mut live_history);
             pump_description(
                 &description_worker,
@@ -1751,6 +1762,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             continue;
                         }
                     }
+                    if e.kind == 2 && e.key == 6 && e.repeat == 0 {
+                        deferred_external.cancel_pending();
+                        shell.set_artwork_external_held(
+                            deferred_external.holds_pause() || settings_handoff.pending(),
+                        );
+                    }
                     if hidden_at.is_none() {
                         if let Some(result) =
                             handle_system_text_event(shell, &mut keyboard, &e, now)
@@ -1797,7 +1814,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                             decision = observation::Decision::Accepted;
                             shell.cancel_press();
                             hidden_at.get_or_insert(current);
-                            shell.set_artwork_active(false);
+                            shell.set_artwork_pause(PauseReason::ForegroundLost, true);
                         }
                         9 => {
                             decision = observation::Decision::Accepted;
@@ -1807,8 +1824,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                                 settings_handoff.focus_returned();
                                 shell.storage_notice("Returned from LG Settings");
                             }
+                            let observed_departure = hidden_at.is_some();
                             hidden_at = None;
-                            shell.set_artwork_active(!session.idle(start.elapsed()));
+                            deferred_external.focus_returned(observed_departure);
+                            shell.set_artwork_pause(PauseReason::ForegroundLost, false);
                         }
                         2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
                             decision = observation::Decision::Accepted;
@@ -1954,6 +1973,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             if let Some(worker) = &action_worker {
                 for reply in worker.poll() {
+                    deferred_external.reply(&reply.request, reply.verified);
                     if reply.request.is_settings() {
                         settings_handoff.reply(live_origin.elapsed(), reply.verified);
                     }
@@ -1999,8 +2019,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
             external_action_attempts += dispatch_requests(
                 &mut shell,
-                &action_worker,
-                &pointer_worker,
+                &mut deferred_external,
+                DispatchWorkers {
+                    action: action_worker.as_ref(),
+                    pointer: pointer_worker.as_ref(),
+                },
                 proof_request.as_ref(),
                 &mut requests,
                 &mut settings_handoff,
@@ -2526,16 +2549,28 @@ fn sync_text_keyboard(
     now: u32,
 ) {
     let wanted = shell.drawer_state().system_keyboard();
+    shell.set_artwork_pause(
+        PauseReason::KeyboardActive,
+        keyboard.active() || !keyboard.accepts_input(now),
+    );
+    let start_ready = shell.keyboard_transition_ready();
     if !wanted && !keyboard.active() {
         return;
     }
+    if wanted
+        && !keyboard.active()
+        && shell.artwork_transition_readiness() == TransitionReadiness::BlockedUnknown
+    {
+        shell.storage_notice("Images are unavailable • press Back to cancel");
+    }
     use native_home::keyboard::Command;
-    let action = keyboard.reconcile(
+    let action = keyboard.reconcile_ready(
         wanted,
         shell.system_keyboard_available(),
         visible,
         window.keyboard_status(),
         now,
+        start_ready,
     );
     match action {
         Command::Start => {
@@ -2558,6 +2593,10 @@ fn sync_text_keyboard(
         }
         Command::None => {}
     }
+    shell.set_artwork_pause(
+        PauseReason::KeyboardActive,
+        keyboard.active() || !keyboard.accepts_input(now),
+    );
 }
 
 fn poll_live(
@@ -2582,17 +2621,136 @@ fn poll_live(
     shell.age_live(origin.elapsed().as_millis() as u32);
 }
 
+#[derive(Clone, Copy)]
+struct DispatchWorkers<'a> {
+    action: Option<&'a native_home::actions::Worker>,
+    pointer: Option<&'a native_home::pointer_speed::Worker>,
+}
+
+/// Drain only artwork before an app-local requested handoff. The existing
+/// action worker remains the final platform authority; this queues no new kind.
 fn dispatch_requests(
     shell: &mut Shell,
-    worker: &Option<native_home::actions::Worker>,
-    pointer_worker: &Option<native_home::pointer_speed::Worker>,
+    deferred: &mut DeferredExternal,
+    workers: DispatchWorkers<'_>,
     proof_request: Option<&native_home::actions::Request>,
     unexecuted: &mut Vec<String>,
     handoff: &mut native_home::session::SettingsHandoff,
     now: Duration,
 ) -> u64 {
+    let worker = workers.action;
+    let (actions, queued_anchor) = shell.take_transition_requests();
+    if !shell.artwork_transition_enabled() {
+        return dispatch_actions(
+            shell,
+            workers,
+            proof_request,
+            unexecuted,
+            handoff,
+            now,
+            actions,
+        );
+    }
+    let anchor = shell.artwork_intent_anchor();
+    deferred.revalidate(
+        &anchor,
+        shell.drawer_state().system_keyboard(),
+        shell.should_exit(),
+    );
+    let mut local = Vec::new();
+    for action in actions {
+        if let Some(request) = native_home::actions::Request::from_action(action.clone()) {
+            if !queued_anchor
+                .as_ref()
+                .is_some_and(|(last, origin)| last == &request && origin == &anchor)
+            {
+                // Earlier or moved-away activation is not current authority.
+                continue;
+            }
+            if !deferred.offer(request, anchor.clone()) {
+                shell.storage_notice("An application handoff is already pending");
+            }
+        } else {
+            local.push(action);
+        }
+    }
+    // Local pointer/description work is not reinterpreted as an external intent.
+    let mut attempts = dispatch_actions(
+        shell,
+        workers,
+        proof_request,
+        unexecuted,
+        handoff,
+        now,
+        local,
+    );
+    deferred.revalidate(
+        &shell.artwork_intent_anchor(),
+        shell.drawer_state().system_keyboard(),
+        shell.should_exit(),
+    );
+    shell.set_artwork_external_held(deferred.holds_pause() || handoff.pending());
+    if deferred
+        .pending_request()
+        .is_some_and(|request| !shell.external_request_current(request))
+    {
+        deferred.cancel_pending();
+        shell.storage_notice("Target no longer available • choose it again");
+    }
+    let context_ready = shell.external_transition_ready();
+    let readiness = shell.artwork_transition_readiness();
+    if readiness == TransitionReadiness::BlockedUnknown && deferred.pending_request().is_some() {
+        shell.storage_notice("Images are unavailable • press Back to cancel");
+    }
+    if let Some(request) = deferred.take_ready(readiness, context_ready) {
+        let allowed = proof_request.is_none_or(|proof| proof == &request);
+        let settings = request.is_settings();
+        if allowed && !(settings && handoff.pending()) {
+            if let Some(worker) = worker {
+                match worker.queue(request.clone()) {
+                    Ok(()) => {
+                        // Attempts/handoff timers start at actual queue acceptance,
+                        // never while waiting for artwork or after queue refusal.
+                        attempts += 1;
+                        deferred.submitted(request);
+                        if settings {
+                            handoff.queued(now);
+                        }
+                        shell.storage_notice(if settings {
+                            "Opening LG Settings…"
+                        } else {
+                            "Opening application…"
+                        });
+                    }
+                    Err(error) => {
+                        shell.storage_notice(&error);
+                        unexecuted.push(format!("{request:?}"));
+                    }
+                }
+            } else {
+                unexecuted.push(format!("{request:?}"));
+            }
+        } else {
+            unexecuted.push(format!("{request:?}"));
+        }
+    }
+    shell.set_artwork_external_held(deferred.holds_pause() || handoff.pending());
+    attempts
+}
+
+fn dispatch_actions(
+    shell: &mut Shell,
+    workers: DispatchWorkers<'_>,
+    proof_request: Option<&native_home::actions::Request>,
+    unexecuted: &mut Vec<String>,
+    handoff: &mut native_home::session::SettingsHandoff,
+    now: Duration,
+    actions: Vec<native_home::model::Action>,
+) -> u64 {
+    let worker = workers.action;
+    let pointer_worker = workers.pointer;
     let mut attempts = 0_u64;
-    for action in shell.take_requests() {
+    for action in actions {
         if let native_home::model::Action::SetPointerSpeed(change) = action {
             attempts += 1;
             if let Some(worker) = pointer_worker {
@@ -4035,5 +4193,113 @@ mod input_frame_tests {
         shell.press(false, PressFrom::Key);
         shell.tick(1400, 0.016);
         assert!(shell.take_requests().is_empty());
+    }
+}
+
+#[cfg(test)]
+mod artwork_transition_dispatch_tests {
+    use super::*;
+    fn shell() -> Shell {
+        let snapshot=serde_json::from_value(serde_json::json!({"captured_at":"synthetic","applications":[{"id":"synthetic.fixture.app","title":"Fixture","type":"native","visible":true,"icon":null}],"launch_ids":["synthetic.fixture.app"],"inputs":[],"context":{"input":"HDMI_1","dynamic_range":"sdr","picture_mode":"cinema"},"settings":{}})).unwrap();
+        let mut shell = Shell::new(snapshot, Preferences::default());
+        shell.open(Page::Applications);
+        shell.enable_app_launches(true);
+        assert!(shell.focus_application("synthetic.fixture.app"));
+        shell
+    }
+    fn request(shell: &mut Shell) {
+        shell
+            .input_frame(100, 0.016, |shell| {
+                shell.press(true, PressFrom::Key);
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        shell
+            .input_frame(200, 0.016, |shell| {
+                shell.press(false, PressFrom::Key);
+                Ok::<(), ()>(())
+            })
+            .unwrap();
+        // The release frame schedules the real 120ms deferred commit.
+        shell.tick(500, 0.016);
+    }
+    fn dispatch(
+        shell: &mut Shell,
+        deferred: &mut DeferredExternal,
+        unexecuted: &mut Vec<String>,
+        handoff: &mut native_home::session::SettingsHandoff,
+    ) -> u64 {
+        dispatch_requests(
+            shell,
+            deferred,
+            DispatchWorkers {
+                action: None,
+                pointer: None,
+            },
+            None,
+            unexecuted,
+            handoff,
+            Duration::ZERO,
+        )
+    }
+    #[test]
+    fn never_enabled_artwork_preserves_original_immediate_attempt_accounting() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = shell();
+        request(&mut shell);
+        let mut deferred = DeferredExternal::default();
+        let mut unexecuted = Vec::new();
+        let mut handoff = native_home::session::SettingsHandoff::default();
+        assert_eq!(
+            dispatch(&mut shell, &mut deferred, &mut unexecuted, &mut handoff),
+            1
+        );
+        assert_eq!(unexecuted.len(), 1);
+        assert!(!deferred.holds_pause());
+        assert!(!handoff.pending());
+    }
+    #[test]
+    fn ready_but_missing_action_worker_consumes_once_without_attempt_or_handoff_timer() {
+        let _serial = plx_base::testlock::serial();
+        let mut shell = shell();
+        let worker = native_home::artwork_worker::Worker::start(|| {
+            native_home::artwork_worker::DirectProvider
+        })
+        .unwrap();
+        shell.enable_live_artwork(
+            native_home::artwork_runtime::Runtime::new(
+                worker,
+                native_home::artwork_cache::Config::default(),
+            )
+            .unwrap(),
+            None,
+        );
+        let until = Instant::now() + Duration::from_secs(2);
+        while shell.artwork_transition_readiness() == TransitionReadiness::Draining {
+            shell.tick(0, 0.016);
+            assert!(Instant::now() < until);
+            std::thread::yield_now();
+        }
+        request(&mut shell);
+        let mut deferred = DeferredExternal::default();
+        let mut unexecuted = Vec::new();
+        let mut handoff = native_home::session::SettingsHandoff::default();
+        assert_eq!(
+            dispatch(&mut shell, &mut deferred, &mut unexecuted, &mut handoff),
+            0
+        );
+        assert_eq!(unexecuted.len(), 1);
+        assert!(!deferred.holds_pause());
+        assert!(!handoff.pending());
+        assert_eq!(
+            dispatch(&mut shell, &mut deferred, &mut unexecuted, &mut handoff),
+            0
+        );
+        assert_eq!(
+            unexecuted.len(),
+            1,
+            "no automatic retry on a missing worker"
+        );
+        shell.finish_live_artwork();
     }
 }

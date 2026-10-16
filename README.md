@@ -131,6 +131,13 @@ physical latency, normal-identity total cost or a matched speedup comparison.
 The [app icon presentation](docs/icon-presentation.md) records the current
 icon-only styling, missing-art fallback and its verification boundary.
 
+The [0.49 transition source](docs/artwork-transition-049.md) adds composed
+artwork pauses and asynchronous drain readiness before keyboard/app handoffs.
+Host tests cover real controlled workers and the shared input-frame order.
+Unknown outcomes stay blocked; normal Root artwork remains off and the native
+transition trial is pending. The [0.46 actual-ID diagnostic](docs/preview-artwork-preflight-046.md)
+is separate G2 resource evidence and does not qualify C2 Root access or this lifecycle.
+
 ## Layout
 
 | Path | Ownership and purpose |

@@ -79,6 +79,28 @@ impl Controller {
         status: crate::runtime::KeyboardStatus,
         now: u32,
     ) -> Command {
+        self.reconcile_ready(wanted, allowed, visible, status, now, true)
+    }
+    /// Readiness withholds only an otherwise eligible Start. A genuine loss
+    /// still takes the original unavailable/close path; visibility is never faked.
+    /// Eligible waiting starts no appearance timeout and changes no counters.
+    pub fn reconcile_ready(
+        &mut self,
+        wanted: bool,
+        allowed: bool,
+        visible: bool,
+        status: crate::runtime::KeyboardStatus,
+        now: u32,
+        start_ready: bool,
+    ) -> Command {
+        let start_eligible = allowed
+            && visible
+            && status.support != 0
+            && status.focused != 0
+            && (status.major, status.minor, status.patch) == (2, 0, 14);
+        if self.opened_at.is_none() && wanted && start_eligible && !start_ready {
+            return Command::None;
+        }
         if let Some(opened) = self.opened_at {
             if !wanted {
                 return Command::Stop;
@@ -96,12 +118,7 @@ impl Controller {
             }
             Command::None
         } else if wanted {
-            if allowed
-                && visible
-                && status.support != 0
-                && status.focused != 0
-                && (status.major, status.minor, status.patch) == (2, 0, 14)
-            {
+            if start_eligible {
                 Command::Start
             } else {
                 self.failures += 1;
@@ -176,5 +193,121 @@ mod tests {
         assert!(session.observe(false));
         assert!(session.observe(true));
         assert!(!PanelSession::default().observe(true));
+    }
+    #[test]
+    fn drain_wait_never_starts_panel_timeout_or_counts_failure_then_starts_once() {
+        let status = crate::runtime::KeyboardStatus {
+            support: 1,
+            focused: 1,
+            major: 2,
+            minor: 0,
+            patch: 14,
+            ..Default::default()
+        };
+        let mut controller = Controller::default();
+        for now in [0, 100, 3100, 9000] {
+            assert_eq!(
+                controller.reconcile_ready(true, true, true, status, now, false),
+                Command::None
+            );
+            assert_eq!(
+                (controller.opens, controller.stops, controller.failures),
+                (0, 0, 0)
+            );
+            assert!(!controller.active());
+        }
+        assert_eq!(
+            controller.reconcile_ready(true, true, true, status, 9001, true),
+            Command::Start
+        );
+        controller.started(true, 9001);
+        assert_eq!(
+            controller.reconcile_ready(true, true, true, status, 9010, false),
+            Command::None
+        );
+        assert_eq!(
+            controller.reconcile_ready(false, true, true, status, 9020, false),
+            Command::Stop
+        );
+        controller.stopped(9020);
+        assert_eq!(
+            (controller.opens, controller.stops, controller.failures),
+            (1, 1, 0)
+        );
+        assert!(!controller.accepts_input(9219));
+        assert!(controller.accepts_input(9220));
+    }
+    #[test]
+    fn waiting_back_cancel_is_none_and_actual_active_visibility_loss_still_finishes() {
+        let status = crate::runtime::KeyboardStatus {
+            support: 1,
+            focused: 1,
+            major: 2,
+            minor: 0,
+            patch: 14,
+            ..Default::default()
+        };
+        let mut controller = Controller::default();
+        assert_eq!(
+            controller.reconcile_ready(true, true, true, status, 0, false),
+            Command::None
+        );
+        assert_eq!(
+            controller.reconcile_ready(false, true, true, status, 100, false),
+            Command::None
+        );
+        controller.started(true, 200);
+        assert_eq!(
+            controller.reconcile_ready(true, true, false, status, 201, false),
+            Command::Finish
+        );
+        assert_eq!(controller.failures, 0);
+    }
+    #[test]
+    fn genuine_unopened_eligibility_loss_is_unavailable_even_while_drain_not_ready() {
+        let good = crate::runtime::KeyboardStatus {
+            support: 1,
+            focused: 1,
+            major: 2,
+            minor: 0,
+            patch: 14,
+            ..Default::default()
+        };
+        for which in 0..5 {
+            let mut c = Controller::default();
+            assert_eq!(
+                c.reconcile_ready(true, true, true, good, 0, false),
+                Command::None
+            );
+            assert_eq!((c.opens, c.stops, c.failures), (0, 0, 0));
+            let mut status = good;
+            let (allowed, visible) = match which {
+                0 => (true, false),
+                1 => (false, true),
+                2 => {
+                    status.support = 0;
+                    (true, true)
+                }
+                3 => {
+                    status.focused = 0;
+                    (true, true)
+                }
+                _ => {
+                    status.patch = 15;
+                    (true, true)
+                }
+            };
+            assert_eq!(
+                c.reconcile_ready(true, allowed, visible, status, 5000, false),
+                Command::Unavailable
+            );
+            assert_eq!((c.opens, c.stops, c.failures), (0, 0, 1));
+            assert!(!c.active());
+            // Main cancels wanted in the unchanged Unavailable arm.
+            assert_eq!(
+                c.reconcile_ready(false, allowed, visible, status, 5001, false),
+                Command::None
+            );
+        }
     }
 }

@@ -45,6 +45,12 @@ runtime mapping. Both earlier host operators remain failures. This grants no
 Preview credential/permission authority or general temporary-path mapping; the
 retained C2 installation remains 0.20.0.
 
+The 0.49 source in `docs/artwork-transition-049.md` implements app-controlled
+pause/drain ordering and typed initialization/settlement. Its host checks do not
+qualify a native transition or closed-negative outcome; keep normal interactive
+Root artwork off. Frozen 0.48 C2 migration artifacts remain bound to their own
+source and receipts; never substitute a new 0.49 executable into those carriers.
+
 The isolated 0.38.0 check in `docs/artwork-startup-capability-038.md` qualifies one
 ordinary native HBC `checkRoot` request and complete temporary cleanup. It did
 not update the retained app, launch an artwork broker or qualify production

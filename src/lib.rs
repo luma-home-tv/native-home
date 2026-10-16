@@ -60,6 +60,7 @@ pub mod artwork_runtime;
 pub mod artwork_startup_probe;
 pub mod artwork_textures;
 pub mod artwork_transfer;
+pub mod artwork_transition;
 pub mod artwork_worker;
 pub mod broker_bootstrap;
 pub mod broker_context;

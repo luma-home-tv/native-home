@@ -39,9 +39,27 @@ pub enum ProviderError {
     Cancelled,
     Expired,
 }
+/// Completion evidence only, never authority to start another session or clear a latch.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SessionSettlement {
+    NoExternalSession,
+    KnownClosed,
+    Unknown,
+}
 /// Construct the provider on the worker thread. A provider itself need not be
 /// Send: its LS2 handle or other thread-local state never leaves that thread.
 pub trait Provider {
+    /// Initial no-dispatch/old-latch evidence. Called on the worker before any
+    /// jobs; generic initializers are not presumed to know remote closure.
+    fn initial_settlement(&self) -> SessionSettlement {
+        SessionSettlement::Unknown
+    }
+    /// Called only on the worker thread after fetch/process returns. Implementors
+    /// must not infer closure from a generic error, cancellation or an empty slot.
+    fn transition_settlement(&self) -> SessionSettlement {
+        SessionSettlement::Unknown
+    }
+
     fn fetch(
         &mut self,
         source: &Source,
@@ -52,6 +70,13 @@ pub trait Provider {
 #[derive(Default)]
 pub struct DirectProvider;
 impl Provider for DirectProvider {
+    fn initial_settlement(&self) -> SessionSettlement {
+        SessionSettlement::NoExternalSession
+    }
+    fn transition_settlement(&self) -> SessionSettlement {
+        SessionSettlement::NoExternalSession
+    }
+
     fn fetch(
         &mut self,
         source: &Source,
@@ -102,6 +127,7 @@ pub struct Completed {
     pub work: Work,
     pub result: FetchResult,
     pub status: Status,
+    pub settlement: SessionSettlement,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RejectReason {
@@ -137,6 +163,8 @@ pub struct Worker {
     jobs: Option<SyncSender<Job>>,
     results: Option<Receiver<Completed>>,
     stop: Arc<AtomicBool>,
+    initial: Option<Receiver<SessionSettlement>>,
+    initial_state: Option<SessionSettlement>,
     active: Option<Active>,
     thread: Option<JoinHandle<()>>,
 }
@@ -145,6 +173,7 @@ fn failed(work: Work, status: Status) -> Completed {
         work,
         result: FetchResult::Failed,
         status,
+        settlement: SessionSettlement::Unknown,
     }
 }
 fn interrupted(deadline: Instant, cancellation: &Cancellation) -> Option<Status> {
@@ -239,6 +268,7 @@ impl Worker {
     {
         let (job_tx, job_rx) = mpsc::sync_channel::<Job>(1);
         let (result_tx, result_rx) = mpsc::sync_channel::<Completed>(1);
+        let (initial_tx, initial_rx) = mpsc::sync_channel(1);
         let stop = Arc::new(AtomicBool::new(false));
         let worker_stop = stop.clone();
         let thread = thread::Builder::new()
@@ -246,13 +276,35 @@ impl Worker {
             .spawn(move || {
                 let mut provider = catch_unwind(AssertUnwindSafe(make_provider)).ok();
                 let mut unavailable = Status::InitPanicked;
+                let initial = if let Some(p) = provider.as_ref() {
+                    match catch_unwind(AssertUnwindSafe(|| p.initial_settlement())) {
+                        Ok(disposition) => disposition,
+                        Err(_) => {
+                            let damaged = provider.take();
+                            let _ = catch_unwind(AssertUnwindSafe(|| drop(damaged)));
+                            unavailable = Status::ProviderUnavailable;
+                            SessionSettlement::Unknown
+                        }
+                    }
+                } else {
+                    SessionSettlement::Unknown
+                };
+                // Independent bounded startup receipt: no join or UI-thread I/O.
+                let _ = initial_tx.try_send(initial);
                 while let Ok(job) = job_rx.recv() {
+                    let mut settlement = SessionSettlement::Unknown;
                     let (mut result, mut status) =
                         if let Some(reason) = interrupted(job.deadline, &job.cancellation) {
                             (FetchResult::Failed, reason)
                         } else if let Some(p) = provider.as_mut() {
-                            match catch_unwind(AssertUnwindSafe(|| process(p, &job))) {
-                                Ok(value) => value,
+                            match catch_unwind(AssertUnwindSafe(|| {
+                                let value = process(p, &job);
+                                (value, p.transition_settlement())
+                            })) {
+                                Ok((value, disposition)) => {
+                                    settlement = disposition;
+                                    value
+                                }
                                 Err(_) => {
                                     // A provider may have mutated itself before panicking.
                                     // Retire it on its own thread; never reuse poisoned state.
@@ -275,6 +327,7 @@ impl Worker {
                             work: job.work,
                             result,
                             status,
+                            settlement,
                         })
                         .is_err()
                     {
@@ -290,6 +343,8 @@ impl Worker {
             jobs: Some(job_tx),
             results: Some(result_rx),
             stop,
+            initial: Some(initial_rx),
+            initial_state: None,
             active: None,
             thread: Some(thread),
         })
@@ -345,6 +400,26 @@ impl Worker {
             }
         }
     }
+    /// Nonblocking one-shot initialization evidence. None means still pending;
+    /// disconnect is Unknown. The cached disposition cannot be overwritten.
+    pub fn initial_settlement(&mut self) -> Option<SessionSettlement> {
+        if self.initial_state.is_none() {
+            let value = match self.initial.as_ref()?.try_recv() {
+                Ok(value) => Some(value),
+                Err(TryRecvError::Empty) => None,
+                Err(TryRecvError::Disconnected) => Some(SessionSettlement::Unknown),
+            };
+            if let Some(value) = value {
+                self.initial_state = Some(value);
+                drop(self.initial.take());
+            }
+        }
+        self.initial_state
+    }
+    /// A queued or completed-unpolled Work still owns the slot.
+    pub fn has_outstanding(&self) -> bool {
+        self.active.is_some()
+    }
     /// Cancel only the current job, retaining its slot until poll returns it.
     pub fn cancel(&mut self) -> bool {
         if let Some(active) = &self.active {
@@ -367,6 +442,7 @@ impl Worker {
                         .map(|a| failed(a.work, Status::WorkerStopped));
                 }
                 if active.cancellation.is_cancelled() {
+                    // Image usability may be revoked; remote closure evidence survives.
                     completed.result = FetchResult::Failed;
                     completed.status = Status::Cancelled;
                 }
@@ -388,6 +464,7 @@ impl Worker {
         });
         drop(self.jobs.take());
         drop(self.results.take());
+        drop(self.initial.take());
         let panicked = self
             .thread
             .take()
@@ -883,5 +960,92 @@ mod tests {
                 ProviderError::Denied
             );
         }
+    }
+    #[test]
+    fn closed_settlement_survives_poll_cancellation_and_failed_image() {
+        struct Closed {
+            entered: mpsc::Sender<()>,
+            release: mpsc::Receiver<()>,
+            settled: mpsc::Sender<()>,
+        }
+        impl Provider for Closed {
+            fn fetch(
+                &mut self,
+                _: &Source,
+                _: Instant,
+                _: &Cancellation,
+            ) -> Result<EncodedFile, ProviderError> {
+                self.entered.send(()).unwrap();
+                self.release.recv_timeout(Duration::from_secs(2)).unwrap();
+                Err(ProviderError::Invalid)
+            }
+            fn transition_settlement(&self) -> SessionSettlement {
+                self.settled.send(()).unwrap();
+                SessionSettlement::KnownClosed
+            }
+        }
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let (settled_tx, settled_rx) = mpsc::channel();
+        let mut w = Worker::start(move || Closed {
+            entered: entered_tx,
+            release: release_rx,
+            settled: settled_tx,
+        })
+        .unwrap();
+        let (_, work, source) = fixture("fixture.closed-cancel");
+        w.try_submit(work, source, deadline()).unwrap();
+        entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(w.has_outstanding());
+        release_tx.send(()).unwrap();
+        settled_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(w.cancel());
+        let done = wait(&mut w);
+        assert_eq!(done.status, Status::Cancelled);
+        assert!(matches!(done.result, FetchResult::Failed));
+        assert_eq!(done.settlement, SessionSettlement::KnownClosed);
+        assert!(!w.has_outstanding());
+        w.finish();
+    }
+    #[test]
+    fn default_provider_decode_success_never_invents_session_closure() {
+        let (_, work, source) = fixture("fixture.unknown-closure");
+        let (mut w, _) = worker(png(1, 1));
+        w.try_submit(work, source, deadline()).unwrap();
+        let done = wait(&mut w);
+        assert_eq!(done.status, Status::Decoded);
+        assert_eq!(done.settlement, SessionSettlement::Unknown);
+        w.finish();
+    }
+    #[test]
+    fn settlement_hook_panic_is_unknown_and_retires_provider() {
+        struct HookPanic;
+        impl Provider for HookPanic {
+            fn fetch(
+                &mut self,
+                _: &Source,
+                _: Instant,
+                _: &Cancellation,
+            ) -> Result<EncodedFile, ProviderError> {
+                Err(ProviderError::Invalid)
+            }
+            fn transition_settlement(&self) -> SessionSettlement {
+                panic!("synthetic settlement panic")
+            }
+        }
+        let mut w = Worker::start(|| HookPanic).unwrap();
+        let (_, work, source) = fixture("fixture.hook-panic");
+        w.try_submit(work, source, deadline()).unwrap();
+        let done = wait(&mut w);
+        assert_eq!(done.status, Status::ProviderPanicked);
+        assert_eq!(done.settlement, SessionSettlement::Unknown);
+        w.finish();
+    }
+    #[test]
+    fn direct_provider_explicitly_has_no_external_session() {
+        assert_eq!(
+            DirectProvider.transition_settlement(),
+            SessionSettlement::NoExternalSession
+        );
     }
 }

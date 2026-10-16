@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import tarfile
 import unittest
@@ -74,7 +75,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
     def unpack(self, output):
         receipt = json.loads((output / 'preview-package-receipt.json').read_text())
         ipk = Path(receipt['ipk'])
-        self.assertEqual(ipk.name, APP + '_0.48.0_arm.ipk')
+        self.assertEqual(ipk.name, APP + '_0.49.0_arm.ipk')
         self.assertEqual(_BASE.sha(ipk.read_bytes()), receipt['sha256'])
         members = _BASE.ar_members(ipk.read_bytes())
         self.assertEqual(set(members), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -86,7 +87,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
             self.assertEqual(set(line.split(': ', 1)[0] for line in text.splitlines()),
                              {'Package', 'Version', 'Section', 'Priority',
                               'Architecture', 'Maintainer', 'Description'})
-            self.assertIn('Version: 0.48.0\n', text)
+            self.assertIn('Version: 0.49.0\n', text)
         files = {}
         prefix = 'usr/palm/applications/' + APP + '/'
         with tarfile.open(fileobj=io.BytesIO(members['data.tar.gz'])) as data:
@@ -101,6 +102,8 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
                     self.assertNotIn(relative, files)
                     files[relative] = data.extractfile(row).read()
                     self.assertEqual(row.mode, 0o755 if relative == 'home-preview' else 0o644)
+                else:
+                    self.assertEqual(row.mode, 0o755)
         return receipt, files
 
     def test_forward_and_reverse_exact_four_file_packages_have_distinct_bytes(self):
@@ -119,7 +122,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
                 self.assertEqual(files['icon.png'], (self.f.root / 'assets/luma-home/icon-160.png').read_bytes())
                 info = json.loads(files['appinfo.json'])
                 self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                                 (APP, '0.48.0', 'home-preview', 'native'))
+                                 (APP, '0.49.0', 'home-preview', 'native'))
                 self.assertEqual(info['requiredPermissions'], [])
                 self.assertIs(receipt['preferences_migration_proof'], True)
                 self.assertEqual(receipt['preferences_migration_direction'], direction)
@@ -247,6 +250,16 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
         self.refused({'NATIVE_HOME_PREFERENCES_MIGRATION_PROOF': ''}, 'require explicit mode')
         self.refused({'NATIVE_HOME_PREFERENCES_MIGRATION_PINS': ''})
         self.refused({'NATIVE_HOME_PREFERENCES_MIGRATION_PROOF': 'true'}, 'explicitly 1')
+
+    def test_normal_archive_modes_are_canonical_under_private_umask(self):
+        previous = os.umask(0o077)
+        try:
+            result, output = self.package(migration=False)
+        finally:
+            os.umask(previous)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        receipt, files = self.unpack(output)
+        self.assertIn('appinfo.json', files)  # unpack checks every actual archive mode.
 
     def test_normal_package_has_no_migration_marker_or_pins_claim(self):
         result, output = self.package(migration=False)

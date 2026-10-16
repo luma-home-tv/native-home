@@ -4,7 +4,7 @@
 //! also requires the negative-only own-state pending guard across instances.
 use crate::{
     app_artwork::{EncodedFile, Source},
-    artwork_worker::{Cancellation, Provider, ProviderError},
+    artwork_worker::{Cancellation, Provider, ProviderError, SessionSettlement},
     broker_installation::Profile,
     broker_protocol::Marker,
 };
@@ -17,6 +17,8 @@ pub struct InstalledProvider {
     marker: Marker,
     profile: Profile,
     quarantined: bool,
+    // Set only by successful resolution of this fetch's existing pending ticket.
+    ticket_resolved: bool,
     #[cfg(any(target_arch = "arm", test))]
     observation: Option<ProofObservation>,
     #[cfg(any(target_arch = "arm", test))]
@@ -24,6 +26,18 @@ pub struct InstalledProvider {
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
+    fn initial_settlement(&self) -> SessionSettlement {
+        match &self.0 {
+            Ok(provider) => provider.initial_settlement(),
+            Err(_) => SessionSettlement::Unknown,
+        }
+    }
+    fn transition_settlement(&self) -> SessionSettlement {
+        match &self.0 {
+            Ok(provider) => provider.transition_settlement(),
+            Err(_) => SessionSettlement::Unknown,
+        }
+    }
     fn fetch(
         &mut self,
         source: &Source,
@@ -108,6 +122,7 @@ impl InstalledProvider {
                 marker,
                 profile,
                 quarantined: false,
+                ticket_resolved: false,
                 observation: None,
                 guard: Some(guard),
             })
@@ -120,12 +135,49 @@ impl InstalledProvider {
     }
 }
 impl Provider for InstalledProvider {
+    fn initial_settlement(&self) -> SessionSettlement {
+        if self.quarantined {
+            return SessionSettlement::Unknown;
+        }
+        #[cfg(any(target_arch = "arm", test))]
+        {
+            // No session has started in this new provider, and the existing
+            // guard must positively show no older unresolved record.
+            if self
+                .guard
+                .as_ref()
+                .is_some_and(|guard| matches!(guard.pending(), Ok(false)))
+            {
+                return SessionSettlement::NoExternalSession;
+            }
+        }
+        SessionSettlement::Unknown
+    }
+    fn transition_settlement(&self) -> SessionSettlement {
+        if !self.ticket_resolved || self.quarantined {
+            return SessionSettlement::Unknown;
+        }
+        #[cfg(any(target_arch = "arm", test))]
+        {
+            // Worker-only check after current-ticket resolution; not a UI-thread
+            // pending-file probe, nor an API to clear or adopt an older record.
+            if self
+                .guard
+                .as_ref()
+                .is_some_and(|guard| matches!(guard.pending(), Ok(false)))
+            {
+                return SessionSettlement::KnownClosed;
+            }
+        }
+        SessionSettlement::Unknown
+    }
     fn fetch(
         &mut self,
         source: &Source,
         deadline: Instant,
         cancellation: &Cancellation,
     ) -> Result<EncodedFile, ProviderError> {
+        self.ticket_resolved = false;
         if self.quarantined {
             return Err(ProviderError::Unavailable);
         }
@@ -440,7 +492,9 @@ fn resolve_pending(
     ticket.finish_known().map_err(|_| {
         provider.quarantined = true;
         ProviderError::Invalid
-    })
+    })?;
+    provider.ticket_resolved = true;
+    Ok(())
 }
 #[cfg(any(target_arch = "arm", test))]
 fn guard_result(
@@ -1379,3 +1433,107 @@ mod native {
 #[cfg(test)]
 #[path = "artwork_installed_provider_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+mod settlement_tests {
+    use super::*;
+    use crate::artwork_session_guard::{Guard, PendingIdentity};
+    use std::os::unix::fs::DirBuilderExt;
+
+    struct Directory(std::path::PathBuf);
+    impl Directory {
+        fn new() -> Self {
+            static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+            let path = std::env::temp_dir().join(format!(
+                "luma-settlement-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            ));
+            std::fs::DirBuilder::new()
+                .mode(0o700)
+                .create(&path)
+                .unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for Directory {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    fn provider(directory: &Directory) -> InstalledProvider {
+        InstalledProvider {
+            marker: Marker {
+                schema: 1,
+                nonce: "a".repeat(32),
+                ui_sha256: "b".repeat(64),
+                broker_sha256: "c".repeat(64),
+            },
+            profile: Profile::Proof,
+            quarantined: false,
+            ticket_resolved: false,
+            observation: None,
+            guard: Some(Guard::open_for_test(&directory.0, Profile::Proof).unwrap()),
+        }
+    }
+    fn identity(p: &InstalledProvider) -> PendingIdentity {
+        PendingIdentity {
+            schema: 1,
+            profile: p.profile,
+            caller_pid: std::process::id(),
+            caller_start_ticks: 123,
+            ui_sha256: p.marker.ui_sha256.clone(),
+            nonce: p.marker.nonce.clone(),
+        }
+    }
+    #[test]
+    fn empty_guard_is_not_current_ticket_closure_and_init_error_stays_unknown() {
+        let directory = Directory::new();
+        let p = provider(&directory);
+        assert_eq!(p.transition_settlement(), SessionSettlement::Unknown);
+        assert_eq!(
+            Init(Err(ProviderError::Unavailable)).transition_settlement(),
+            SessionSettlement::Unknown
+        );
+    }
+    #[test]
+    fn resolved_current_ticket_allows_failed_image_but_new_pending_or_quarantine_blocks() {
+        let directory = Directory::new();
+        let mut p = provider(&directory);
+        let ticket = p.guard.as_ref().unwrap().begin(identity(&p)).unwrap();
+        assert!(guard_result(&mut p, ticket, Err(ProviderError::Invalid)).is_err());
+        assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
+        let _retained = p.guard.as_ref().unwrap().begin(identity(&p)).unwrap();
+        assert_eq!(p.transition_settlement(), SessionSettlement::Unknown);
+        p.quarantined = true;
+        assert_eq!(p.transition_settlement(), SessionSettlement::Unknown);
+    }
+    #[test]
+    fn replaced_guard_directory_is_unknown_even_after_prior_ticket_resolution() {
+        let directory = Directory::new();
+        let mut p = provider(&directory);
+        let ticket = p.guard.as_ref().unwrap().begin(identity(&p)).unwrap();
+        resolve_pending(&mut p, ticket).unwrap();
+        std::fs::remove_dir(&directory.0).unwrap();
+        std::fs::DirBuilder::new()
+            .mode(0o700)
+            .create(&directory.0)
+            .unwrap();
+        assert_eq!(p.transition_settlement(), SessionSettlement::Unknown);
+    }
+    #[test]
+    fn initialization_observes_old_pending_instead_of_declaring_ready() {
+        let directory = Directory::new();
+        let p = provider(&directory);
+        assert_eq!(p.initial_settlement(), SessionSettlement::NoExternalSession);
+        let retained = p.guard.as_ref().unwrap().begin(identity(&p)).unwrap();
+        drop(retained); // Deliberately retains the unresolved old record.
+        let fresh = provider(&directory);
+        assert_eq!(fresh.initial_settlement(), SessionSettlement::Unknown);
+        assert_eq!(
+            Init(Err(ProviderError::Unavailable)).initial_settlement(),
+            SessionSettlement::Unknown
+        );
+        assert!(fresh.guard.as_ref().unwrap().pending().unwrap());
+    }
+}

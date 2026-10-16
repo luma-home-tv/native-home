@@ -237,6 +237,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
             marker,
             profile: Profile::Proof,
             quarantined: false,
+            ticket_resolved: false,
             observation: None,
             guard: None,
         },

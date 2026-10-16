@@ -27,6 +27,12 @@ struct Gate {
     calls: Arc<AtomicUsize>,
 }
 impl Provider for Gate {
+    fn initial_settlement(&self) -> crate::artwork_worker::SessionSettlement {
+        crate::artwork_worker::SessionSettlement::NoExternalSession
+    }
+    fn transition_settlement(&self) -> crate::artwork_worker::SessionSettlement {
+        crate::artwork_worker::SessionSettlement::NoExternalSession
+    }
     fn fetch(
         &mut self,
         source: &Source,
@@ -126,10 +132,26 @@ fn controlled_worker() -> (Worker, Controls) {
         },
     )
 }
+fn initialized(mut runtime: Runtime) -> Runtime {
+    let deadline = Instant::now() + Duration::from_secs(2);
+    while runtime.transition_readiness() == TransitionReadiness::Draining {
+        let frame = runtime.frame(0);
+        assert!(frame.changed.is_none() && frame.evicted.is_empty());
+        assert_eq!(runtime.submitted, 0);
+        assert!(
+            Instant::now() < deadline,
+            "controlled provider initialization did not complete"
+        );
+        thread::yield_now();
+    }
+    assert_eq!(runtime.transition_readiness(), TransitionReadiness::Ready);
+    runtime
+}
+
 fn runtime() -> (Runtime, Controls) {
     let (worker, control) = controlled_worker();
     (
-        Runtime::new(worker, cache::Config::default()).unwrap(),
+        initialized(Runtime::new(worker, cache::Config::default()).unwrap()),
         control,
     )
 }
@@ -158,11 +180,15 @@ fn fetch_budget_rejects_zero_or_over_thirty_seconds_without_dispatch() {
 fn default_and_configured_budgets_reach_actual_worker_provider_deadlines() {
     for configured in [None, Some(Duration::from_secs(30))] {
         let (worker, control) = controlled_worker();
-        let mut runtime = match configured {
-            None => Runtime::new(worker, cache::Config::default()),
-            Some(budget) => Runtime::with_fetch_budget(worker, cache::Config::default(), budget),
-        }
-        .unwrap();
+        let mut runtime = initialized(
+            match configured {
+                None => Runtime::new(worker, cache::Config::default()),
+                Some(budget) => {
+                    Runtime::with_fetch_budget(worker, cache::Config::default(), budget)
+                }
+            }
+            .unwrap(),
+        );
         runtime
             .update_catalogue(Some(&sources(&[("fixture.budget", "1")])))
             .unwrap();
@@ -198,9 +224,10 @@ fn default_and_configured_budgets_reach_actual_worker_provider_deadlines() {
 #[test]
 fn configured_long_budget_does_not_publish_cancelled_inflight_content() {
     let (worker, control) = controlled_worker();
-    let mut runtime =
+    let mut runtime = initialized(
         Runtime::with_fetch_budget(worker, cache::Config::default(), Duration::from_secs(30))
-            .unwrap();
+            .unwrap(),
+    );
     runtime
         .update_catalogue(Some(&sources(&[("fixture.cancel_budget", "1")])))
         .unwrap();

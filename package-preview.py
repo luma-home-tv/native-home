@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.48.0' if main == 'home-preview' else '0.1.0'
+version = '0.49.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -397,8 +397,16 @@ with tarfile.open(output / 'control.tar.gz', 'w:gz', format=tarfile.USTAR_FORMAT
     tar.addfile(entry, io.BytesIO(control))
 with tarfile.open(output / 'data.tar.gz', 'w:gz', format=tarfile.USTAR_FORMAT) as tar:
     for path in sorted((output / 'preview-package').rglob('*')):
+        if path.is_symlink():
+            raise ValueError('Package payload must not contain symbolic links')
         entry = tar.gettarinfo(str(path), arcname='./' + str(path.relative_to(output / 'preview-package')))
         entry.uid = entry.gid = 0; entry.uname = entry.gname = 'root'; entry.mtime = 1700000000
+        if entry.isdir():
+            entry.mode = 0o755
+        elif entry.isfile():
+            entry.mode = 0o755 if path == stage / main else 0o644
+        else:
+            raise ValueError('Package payload must contain only directories and regular files')
         if path.is_file():
             with path.open('rb') as stream: tar.addfile(entry, stream)
         else: tar.addfile(entry)

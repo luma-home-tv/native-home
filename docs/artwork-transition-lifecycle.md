@@ -1,9 +1,9 @@
 # Artwork across keyboard and foreground transitions
 
-This is a follow-up design for the source-bound
-[0.45 Preview admission candidate](preview-artwork-admission-045.md), not an
-implemented or qualified production lifecycle. Ordinary interactive artwork
-activation remains disabled. The admission experiment does not establish
+The app-controlled pause/drain slice is now implemented in the
+[0.49 source candidate](artwork-transition-049.md), with host checks. Its native
+transition trial and the authenticated closed-negative slice below remain open.
+Ordinary interactive artwork activation remains disabled. The admission experiment does not establish
 keyboard/departure recovery, physical input, performance or C2 Root access.
 
 The resource policy requires the selected application's sole foreground CARD.

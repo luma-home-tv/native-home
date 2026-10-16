@@ -71,6 +71,12 @@ struct Gate {
     cancelled: Arc<AtomicUsize>,
 }
 impl Provider for Gate {
+    fn initial_settlement(&self) -> crate::artwork_worker::SessionSettlement {
+        crate::artwork_worker::SessionSettlement::NoExternalSession
+    }
+    fn transition_settlement(&self) -> crate::artwork_worker::SessionSettlement {
+        crate::artwork_worker::SessionSettlement::NoExternalSession
+    }
     fn fetch(
         &mut self,
         source: &Source,
@@ -157,8 +163,19 @@ fn runtime() -> (Runtime, Controls) {
         cancelled: observed,
     })
     .unwrap();
+    let mut runtime = Runtime::new(worker, Config::default()).unwrap();
+    let until = Instant::now() + Duration::from_secs(2);
+    while runtime.transition_readiness() == crate::artwork_runtime::TransitionReadiness::Draining {
+        runtime.frame(0);
+        assert!(Instant::now() < until);
+        std::thread::yield_now();
+    }
+    assert_eq!(
+        runtime.transition_readiness(),
+        crate::artwork_runtime::TransitionReadiness::Ready
+    );
     (
-        Runtime::new(worker, Config::default()).unwrap(),
+        runtime,
         Controls {
             entered: entered_rx,
             permits: permit_tx,
@@ -549,4 +566,259 @@ fn presentation_receipt_uses_drawn_shared_placement_and_integer_pixel_dimensions
         assert_eq!(shell.focused_item(), focus);
         assert!(shell.take_requests().is_empty());
     }
+}
+
+fn not_yet_pumped_shell(ids: &[&str]) -> (Shell, Controls) {
+    let (runtime, controls) = runtime();
+    let mut shell = Shell::new(snapshot(ids), Preferences::default());
+    shell.enable_live_artwork(runtime, None);
+    shell.apply_live(&update(ids, "1", "icon.png", 100), 100);
+    shell.open(Page::Applications);
+    (shell, controls)
+}
+fn release_deferred_press(shell: &mut Shell) {
+    // Advance the real press controller through Down -> Up while scheduling is
+    // explicitly paused. The release tick schedules its 120ms commit; merely
+    // jumping to the final tick would schedule a FUTURE commit, not deliver one.
+    shell.set_artwork_active(false);
+    shell
+        .input_frame(100, 0.016, |shell| {
+            shell.press(true, PressFrom::Key);
+            Ok::<(), ()>(())
+        })
+        .unwrap();
+    shell
+        .input_frame(200, 0.016, |shell| {
+            shell.press(false, PressFrom::Key);
+            Ok::<(), ()>(())
+        })
+        .unwrap();
+    assert_eq!(value(shell, "/runtime/submitted"), 0);
+    assert!(
+        shell.take_requests().is_empty(),
+        "release scheduled but has not yet committed"
+    );
+    // No pump occurs when removing Manual. At frame500 the commit is already
+    // due, and the old pump-before-input.tick ordering would start a fetch.
+    shell.set_artwork_active(true);
+}
+#[test]
+fn tick_committed_keyboard_intent_precedes_first_possible_worker_dispatch() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = not_yet_pumped_shell(&[A]);
+    shell.system_keyboard_available = true;
+    assert!(shell.focus_drawer_control(2));
+    release_deferred_press(&mut shell);
+    assert_eq!(value(&shell, "/runtime/submitted"), 0);
+    shell.input_frame(500, 0.016, |_| Ok::<(), ()>(())).unwrap();
+    assert!(shell.drawer_state().system_keyboard());
+    assert!(shell
+        .artwork_pauses()
+        .contains(crate::artwork_transition::PauseReason::KeyboardIntent));
+    assert_eq!(
+        value(&shell, "/runtime/submitted"),
+        0,
+        "old pump-before-input.tick dispatched this frame"
+    );
+    assert!(controls.entered.try_recv().is_err());
+    let mut keyboard = crate::keyboard::Controller::default();
+    let status = crate::runtime::KeyboardStatus {
+        support: 1,
+        focused: 1,
+        major: 2,
+        minor: 0,
+        patch: 14,
+        ..Default::default()
+    };
+    assert_eq!(
+        keyboard.reconcile_ready(
+            true,
+            true,
+            true,
+            status,
+            500,
+            shell.keyboard_transition_ready()
+        ),
+        crate::keyboard::Command::Start
+    );
+    shell.back();
+    shell.set_artwork_active(false);
+    assert!(shell.finish_live_artwork().unwrap()["joined"]
+        .as_bool()
+        .unwrap());
+}
+#[test]
+fn tick_committed_external_intent_stops_dispatch_and_captures_activation_anchor() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = not_yet_pumped_shell(&[A, B]);
+    shell.enable_app_launches(true);
+    assert!(shell.focus_application(A));
+    release_deferred_press(&mut shell);
+    shell.input_frame(500, 0.016, |_| Ok::<(), ()>(())).unwrap();
+    assert_eq!(value(&shell, "/runtime/submitted"), 0);
+    assert!(controls.entered.try_recv().is_err());
+    assert!(shell
+        .artwork_pauses()
+        .contains(crate::artwork_transition::PauseReason::ExternalIntent));
+    let origin = shell.artwork_intent_anchor();
+    assert!(shell.focus_application(B));
+    let (actions, queued) = shell.take_transition_requests();
+    assert_eq!(actions, vec![Action::RequestApplication(A.into())]);
+    assert_eq!(
+        queued,
+        Some((
+            crate::actions::Request::Application { id: A.into() },
+            origin.clone()
+        ))
+    );
+    assert_ne!(
+        origin,
+        shell.artwork_intent_anchor(),
+        "main must reject the moved-away origin, not recapture it"
+    );
+    shell.set_artwork_active(false);
+    shell.finish_live_artwork();
+}
+#[test]
+fn queued_back_wins_over_due_commit_without_waiting_for_or_cancelling_worker() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = not_yet_pumped_shell(&[A]);
+    shell.system_keyboard_available = true;
+    assert!(shell.focus_drawer_control(2));
+    release_deferred_press(&mut shell);
+    shell
+        .input_frame(500, 0.016, |shell| {
+            shell.back();
+            Ok::<(), ()>(())
+        })
+        .unwrap();
+    assert!(!shell.drawer_state().system_keyboard());
+    assert!(shell.take_requests().is_empty());
+    assert_eq!(controls.started().app_id, A);
+    assert_eq!(controls.cancelled.load(Ordering::SeqCst), 0);
+    controls.release(10, 1);
+    shell.set_artwork_active(false);
+    drive_until(&mut shell, 516, |s| {
+        s.artwork_transition_readiness() == crate::artwork_runtime::TransitionReadiness::Ready
+    });
+    shell.finish_live_artwork();
+}
+#[test]
+fn keyboard_intent_waits_for_real_worker_drain_without_upload_or_second_dispatch() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = shell(&[A, B]);
+    assert_eq!(controls.started().app_id, A);
+    shell.drawer.editing = true;
+    shell.drawer.use_system_keyboard(true);
+    let before = shell.preferences().clone();
+    let mut keyboard = crate::keyboard::Controller::default();
+    let status = crate::runtime::KeyboardStatus {
+        support: 1,
+        focused: 1,
+        major: 2,
+        minor: 0,
+        patch: 14,
+        ..Default::default()
+    };
+    for ms in 101..111 {
+        shell.tick(ms, 0.016);
+        assert_eq!(
+            keyboard.reconcile_ready(
+                true,
+                true,
+                true,
+                status,
+                ms,
+                shell.keyboard_transition_ready()
+            ),
+            crate::keyboard::Command::None
+        );
+        assert_eq!(value(&shell, "/runtime/submitted"), 1);
+        assert_eq!(value(&shell, "/gl/uploads"), 0);
+    }
+    assert_eq!((keyboard.opens, keyboard.failures), (0, 0));
+    assert_eq!(controls.cancelled.load(Ordering::SeqCst), 0);
+    controls.release(50, 1);
+    drive_until(&mut shell, 116, |s| {
+        s.artwork_transition_readiness() == crate::artwork_runtime::TransitionReadiness::Ready
+    });
+    assert!(controls.entered.try_recv().is_err());
+    assert_eq!(value(&shell, "/runtime/submitted"), 1);
+    assert_eq!(value(&shell, "/gl/uploads"), 0);
+    assert_eq!(
+        keyboard.reconcile_ready(
+            true,
+            true,
+            true,
+            status,
+            117,
+            shell.keyboard_transition_ready()
+        ),
+        crate::keyboard::Command::Start
+    );
+    keyboard.started(true, 117);
+    shell.set_artwork_pause(crate::artwork_transition::PauseReason::KeyboardActive, true);
+    assert_eq!(
+        keyboard.reconcile_ready(
+            true,
+            true,
+            true,
+            status,
+            118,
+            shell.keyboard_transition_ready()
+        ),
+        crate::keyboard::Command::None
+    );
+    assert_eq!(shell.preferences(), &before);
+    shell.set_artwork_active(false);
+    shell.finish_live_artwork();
+}
+#[test]
+fn focus_idle_and_compatibility_cannot_clear_keyboard_or_quarantine_owners() {
+    let _serial = plx_base::testlock::serial();
+    use crate::artwork_transition::PauseReason::*;
+    let (mut shell, controls) = shell(&[A]);
+    controls.started();
+    shell.drawer.editing = true;
+    shell.drawer.use_system_keyboard(true);
+    shell.set_artwork_pause(ForegroundLost, true);
+    shell.set_artwork_pause(Idle, true);
+    shell.set_artwork_active(false);
+    shell.set_artwork_active(true);
+    shell.set_artwork_pause(ForegroundLost, false);
+    shell.set_artwork_pause(Idle, false);
+    assert!(shell.artwork_pauses().contains(KeyboardIntent));
+    assert!(!shell.artwork.as_ref().unwrap().active());
+    shell.set_artwork_pause(Quarantine, true);
+    shell.set_artwork_pause(Quarantine, false);
+    shell.set_artwork_active(true);
+    assert_eq!(
+        shell.artwork_transition_readiness(),
+        crate::artwork_runtime::TransitionReadiness::BlockedUnknown
+    );
+    controls.release(10, 1);
+    shell.finish_live_artwork();
+    assert_eq!(
+        shell.artwork_transition_readiness(),
+        crate::artwork_runtime::TransitionReadiness::BlockedUnknown
+    );
+    assert!(!shell.keyboard_transition_ready());
+}
+#[test]
+fn disposed_unclassified_worker_keeps_shell_quarantine_and_local_back_responsive() {
+    let _serial = plx_base::testlock::serial();
+    let (mut shell, controls) = shell(&[A]);
+    controls.started();
+    controls.release(10, 1);
+    // No Runtime poll classified the outstanding completion before shutdown.
+    let done = shell.finish_live_artwork().unwrap();
+    assert_eq!(done["settlement"], "Unknown");
+    shell.set_artwork_active(true);
+    assert_eq!(
+        shell.artwork_transition_readiness(),
+        crate::artwork_runtime::TransitionReadiness::BlockedUnknown
+    );
+    shell.back();
+    assert_eq!(shell.page(), Page::Home);
+    assert!(!shell.external_transition_ready());
 }
