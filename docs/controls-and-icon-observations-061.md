@@ -55,6 +55,15 @@ the dashboard contains the new UI and observations. A separately reviewed saved
 ledger verifier passes ten synthetic guard cases, with actual native context
 pins still unset. No TV was contacted by these builds or guards.
 
+Both preparation selections and the ordinary package also pass independent
+local SDK/archive/source audits. Seventeen auditor guard cases and the reviewed
+two-report composition pass. Coordinator readback rehashes 186 input files,
+1,026 saved inspector outputs and four frontends. The UI's direct loader,
+library and GLIBC sets equal retained 0.57; the helper's direct ABI equals the
+specifically bound 0.46 reference. The rollback archive matches the saved full
+0.57 bundle. These checks execute no target ELF and grant no fresh native reader
+permission or transitive-loading qualification.
+
 The [milestone](controls-and-icon-observations-061-milestone.json) binds the
 checks and actual artifacts. This work does not qualify execution on the G2, a retained update,
 new controls, full icon coverage or responsiveness. The current retained G2

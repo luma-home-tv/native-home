@@ -731,7 +731,38 @@
     ],
     "coordinator_readback_sha256": "0a4dc25fae05a36b7e81facbc74a51f954b24f47ca709e325e107869fb113d98",
     "fresh_private_nonce_sets_distinct": true,
-    "independent_SDK_artifact_audit_qualified": false,
+    "independent_SDK_artifact_audit_qualified": true,
     "native_admission_qualified": false
+  },
+  "local_artifact_audit": {
+    "selected_source_inputs": 136,
+    "reader_source_sha256": "3f544a3ace7f5e5269aec55afb794be90e47113afe36f2483cc1ff4bf836af2d",
+    "independent_source_review": "clear",
+    "reader_guard_cases": 17,
+    "actual_per_preparation_audits_returncode": [
+      0,
+      0
+    ],
+    "actual_composition_returncode": 0,
+    "composite_report_sha256": "b600befdc87af3042aa5d193d5525a31857dc13a81c67575d499111439fdb5a3",
+    "actual_SDK_reports": {
+      "preparation0": {
+        "bytes": 137515,
+        "sha256": "b21a701f6ec3a081a53eafd3ecfaefa48f430632576c5ba41613a10c4c7104e3"
+      },
+      "preparation16": {
+        "bytes": 137800,
+        "sha256": "1aa248e7377009ad4928febf5b49414492d6de06fd52275e1a03b3ca89bca273"
+      }
+    },
+    "Root_rehashed_inputs": 186,
+    "Root_rehashed_inspector_outputs": 1026,
+    "Root_rehashed_frontends": 4,
+    "UI_direct_ABI_exact057": true,
+    "helper_direct_ABI_exact_bound046": true,
+    "saved057_rollback_full_bundle_matches": true,
+    "native_permission_or_transitive_loading_or_TV_execution_qualified": false,
+    "TV_contacted": false,
+    "Root_closeout_sha256": "c11031a82b64d23c57cc6e3c1a23cb3108a307e2611e62f9a9c9bed1046c78f6"
   }
 }

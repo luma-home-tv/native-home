@@ -275,6 +275,11 @@ Both actual061 ARM builds later pass at76117505dd837ead35e16a550ae194185ef3acfd/
 136inputs; helper bytes match060. A separately reviewed saved-ledger verifier
 passes10syntheticguards withnativecontext pinsunset. NoTV/package/native authority
 follows. Preserve actual local SDK/package audit and fresh native admission gates.
+The later061 two-preparation local audit/composition now passes17guards and both
+actual SDK runs with independent source review. Root rehashed186inputs/1026SDK
+outputs/4frontends; directUI ABI exact057/helperexactbound046/full057rollback
+match. This remains offline artifact evidence, not native/Root admission. New
+three-launch carrier needs its own frozen review/guards and fresh dated scope.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
