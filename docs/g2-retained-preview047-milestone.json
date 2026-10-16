@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "milestone": "G2 retained native preview047",
+  "date": "2026-10-16",
+  "device_class": "LG G2 / webOS24",
+  "firmware": "23.25.55",
+  "sdk": "9.2.2",
+  "status": "retained_normal047_two_fresh_sessions_and_saved_audit_verified",
+  "retained_version": "0.47.0",
+  "system_home_replaced": false,
+  "compiled_provenance": {
+    "functional_source_revision": "be6c06a341d72be1d06e92819a1be6c71ed52048",
+    "selected_build_input_count": 101,
+    "ui_sha256": "72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb",
+    "ui_bytes": 3879936,
+    "build_receipt_sha256": "581a7f64ee47c548eb1a98038465f3fd8c5ff9ea7ad18b17465312979145abd7",
+    "package_sha256": "911424b4affd78833835457b8696a88e90b77b829e9cc20122a229ec81c075ea",
+    "package_bytes": 2338400,
+    "package_receipt_sha256": "598df53391dcae0a32533743018dfbfec0d7b44a0dd113318cb5a592e4f0f8e5",
+    "documentation_only_revision_at_draft": "473626",
+    "later_revision_compilation_claimed": false,
+    "later_048_source_qualification_transferred": false
+  },
+  "final_native_operator": {
+    "host_tool_session_id": 20164,
+    "actual_exit_code": 0,
+    "driver_sha256": "e2a0809d1dad24e1687a132f4890b8343d0719893772339232b466028d71828c",
+    "candidate_sha256": "274f0c193ac6db8cc351b2a489637287c7b02f66fa2154de943340bc36baa84b",
+    "root_terminal_attestation_sha256": "9906291cdeb003153a849315f705ba4aa019e7ae6f77bfcc0047aa717063e90b",
+    "fresh_native_sessions": 2,
+    "distinct_raw_bound_process_identities": true,
+    "ordinary_UI_flow": [
+      "Home",
+      "Apps",
+      "Home",
+      "Back natural exit"
+    ],
+    "first_session_idle_checkpoint_requested_seconds": 125,
+    "observed_idle_hold_seconds": 126.30130270800146,
+    "idle_checkpoint_inputs_sent": 0,
+    "idle_compositor_dark_fraction": 1.0,
+    "idle_compositor_mean_rgb": 0.0,
+    "first_session_idle_presentations_wakes": [
+      1,
+      1
+    ],
+    "second_session_idle_presentations_wakes": [
+      0,
+      0
+    ],
+    "keyboard_opens_stops_dismissals_failures_each_session": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "preference_content_queue_attempts_each_session": 0,
+    "live_nonsimulated_catalogue_reads_in_both_sessions": true,
+    "app_card_setting_or_source_actions_observed": false,
+    "continuation_install_or_restore_requested": false,
+    "Root_artwork_enabled": false
+  },
+  "preserved_failed_operators": [
+    {
+      "host_tool_session_id": 44543,
+      "actual_exit_code": 1,
+      "failure": "visual_command_window_expired",
+      "root_terminal_attestation_sha256": "d262c81b190df8eb743b67a715b31c9c30d805e1997b765d518da0eaf0d491b4",
+      "reclassified_as_pass": false
+    },
+    {
+      "host_tool_session_id": 10770,
+      "actual_exit_code": 1,
+      "failure": "renew_acquisition_timestamp_stability_assumption",
+      "root_terminal_attestation_sha256": "8b3371951ce0380265e890bd38596a0283fe906814b42f11e9197ca5ab889afe",
+      "reclassified_as_pass": false
+    },
+    {
+      "host_tool_session_id": 59817,
+      "actual_exit_code": 1,
+      "failure": "complete_stat_local_evidence_equality_changed_field_unknown",
+      "root_terminal_attestation_sha256": "8b1920a0d364658d3dbb82efeae9cb0d9d8e673c79ab7ab53c08bc2c0ff87aa6",
+      "reclassified_as_pass": false
+    },
+    {
+      "host_tool_session_id": 2664,
+      "actual_exit_code": 1,
+      "failure": "local_device_renew_acquisition_timestamp_one_second_skew",
+      "root_terminal_attestation_sha256": "c8a92c50faca2418d95d6fd56ed95b0e0f80c2bc881375208237fcfc39757ab6",
+      "reclassified_as_pass": false
+    },
+    {
+      "host_tool_session_id": 84387,
+      "actual_exit_code": 1,
+      "failure": "complete_stat_command_equality_changed_field_unknown",
+      "root_terminal_attestation_sha256": "22ba27940f6cf7b92962cc736317977657541fbc223a637af11e5e350dda7cdf",
+      "reclassified_as_pass": false
+    },
+    {
+      "host_tool_session_id": 66189,
+      "actual_exit_code": 1,
+      "failure": "terminal_file_mode_expectation_mismatched_frozen_source",
+      "root_terminal_attestation_sha256": "239c5c47e3a7b238b1ddd0a3464c5a6173960c1acd075a728c7b1e08380a6e50",
+      "reclassified_as_pass": false
+    }
+  ],
+  "identifier_scope": "Host tool sessions, not TV process IDs",
+  "retained_preservation": {
+    "bundle_entries": 32,
+    "bundle_files": 30,
+    "unchanged_resource_files": 28,
+    "only_payload_changes": [
+      "executable",
+      "application version metadata"
+    ],
+    "all_original_preference_bytes_and_metadata_equal": true,
+    "state_directory_file_modes": [
+      "0700",
+      "0600"
+    ],
+    "Core_files_hashed": 5,
+    "typed_read_domains": 19,
+    "preservation_domains_including_Core_group": 20,
+    "native_terminal_file_mode": "0640",
+    "bound_private_process_leaf_mode": "0700",
+    "shared_runtime_ancestor_mode": "01777",
+    "whole_runtime_ancestor_private_claimed": false
+  },
+  "host_input_and_reader_contract": {
+    "Apps_OK_requires_root_visual_attestation": true,
+    "whole_BMP_fresh_recheck_required": true,
+    "maximum_sample_age_seconds": 5,
+    "atomic_focus_key_delivery_qualified": false,
+    "command_publication": "complete0600 single-link file; atomic macOS exclusive rename",
+    "access_time_excluded_from_writer_stability_only": true,
+    "writer_identity_fields_and_read_length_checked": true,
+    "local_remote_lease_timestamps_separately_validated": true,
+    "earlier_stat_changed_field_cause_proved": false
+  },
+  "cleanup": {
+    "verified_owned_staging_capture_directories_removed": 6,
+    "lease_release_verified": true,
+    "host_agent_cleanup_verified": true,
+    "errors": {},
+    "runtime_receipt_directories_intentionally_retained": true,
+    "old_runtime_contents_rehashed": false,
+    "runtime_absence_claimed": false
+  },
+  "visual_observation": {
+    "Luma_logo_seen": true,
+    "available_icons_without_added_graphite_plate_seen": true,
+    "texture_count_qualified": false,
+    "all_app_artwork_qualified": false,
+    "raw_frames_published": false
+  },
+  "independent_saved_audit": {
+    "status": "passed",
+    "auditor_version": 7,
+    "auditor_sha256": "1e13ffcebb95a9f337d2b580c2dcfa10ee53ee4e3482384ffa7b76ff69c08cd9",
+    "report_sha256": "2643e965170912642142dfd5439700dd85bda7e3ff75090301b4d42865900b58",
+    "assertions": 18769,
+    "artifact_binding_count": 1670,
+    "frame_count": 15,
+    "session_count": 2,
+    "counts_are_test_coverage_metric": false,
+    "Root_replay_actual_host_tool_session_id": 88694,
+    "Root_replay_exit_code": 0,
+    "Root_replay_byte_identical": true,
+    "Root_replay_receipt_sha256": "df476a301f0c6dab333b8202913b41cfa41006cdb67984e3395ccd08197a7d45",
+    "saved_only_no_TV_contact": true,
+    "audit_history_preserved": {
+      "v4": "Execution-log mode assumption failed.",
+      "v5": "Component audit passed 18767 assertions.",
+      "v6": "Incorrect private-parent assumption failed.",
+      "v7": "Actual host metadata recorded; final audit and Root replay passed."
+    },
+    "TV_rerun_for_audit_corrections": false
+  },
+  "qualification_limits": {
+    "physical_input": false,
+    "IME": false,
+    "performance": false,
+    "Root_artwork": false,
+    "C2_behavior_transferred": false,
+    "C2_native_preference_migration": false,
+    "comprehensive_TV_feature_coverage": false,
+    "rollback_or_old37_code_execution": false
+  },
+  "publication_ready": true,
+  "host_evidence_metadata": {
+    "evidence_directory_mode": "0755",
+    "Root_attested_execution_log_mode": "0644",
+    "critical_backup_and_frame_modes": [
+      "0400",
+      "0600"
+    ],
+    "private_enclosing_directory_qualified": false,
+    "raw_captures_published": false,
+    "raw_personal_state_published": false
+  },
+  "saved_audit_limits": [
+    "Actual own evidence directory0755 and exact Root-attested execution log0644; no private enclosing-directory qualification; private backup/frame input modes remain400/600",
+    "Root reviewed focus/appearance, no OCR or all-normal-pixel oracle",
+    "5s fullBMP/owner sample is not atomic input targeting",
+    "Idle source-bound time/owner samples are not power/draw/performance proof",
+    "Remote staging deletion and agent/lease absence include source-bound return-code receipts",
+    "Old normal runtime file bytes were not rehashed",
+    "Original operator failures remain distinct; no rollback or old-code execution trial"
+  ]
+}

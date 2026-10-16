@@ -22,12 +22,22 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
-The latest verified retained G2 installation is 0.37.0, with dashboard ELF
-SHA-256 `3310d1a5c0e7d7910dc2052673e6f508efaa25b9e83f2602204c5f72e5ae2c21`.
-Its two normal sessions, full bundle/state preservation and temporary cleanup
-are recorded in `docs/retained-preview-037.md`. Historical drivers pinned to
-0.31.0 must remain historical; prepare a fresh guarded candidate for later tests
-and preserve the current installation and favourites.
+The latest verified retained G2 installation is 0.47.0, with dashboard ELF
+SHA-256 `72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb`
+from frozen functional source `be6c06a341d72be1d06e92819a1be6c71ed52048`.
+Its two fresh normal sessions, original private preferences, full bundle/Core20
+preservation and six scoped staging-directory removals are recorded in
+`docs/g2-retained-preview047.md`, with an independently replayed saved audit.
+The six earlier failed operators remain failures; runtime logs are intentionally
+retained. Normal Root artwork remains off, with no new physical-input, IME,
+performance or all-app artwork qualification. The older 0.37 record and drivers
+pinned to 0.31 remain historical; preserve the current installation/favourites.
+
+C2's separately verified compatibility baseline is restored 0.20.0, documented
+in `docs/c2-native-preferences-047.md`. Its earlier native migration history
+remains unknown. The 0.48 SDK-argument source candidate has separate host/ARM
+build checks; G2's 0.47 result and any isolated Target collection mechanics do
+not grant C2 Preview migration, Root-artwork or retained-upgrade authority.
 
 The isolated 0.38.0 check in `docs/artwork-startup-capability-038.md` qualifies one
 ordinary native HBC `checkRoot` request and complete temporary cleanup. It did

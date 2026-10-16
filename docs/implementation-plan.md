@@ -15,9 +15,12 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 now retains [0.37.0](retained-preview-037.md) after
-two normal sessions, a bounded idle/wake and same-install relaunch, with the full
-saved state preserved. C2 was last verified on 0.20.0. The
+current native interface. G2 now retains [0.47.0](g2-retained-preview047.md) after
+two fresh Home/Apps/Back sessions, a natural idle-black/wake and full saved-state,
+bundle and Core20 preservation. Its visual frames show the logo and unboxed
+available icons; broader artwork and physical-input/performance qualification
+remain separate. C2's [0.20 restoration](c2-native-preferences-047.md) is verified;
+its native preference migration and normal upgrade remain unqualified. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -288,6 +291,9 @@ the [transition lifecycle](artwork-transition-lifecycle.md) is qualified. The
 [C2 installer metadata measurement](c2-installer-metadata-045.md) supports one
 rollback mechanism component; ordinary-owner preference migration, reversal,
 same-ID restoration and current normal UI still require their own C2 tests.
+The [0.48 SDK-argument candidate](preferences-sdk-arguments-048.md) accepts one
+bounded opaque launcher JSON object without granting operation authority. Its
+host/ARM checks precede separate C2 native forward/reverse and restoration proof.
 
 Network reconfiguration, firmware, factory reset, service/calibration controls,
 OLED protections and compensation scheduling remain protected/delegated. An
@@ -311,7 +317,8 @@ The [Settings handoff milestone](settings-handoff-milestone.json) then verifies
 the LG Picture overlay, sustained underlying dashboard lifetime and return after
 injected Back on the G2. Version 0.9.0 enables that fixed route with per-launch
 model/firmware/SDK checks; native setting writes and HDMI switching remain gated.
-Build before taking the lock; release it before reviewing frames or changing
+Build and host-check before taking the lock. Keep the device lease through live
+frame review and input, then release it after verified closeout before changing
 source. Inspect native frames, record exact source/build revisions and keep
 private device data outside Git. After each test, verify removal of the package,
 launcher entry, process, runtime, persistent test data, jail and mounts; compare
