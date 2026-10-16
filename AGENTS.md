@@ -226,6 +226,17 @@ receipts and unchanged other9 framework files. ARM release panic=abort means
 catch_unwind grants no native panic-recovery guarantee. No target ELF/TV/helper
 ran in that audit; fresh reader identity, scene, lease, complete retained baseline,
 native memory/latency and known cleanup remain required before promotion.
+The first060 native trial in `docs/bounded-icon-decoding-060-first-native.md`
+is closed: inert checkRoot returnedtrue, after-foreground unavailable, no resource
+worker/Rootexec/image jobs, consumer skipped, operatorexit1. Preserve strict
+context refusal; no actual foreground change or decoder failure is inferred.
+Exact057/privateprefs/Core5+19/oldruntime preservation and known cleanup+original
+lease/agent closeout pass independent saved audit/byte-identical Root replay.
+Original240 mount rows remain exactprefix242 with one existing read-only SDKpair;
+no mount operation/restored-mount/cause claim. Five saved startupRSS/HWM samples
+29480KiB do not qualify larger decoding/totalmemory/performance. Current060V1
+scope is closed, never re-adopt dates/nonce/lease. A new trial needs new private
+pins/package inspection/admission/fresh baseline; retain every context gate.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

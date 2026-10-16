@@ -6,6 +6,10 @@ This fixes the source limitation found by the partial 0.59 G2 batch. Source and
 host validation, matching ARM builds and local package/ABI inspection pass.
 Native qualification remains pending.
 The last verified retained G2 remains 0.57. C2 was not contacted.
+The later [first temporary G2 trial](bounded-icon-decoding-060-first-native.md)
+declined on unavailable foreground context before submitting any image job.
+Exact 0.57 restoration and known cleanup pass independent saved audit/replay;
+this preserves native nonqualification of the decoder.
 
 ## Shared policy and attributed framework
 
