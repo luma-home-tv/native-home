@@ -240,6 +240,7 @@ fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
             ticket_resolved: false,
             observation: None,
             guard: None,
+            last_attempt: None,
         },
         source,
         exchange,
@@ -1096,4 +1097,364 @@ fn framework_runtime_parent_is_sticky_shared_while_observation_leaf_stays_privat
         not_sticky.uid(),
         not_sticky.gid()
     ));
+}
+
+// Foundation-only trace tests. All packets/identities are controlled host fixtures.
+fn trace_for(exchange: &session::Exchange, source: &Source) -> AttemptTrace {
+    let mut trace = AttemptTrace::new(Profile::Proof, source.key());
+    trace.stage = AttemptStage::ReadArtwork;
+    trace.own = Some(exchange.own.clone());
+    trace.client = Some(exchange.client);
+    trace.root = Some(exchange.root);
+    trace.identify_message = Some(exchange.message);
+    trace.identify_request = Some(crate::broker_protocol::Request {
+        schema: 1,
+        op: crate::broker_protocol::Operation::Identify,
+        nonce: exchange.identity.nonce.clone(),
+    });
+    trace.identify_response = Some(exchange.identity.clone());
+    trace.identity = Some(exchange.identity.clone());
+    trace.identify_bound = true;
+    trace.request = Some(exchange.request.clone());
+    trace
+}
+fn fixture_packets(exchange: &session::Exchange) -> Vec<crate::broker_transport::Packet> {
+    let wire::Outcome::Artwork(image) = &exchange.outcome else {
+        panic!("Synthetic image fixture")
+    };
+    vec![
+        serde_json::to_vec(&image.header).unwrap(),
+        wire::encode_chunk(exchange.request.request_id, 0, &image.bytes).unwrap(),
+        serde_json::to_vec(&image.complete).unwrap(),
+    ]
+    .into_iter()
+    .map(|bytes| crate::broker_transport::Packet {
+        bytes,
+        credentials: exchange.root,
+    })
+    .collect()
+}
+#[test]
+fn no_writer_still_retains_typed_failure_metadata_without_encoded_payload() {
+    let (mut provider, source, exchange, _) = fixture();
+    let mut observation = Observation {
+        writer: None,
+        ticket: None,
+        trace: trace_for(&exchange, &source),
+    };
+    observation.connected(&source).unwrap();
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let mut packets = fixture_packets(&exchange);
+    assert!(!observation
+        .trace
+        .push_resource(&mut receiver, &packets.remove(0))
+        .unwrap());
+    observation.trace.fail(
+        AttemptFailureKind::ProviderError,
+        ProviderError::Unavailable,
+    );
+    retain_attempt(&mut provider, observation.trace);
+    assert!(provider.observation.is_none());
+    let retained = provider.last_attempt.as_ref().unwrap();
+    assert_eq!(retained.identity.as_ref(), Some(&exchange.identity));
+    assert!(retained.header.is_some());
+    assert_eq!(retained.resource_packets_validated, 1);
+    assert_eq!(retained.failure.unwrap().stage, AttemptStage::ReadArtwork);
+    assert!(!retained.clean_eof);
+    assert!(!provider.ticket_resolved);
+}
+#[test]
+fn receiver_rejection_never_becomes_validated_header_or_progress() {
+    let (_, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let mut packet = fixture_packets(&exchange).remove(0);
+    let mut header: wire::Header = serde_json::from_slice(&packet.bytes).unwrap();
+    header.identity.nonce = "f".repeat(32);
+    packet.bytes = serde_json::to_vec(&header).unwrap();
+    assert_eq!(
+        trace.push_resource(&mut receiver, &packet),
+        Err(ProviderError::Invalid)
+    );
+    assert_eq!(trace.resource_packets_received, 1);
+    assert_eq!(trace.resource_packets_validated, 0);
+    assert!(trace.header.is_none());
+    assert!(trace.complete.is_none());
+    assert!(trace.last_validated_credentials.is_none());
+    assert!(!trace.report().as_object().unwrap().contains_key("header"));
+}
+#[test]
+fn invalid_packet_retains_prior_valid_metadata_and_blocks_later_eof_read() {
+    let (_, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let mut packets = fixture_packets(&exchange);
+    trace
+        .push_resource(&mut receiver, &packets.remove(0))
+        .unwrap();
+    packets[0].credentials.pid += 1;
+    assert_eq!(
+        trace.push_resource(&mut receiver, &packets[0]),
+        Err(ProviderError::Invalid)
+    );
+    let first_failure = trace.failure;
+    let called = std::cell::Cell::new(false);
+    assert!(receive_attempt_packet(&mut trace, || {
+        called.set(true);
+        Ok(crate::broker_transport::Incoming::Eof)
+    })
+    .is_err());
+    assert!(
+        !called.get(),
+        "A terminal failed attempt must not consume another message"
+    );
+    assert_eq!(trace.failure, first_failure);
+    assert!(!trace.observed_unexpected_eof);
+    assert_eq!(trace.resource_packets_received, 2);
+    assert_eq!(trace.resource_packets_validated, 1);
+    assert_eq!(trace.last_validated_credentials, Some(exchange.root));
+    assert!(trace.header.is_some());
+    assert!(trace.complete.is_none());
+}
+#[test]
+fn typed_unexpected_eof_and_transport_error_still_settle_unknown() {
+    for unexpected_eof in [false, true] {
+        let (mut provider, source, exchange, hbc) = fixture();
+        let mut trace = trace_for(&exchange, &source);
+        let error = receive_attempt_packet(&mut trace, || {
+            if unexpected_eof {
+                Ok(crate::broker_transport::Incoming::Eof)
+            } else {
+                Err(std::io::ErrorKind::TimedOut.into())
+            }
+        })
+        .unwrap_err();
+        assert_eq!(error, ProviderError::Unavailable);
+        assert_eq!(trace.observed_unexpected_eof, unexpected_eof);
+        retain_attempt(&mut provider, trace);
+        let settled = session::settle(
+            &mut provider,
+            source.key(),
+            Err(error),
+            Ok(hbc),
+            false,
+            false,
+        );
+        assert!(settled.is_err());
+        assert!(provider.quarantined);
+        assert!(!provider.ticket_resolved);
+        assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+        assert!(provider.last_attempt.as_ref().unwrap().failure.is_some());
+    }
+}
+fn contains_fixture_payload(value: &Value, bytes: &[u8]) -> bool {
+    match value {
+        Value::Array(values) => {
+            (values.len() == bytes.len()
+                && values
+                    .iter()
+                    .zip(bytes)
+                    .all(|(v, b)| v.as_u64() == Some(u64::from(*b))))
+                || values.iter().any(|v| contains_fixture_payload(v, bytes))
+        }
+        Value::Object(values) => values.values().any(|v| contains_fixture_payload(v, bytes)),
+        Value::String(value) => value.as_bytes() == bytes,
+        _ => false,
+    }
+}
+#[test]
+fn complete_metadata_survives_generic_finish_failure_without_invented_eof() {
+    let (mut provider, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    for packet in fixture_packets(&exchange) {
+        trace.push_resource(&mut receiver, &packet).unwrap();
+    }
+    assert!(matches!(
+        receiver.finish().unwrap(),
+        wire::Outcome::Artwork(_)
+    ));
+    trace.resource_complete_validated = Some(true);
+    trace.finish_request = Some(wire::FinishRequest::new(2, &marker().nonce).unwrap());
+    trace.stage = AttemptStage::Finish;
+    trace.fail(
+        AttemptFailureKind::ProviderError,
+        ProviderError::Unavailable,
+    );
+    retain_attempt(&mut provider, trace);
+    let report = provider.last_attempt.as_ref().unwrap().report();
+    assert!(report["header"].is_object());
+    assert!(report["complete"].is_object());
+    assert!(report["finish_request"].is_object());
+    assert_eq!(report["attempt_failure"]["stage"], "finish");
+    assert_eq!(report["observed_unexpected_eof"], false);
+    assert_eq!(report["clean_eof"], false);
+    let wire::Outcome::Artwork(image) = &exchange.outcome else {
+        panic!("Synthetic image fixture")
+    };
+    assert!(contains_fixture_payload(
+        &json!({"accidental_payload":image.bytes}),
+        &image.bytes
+    ));
+    assert!(contains_fixture_payload(
+        &json!({"accidental_payload":"bounded encoded fixture bytes"}),
+        &image.bytes
+    ));
+    assert!(!contains_fixture_payload(&report, &image.bytes));
+}
+#[test]
+fn successful_trace_projection_preserves_existing_protocol_metadata() {
+    let (_, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    for packet in fixture_packets(&exchange) {
+        trace.push_resource(&mut receiver, &packet).unwrap();
+    }
+    trace.resource_complete_validated = Some(true);
+    trace.finish_request = Some(wire::FinishRequest::new(2, &marker().nonce).unwrap());
+    trace.own_after = Some(exchange.own.clone());
+    trace.finished = exchange.finished.clone();
+    trace.clean_eof = true;
+    trace.stage = AttemptStage::Closed;
+    let report = trace.report();
+    for (key, expected) in [
+        ("own", json!(exchange.own)),
+        ("own_after", json!(exchange.own)),
+        (
+            "root_peer",
+            json!({"pid":exchange.root.pid,"uid":exchange.root.uid,"gid":exchange.root.gid}),
+        ),
+        ("identity", json!(exchange.identity)),
+        ("identify_response", json!(exchange.identity)),
+        ("request", json!(exchange.request)),
+        ("finished", json!(exchange.finished)),
+    ] {
+        assert_eq!(report[key], expected, "Preserved protocol field {key}");
+    }
+    assert_eq!(report["resource_packets_received"], 3);
+    assert_eq!(report["resource_packets_validated"], 3);
+    assert_eq!(report["header_matches"], true);
+    assert_eq!(report["resource_complete_validated"], true);
+    assert_eq!(report["clean_eof"], true);
+    assert!(report["attempt_failure"].is_null());
+    assert_eq!(report["negative_acceptance_enabled"], false);
+}
+#[test]
+fn pre_identify_eof_and_all_stage_names_supply_no_session_authority() {
+    let (_, source, _, _) = fixture();
+    let mut trace = AttemptTrace::new(Profile::Proof, source.key());
+    for (stage, name) in [
+        (AttemptStage::AwaitStartup, "await_startup"),
+        (
+            AttemptStage::ExecWorkerNotStarted,
+            "exec_worker_not_started",
+        ),
+        (AttemptStage::Connecting, "connecting"),
+        (
+            AttemptStage::ConnectedBeforeIdentify,
+            "connected_before_identify",
+        ),
+        (AttemptStage::Identify, "identify"),
+        (AttemptStage::ReadArtwork, "read_artwork"),
+        (AttemptStage::Finish, "finish"),
+        (AttemptStage::Closed, "closed"),
+    ] {
+        trace.stage = stage;
+        let report = trace.report();
+        assert_eq!(report["stage"], name);
+        assert_eq!(report["negative_acceptance_enabled"], false);
+        assert!(report.get("identity").is_none());
+        assert_eq!(
+            report["clean_eof"], false,
+            "A stage label cannot invent closure"
+        );
+    }
+    trace.stage = AttemptStage::Identify;
+    assert!(
+        receive_attempt_packet(&mut trace, || Ok(crate::broker_transport::Incoming::Eof)).is_err()
+    );
+    let report = trace.report();
+    assert_eq!(report["attempt_failure"]["stage"], "identify");
+    assert_eq!(report["observed_unexpected_eof"], true);
+    assert_eq!(report["clean_eof"], false);
+    assert!(report.get("identity").is_none());
+}
+
+#[test]
+fn next_fetch_preconditions_clear_prior_trace_without_inventing_attempt_or_settlement() {
+    use crate::artwork_worker::Worker;
+    use std::sync::mpsc;
+    struct Held {
+        cancellation: mpsc::Sender<Cancellation>,
+        release: mpsc::Receiver<()>,
+    }
+    impl Provider for Held {
+        fn fetch(
+            &mut self,
+            _: &Source,
+            _: Instant,
+            cancellation: &Cancellation,
+        ) -> Result<EncodedFile, ProviderError> {
+            self.cancellation.send(cancellation.clone()).unwrap();
+            self.release.recv_timeout(Duration::from_secs(2)).unwrap();
+            Err(ProviderError::Unavailable)
+        }
+    }
+    let (send, receive) = mpsc::channel();
+    let (release, wait) = mpsc::channel();
+    let mut worker = Worker::start(move || Held {
+        cancellation: send,
+        release: wait,
+    })
+    .unwrap();
+    let id = "synthetic.fixture.installed";
+    let raw = json!({"replies":{"apps":{"returnValue":true,"apps":[{"id":id,"title":"Fixture","type":"native","visible":true,"version":"1.0.0","folderPath":format!("/media/developer/apps/usr/palm/applications/{id}"),"icon":"icon.png","largeIcon":"images/large.png"}]},"launch_points":{"returnValue":true,"launchPoints":[{"id":id}]}}});
+    let sources = app_artwork::sources_from_raw(&raw, crate::identity::PROOF).unwrap();
+    let mut cache =
+        crate::artwork_cache::ArtworkCache::new(crate::artwork_cache::Config::default()).unwrap();
+    cache.update_catalogue(&sources).unwrap();
+    cache.set_interest(&[id.to_owned()], &[]).unwrap();
+    let work = cache.next_work(0).unwrap();
+    let source = sources[id].preferred().unwrap().clone();
+    let future = Instant::now() + Duration::from_secs(2);
+    worker.try_submit(work, source.clone(), future).unwrap();
+    let cancellation = receive.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert!(!cancellation.is_cancelled());
+    for (quarantined, deadline, expected) in [
+        (true, future, ProviderError::Unavailable),
+        (false, Instant::now(), ProviderError::Expired),
+    ] {
+        let (mut provider, fixture_source, exchange, _) = fixture();
+        provider.last_attempt = Some(trace_for(&exchange, &fixture_source));
+        provider.ticket_resolved = true; // Previous job's metadata, never current authority.
+        provider.quarantined = quarantined;
+        assert!(
+            matches!(provider.fetch(&source, deadline, &cancellation), Err(error) if error == expected)
+        );
+        assert!(provider.last_attempt.is_none());
+        assert!(!provider.ticket_resolved);
+        assert_eq!(provider.quarantined, quarantined);
+        assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+    }
+    assert!(worker.cancel());
+    assert!(cancellation.is_cancelled());
+    let (mut provider, fixture_source, exchange, _) = fixture();
+    provider.last_attempt = Some(trace_for(&exchange, &fixture_source));
+    provider.ticket_resolved = true;
+    assert!(matches!(
+        provider.fetch(&source, future, &cancellation),
+        Err(ProviderError::Cancelled)
+    ));
+    assert!(provider.last_attempt.is_none());
+    assert!(!provider.ticket_resolved);
+    assert!(!provider.quarantined);
+    assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+    release.send(()).unwrap();
+    let finished = worker.finish();
+    assert!(finished.joined && !finished.panicked);
 }

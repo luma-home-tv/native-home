@@ -23,6 +23,9 @@ pub struct InstalledProvider {
     observation: Option<ProofObservation>,
     #[cfg(any(target_arch = "arm", test))]
     guard: Option<crate::artwork_session_guard::Guard>,
+    // In-memory metadata only; never a settlement or stale-latch recovery grant.
+    #[cfg(any(target_arch = "arm", test))]
+    last_attempt: Option<AttemptTrace>,
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
@@ -125,6 +128,7 @@ impl InstalledProvider {
                 ticket_resolved: false,
                 observation: None,
                 guard: Some(guard),
+                last_attempt: None,
             })
         }
         #[cfg(not(target_arch = "arm"))]
@@ -178,6 +182,10 @@ impl Provider for InstalledProvider {
         cancellation: &Cancellation,
     ) -> Result<EncodedFile, ProviderError> {
         self.ticket_resolved = false;
+        #[cfg(any(target_arch = "arm", test))]
+        {
+            self.last_attempt = None;
+        }
         if self.quarantined {
             return Err(ProviderError::Unavailable);
         }
@@ -1104,6 +1112,279 @@ mod session {
     }
 }
 
+// A trace is metadata about this attempt, never proof of settlement. In
+// particular, unexpected EOF remains the same failed operation as before.
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AttemptStage {
+    AwaitStartup,
+    ExecWorkerNotStarted,
+    Connecting,
+    ConnectedBeforeIdentify,
+    Identify,
+    ReadArtwork,
+    Finish,
+    Closed,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl AttemptStage {
+    fn name(self) -> &'static str {
+        match self {
+            Self::AwaitStartup => "await_startup",
+            Self::ExecWorkerNotStarted => "exec_worker_not_started",
+            Self::Connecting => "connecting",
+            Self::ConnectedBeforeIdentify => "connected_before_identify",
+            Self::Identify => "identify",
+            Self::ReadArtwork => "read_artwork",
+            Self::Finish => "finish",
+            Self::Closed => "closed",
+        }
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AttemptFailureKind {
+    ProviderError,
+    ReceiveError,
+    UnexpectedEof,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct AttemptFailure {
+    stage: AttemptStage,
+    kind: AttemptFailureKind,
+    provider_error: ProviderError,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug)]
+struct AttemptTrace {
+    profile: Profile,
+    source_key: crate::app_artwork::SourceKey,
+    stage: AttemptStage,
+    failure: Option<AttemptFailure>,
+    own: Option<crate::broker_probe::OwnIdentity>,
+    own_after: Option<crate::broker_probe::OwnIdentity>,
+    client: Option<crate::broker_transport::Credentials>,
+    root: Option<crate::broker_transport::Credentials>,
+    identify_message: Option<crate::broker_transport::Credentials>,
+    identify_request: Option<crate::broker_protocol::Request>,
+    identify_response: Option<crate::broker_protocol::Response>,
+    identity: Option<crate::broker_protocol::Response>,
+    identify_bound: bool,
+    request: Option<crate::artwork_transfer::Request>,
+    finish_request: Option<crate::artwork_transfer::FinishRequest>,
+    header: Option<crate::artwork_transfer::Header>,
+    complete: Option<crate::artwork_transfer::Complete>,
+    refusal: Option<crate::artwork_transfer::Refusal>,
+    finished: Option<crate::artwork_transfer::Finished>,
+    header_matches: Option<bool>,
+    resource_complete_validated: Option<bool>,
+    resource_packets_received: u32,
+    resource_packets_validated: u32,
+    last_received_credentials: Option<crate::broker_transport::Credentials>,
+    last_validated_credentials: Option<crate::broker_transport::Credentials>,
+    proof_binding_hold_ms: u64,
+    clean_eof: bool,
+    observed_unexpected_eof: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl AttemptTrace {
+    fn new(profile: Profile, source: &crate::app_artwork::SourceKey) -> Self {
+        Self {
+            profile,
+            source_key: source.clone(),
+            stage: AttemptStage::AwaitStartup,
+            failure: None,
+            own: None,
+            own_after: None,
+            client: None,
+            root: None,
+            identify_message: None,
+            identify_request: None,
+            identify_response: None,
+            identity: None,
+            identify_bound: false,
+            request: None,
+            finish_request: None,
+            header: None,
+            complete: None,
+            refusal: None,
+            finished: None,
+            header_matches: None,
+            resource_complete_validated: None,
+            resource_packets_received: 0,
+            resource_packets_validated: 0,
+            last_received_credentials: None,
+            last_validated_credentials: None,
+            proof_binding_hold_ms: 0,
+            clean_eof: false,
+            observed_unexpected_eof: false,
+        }
+    }
+    fn fail(&mut self, kind: AttemptFailureKind, error: ProviderError) {
+        // First failure is terminal metadata. A later EOF cannot erase it.
+        if self.failure.is_none() {
+            self.observed_unexpected_eof = kind == AttemptFailureKind::UnexpectedEof;
+            self.failure = Some(AttemptFailure {
+                stage: self.stage,
+                kind,
+                provider_error: error,
+            });
+        }
+    }
+    fn push_resource(
+        &mut self,
+        receiver: &mut crate::artwork_transfer::Receiver,
+        packet: &crate::broker_transport::Packet,
+    ) -> Result<bool, ProviderError> {
+        if let Some(failure) = self.failure {
+            return Err(failure.provider_error);
+        }
+        self.resource_packets_received += 1;
+        self.last_received_credentials = Some(packet.credentials);
+        let ended = match receiver.push_packet(&packet.bytes, packet.credentials) {
+            Ok(ended) => ended,
+            Err(_) => {
+                self.fail(AttemptFailureKind::ProviderError, ProviderError::Invalid);
+                return Err(ProviderError::Invalid);
+            }
+        };
+        // Parsed metadata is authoritative progress ONLY after Receiver accepted
+        // this exact packet and its credentials. No raw image data is retained.
+        self.resource_packets_validated += 1;
+        self.last_validated_credentials = Some(packet.credentials);
+        if let Ok(header) =
+            crate::artwork_transfer::parse_header_for_profile(&packet.bytes, self.profile)
+        {
+            self.header_matches = Some(session::header_matches(&header, &self.source_key));
+            self.header = Some(header);
+        }
+        if let Ok(complete) =
+            crate::artwork_transfer::parse_complete_for_profile(&packet.bytes, self.profile)
+        {
+            self.complete = Some(complete);
+        }
+        if let Ok(refusal) =
+            crate::artwork_transfer::parse_refusal_for_profile(&packet.bytes, self.profile)
+        {
+            self.refusal = Some(refusal);
+        }
+        Ok(ended)
+    }
+    fn report(&self) -> serde_json::Value {
+        use serde_json::json;
+        let failure = self.failure.map(|f| json!({
+            "stage":f.stage.name(),
+            "kind":match f.kind { AttemptFailureKind::ProviderError=>"provider_error", AttemptFailureKind::ReceiveError=>"receive_error", AttemptFailureKind::UnexpectedEof=>"unexpected_eof" },
+            "provider_error":observed_outcome(&Err(f.provider_error)),
+        }));
+        let mut value = json!({"stage":self.stage.name(),"clean_eof":self.clean_eof,
+            "proof_binding_hold_ms":self.proof_binding_hold_ms,
+            "attempt_source_key":self.source_key,"attempt_failure":failure,
+            "observed_unexpected_eof":self.observed_unexpected_eof,
+            "failure_evidence_retained":true,"negative_acceptance_enabled":false});
+        // Preserve successful optional-JSON field names and values. Absence of
+        // an unobserved field stays absence, not an invented typed observation.
+        macro_rules! optional {
+            ($key:literal,$field:expr) => {
+                if let Some(field) = &$field {
+                    value[$key] = json!(field);
+                }
+            };
+        }
+        macro_rules! optional_credentials {
+            ($key:literal, $field:expr) => {
+                if let Some(field) = &$field {
+                    value[$key] = json!({"pid":field.pid,"uid":field.uid,"gid":field.gid});
+                }
+            };
+        }
+        optional!("own", self.own);
+        optional!("own_after", self.own_after);
+        optional_credentials!("client_credentials", self.client);
+        optional_credentials!("root_peer", self.root);
+        optional_credentials!("root_message_credentials", self.identify_message);
+        optional!("identify_request", self.identify_request);
+        optional!("identify_response", self.identify_response);
+        optional!("identity", self.identity);
+        if self.identify_bound {
+            value["identify_bound"] = json!(true);
+        }
+        optional!("request", self.request);
+        optional!("finish_request", self.finish_request);
+        optional!("header", self.header);
+        optional!("complete", self.complete);
+        optional!("refusal", self.refusal);
+        optional!("finished", self.finished);
+        optional!("header_matches", self.header_matches);
+        optional!(
+            "resource_complete_validated",
+            self.resource_complete_validated
+        );
+        if self.resource_packets_received != 0 {
+            value["resource_packets_received"] = json!(self.resource_packets_received);
+            if self.resource_packets_validated != 0 {
+                value["resource_packets_validated"] = json!(self.resource_packets_validated);
+            }
+            optional_credentials!(
+                "last_received_resource_message_credentials",
+                self.last_received_credentials
+            );
+            optional_credentials!(
+                "last_resource_message_credentials",
+                self.last_validated_credentials
+            );
+        }
+        value
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn receive_attempt_packet(
+    trace: &mut AttemptTrace,
+    receive: impl FnOnce() -> std::io::Result<crate::broker_transport::Incoming>,
+) -> Result<crate::broker_transport::Packet, ProviderError> {
+    if let Some(failure) = trace.failure {
+        return Err(failure.provider_error);
+    }
+    match receive() {
+        Ok(crate::broker_transport::Incoming::Packet(packet)) => Ok(packet),
+        Ok(crate::broker_transport::Incoming::Eof) => {
+            trace.fail(
+                AttemptFailureKind::UnexpectedEof,
+                ProviderError::Unavailable,
+            );
+            Err(ProviderError::Unavailable)
+        }
+        Err(_) => {
+            trace.fail(AttemptFailureKind::ReceiveError, ProviderError::Unavailable);
+            Err(ProviderError::Unavailable)
+        }
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+struct Observation<'a> {
+    writer: Option<&'a ProofObservation>,
+    ticket: Option<ProofTicket>,
+    trace: AttemptTrace,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl Observation<'_> {
+    fn connected(&self, source: &Source) -> Result<(), ProviderError> {
+        if let (Some(writer), Some(ticket)) = (self.writer, self.ticket) {
+            writer
+                .connected(ticket, source.key(), &self.trace.report())
+                .map_err(|_| ProviderError::Invalid)?;
+        }
+        Ok(())
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn retain_attempt(provider: &mut InstalledProvider, trace: AttemptTrace) {
+    // Metadata only. No-writer workers retain it in this provider instance;
+    // final diagnostic projection occurs only after the existing join/settle.
+    provider.last_attempt = Some(trace);
+}
+
 #[cfg(target_arch = "arm")]
 mod native {
     use super::*;
@@ -1130,26 +1411,6 @@ mod native {
             Ok(())
         }
     }
-    struct Observation<'a> {
-        writer: Option<&'a ProofObservation>,
-        ticket: Option<ProofTicket>,
-        protocol: serde_json::Value,
-    }
-    impl Observation<'_> {
-        fn set(&mut self, key: &str, value: serde_json::Value) {
-            if self.writer.is_some() {
-                self.protocol[key] = value;
-            }
-        }
-        fn connected(&self, source: &Source) -> Result<(), ProviderError> {
-            if let (Some(writer), Some(ticket)) = (self.writer, self.ticket) {
-                writer
-                    .connected(ticket, source.key(), &self.protocol)
-                    .map_err(|_| ProviderError::Invalid)?;
-            }
-            Ok(())
-        }
-    }
     fn exchange(
         marker: &Marker,
         profile: Profile,
@@ -1169,25 +1430,26 @@ mod native {
             }
         }
         let own = probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)?;
-        observation.set("stage", serde_json::json!("connecting"));
-        observation.set("own", serde_json::json!(own));
-        observation.set("client_credentials",serde_json::json!({"pid":std::process::id(),"uid":unsafe{libc::geteuid()},"gid":unsafe{libc::getegid()}}));
+        observation.trace.stage = AttemptStage::Connecting;
+        observation.trace.own = Some(own.clone());
+        observation.trace.client = Some(Credentials {
+            pid: std::process::id() as i32,
+            uid: unsafe { libc::geteuid() },
+            gid: unsafe { libc::getegid() },
+        });
         let connection = Connection::connect_until(&marker.nonce, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
         let root = connection
             .peer_credentials()
             .map_err(|_| ProviderError::Denied)?;
-        observation.set(
-            "root_peer",
-            serde_json::json!({"pid":root.pid,"uid":root.uid,"gid":root.gid}),
-        );
+        observation.trace.root = Some(root);
         if root.uid != 0 || root.pid <= 1 {
             return Err(ProviderError::Denied);
         }
         if probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)? != own {
             return Err(ProviderError::Denied);
         }
-        observation.set("stage", serde_json::json!("connected_before_identify"));
+        observation.trace.stage = AttemptStage::ConnectedBeforeIdentify;
         observation.connected(source)?;
         if observation.ticket.is_some_and(|ticket| ticket.hold) {
             let began = Instant::now();
@@ -1195,10 +1457,7 @@ mod native {
                 check(deadline, cancellation, stop)?;
                 std::thread::sleep(Duration::from_millis(20));
             }
-            observation.set(
-                "proof_binding_hold_ms",
-                serde_json::json!(began.elapsed().as_millis()),
-            );
+            observation.trace.proof_binding_hold_ms = began.elapsed().as_millis() as u64;
         }
         check(deadline, cancellation, stop)?;
         let request = protocol::Request {
@@ -1206,21 +1465,21 @@ mod native {
             op: protocol::Operation::Identify,
             nonce: marker.nonce.clone(),
         };
-        observation.set("identify_request", serde_json::json!(request));
-        observation.set("stage", serde_json::json!("identify"));
+        observation.trace.identify_request = Some(request.clone());
+        observation.trace.stage = AttemptStage::Identify;
         connection
             .send_until(
                 &serde_json::to_vec(&request).map_err(|_| ProviderError::Invalid)?,
                 deadline,
             )
             .map_err(|_| ProviderError::Unavailable)?;
-        let packet = connection
-            .recv_until(protocol::RESPONSE_LIMIT, deadline)
-            .map_err(|_| ProviderError::Unavailable)?;
-        observation.set("root_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
+        let packet = receive_attempt_packet(&mut observation.trace, || {
+            connection.recv_or_eof_until(protocol::RESPONSE_LIMIT, deadline)
+        })?;
+        observation.trace.identify_message = Some(packet.credentials);
         let identity = protocol::parse_response_for_profile(&packet.bytes, profile)
             .map_err(|_| ProviderError::Invalid)?;
-        observation.set("identify_response", serde_json::json!(identity));
+        observation.trace.identify_response = Some(identity.clone());
         probe::bind_response_for_profile(
             marker,
             &own,
@@ -1231,55 +1490,28 @@ mod native {
             profile,
         )
         .map_err(|_| ProviderError::Denied)?;
-        observation.set("identity", serde_json::json!(identity));
-        observation.set("identify_bound", serde_json::json!(true));
+        observation.trace.identity = Some(identity.clone());
+        observation.trace.identify_bound = true;
         check(deadline, cancellation, stop)?;
         let read = wire::Request::new(1, &marker.nonce, source.app_id(), wire::Variant::Preferred)
             .map_err(|_| ProviderError::Invalid)?;
-        observation.set("request", serde_json::json!(read));
-        observation.set("stage", serde_json::json!("read_artwork"));
+        observation.trace.request = Some(read.clone());
+        observation.trace.stage = AttemptStage::ReadArtwork;
         wire::send_request(&connection, &read, deadline).map_err(|_| ProviderError::Unavailable)?;
         let mut receiver = wire::Receiver::new_for_profile(&read, &identity, root, profile)
             .map_err(|_| ProviderError::Invalid)?;
-        let mut header_matches = true;
-        let mut resource_packets = 0u32;
         loop {
-            let packet = connection
-                .recv_until(wire::MESSAGE_LIMIT, deadline)
-                .map_err(|_| ProviderError::Unavailable)?;
-            resource_packets += 1;
-            observation.set(
-                "resource_packets_received",
-                serde_json::json!(resource_packets),
-            );
-            observation.set("last_resource_message_credentials",serde_json::json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid}));
-            if let Ok(header) = wire::parse_header_for_profile(&packet.bytes, profile) {
-                header_matches = session::header_matches(&header, source.key());
-                observation.set("header", serde_json::json!(header));
-                observation.set("header_matches", serde_json::json!(header_matches));
-            }
-            if let Ok(complete) = wire::parse_complete_for_profile(&packet.bytes, profile) {
-                observation.set("complete", serde_json::json!(complete));
-            }
-            if let Ok(refusal) = wire::parse_refusal_for_profile(&packet.bytes, profile) {
-                observation.set("refusal", serde_json::json!(refusal));
-            }
-            let ended = receiver
-                .push_packet(&packet.bytes, packet.credentials)
-                .map_err(|_| ProviderError::Invalid)?;
-            observation.set(
-                "resource_packets_validated",
-                serde_json::json!(resource_packets),
-            );
-            if ended {
+            let packet = receive_attempt_packet(&mut observation.trace, || {
+                connection.recv_or_eof_until(wire::MESSAGE_LIMIT, deadline)
+            })?;
+            if observation.trace.push_resource(&mut receiver, &packet)? {
                 break;
             }
         }
+        let header_matches = observation.trace.header_matches.unwrap_or(true);
         let outcome = receiver.finish().map_err(|_| ProviderError::Invalid)?;
-        observation.set(
-            "resource_complete_validated",
-            serde_json::json!(matches!(&outcome, wire::Outcome::Artwork(_))),
-        );
+        observation.trace.resource_complete_validated =
+            Some(matches!(&outcome, wire::Outcome::Artwork(_)));
         // Once a bounded transaction ended, Finish is cleanup even if the job
         // was cancelled. Its bytes can still never be returned after cancellation.
         if Instant::now() >= deadline {
@@ -1287,8 +1519,8 @@ mod native {
         }
         let finish =
             wire::FinishRequest::new(2, &marker.nonce).map_err(|_| ProviderError::Invalid)?;
-        observation.set("finish_request", serde_json::json!(finish));
-        observation.set("stage", serde_json::json!("finish"));
+        observation.trace.finish_request = Some(finish.clone());
+        observation.trace.stage = AttemptStage::Finish;
         wire::send_finish_request(&connection, &finish, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
         let finished = wire::receive_finished_for_profile(
@@ -1312,10 +1544,10 @@ mod native {
             profile,
         )
         .map_err(|_| ProviderError::Denied)?;
-        observation.set("own_after", serde_json::json!(own_after));
-        observation.set("finished", serde_json::json!(finished));
-        observation.set("clean_eof", serde_json::json!(true));
-        observation.set("stage", serde_json::json!("closed"));
+        observation.trace.own_after = Some(own_after);
+        observation.trace.finished = Some(finished.clone());
+        observation.trace.clean_eof = true;
+        observation.trace.stage = AttemptStage::Closed;
         Ok(session::Exchange {
             own,
             root,
@@ -1364,13 +1596,25 @@ mod native {
             }) {
             Ok(handle) => handle,
             Err(_) => {
+                let mut trace = AttemptTrace::new(profile, source.key());
+                trace.stage = AttemptStage::ExecWorkerNotStarted;
+                trace.fail(
+                    AttemptFailureKind::ProviderError,
+                    ProviderError::Unavailable,
+                );
+                retain_attempt(provider, trace);
                 provider.quarantined = false;
                 resolve_pending(provider, pending)?;
                 if let Some(ticket) = ticket {
+                    let protocol = provider
+                        .last_attempt
+                        .as_ref()
+                        .map(AttemptTrace::report)
+                        .unwrap_or_default();
                     write_observed_result(
                         provider,
                         ticket,
-                        &serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":{"stage":"exec_worker_not_started","clean_eof":false},"hbc":null,"root_helper":null,"outcome":"unavailable","quarantined":false,"exec_worker_started":false,"exec_worker_joined":false,"root_dispatch_requested":false,"known_no_start":true,"performance_qualified":false,"encoded_image_bytes_logged":false}),
+                        &serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":protocol,"hbc":null,"root_helper":null,"outcome":"unavailable","quarantined":false,"exec_worker_started":false,"exec_worker_joined":false,"root_dispatch_requested":false,"known_no_start":true,"performance_qualified":false,"encoded_image_bytes_logged":false}),
                     )?;
                 }
                 return Err(ProviderError::Unavailable);
@@ -1378,11 +1622,11 @@ mod native {
         };
         let worker = session::ExecWorker::new(handle, stop.clone());
         let marker = provider.marker.clone();
-        let (result, protocol) = {
+        let (result, trace) = {
             let mut observation = Observation {
                 writer: provider.observation.as_ref(),
                 ticket,
-                protocol: serde_json::json!({"stage":"await_startup","clean_eof":false,"proof_binding_hold_ms":0}),
+                trace: AttemptTrace::new(profile, source.key()),
             };
             let result = exchange(
                 &marker,
@@ -1394,8 +1638,14 @@ mod native {
                 rx,
                 &mut observation,
             );
-            (result, observation.protocol)
+            if let Err(error) = &result {
+                observation
+                    .trace
+                    .fail(AttemptFailureKind::ProviderError, *error);
+            }
+            (result, observation.trace)
         };
+        retain_attempt(provider, trace);
         if result.is_err() {
             stop.store(true, Ordering::Release);
         }
@@ -1418,6 +1668,11 @@ mod native {
         );
         let result = guard_result(provider, pending, result);
         if let Some(ticket) = ticket {
+            let protocol = provider
+                .last_attempt
+                .as_ref()
+                .map(AttemptTrace::report)
+                .unwrap_or_default();
             let helper = hbc
                 .as_ref()
                 .map(|value| value["parsed"]["helper_report"].clone())
@@ -1474,6 +1729,7 @@ mod settlement_tests {
             ticket_resolved: false,
             observation: None,
             guard: Some(Guard::open_for_test(&directory.0, Profile::Proof).unwrap()),
+            last_attempt: None,
         }
     }
     fn identity(p: &InstalledProvider) -> PendingIdentity {

@@ -117,6 +117,54 @@ fn enrolled_peer_for_profile(
     Ok(enrollment)
 }
 
+// Both values are moved in; the callback runs only after their owned descriptors
+// have been dropped. This is source-bound FD closure, not process/namespace proof.
+#[cfg(any(target_arch = "arm", test))]
+fn after_dropping_endpoints<C, L, R>(connection: C, listener: L, after: impl FnOnce() -> R) -> R {
+    drop(connection);
+    drop(listener);
+    after()
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn record_closed_withdrawal(
+    report: &mut Value,
+    withdrawal: &crate::broker_server::ContextWithdrawal,
+    peer_after: &protocol::PeerEvidence,
+    installation_after: Value,
+) -> io::Result<()> {
+    use serde_json::json;
+    if report["qualified"].as_bool() != Some(false)
+        || report["finished_sent"].as_bool() != Some(false)
+        || !report["finished"].is_null()
+        || !report["artwork_finished"].is_null()
+        || report["artwork_session_completed"].as_bool() != Some(false)
+        || report["closed_negative_candidate"].as_bool() != Some(false)
+        || report["connection_closed"].as_bool() != Some(true)
+        || report["listener_closed"].as_bool() != Some(true)
+        || report["response_sent"].as_bool() != Some(true)
+        || report["resource_mode"].as_bool() != Some(true)
+        || report["profile"] != json!(withdrawal.profile())
+        || peer_after != withdrawal.peer()
+    {
+        return Err(invalid(
+            "Contradictory or incomplete context-withdrawal closure",
+        ));
+    }
+    report["failure"] = json!({"kind":"context_changed","stage":withdrawal.stage().as_str(),"request_id":withdrawal.request_id()});
+    report["closed_negative_candidate"] = json!(true);
+    report["context_withdrawal_message_credentials"] = json!({"pid":withdrawal.message().pid,"uid":withdrawal.message().uid,"gid":withdrawal.message().gid});
+    report["peer_after_context_withdrawal"] = json!(peer_after);
+    report["installation_after_context_withdrawal"] = installation_after;
+    report["closed_negative_acceptance_enabled"] = json!(false);
+    // Explicitly negative; these were checked false/null, never erased success.
+    report["finished"] = Value::Null;
+    report["finished_sent"] = json!(false);
+    report["artwork_session_completed"] = json!(false);
+    report["qualified"] = json!(false);
+    Ok(())
+}
+
 #[cfg(target_arch = "arm")]
 mod native {
     use super::*;
@@ -272,7 +320,7 @@ mod native {
         if artwork_transfer::parse_request(&packet.bytes).is_ok() {
             report["resource_mode"] = json!(true);
             report["context_cli_gets_only"] = json!(false);
-            crate::broker_server::serve_installed_artwork(
+            let served = crate::broker_server::serve_installed_artwork(
                 &connection,
                 &enrollment,
                 connect,
@@ -280,16 +328,51 @@ mod native {
                 deadline,
                 report,
                 &installation,
-            )?;
+            );
+            if let Err(error) = served {
+                let withdrawal = error
+                    .downcast_ref::<crate::broker_server::ContextWithdrawal>()
+                    .cloned();
+                let fresh =
+                    withdrawal.as_ref().map(|withdrawal| {
+                        (|| -> Result<(protocol::PeerEvidence, Value), Box<dyn std::error::Error>> {
+                        remaining(deadline)?;
+                        if withdrawal.profile() != profile {
+                            return Err(invalid("Context withdrawal profile changed").into());
+                        }
+                        let peer = admit(&installation, &enrollment, &connect,
+                            &withdrawal.message(), deadline, profile)?;
+                        if &peer != withdrawal.peer() {
+                            return Err(invalid("Context withdrawal caller changed").into());
+                        }
+                        installation.revalidate()?;
+                        remaining(deadline)?;
+                        Ok((peer, installation.evidence()))
+                    })()
+                    });
+                return after_dropping_endpoints(connection, listener, || {
+                    report["connection_closed"] = json!(true);
+                    report["listener_closed"] = json!(true);
+                    match (withdrawal, fresh) {
+                        (Some(withdrawal), Some(Ok((peer, evidence)))) => {
+                            record_closed_withdrawal(report, &withdrawal, &peer, evidence)?;
+                            Err(error)
+                        }
+                        (Some(_), Some(Err(revalidation))) => Err(revalidation),
+                        _ => Err(error),
+                    }
+                });
+            }
             report["finished"] = report["artwork_finished"].clone();
             report["finished_sent"] = json!(true);
             // The shared operation sends Finished only after its final context
             // and peer readback. The finite installed session now closes.
-            drop(connection);
-            drop(listener);
-            report["connection_closed"] = json!(true);
-            report["qualified"] = json!(true);
-            return Ok(());
+            return after_dropping_endpoints(connection, listener, || {
+                report["connection_closed"] = json!(true);
+                report["listener_closed"] = json!(true);
+                report["qualified"] = json!(true);
+                Ok(())
+            });
         }
         let finish = artwork_transfer::parse_finish_request(&packet.bytes)?;
         if finish.request_id != 1 || finish.nonce != pins.rendezvous_nonce {
@@ -326,25 +409,30 @@ mod native {
         report["finished_sent"] = json!(true);
         // Closing this accepted connection and listener is the only endpoint
         // cleanup. No PID file, daemon, filesystem socket or Root write exists.
-        drop(connection);
-        drop(listener);
-        report["connection_closed"] = json!(true);
-        report["qualified"] = json!(true);
-        Ok(())
+        after_dropping_endpoints(connection, listener, || {
+            report["connection_closed"] = json!(true);
+            report["listener_closed"] = json!(true);
+            report["qualified"] = json!(true);
+            Ok(())
+        })
     }
     pub(super) fn entry(profile: Profile) -> Result<(), String> {
         let began = Instant::now();
-        let mut report = json!({"schema":1,"stage":"startup_proof_complete","profile":profile,"server_pid":std::process::id(),"operation_budget_ms":20000,"listener_bound":false,"response_sent":false,"finished_sent":false,"connection_closed":false,"qualified":false,"icon_reads":false,"artwork_reads":false,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"context_cli_gets_only":true});
+        let mut report = json!({"schema":1,"stage":"startup_proof_complete","profile":profile,"server_pid":std::process::id(),"operation_budget_ms":20000,"listener_bound":false,"listener_closed":false,"response_sent":false,"finished":null,"finished_sent":false,"connection_closed":false,"closed_negative_candidate":false,"artwork_session_completed":false,"qualified":false,"icon_reads":false,"artwork_reads":false,"commands":false,"setting_writes":false,"root_file_writes":false,"daemonized":false,"normal_loader_qualified":false,"production_startup_qualified":false,"context_cli_gets_only":true});
         let result = run(&mut report, profile);
-        report["outcome"] = json!(if result.is_ok() {
-            if report["artwork_session_completed"] == true {
-                "identified_artwork_finished"
+        report["outcome"] = json!(
+            if result.is_err() && report["closed_negative_candidate"] == true {
+                "context_changed_closed"
+            } else if result.is_ok() {
+                if report["artwork_session_completed"] == true {
+                    "identified_artwork_finished"
+                } else {
+                    "identified_finished"
+                }
             } else {
-                "identified_finished"
+                "refused"
             }
-        } else {
-            "refused"
-        });
+        );
         if let Err(ref error) = result {
             report["error"] = json!(error.to_string());
         }
@@ -590,5 +678,123 @@ mod tests {
             assert!(main_entry(&[]).unwrap_err().contains("ARM Proof"));
             assert!(preview_main_entry(&[]).unwrap_err().contains("ARM Preview"));
         }
+    }
+}
+
+#[cfg(test)]
+mod context_withdrawal_closure_tests {
+    use super::*;
+    use crate::broker_server::{ContextWithdrawal, WithdrawalStage};
+    use serde_json::json;
+    fn fixture(stage: WithdrawalStage) -> (Value, ContextWithdrawal, protocol::PeerEvidence) {
+        let peer = protocol::PeerEvidence {
+            pid: 123,
+            uid_fields: [6583; 4],
+            start_ticks: 456,
+            exe_sha256: "b".repeat(64),
+            exe_path: Profile::Proof.peer_exe_path(),
+            root_path: Profile::Proof.jail_root(),
+        };
+        let w = ContextWithdrawal::fixture(
+            stage,
+            if stage == WithdrawalStage::ReadAfter {
+                1
+            } else {
+                2
+            },
+            Profile::Proof,
+            Credentials {
+                pid: 123,
+                uid: 6583,
+                gid: 5000,
+            },
+            peer.clone(),
+        );
+        let report = json!({"profile":Profile::Proof,"qualified":false,"finished_sent":false,"finished":null,"artwork_session_completed":false,"closed_negative_candidate":false,"connection_closed":false,"listener_closed":false,"response_sent":true,"resource_mode":true,"artwork_reads":[{"header":{"encoded_bytes":4},"encoded_data_released":true,"completed":false}]});
+        let mut report = report;
+        if stage == WithdrawalStage::Finish {
+            report["artwork_reads"][0]["complete"] =
+                json!({"op":"artwork_complete","request_id":1});
+            report["artwork_reads"][0]["completed"] = json!(true);
+        }
+        (report, w, peer)
+    }
+    #[test]
+    fn descriptor_drops_precede_the_receipt_callback() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        struct Owned(&'static str, Rc<RefCell<Vec<&'static str>>>);
+        impl Drop for Owned {
+            fn drop(&mut self) {
+                self.1.borrow_mut().push(self.0);
+            }
+        }
+        let events = Rc::new(RefCell::new(Vec::new()));
+        let result = after_dropping_endpoints(
+            Owned("connection", events.clone()),
+            Owned("listener", events.clone()),
+            || {
+                assert_eq!(&*events.borrow(), &["connection", "listener"]);
+                "closed"
+            },
+        );
+        assert_eq!(result, "closed");
+    }
+    #[test]
+    fn candidate_is_negative_preserves_partial_records_and_never_fabricates_finished() {
+        for stage in [WithdrawalStage::ReadAfter, WithdrawalStage::Finish] {
+            let (mut report, w, peer) = fixture(stage);
+            let partial = report["artwork_reads"].clone();
+            report["connection_closed"] = json!(true);
+            report["listener_closed"] = json!(true);
+            record_closed_withdrawal(&mut report, &w, &peer, json!({"root_process":{"pid":7}}))
+                .unwrap();
+            assert_eq!(
+                report["failure"],
+                json!({"kind":"context_changed","stage":stage.as_str(),"request_id":w.request_id()})
+            );
+            assert_eq!(report["closed_negative_candidate"], true);
+            assert_eq!(report["qualified"], false);
+            assert_eq!(report["finished_sent"], false);
+            assert!(report["finished"].is_null());
+            assert_eq!(report["artwork_session_completed"], false);
+            assert_eq!(report["artwork_reads"], partial);
+            assert_eq!(report["closed_negative_acceptance_enabled"], false);
+            assert_eq!(
+                report["context_withdrawal_message_credentials"],
+                json!({"pid":123,"uid":6583,"gid":5000})
+            );
+        }
+    }
+    #[test]
+    fn closure_peer_or_success_contradiction_never_becomes_candidate() {
+        for (field, value) in [
+            ("connection_closed", json!(false)),
+            ("listener_closed", json!(false)),
+            ("qualified", json!(true)),
+            ("finished_sent", json!(true)),
+            ("finished", json!({"fake":true})),
+            ("artwork_finished", json!({"fake":true})),
+            ("artwork_session_completed", json!(true)),
+            ("response_sent", json!(false)),
+            ("resource_mode", json!(false)),
+        ] {
+            let (mut report, w, peer) = fixture(WithdrawalStage::Finish);
+            report["connection_closed"] = json!(true);
+            report["listener_closed"] = json!(true);
+            report[field] = value;
+            assert!(record_closed_withdrawal(&mut report, &w, &peer, json!({})).is_err());
+            assert_eq!(report["closed_negative_candidate"], false);
+        }
+        let (mut report, w, mut peer) = fixture(WithdrawalStage::Finish);
+        report["connection_closed"] = json!(true);
+        report["listener_closed"] = json!(true);
+        peer.start_ticks += 1;
+        assert!(record_closed_withdrawal(&mut report, &w, &peer, json!({})).is_err());
+        let (mut report, w, peer) = fixture(WithdrawalStage::Finish);
+        report["connection_closed"] = json!(true);
+        report["listener_closed"] = json!(true);
+        report["profile"] = json!(Profile::Preview);
+        assert!(record_closed_withdrawal(&mut report, &w, &peer, json!({})).is_err());
     }
 }

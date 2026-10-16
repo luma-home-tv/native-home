@@ -153,6 +153,9 @@ The [0.50 transport foundation](docs/artwork-transport-eof-050.md) adds a typed
 packet/EOF distinction while preserving legacy callers. Its host checks do not
 enable negative acceptance. A separate headless G2 native probe qualifies four
 local socket cases with clean removal; neither retained TV installation changes.
+The [0.51 attempt/shutdown foundation](docs/artwork-attempt-foundation-051.md)
+adds typed failure metadata and narrow helper closure candidates. Host checks
+pass; failed exchanges remain Unknown and normal Root artwork stays off.
 
 ## Layout
 

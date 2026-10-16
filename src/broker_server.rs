@@ -3,6 +3,193 @@
 //! Fixed context/catalogue GETs use the pinned installed system client.
 //! Artwork requests select an app and icon variant from our own fixed catalogue.
 //! No caller-selected command, filesystem path or service URI exists.
+// Private observation types only. No consumer may turn this error or a report
+// into settlement; the provider's existing acceptance path remains unchanged.
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WithdrawalStage {
+    ReadAfter,
+    Finish,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl WithdrawalStage {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            Self::ReadAfter => "read_after",
+            Self::Finish => "finish",
+        }
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug)]
+pub(crate) struct ContextWithdrawal {
+    stage: WithdrawalStage,
+    request_id: u32,
+    profile: crate::broker_installation::Profile,
+    message: crate::broker_transport::Credentials,
+    peer: crate::broker_protocol::PeerEvidence,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl ContextWithdrawal {
+    fn new(
+        stage: WithdrawalStage,
+        request_id: u32,
+        profile: crate::broker_installation::Profile,
+        message: crate::broker_transport::Credentials,
+        peer: crate::broker_protocol::PeerEvidence,
+    ) -> Self {
+        Self {
+            stage,
+            request_id,
+            profile,
+            message,
+            peer,
+        }
+    }
+    pub(crate) fn stage(&self) -> WithdrawalStage {
+        self.stage
+    }
+    pub(crate) fn request_id(&self) -> u32 {
+        self.request_id
+    }
+    pub(crate) fn profile(&self) -> crate::broker_installation::Profile {
+        self.profile
+    }
+    pub(crate) fn message(&self) -> crate::broker_transport::Credentials {
+        self.message
+    }
+    pub(crate) fn peer(&self) -> &crate::broker_protocol::PeerEvidence {
+        &self.peer
+    }
+    #[cfg(test)]
+    pub(crate) fn fixture(
+        stage: WithdrawalStage,
+        request_id: u32,
+        profile: crate::broker_installation::Profile,
+        message: crate::broker_transport::Credentials,
+        peer: crate::broker_protocol::PeerEvidence,
+    ) -> Self {
+        Self::new(stage, request_id, profile, message, peer)
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+impl std::fmt::Display for ContextWithdrawal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Installed artwork policy withdrawn at {} request {}",
+            self.stage.as_str(),
+            self.request_id
+        )
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+impl std::error::Error for ContextWithdrawal {}
+
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum InstalledContextOutcome {
+    Admitted,
+    Withdrawn,
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn installed_context_outcome(
+    value: &serde_json::Value,
+    expected: &str,
+    profile: crate::broker_installation::Profile,
+) -> Result<InstalledContextOutcome, crate::broker_protocol::Error> {
+    use crate::broker_protocol::Error;
+    let reader = &value["_reader"];
+    if reader["schema"].as_u64() != Some(1)
+        || reader["kind"].as_str() != Some("fixed_core_luna_send")
+        || reader["program"].as_str() != Some("/usr/bin/luna-send")
+        || reader["approved"].as_bool() != Some(true)
+        || reader["qualified"].as_bool() != Some(true)
+        || reader["cleanup_known"].as_bool() != Some(true)
+        || !reader["error"].is_null()
+        || reader["executable_after"] != reader["executable"]
+        || reader["executable"]["sha256"].as_str() != Some(expected)
+        || reader["executable_after"]["sha256"].as_str() != Some(expected)
+    {
+        return Err(Error::Context);
+    }
+    let system = &value["system_info"];
+    let foreground = &value["foreground"];
+    let windows = &value["windows"];
+    if system["returnValue"].as_bool() != Some(true)
+        || system["modelName"].as_str() != Some("OLED55G26LA")
+        || system["firmwareVersion"].as_str() != Some("23.25.55")
+        || system["sdkVersion"].as_str() != Some("9.2.2")
+        || foreground["returnValue"].as_bool() != Some(true)
+    {
+        return Err(Error::Context);
+    }
+    let foreground_id = foreground["appId"]
+        .as_str()
+        .filter(|id| crate::model::valid_app_id(id))
+        .ok_or(Error::Context)?;
+    if windows["returnValue"].as_bool() != Some(true) {
+        return Err(Error::Context);
+    }
+    let rows = windows["windows"].as_array().ok_or(Error::Context)?;
+    // Only the existing sole-CARD positive policy, a matching sole foreign
+    // CARD, or the measured LG keyboard composition have typed meaning here.
+    // Empty, mismatched, duplicate and unfamiliar compositions stay Unknown.
+    if rows.iter().any(|row| {
+        !row["appId"]
+            .as_str()
+            .is_some_and(crate::model::valid_app_id)
+            || !matches!(
+                row["windowType"].as_str(),
+                Some("_WEBOS_WINDOW_TYPE_CARD" | "_WEBOS_WINDOW_TYPE_KEYBOARD")
+            )
+    }) {
+        return Err(Error::Context);
+    }
+    if crate::broker_protocol::validate_context_for_profile(system, foreground, windows, profile)
+        .is_ok()
+    {
+        return Ok(InstalledContextOutcome::Admitted);
+    }
+    let card = |row: &serde_json::Value, id: &str| {
+        row["appId"].as_str() == Some(id)
+            && row["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_CARD")
+    };
+    let keyboard = |row: &serde_json::Value| {
+        row["appId"].as_str() == Some("com.webos.app.keyboard")
+            && row["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_KEYBOARD")
+    };
+    let sole_foreign_card = rows.len() == 1
+        && foreground_id != profile.app_id()
+        && foreground_id != "com.webos.app.keyboard"
+        && card(&rows[0], foreground_id);
+    let own_card_with_lg_keyboard = foreground_id == profile.app_id()
+        && rows.len() == 2
+        && ((card(&rows[0], profile.app_id()) && keyboard(&rows[1]))
+            || (keyboard(&rows[0]) && card(&rows[1], profile.app_id())));
+    if sole_foreign_card || own_card_with_lg_keyboard {
+        Ok(InstalledContextOutcome::Withdrawn)
+    } else {
+        Err(Error::Context)
+    }
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn withdrawal_supported(
+    installed: bool,
+    stage: WithdrawalStage,
+    request_id: u32,
+    successful_image: bool,
+) -> bool {
+    installed
+        && successful_image
+        && match stage {
+            WithdrawalStage::ReadAfter => request_id == 1,
+            WithdrawalStage::Finish => request_id == 2,
+        }
+}
+
 #[cfg(any(target_arch = "arm", test))]
 mod proof {
     use crate::broker_installation::Profile;
@@ -615,10 +802,14 @@ mod proof {
         report["icon_reads"] = json!(true);
         report["artwork_reads"] = json!([]);
         let mut expected_id = 1_u32;
+        let mut successful_image = false;
         loop {
             if let Ok(finish) = wire::parse_finish_request(&packet.bytes) {
                 if finish.nonce != enrolled.nonce || finish.request_id != expected_id {
                     return Err(invalid("Artwork finish sequence/session mismatch").into());
+                }
+                if matches!(authority, ResourceAuthority::Installed(_)) {
+                    report["artwork_finish_request"] = json!(finish);
                 }
                 report["artwork_finish_connect_credentials"] =
                     json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
@@ -628,12 +819,47 @@ mod proof {
                 let context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 report["artwork_finish_context"] = context.clone();
-                check_context_for_profile(&context, &enrolled.context_reader_sha256, profile)?;
+                let withdrawal_eligible = super::withdrawal_supported(
+                    matches!(authority, ResourceAuthority::Installed(_)),
+                    super::WithdrawalStage::Finish,
+                    finish.request_id,
+                    successful_image,
+                );
+                let context_outcome = if withdrawal_eligible {
+                    super::installed_context_outcome(
+                        &context,
+                        &enrolled.context_reader_sha256,
+                        profile,
+                    )?
+                } else {
+                    check_context_for_profile(&context, &enrolled.context_reader_sha256, profile)?;
+                    super::InstalledContextOutcome::Admitted
+                };
+                if context_outcome == super::InstalledContextOutcome::Withdrawn
+                    && std::time::Instant::now() >= deadline
+                {
+                    return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+                }
                 let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 if after != before {
                     return Err(invalid("Artwork caller changed before finish").into());
                 }
                 report["artwork_finish_peer_after"] = json!(after);
+                if context_outcome == super::InstalledContextOutcome::Withdrawn {
+                    // Peer revalidation performs I/O; an expiry during it is
+                    // Unknown, never a closed-negative candidate.
+                    if std::time::Instant::now() >= deadline {
+                        return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+                    }
+                    return Err(super::ContextWithdrawal::new(
+                        super::WithdrawalStage::Finish,
+                        finish.request_id,
+                        profile,
+                        packet.credentials,
+                        after,
+                    )
+                    .into());
+                }
                 let finished = wire::Finished::new_for_profile(&finish, &identity, profile)?;
                 wire::send_finished_for_profile(connection, &finished, deadline, profile)?;
                 report["artwork_finished"] = json!(finished);
@@ -651,6 +877,7 @@ mod proof {
             record["connect_credentials"] =
                 json!({"pid":connect.pid,"uid":connect.uid,"gid":connect.gid});
             record["message_credentials"] = json!({"pid":packet.credentials.pid,"uid":packet.credentials.uid,"gid":packet.credentials.gid});
+            let mut completed_successfully = false;
             let operation = (|| -> Result<(), Box<dyn std::error::Error>> {
                 let before = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 record["peer_before"] = json!(before);
@@ -713,15 +940,50 @@ mod proof {
                 let after_context =
                     crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
                 record["context_after"] = after_context.clone();
-                check_context_for_profile(
-                    &after_context,
-                    &enrolled.context_reader_sha256,
-                    profile,
-                )?;
+                let withdrawal_eligible = super::withdrawal_supported(
+                    matches!(authority, ResourceAuthority::Installed(_)),
+                    super::WithdrawalStage::ReadAfter,
+                    request.request_id,
+                    prepared.is_ok() && readback.is_ok() && header.is_some(),
+                );
+                let context_outcome = if withdrawal_eligible {
+                    super::installed_context_outcome(
+                        &after_context,
+                        &enrolled.context_reader_sha256,
+                        profile,
+                    )?
+                } else {
+                    check_context_for_profile(
+                        &after_context,
+                        &enrolled.context_reader_sha256,
+                        profile,
+                    )?;
+                    super::InstalledContextOutcome::Admitted
+                };
+                if context_outcome == super::InstalledContextOutcome::Withdrawn
+                    && std::time::Instant::now() >= deadline
+                {
+                    return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+                }
                 let after = resource_peer(enrolled, &connect, &packet.credentials, authority)?;
                 record["peer_after"] = json!(after);
                 if after != before {
                     return Err(invalid("Artwork caller changed during operation").into());
+                }
+                if context_outcome == super::InstalledContextOutcome::Withdrawn {
+                    // Peer revalidation performs I/O; an expiry during it is
+                    // Unknown, never a closed-negative candidate.
+                    if std::time::Instant::now() >= deadline {
+                        return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+                    }
+                    return Err(super::ContextWithdrawal::new(
+                        super::WithdrawalStage::ReadAfter,
+                        request.request_id,
+                        profile,
+                        packet.credentials,
+                        after,
+                    )
+                    .into());
                 }
                 match readback {
                     Ok(()) => {
@@ -734,6 +996,7 @@ mod proof {
                         wire::send_complete_for_profile(connection, &complete, deadline, profile)?;
                         record["complete"] = json!(complete);
                         record["completed"] = json!(true);
+                        completed_successfully = true;
                     }
                     Err(reason) => {
                         let refusal = wire::Refusal::new_for_profile(
@@ -756,6 +1019,7 @@ mod proof {
                 .ok_or_else(|| invalid("Missing artwork receipt container"))?
                 .push(record);
             operation?;
+            successful_image = expected_id == 1 && completed_successfully;
             expected_id += 1;
             packet = connection.recv_until(protocol::REQUEST_LIMIT, deadline)?;
         }
@@ -1276,5 +1540,235 @@ pub fn main_entry(arguments: &[String]) -> Result<(), String> {
     {
         let _ = arguments;
         Err("Identify helper requires the admitted ARM TV test lane".into())
+    }
+}
+
+#[cfg(test)]
+mod context_withdrawal_foundation_tests {
+    use super::*;
+    use crate::broker_installation::Profile;
+    use serde_json::json;
+    fn context(profile: Profile) -> serde_json::Value {
+        json!({"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"},
+            "foreground":{"returnValue":true,"appId":profile.app_id()},"windows":{"returnValue":true,"windows":[{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD","metadata":"ignored"}]},
+            "_reader":{"schema":1,"kind":"fixed_core_luna_send","program":"/usr/bin/luna-send","approved":true,"qualified":true,"cleanup_known":true,"error":null,"executable":{"sha256":"d".repeat(64),"inode":11},"executable_after":{"sha256":"d".repeat(64),"inode":11}}})
+    }
+    #[test]
+    fn installed_positive_policy_is_unchanged_and_foreign_context_is_never_admitted() {
+        for profile in [Profile::Proof, Profile::Preview] {
+            let good = context(profile);
+            assert_eq!(
+                installed_context_outcome(&good, &"d".repeat(64), profile).unwrap(),
+                InstalledContextOutcome::Admitted
+            );
+            let mut changed = good.clone();
+            changed["foreground"]["appId"] = json!("com.webos.app.home");
+            changed["windows"]["windows"][0]["appId"] = json!("com.webos.app.home");
+            assert_eq!(
+                installed_context_outcome(&changed, &"d".repeat(64), profile).unwrap(),
+                InstalledContextOutcome::Withdrawn
+            );
+            assert!(crate::broker_protocol::validate_context_for_profile(
+                &changed["system_info"],
+                &changed["foreground"],
+                &changed["windows"],
+                profile
+            )
+            .is_err());
+            let mut keyboard = good;
+            keyboard["windows"]["windows"]
+                .as_array_mut()
+                .unwrap()
+                .push(json!({"appId":"com.webos.app.keyboard","windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"}));
+            assert_eq!(
+                installed_context_outcome(&keyboard, &"d".repeat(64), profile).unwrap(),
+                InstalledContextOutcome::Withdrawn
+            );
+        }
+    }
+    #[test]
+    fn malformed_or_changed_reader_system_is_unknown_not_a_policy_withdrawal() {
+        let mut withdrawn = context(Profile::Proof);
+        withdrawn["foreground"]["appId"] = json!("other.app");
+        withdrawn["windows"]["windows"][0]["appId"] = json!("other.app");
+        assert_eq!(
+            installed_context_outcome(&withdrawn, &"d".repeat(64), Profile::Proof).unwrap(),
+            InstalledContextOutcome::Withdrawn
+        );
+        for (field, value) in [
+            ("schema", json!(true)),
+            ("qualified", json!(false)),
+            ("cleanup_known", json!(false)),
+            ("program", json!("/tmp/reader")),
+            ("error", json!("contradictory_reader_error")),
+            ("error", json!(false)),
+        ] {
+            let mut bad = withdrawn.clone();
+            bad["_reader"][field] = value;
+            assert!(installed_context_outcome(&bad, &"d".repeat(64), Profile::Proof).is_err());
+        }
+        let mut bad = withdrawn.clone();
+        bad["_reader"]["executable_after"]["sha256"] = json!("e".repeat(64));
+        assert!(installed_context_outcome(&bad, &"d".repeat(64), Profile::Proof).is_err());
+        let mut same_hash_changed_identity = withdrawn.clone();
+        same_hash_changed_identity["_reader"]["executable_after"]["inode"] = json!(12);
+        assert!(installed_context_outcome(
+            &same_hash_changed_identity,
+            &"d".repeat(64),
+            Profile::Proof
+        )
+        .is_err());
+        for (field, value) in [
+            ("returnValue", json!(false)),
+            ("modelName", json!("OLED65C26LD")),
+            ("firmwareVersion", json!("other")),
+            ("sdkVersion", json!("other")),
+        ] {
+            let mut bad = withdrawn.clone();
+            bad["system_info"][field] = value;
+            assert!(installed_context_outcome(&bad, &"d".repeat(64), Profile::Proof).is_err());
+        }
+        for bad_rows in [
+            json!(null),
+            json!([{"appId":42,"windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+            json!([{"appId":"other"}]),
+            json!([false]),
+        ] {
+            let mut bad = withdrawn.clone();
+            bad["windows"]["windows"] = bad_rows;
+            assert!(installed_context_outcome(&bad, &"d".repeat(64), Profile::Proof).is_err());
+        }
+        let mut bad = withdrawn;
+        bad["foreground"]["returnValue"] = json!(false);
+        assert!(installed_context_outcome(&bad, &"d".repeat(64), Profile::Proof).is_err());
+    }
+    #[test]
+    fn unrecognized_or_inconsistent_windows_never_become_withdrawal() {
+        for profile in [Profile::Proof, Profile::Preview] {
+            let good = context(profile);
+            for (foreground, rows) in [
+                ("", json!([])),
+                (
+                    "bad/app",
+                    json!([{"appId":"bad/app","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+                ("other.app", json!([])),
+                (
+                    "other.app",
+                    json!([{"appId":"","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+                (
+                    "other.app",
+                    json!([{"appId":"different.app","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+                (
+                    "other.app",
+                    json!([{"appId":"other.app","windowType":"_WEBOS_WINDOW_TYPE_SPLASH"}]),
+                ),
+                (
+                    "other.app",
+                    json!([{"appId":"other.app","windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":"other.app","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+                (
+                    profile.app_id(),
+                    json!([{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"}]),
+                ),
+                (
+                    profile.app_id(),
+                    json!([{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":"foreign.keyboard","windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"}]),
+                ),
+                (
+                    "com.webos.app.keyboard",
+                    json!([{"appId":"com.webos.app.keyboard","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+                (
+                    "com.webos.app.keyboard",
+                    json!([{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":"com.webos.app.keyboard","windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"}]),
+                ),
+                (
+                    profile.app_id(),
+                    json!([{"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"},{"appId":"other.app","windowType":"_WEBOS_WINDOW_TYPE_CARD"}]),
+                ),
+            ] {
+                let mut bad = good.clone();
+                bad["foreground"]["appId"] = json!(foreground);
+                bad["windows"]["windows"] = rows;
+                assert!(
+                    installed_context_outcome(&bad, &"d".repeat(64), profile).is_err(),
+                    "{bad}"
+                );
+            }
+            // The actual two-row keyboard composition is order-independent.
+            let mut keyboard = good;
+            keyboard["windows"]["windows"] = json!([
+                {"appId":"com.webos.app.keyboard","windowType":"_WEBOS_WINDOW_TYPE_KEYBOARD"},
+                {"appId":profile.app_id(),"windowType":"_WEBOS_WINDOW_TYPE_CARD"}
+            ]);
+            assert_eq!(
+                installed_context_outcome(&keyboard, &"d".repeat(64), profile).unwrap(),
+                InstalledContextOutcome::Withdrawn
+            );
+        }
+    }
+    #[test]
+    fn eligibility_excludes_operator_readbefore_mixed_refusal_and_wrong_sequence() {
+        assert!(withdrawal_supported(
+            true,
+            WithdrawalStage::ReadAfter,
+            1,
+            true
+        ));
+        assert!(withdrawal_supported(true, WithdrawalStage::Finish, 2, true));
+        for stage in [WithdrawalStage::ReadAfter, WithdrawalStage::Finish] {
+            for id in [0, 1, 2, 3] {
+                assert!(!withdrawal_supported(false, stage, id, true));
+                assert!(!withdrawal_supported(true, stage, id, false));
+            }
+        }
+        assert!(!withdrawal_supported(
+            true,
+            WithdrawalStage::ReadAfter,
+            2,
+            true
+        ));
+        assert!(!withdrawal_supported(
+            true,
+            WithdrawalStage::Finish,
+            1,
+            true
+        ));
+        // No ReadBefore variant exists; it still uses the old strict checker.
+    }
+    #[test]
+    fn withdrawal_is_a_typed_error_with_kernel_binding_not_report_json() {
+        let message = crate::broker_transport::Credentials {
+            pid: 123,
+            uid: 6583,
+            gid: 5000,
+        };
+        let peer = crate::broker_protocol::PeerEvidence {
+            pid: 123,
+            uid_fields: [6583; 4],
+            start_ticks: 456,
+            exe_sha256: "b".repeat(64),
+            exe_path: Profile::Proof.peer_exe_path(),
+            root_path: Profile::Proof.jail_root(),
+        };
+        let error: Box<dyn std::error::Error> = Box::new(ContextWithdrawal::new(
+            WithdrawalStage::Finish,
+            2,
+            Profile::Proof,
+            message,
+            peer.clone(),
+        ));
+        let typed = error.downcast_ref::<ContextWithdrawal>().unwrap();
+        assert_eq!(typed.stage(), WithdrawalStage::Finish);
+        assert_eq!(typed.request_id(), 2);
+        assert_eq!(typed.profile(), Profile::Proof);
+        assert_eq!(typed.message(), message);
+        assert_eq!(typed.peer(), &peer);
+        assert!(error.to_string().contains("finish request 2"));
+        let text: Box<dyn std::error::Error> = std::io::Error::other(error.to_string()).into();
+        assert!(text.downcast_ref::<ContextWithdrawal>().is_none());
     }
 }

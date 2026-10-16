@@ -71,6 +71,14 @@ cases from the byte-identical transport module, with scoped removal and retained
 0.47 preservation. It does not qualify either new 0.50 dashboard/helper executable,
 C2 behavior, an artwork session or closed-negative acceptance.
 
+The 0.51 source in `docs/artwork-attempt-foundation-051.md` adds typed attempt
+metadata and a narrow helper context-withdrawal/endpoint-closure candidate.
+Host checks pass; no 0.51 native execution is qualified. The provider still
+settles these failures as Unknown, retains pending state and leaves normal Root
+artwork off. A reported closed candidate is not authority to clear a Ticket.
+Finish failure still has no typed observed-EOF evidence. Retained G2/C2 baselines
+and frozen earlier carriers/artifacts remain unchanged.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 
