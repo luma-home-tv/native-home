@@ -1,12 +1,18 @@
 # Ordinary native surface prerequisite
 
-Before the two [0.53 artwork context tests](artwork-context-qualification-053.md),
-verify that an owned native Target can become the sole foreground CARD while an
-owned native Proof process keeps its window alive. This prerequisite uses no
-artwork broker or HBC session. Both packages now have a G2 installation/removal
-record, with **no launch requests or native scene qualification**. The separate
-[prepared-package cleanup milestone](native-surface-prepared-cleanup-milestone.json)
-binds that limited result.
+The [new six-file probe's G2 experiment](native-surface-scene-g2.md) now qualifies
+an owned native Target becoming the sole foreground CARD while the ordinary
+Proof keeps its window alive and stops drawing after departure. Both original
+actors closed naturally, all temporary packages/files were removed and actual
+retained 0.57 was preserved. Independent saved audit and replay agree. No artwork
+broker or HBC session ran; the two [0.53 artwork context tests](artwork-context-qualification-053.md)
+remain unqualified.
+
+The sections below retain the earlier three-file package preparation and its
+separate cleanup, followed by the public source/build stage. That original
+[prepared-package milestone](native-surface-prepared-cleanup-milestone.json)
+had no launch requests or native scene qualification. The later result above
+does not rewrite it.
 
 That prepared-installation record preserved the then-current G2 0.47 and C2
 0.48. The current G2 baseline is separately verified [0.57](g2-retained-preview057.md);
@@ -14,7 +20,7 @@ normal Root artwork remains off. Historical dates, locks, package pins and
 preference snapshots do not admit another run. Cleanup of the original prepared
 packages is qualified separately below.
 
-## Why a separate probe
+## Why a separate probe and historical preparation
 
 The normal interactive dashboard exits shortly after observed focus loss. Its
 scripted diagnostic path can continue drawing during a background interval.
@@ -96,7 +102,7 @@ and host-agent closeout. A zero release exit status alone was insufficient:
 the coordination tool also returns zero for already-absent or foreign locks.
 Original failure and separate cleanup remain distinct records.
 
-The next actor experiment needs a prepared-then-launch workflow, fresh actual
+At that stage, the next actor experiment needed a prepared-then-launch workflow, fresh actual
 LG Home/Active confirmation immediately before dispatch, and enough time left
 for the native lifetime and removal. Baseline preparation time must not consume
 the actor's own lifetime allowance. Natural screensaver activity can be accepted
@@ -141,7 +147,7 @@ The 0.53 diagnostic holds and this ordinary scene probe cannot serve as release
 performance measurements. Existing per-operation checks and Unknown barriers must
 remain intact while evaluating a faster design.
 
-## Public source for the next ordinary experiment
+## Public source/build stage before the new ordinary experiment
 
 The minimal [standalone probe](../probes/native-surface/README.md) is preserved
 in the repository. Its main, scoped runtime, identity and SDL event bridge retain
@@ -153,9 +159,9 @@ the earlier three-file package result does not transfer.
 
 Root ran the two render-gate tests, 28 inherited-build-override cases and strict
 Clippy. The five new host phase-boundary tests also pass. These checks do not
-establish either native actor or scene. A new two-phase carrier is being prepared
+establish either native actor or scene. A new two-phase carrier was prepared
 against actual retained 0.57, with preparation completed before actor timing
-starts. All TV operations remain with the coordinator.
+started. All TV operations remain with the coordinator.
 
 Its proposed ordinary-launch precondition permits exact LG Home CARD with an
 optional exact natural LG screensaver, with a consistent fresh Active/Screen
@@ -171,8 +177,9 @@ matched and all 14 local input blobs checked at that revision. It reproduces
 ELF `2195b51d2a585e9ed153e7755b743c822d37e53dfa4e1b6fcc9770c5453f59b1`
 byte-for-byte. Its six-file IPK has SHA-256
 `f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736`.
-The [source/build record](native-surface-public-source-milestone.json) keeps this
-separate from future device qualification. The new package has not run on a TV.
+The historical [source/build record](native-surface-public-source-milestone.json)
+keeps this local stage separate from the later [native qualification](native-surface-scene-g2.md).
+At the source/build stage, the new package had not run on a TV.
 
 An independently authored artifact auditor, executed by the coordinator, now
 passes actual SDK `ar` extraction, exact six-file/four-directory inventory,
@@ -180,4 +187,6 @@ source/font/lock checks, all 103 input bindings and full framework verification.
 SDK `readelf` confirms ARM32 little-endian EABI5 soft-float PIE, the same loader
 and a subset of actual retained 0.57's direct library/GLIBC requirements. This
 is local artifact evidence, not a transitive loader or native-window test. The
-new ordinary scene carrier and native saved-evidence audit remain unrun.
+new ordinary scene carrier and saved-evidence audit were unrun at that stage;
+their later successful execution and preserved reader failure are recorded in
+the [G2 scene result](native-surface-scene-g2.md).

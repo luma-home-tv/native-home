@@ -108,6 +108,7 @@ separate readback verified every frozen file.
 No 0.53 dashboard/helper IPK has been created or run on a TV. Its host/build
 results do not transfer previous native qualification to either new executable.
 The separate [ordinary surface prerequisite](native-surface-scene-prerequisite.md)
-now has audited ARM packages and passing host checks, with device admission still
-blocked. It establishes no artwork authority. The independent negative-case
+now has a separate [successful ordinary G2 scene result](native-surface-scene-g2.md)
+and complete known cleanup, independently replayed. It establishes no artwork
+authority and does not execute either 0.53 case. The independent negative-case
 native carrier and saved-receipt audit remain separate work.

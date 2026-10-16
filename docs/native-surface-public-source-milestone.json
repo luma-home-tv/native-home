@@ -72,5 +72,7 @@
     "new package execution, lifecycle and complete known removal",
     "Root artwork negative settlement or normal activation",
     "physical input, performance and C2"
-  ]
+  ],
+  "record_scope": "Historical source/build stage before native execution; its native-pending fields describe that stage.",
+  "later_native_result": "native-surface-scene-g2-milestone.json"
 }

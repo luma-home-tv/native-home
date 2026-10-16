@@ -66,10 +66,11 @@ flowchart LR
 
 ## Next evidence
 
-First complete the [ordinary held-window scene prerequisite](native-surface-scene-prerequisite.md)
-against the current retained baseline. It informs departure/teardown behavior
-for an active privileged refresh; a prefilled ordinary cache needs no Root
-session merely to render.
+The [ordinary held-window scene prerequisite](native-surface-scene-g2.md) now
+passes against retained G2 0.57, with full cleanup and independent saved replay.
+It informs departure/teardown behavior for an active privileged refresh without
+qualifying that refresh. A prefilled ordinary cache needs no Root session merely
+to render.
 
 Then implement and test the ordinary cache bridge with the existing producer
 kept diagnostic-only. Matching executable/positive-transfer qualification remains

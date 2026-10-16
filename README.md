@@ -70,9 +70,10 @@ readout with explicit failure/expiry withdrawal. Its separate
 fresh Home/Apps session and complete preservation/cleanup.
 
 The [ordinary held-window probe source](probes/native-surface/README.md) is now
-preserved as a separate workspace. Its next native test will establish whether
-webOS24 keeps that window alive beneath our own foreground test app; it adds no
-Root helper or normal artwork activation.
+preserved as a separate workspace. Its [G2 native test](docs/native-surface-scene-g2.md)
+now verifies that held window beneath our own foreground Target, drawing stopped
+after departure, natural actor closure and complete known cleanup. Independent
+saved audit and replay agree. It adds no Root helper or normal artwork activation.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
@@ -192,10 +193,11 @@ The [0.53 isolated context recipe](docs/artwork-context-qualification-053.md)
 adds fixed ReadAfter and Finish experiments. Its host checks and matching ARM
 builds pass; neither native case is qualified. The separate
 [ordinary surface prerequisite](docs/native-surface-scene-prerequisite.md) now
-has audited test packages and passing host checks. Those packages were installed
-and removed without launch requests; native scene admission remains unqualified.
-It also records the outstanding responsiveness gate before normal Root artwork
-activation.
+has a [qualified ordinary G2 scene and cleanup](docs/native-surface-scene-g2.md),
+separate from its historical prepared-only installation/removal. Privileged
+negative cases and normal artwork remain unqualified. The
+[next responsiveness boundary](docs/artwork-responsive-cache-next.md) uses ordinary
+durable cache reads during normal interaction.
 
 The [0.54 packaged-icon candidate](docs/packaged-icon-demand.md) replaces the
 first-64 synchronous loader with ordinary, bounded demand loading. Icons keep

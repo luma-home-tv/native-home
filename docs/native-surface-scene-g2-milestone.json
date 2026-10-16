@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "status": "G2_ordinary_held_window_scene_and_known_cleanup_independently_replayed",
+  "source_build_record": "native-surface-public-source-milestone.json",
+  "functional_source_revision": "5cf35ead09bae6da2ad908dd66d8f7e94fe29843",
+  "source_manifest_sha256": "53dca6fd11670d860ebb09b5df4ed613321066200bb594937a620a524035ebd9",
+  "probe_ELF_sha256": "2195b51d2a585e9ed153e7755b743c822d37e53dfa4e1b6fcc9770c5453f59b1",
+  "probe_six_file_IPK_sha256": "f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736",
+  "target_ELF_sha256": "9b8620aef4fdea0758a740881f40cbf581a65e6f9afe016a842918a2f3dd0cee",
+  "target_IPK_sha256": "f6294283357ad34a1964f18229fd79dd15df3e7137287d6c7b467eee4ac3844e",
+  "actual_operator_exit": 0,
+  "actual_operator_terminal": "4923aa",
+  "terminal_receipt_sha256": "145ad22c1bb50b986602080ff21a042aec1249008b8c17749f86f806f1b927b6",
+  "admitted_driver_sha256": "fccd8063ac5131a8986d0c82634bd5d8ed6eff6cc57b9a21f014230e92126e4c",
+  "pure_validator_sha256": "32c13cca599c310183addbc2127dd6e0a0ea9c24e2fe27f53f144a09521da4da",
+  "host_carrier_guard_fixtures": 14,
+  "native_scene": {
+    "qualified": true,
+    "initial_clean_first_swap_and_sole_Proof_CARD": true,
+    "both_original_actors_raw_bound_around_sole_Target_CARD": true,
+    "Target_request_to_observation_completed_seconds": 4.203666209,
+    "observation_is_not_launch_latency": true,
+    "probe_held_ms": 60028,
+    "probe_full_lifetime_unaborted": true,
+    "clears": 454,
+    "swaps": 454,
+    "departure_stop_counts": [
+      454,
+      454
+    ],
+    "no_draw_after_observed_stop": true,
+    "Complete_published_while_Window_owned": true,
+    "external_original_PID_and_whole_assigned_UID_absence_both_roles": true,
+    "OS_exit_status_measured": false,
+    "Target_owned_framebuffer_reviewed": true,
+    "physical_panel_attestation": false
+  },
+  "preservation": {
+    "retained_version": "0.57.0",
+    "full_bundle_entries": 32,
+    "full_bundle_files": 30,
+    "preferences_entries": 2,
+    "preferences_files": 1,
+    "fresh_preference_bytes_and_metadata": true,
+    "old_runtime_entries": 140,
+    "old_runtime_files": 93,
+    "old_runtime_bytes_rehashed": true,
+    "Core_file_digests": 5,
+    "sampled_reply_domains": 19,
+    "retained_Preview_replaced_or_uninstalled": false,
+    "normal_Root_artwork": false
+  },
+  "cleanup": {
+    "one_supported_remove_each": true,
+    "completed_registry_bundle_state_runtime_jail_mount_absence": true,
+    "both_staged_IPKs_and_empty_directory": true,
+    "exact_successful_lease_release_and_whole_lock_absence": true,
+    "host_agent_closed": true
+  },
+  "preserved_first_saved_reader_failure": {
+    "source_sha256": "2fc2fecb2d584d7d69b0421b9fa709e7bdc5841f36b40aa0fa2a948436e50573",
+    "actual_exit": 1,
+    "actual_terminal": "507b13",
+    "reason": "Reserved map label was allocated before two intervening alias-check operations; reader assumed adjacency.",
+    "native_evidence_unchanged": true,
+    "TV_rerun_for_reader": false
+  },
+  "independent_saved_audit": {
+    "source_sha256": "797c5aa09bc8905fd15455b466de2a435988bb881df2394340030ad18953b5d6",
+    "actual_exit": 0,
+    "actual_terminal": "edb5c4",
+    "Root_replay_exit": 0,
+    "Root_replay_terminal": "187519",
+    "report_sha256": "154c628b2bfc76f350e37b4ece8550104c1e3645d89190ff8bad7f9ecdd7180c",
+    "byte_identical": true,
+    "bound_files": 15224,
+    "distinct_original_map_operations_required": true
+  },
+  "Root_broker_or_HBC_session": false,
+  "C2_contacted": false,
+  "unqualified": [
+    "0.53 privileged artwork cases and negative settlement",
+    "normal Root artwork or cache population",
+    "normal Preview handoff and keyboard behavior",
+    "SDK internal activity, OS exit status or hard blocking-call bounds",
+    "physical input/panel, general scene behavior and performance",
+    "C2"
+  ]
+}

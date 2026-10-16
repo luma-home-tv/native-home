@@ -45,12 +45,17 @@ carriers must not run against057.
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing
 package is `f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736`;
-ELF2195 is reproduced byte-for-byte. This source wave made no TV contact and
-establishes no native scene or Root authority. The new ordinary carrier must
-preserve actual057 and fresh state; older047/V7 dates and owner records cannot
-be reused. Natural Home/screensaver admission never broadens sole-Proof readiness
-or both-live sole-Target qualification. Component nonqualification and known
-ordinary cleanup remain distinct; unknown ownership/transport retains barriers.
+ELF2195 is reproduced byte-for-byte. That source wave made no TV contact. The
+later `docs/native-surface-scene-g2.md` qualifies the ordinary held-window scene,
+both original actors alive around sole Target CARD, stopped drawing, full 60-second
+lifetime and complete known cleanup against retained057. Full bundle/preferences,
+old runtime bytes and sampled Core were preserved. Saved audit and Root replay
+match; preserve the first saved-reader indexing failure. No Root broker/HBC,
+normal artwork, physical input, performance or C2 qualification follows. Future
+carriers need fresh actual057 state and dates; older047/V7 dates and owner records
+cannot be reused. Natural Home/screensaver admission never broadens sole-Proof
+readiness or both-live sole-Target qualification. Component nonqualification and
+known ordinary cleanup remain distinct; unknown ownership/transport retains barriers.
 
 `docs/artwork-responsive-cache-next.md` chooses ordinary durable icon reads for
 normal interaction, with separately qualified privileged preparation. Preserve
