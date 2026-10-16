@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "version": "0.54.0",
+  "date": "2026-10-16",
+  "scope": "Bounded ordinary packaged-icon loading: host checks and matching ARM32 builds only",
+  "source_revision": "3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb",
+  "checks": {
+    "rust_hostsim_all_targets": {"passed": 620, "failed": 0, "exit_code": 0},
+    "python_packaging": {"passed": 64, "failed": 0, "exit_code": 0},
+    "clippy_all_targets_deny_warnings": {"exit_code": 0},
+    "arm_dashboard": {"exit_code": 0},
+    "arm_proof_helper": {"exit_code": 0},
+    "independent_source_and_scope_review": "clear"
+  },
+  "artifacts": {
+    "dashboard": {
+      "sha256": "a1bd31cc4e3ce7b9141f3e33a7db81392f4d0e7893d6a0c8e77193b6e90ae418",
+      "bytes": 4181480,
+      "build_receipt_sha256": "817aeb0b50cdd806d2edfef06be1e736d6560483302416993bfff65e353259a2"
+    },
+    "proof_helper": {
+      "sha256": "4839b70a5c1e6a9a1ae99a9230631afa8f309305dc540e1869078413e65894cc",
+      "bytes": 883200,
+      "build_receipt_sha256": "a69dcdc682ce8b8db7a07da9f591e87ee12de0a57227663471225f0e99838f37"
+    },
+    "matching_selected_source_inputs": 110,
+    "identical_source_and_framework_snapshots": true,
+    "private_checks_and_artifacts_receipt_sha256": "a180f9fbd8d1b6cf2074f24d352f279abe6abffce3db99ae5410c0f85e393fdd"
+  },
+  "limits": {
+    "encoded_icon_bytes": 1048576,
+    "decoded_axis_pixels": 512,
+    "decoded_rgba_bytes": 1048576,
+    "outstanding_jobs_including_unpolled_completion": 1,
+    "decoded_results_awaiting_capacity": 1,
+    "texture_handles": 64,
+    "texture_rgba_payload_estimate_bytes": 16777216,
+    "packaged_upload_attempts_per_frame": 1
+  },
+  "native_execution_qualified": false,
+  "native_rendering_or_performance_qualified": false,
+  "retained_update_performed": false,
+  "normal_Root_artwork_enabled": false,
+  "retained_G2_version": "0.47.0",
+  "retained_C2_version": "0.48.0",
+  "total_heap_or_hard_shutdown_bound_claimed": false,
+  "fresh_live_app_artwork_or_all_app_coverage_claimed": false
+}

@@ -66,6 +66,14 @@ and a timeout fails the capture rather than claiming decoded artwork.
 
 ## Evidence and remaining work
 
+The [source/build record](packaged-icon-demand-milestone.json) binds functional
+source `3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb` to 620 passing Rust tests,
+64 passing Python packaging tests, clean strict Clippy and two successful ARM32
+builds. The frozen dashboard and Proof helper have identical snapshots of all
+110 selected source inputs and the verified framework. Independent source and
+scope review is clear. Neither new executable has run on a TV; these builds do
+not replace the separately frozen 0.53 diagnostic artifacts.
+
 The component tests use real temporary files, the ordinary worker and actual PNG
 decoder, with a simulated GL ownership backend. They cover bounded/escaped/
 symlink/FIFO inputs, stable file reads and directory churn, alpha/aspect, over-64

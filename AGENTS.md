@@ -187,16 +187,16 @@ never uninstall/reset the retained Preview or clear an old pending record. Actua
 Preview permissions, retained promotion and keyboard/departure recovery remain
 unqualified until their separate evidence is complete.
 
-The G2 is primary. The user's latest instruction reopens both TVs for autonomous
-isolated testing from 00:00 Europe/London on 2026-10-16 (23:00 UTC on 15 October).
-Do not contact C2 before that time. The user expects to be available again around
-09:00; finish the overnight runs and cleanup before then, starting no new test
-after 08:45 local. This replaces the earlier C2 window ending 20:30 on 15 October.
+The G2 is primary. After the earlier overnight window, the user confirmed both
+TVs free for autonomous isolated testing on 16 October and offered G2 physical
+input when needed. That later instruction replaces the earlier overnight cutoff
+and C2 window. Check fresh foreground/availability before a new native run; old
+dated carriers and expired device leases do not become valid again.
 Only the coordinator contacts TVs, with distinct per-device leases and private
 agents and preserved retained installations/favourites. Refresh C2's actual
 model, firmware, app version and complete bundle/state baseline before changes;
-G2 results never establish C2 behavior. No physical-input checks require the user
-overnight. This authorization does not broaden protected operations or permit
+G2 results never establish C2 behavior. Physical-input checks require current
+user availability. This authorization does not broaden protected operations or permit
 LG Home, Core, boot, permission, media or OLED changes.
 
 Do not rewrite public history or change the existing public repository's identity
