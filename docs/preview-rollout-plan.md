@@ -1,15 +1,16 @@
 # Backed-up G2 preview rollout
 
-Historical scope: this plan delivered G2 normal Preview 0.26.0. G2 now retains
-0.30.0 after the [latest backed-up update](retained-preview-030-milestone.json);
-the [0.28.0 update](apps-scroll-rest-milestone.json) remains historical evidence. The original
-[update record](preview-update-milestone.json) covers the installer rehearsal,
-fresh backups, complete installed bundle/state verification, normal keyboard
-smoke and cleanup. C2 remains on 0.20.0. The [startup/relaunch](startup-relaunch-milestone.json),
-[Sound](sound-read-milestone.json) and earlier input records establish their
-listed isolated results. This rollout delivers those changes to the installed
-preview while preserving LG Home and the user's saved dashboard state. Full
-release qualification remains in the [interactive contract](interactive-keyboard-acceptance.md)
+Current retained deliveries are [G2 0.47](g2-retained-preview047.md) and
+[C2 0.48](c2-retained-preview-048.md). Each used its own backed-up normal identity,
+resources and preservation checks. C2's latest two-session trial excluded
+Search/IME; neither delivery enables normal Root artwork or qualifies physical
+input, all-app artwork or performance.
+
+The procedure below is the historical G2 0.26 rollout, with later 0.28/0.30
+records retained as history. Its versions, rollback artifact and keyboard recipe
+must not be used as current C2 admission. Unknown installer/process/state or
+coordination outcomes require a hold, rather than generic automatic rollback.
+Full release qualification remains in the [interactive contract](interactive-keyboard-acceptance.md)
 and [delivery plan](parallel-development.md).
 
 ## Changed paths and evidence
@@ -77,4 +78,5 @@ Physical hold/pointer/wheel, later-batch dismissal races, broader composing
 languages, repeated-entry reliability, matched performance, full HDMI/media
 behaviour and reboot persistence remain explicit work. A successful backed-up
 preview update does not complete those requirements or the whole dashboard goal.
-C2 promotion requires its own candidate admission and device evidence.
+The C2 0.48 result supplies its own narrow normal-retention evidence; broader
+C2 keyboard, physical-input and performance qualification remain separate.

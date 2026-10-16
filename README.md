@@ -44,9 +44,18 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
+Current retained normal deliveries are [G2 0.47](docs/g2-retained-preview047.md)
+and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
+saved preferences and two-session device evidence. The C2 trial omitted
+Search/IME. Normal Root artwork remains off. The separate
+[0.49 isolated G2 scheduling result](docs/artwork-transition-049.md) does not
+activate that provider in either retained app.
+
+The following component records retain their historical versions and scopes.
 The [text-input milestone](docs/text-input-milestone.json) records isolated G2
 system-keyboard typing/lifecycle work and the single-keyboard design. The retained
-G2 preview now includes that integration; C2 retains its earlier keypad. The
+G2 preview includes that integration. C2 now retains the current normal UI, with
+its keyboard/IME behavior still unqualified by the latest no-text trial. The
 [backed-up G2 update](docs/preview-update-milestone.json) records normal-build
 Apps/Search/LG-keyboard/Back verification and preserved favourites.
 The newer [shared-controller record](docs/keyboard-integration-milestone.json)
@@ -61,7 +70,7 @@ and [isolated G2 Sound/Accessibility qualification](docs/control-row-presentatio
 remain separate evidence. The [0.28 G2 delivery](docs/apps-scroll-rest-milestone.json)
 also fixes a reproduced Apps scroll redraw tail, profiles the new build and
 verifies the backed-up normal update with favourites preserved.
-The [latest backed-up G2 delivery](docs/retained-preview-037.md) is 0.37.0:
+The [historical backed-up G2 delivery](docs/retained-preview-037.md) at 0.37.0 introduced this styling:
 app icons retain their own shape and alpha directly on black, with initials only
 for missing artwork. Two normal sessions verified Apps/Search/keyboard, read-only
 General/Inputs, a bounded black idle/wake and relaunch, with favourites and checked
@@ -107,8 +116,8 @@ identities. The first harness observation failed and separate recovery completed
 the second corrected driver passed with complete cleanup/preservation. It adds no
 resource access or retained loader. The [0.41 nonce-refusal results](docs/artwork-startup-refusal-041.md)
 verify two exact refusal guards and complete temporary removal on G2; they add
-no resource or production capability. G2 now
-retains 0.37.0 after its separate normal workflow; C2 was last verified on 0.20.0.
+no resource or production capability. Those historical results preserved G2
+0.37.0 and C2 0.20.0; current retained versions are recorded below.
 The [0.43 installed artwork result](docs/artwork-installed-renderer-043.md) now
 connects the protected installed provider to the real worker/cache/native
 Home/Apps renderer on G2. Six transfers completed; three shared live targets
@@ -131,11 +140,13 @@ physical latency, normal-identity total cost or a matched speedup comparison.
 The [app icon presentation](docs/icon-presentation.md) records the current
 icon-only styling, missing-art fallback and its verification boundary.
 
-The [0.49 transition source](docs/artwork-transition-049.md) adds composed
+The [0.49 transition component](docs/artwork-transition-049.md) adds composed
 artwork pauses and asynchronous drain readiness before keyboard/app handoffs.
 Host tests cover real controlled workers and the shared input-frame order.
-Unknown outcomes stay blocked; normal Root artwork remains off and the native
-transition trial is pending. The [0.46 actual-ID diagnostic](docs/preview-artwork-preflight-046.md)
+One isolated G2 trial now verifies queued-work/local-intent/Back scheduling,
+seven known closed helper sessions and complete temporary cleanup. Real LG
+keyboard/external-app handoffs remain open. Unknown outcomes stay blocked;
+normal Root artwork remains off. The [0.46 actual-ID diagnostic](docs/preview-artwork-preflight-046.md)
 is separate G2 resource evidence and does not qualify C2 Root access or this lifecycle.
 
 ## Layout
@@ -176,9 +187,13 @@ The [interactive preview guide](docs/interactive-preview.md) describes navigatio
 package modes and removal. The OLED55G26LA G2 now retains verified 0.47.0,
 with two fresh normal sessions, original private preferences and preserved Core
 checks recorded in the [G2 delivery record](docs/g2-retained-preview047.md).
-The OLED65C26LD C2 remains on exactly restored 0.20.0; its
-[isolated startup observation](docs/c2-startup-collection.md) does not qualify a
-Preview upgrade. The [branding/status milestone](docs/branding-status-milestone.json)
+The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
+two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
+packaged resources and original preference bytes. Its ordinary-owner metadata
+roundtrip and separate restoration were qualified first. The latest trial
+exercised no Search/IME or Root artwork. The earlier
+[isolated startup observation](docs/c2-startup-collection.md) remains a separate
+collection result. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
 category/detail composition, native navigation, G2 Settings-return regression
@@ -196,7 +211,7 @@ qualifies first-OK suppression and a distinct second-OK action on both models.
 The [G2 human check](docs/manual-keyboard-milestone.json) confirms `lu` + Done,
 reopen, then `ma` + Back retains `luma` with no second keypad. Its native trace
 also records one safely drained same-batch closing-key release. Broader dismissal
-races, C2 physical typing, performance and C2 promotion remain separate
+races, C2 physical typing, performance and broader delivery remain separate
 acceptance gates. The G2 normal update is recorded separately from the earlier
 human check. One G2 attempt exited on early focus loss before readiness;
 cold-entry reliability remains under investigation. The

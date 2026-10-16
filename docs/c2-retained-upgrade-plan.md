@@ -1,10 +1,10 @@
 # C2 retained UI upgrade plan
 
-This is a proposed backed-up upgrade of the C2's retained 0.20 dashboard to the current normal UI, with packaged artwork and no Root artwork provider. No upgrade or permission migration is established by this document. LG Home, Core files, firmware, boot, jail and LS2 policy remain outside the change.
+C2 now retains [normal 0.48](c2-retained-preview-048.md), after a separately qualified ordinary-owner metadata roundtrip and old-version restoration, then fresh forward migration and two normal UI sessions. Its original preference bytes/owners and C2-specific packaged resources were preserved. Root artwork remains disabled. The historical baseline and safety contract below explain that transition; LG Home, Core files, firmware, boot, jail and LS2 policy remain outside the change.
 
 ## Recorded baseline and compatibility gap
 
-The read-only overnight baseline and [isolated 0.44 static check](c2-icon-presentation-044.md) preserved the retained 0.20 installation. Its app-owned state directory and preference file currently have mode `0777`. The installed bundle directory and all recorded bundle files also have mode `0777`. These are historical facts to preserve in the backup, rather than modes to infer from a package.
+The read-only overnight baseline and [isolated 0.44 static check](c2-icon-presentation-044.md) preserved the retained 0.20 installation. At that baseline, its app-owned state directory and preference file had mode `0777`. The old installed bundle directory and all recorded bundle files also had mode `0777`. Current 0.48 retains the measured bundle root mode `0777`, canonical installed payload modes, and private state directory/file modes `0700`/`0600`. These are historical facts to preserve in the backup, rather than modes to infer from a package.
 
 The modern [preference Store](../src/preferences.rs) requires an ordinary app-owned directory and regular preference file with no group or other permission bits; the file must have one link. Creating a new directory uses `0700`, but opening an existing insecure directory does not repair it. The upgrade therefore needs an explicit compatibility transaction before modern preference loading. Falling back to default preferences after a storage error would not demonstrate preservation of the user's configuration.
 
@@ -16,11 +16,11 @@ The current [Shell](../src/shell.rs) prefers a live texture when one exists, the
 
 The retained C2 assets cover many current applications, but three currently eligible applications have no packaged mapping. This source path can reuse existing icons; it cannot create those missing images. A candidate must preserve the reviewed C2 asset set rather than substitute G2 assets or synthetic fixtures. It needs no Root broker, privileged artwork reads or helper policy changes.
 
-The 0.44 C2 result proves presentation of controlled synthetic icons in an isolated app. It does not prove that the retained normal app can decode, upload and display every real packaged asset after a live catalogue refresh. That requires a normal-identity trial and inspection of its actual frames. Initials in earlier target-only artwork experiments were not evidence of a general icon-loading failure.
+The 0.44 C2 result proves presentation of controlled synthetic icons in an isolated app. It does not prove that the retained normal app can decode, upload and display every real packaged asset after a live catalogue refresh. The later 0.48 normal-identity trial inspected real Home/Apps frames; it did not establish an all-app decode/upload count or pixel oracle. Initials in earlier target-only artwork experiments were not evidence of a general icon-loading failure.
 
 ## Qualify installer metadata before the retained upgrade
 
-A small installer-only component can resolve uncertainty without launching the retained app or a test app:
+The installer-only and same-version replacement records resolved their narrow mechanisms before migration. The original intended sequence, without launching either package, was:
 
 1. Under a fresh device lease, require quiet LG Home and absence of the fixed isolated Proof identity. Save fresh retained bundle/state byte and metadata manifests, the selected Core hashes and state-domain readbacks.
 2. Install a reviewed inert package under that isolated identity through the supported installer. Never launch it. Include no services, Root helper, startup hooks, policy additions or capability trial.
@@ -42,7 +42,7 @@ An implementation may run as an explicit ordinary-app migration before Store ini
 
 Before installation, preserve the exact original package, complete retained bundle and state bytes, owner/group/modes and initialized preference contents privately. Require no retained process is running, quiet LG Home, adequate storage and the dated device-use window. Admit an exact normal package with the intended C2 resources and no diagnostic marker, Root provider activation or helper payload.
 
-After the supported same-ID update, verify modern Store acceptance of the actual retained preferences. The only intended state metadata changes are the two modes above; preference bytes and owner/group remain equal to the backup. Exercise the actual normal identity in separate sessions, including packaged icons after catalogue refresh, read-only navigation, keyboard Done/Back and idle/wake behavior. Avoid launching app or input cards and avoid setting changes. Capture and inspect real-asset frames; source support and the synthetic 0.44 result are prerequisites, not substitutes.
+After the supported same-ID update, verify modern Store acceptance of the actual retained preferences. The only intended state metadata changes are the two modes above; preference bytes and owner/group remain equal to the backup. The completed 0.48 trial exercised the actual normal identity in two fresh Home/Apps/Back sessions, including catalogue reads, packaged-artwork frames and natural idle/wake. It deliberately omitted Search/IME; keyboard behavior requires a separate trial. Avoid launching app or input cards and avoid setting changes. Capture and inspect real-asset frames; source support and the synthetic 0.44 result are prerequisites, not substitutes.
 
 Recheck full bundle/state expectations, Core hashes, selected state domains, original current/last-input observations and cleanup. Keep the existing working default until this explicit trial is admitted. A trial may deliberately restore 0.20 after qualified closure before a later decision to retain the new version.
 

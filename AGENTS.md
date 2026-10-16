@@ -33,23 +33,37 @@ retained. Normal Root artwork remains off, with no new physical-input, IME,
 performance or all-app artwork qualification. The older 0.37 record and drivers
 pinned to 0.31 remain historical; preserve the current installation/favourites.
 
-C2's separately verified compatibility baseline is restored 0.20.0, documented
-in `docs/c2-native-preferences-047.md`. Its earlier native migration history
-remains unknown. The 0.48 SDK-argument source candidate has separate host/ARM
-build checks; G2's 0.47 result and any isolated Target collection mechanics do
-not grant C2 Preview migration, Root-artwork or retained-upgrade authority.
+The latest verified retained C2 installation is 0.48.0, with dashboard ELF
+SHA-256 `b8e0ac9b3918c354a3fc1a7068c404a4a61d155318807f30e027b0aa130962d3`
+from frozen source `cba8196ba66763f959bb50b5b1193d114de7d880`.
+`docs/c2-retained-preview-048.md` records its own ordinary-owner migration
+roundtrip, separate old-version restoration, fresh forward migration and two
+normal sessions. Preserve the original preference bytes/owners in private
+0700/0600 state and all C2-specific packaged resources. Do not reuse older
+0.20 rollback/mode assumptions as the current baseline. The original failed
+operators remain failures; later continuation and independent saved-audit
+success do not rewrite them. Root artwork, C2 IME, physical input, performance
+and all-app coverage remain unqualified.
 The isolated C2 startup collection in `docs/c2-startup-collection.md` now has
 independently replayed observation and separate cleanup evidence. Its new Target
 identity confirms the observed opaque SDK argument and only its own measured
 runtime mapping. Both earlier host operators remain failures. This grants no
 Preview credential/permission authority or general temporary-path mapping; the
-retained C2 installation remains 0.20.0.
+retained C2 installation at that historical observation remained 0.20.0.
+Current C2 retention is the separately qualified 0.48 result above.
 
 The 0.49 source in `docs/artwork-transition-049.md` implements app-controlled
-pause/drain ordering and typed initialization/settlement. Its host checks do not
-qualify a native transition or closed-negative outcome; keep normal interactive
-Root artwork off. Frozen 0.48 C2 migration artifacts remain bound to their own
+pause/drain ordering and typed initialization/settlement. Its isolated G2 native
+component now qualifies queued/unpolled Work, local intent/Back and poll-only
+known completion, followed by seven helper sessions and complete cleanup with
+normal 0.47 preserved. The independent saved audit and Root semantic replay agree
+on all facts and bindings; diagnostic-check ordering differs. Real LG keyboard
+or external-app handoff and authenticated closed-negative outcomes remain open;
+keep normal interactive Root artwork off. Frozen 0.48 C2 artifacts remain bound to their own
 source and receipts; never substitute a new 0.49 executable into those carriers.
+
+The following earlier component records describe their historical baselines;
+they do not replace the current retained versions above.
 
 The isolated 0.38.0 check in `docs/artwork-startup-capability-038.md` qualifies one
 ordinary native HBC `checkRoot` request and complete temporary cleanup. It did

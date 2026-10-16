@@ -1,0 +1,140 @@
+{
+  "schema": 1,
+  "version": "0.49.0",
+  "status": "One isolated G2 queued-work/local-intent scheduling component and complete preservation/removal independently audited; ordinary Root artwork remains off",
+  "functional_source_revision": "0767fbf14857012a0699f5cb473c562292aa5d98",
+  "selected_source_inputs": 102,
+  "artifacts": {
+    "ui": {
+      "name": "home-preview",
+      "sha256": "243f2c51b8e4fe5b4432ba160d67c1807abc4d689d57bf88f369553b1c8d5754",
+      "bytes": 3913896,
+      "build_receipt_sha256": "3ab2bb7d75e84ea10e4fd33283a8415c7f59cd520efe493557144a944be01e0b"
+    },
+    "installed_proof_helper": {
+      "name": "artwork-broker-startup-proof",
+      "sha256": "246d5651a7ce67d83d14de891bbae9b02038b3367981c09e8c3e62b58c11649a",
+      "bytes": 847968,
+      "build_receipt_sha256": "d6d8f0d6689f6100506577fee04d3f3b899f242cf93cd86d2eb3b814bfe0b70a"
+    },
+    "ipk_sha256": "8eb5c89bc5e79194eb46a223095eeac2d15569e45939ef5af022e121ecb8dc0c",
+    "ipk_bytes": 2356454,
+    "package_receipt_sha256": "780b8b973583caab75ab53a33fbce930a76d174e9de2516fd4854ce792bb20e5",
+    "candidate_sha256": "2efa2f73c0aff373e044dd701b02f24f1eea05a4460fe784b9145daad0493e88",
+    "carrier_sha256": "88a2659a7721404f0c8b94a2a2bab7f10bd67d428d0e25548de1c36415f1d810",
+    "validator_sha256": "3f991f42873c677955c4cad59272fde8a30c37421c379caf9bba41d0d5534f97",
+    "actual_sdk_ar_audit_sha256": "9e9a7609431a85edf058333892d18409aa8ec58a44fbce5ae8d65618d3922123"
+  },
+  "host_checks": {
+    "rust_library_tests": 498,
+    "dashboard_tests": 7,
+    "rust_total": 505,
+    "python_tests": 58,
+    "private_carrier_cases": 12,
+    "clippy_warnings_denied": true,
+    "arm_ui_build_exit": 0,
+    "arm_installed_helper_build_exit": 0,
+    "earlier_failed_fixture_logs_retained": true
+  },
+  "native": {
+    "device_family": "G2",
+    "model": "OLED55G26LA",
+    "firmware": "23.25.55",
+    "sdk": "9.2.2",
+    "webos_generation": 24,
+    "carrier_exit": 0,
+    "isolated_profile": "Proof",
+    "queued_or_unpolled_worker_slot_observed": true,
+    "local_keyboard_intent_pause_observed": true,
+    "local_Back_responsive_with_separate_Manual_pause": true,
+    "poll_to_classified_known_completion": true,
+    "new_submissions_during_pause": 0,
+    "artwork_GL_uploads_during_pause": 0,
+    "recorded_runtime_cancellation_requests": 0,
+    "actual_helpers": 7,
+    "completed_eligible_transfers": 7,
+    "known_Core_child_union": 112,
+    "first_helper_external_raw_process_bound": true,
+    "later_helpers_kernel_self_and_HBC_bound": 6,
+    "all_helpers_external_raw_process_bound": false,
+    "frames": 2,
+    "fully_visible_live_targets": {
+      "Home": 3,
+      "Applications": 4
+    },
+    "distinct_visible_targets": 4,
+    "accepted_transfer_source_classes": {
+      "lg_system": 1,
+      "encrypted_apps": 5,
+      "developer_apps": 1
+    },
+    "source_class_wide_compatibility_qualified": false,
+    "Root_or_HBC_stage_at_pause_independently_observed": false,
+    "real_LG_keyboard_started": false,
+    "real_external_application_handoff": false,
+    "main_handoff_qualified": false
+  },
+  "saved_frames": {
+    "Home": {
+      "sha256": "d95c6e6b294d9af27e63b07f621135a052ab6d2db9b5ff69a6841251fae993e6",
+      "bytes": 6220817
+    },
+    "Applications": {
+      "sha256": "8d7f02439bf220d0ff53c263948794b588865c1a8950e2c9129dadc40eb49417",
+      "bytes": 6220817
+    }
+  },
+  "preservation_and_cleanup": {
+    "retained_normal_version": "0.47.0",
+    "retained_bundle_entries": 32,
+    "retained_bundle_files": 30,
+    "full_bundle_and_private_state_bytes_owners_groups_modes_unchanged": true,
+    "favourites_unchanged": true,
+    "Core_files_unchanged": 5,
+    "typed_domains_preserved": 20,
+    "positive_cleanup_gates": 24,
+    "known_helpers_and_child_groups_absent": true,
+    "pending_absent_before_supported_uninstall": true,
+    "protected_two_test_files_and_directory_removed": true,
+    "own_upload_lease_private_agent_removed": true,
+    "ordinary_runtime_logs_intentionally_retained": true,
+    "ordinary_runtime_logs_deep_rehash_qualified": false,
+    "recorded_own_registration_package_state_runtime_jail_mount_scopes_absent": true,
+    "all_private_namespaces_or_all_tmp_survey_qualified": false
+  },
+  "independent_saved_audit": {
+    "execution_exit": 0,
+    "assertions_passed": 28677,
+    "artifact_bindings": 245,
+    "script_sha256": "5c4c6af3028877f22ceb817710e3c12cec5bee0e240b9ce0c0271ac7b86facf3",
+    "result_sha256": "304f1b816de3c4eff3fa46bbbfa37813d3811db60efc54980f8b109013e4f782",
+    "root_terminal_attestation_sha256": "570a722ecf60d1b26962e0edc45abfcb51ce6c802f60a8c048f5178acc0a3c83",
+    "root_replay_audit_execution_exit": 0,
+    "root_replay_result_sha256": "918bfac0a4746e69f5a17e23ffe6386159ca739ea4e9c86729fbb2d7b6392825",
+    "initial_byte_comparison_wrapper_exit": 1,
+    "semantic_comparison_exit": 0,
+    "semantic_replay_receipt_sha256": "a03b2481a45b7884a73b3f0d1f30ce1a09f53f7085b362b7a51173f68db57280",
+    "byte_identical": false,
+    "facts_and_artifact_bindings_identical": true,
+    "diagnostic_check_multiset_identical": true,
+    "difference": "diagnostic check order only",
+    "original_comparison_preserved": true
+  },
+  "boundaries": {
+    "older_pending_recovery_qualified": false,
+    "authenticated_late_context_negative_qualified": false,
+    "normal_Root_artwork_enabled": false,
+    "normal_rollout_qualified": false,
+    "C2_Root_artwork_qualified": false,
+    "production_startup_qualified": false,
+    "physical_input_or_IME_qualified": false,
+    "pixel_content_identity_independently_verified": false,
+    "performance_or_reliability_qualified": false,
+    "hard_blocked_call_lifetime_qualified": false,
+    "duplicate_concurrent_or_power_loss_recovery_qualified": false
+  },
+  "framework": {
+    "mode": "shared attributed PlxNative dependency",
+    "attribution": "../README.md#plxnative-framework-dependency"
+  }
+}

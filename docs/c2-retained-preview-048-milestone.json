@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "milestone": "c2-retained-normal-preview-048",
+  "retained_version": "0.48.0",
+  "device": "C2",
+  "model": "OLED65C26LD",
+  "firmware": "23.25.55",
+  "sdk": "9.2.2",
+  "source_revision": "cba8196ba66763f959bb50b5b1193d114de7d880",
+  "selected_build_inputs": 101,
+  "dashboard": {
+    "sha256": "b8e0ac9b3918c354a3fc1a7068c404a4a61d155318807f30e027b0aa130962d3",
+    "bytes": 3880300,
+    "build_receipt_sha256": "145d70d631d924696b18fb9312ff1b453e7e20745dc7103c4248f30bb3fd0d01"
+  },
+  "normal_package": {
+    "sha256": "87bfcc536dbbf9ea83234e1dd29ca4c45f1df5f47f095fdc6cbd6ee60da1079b",
+    "bytes": 2455566,
+    "receipt_sha256": "82706a162584079908f0354cba0ad709f760e586a579717fd29ef46f45bc2909",
+    "entries": 42,
+    "files": 40,
+    "unchanged_C2_resource_files": 38,
+    "only_changed_payloads": [
+      "executable",
+      "app_version"
+    ],
+    "diagnostic_markers": false,
+    "Root_helper": false
+  },
+  "normal_trial": {
+    "actual_operator_exit": 0,
+    "candidate_sha256": "3a70831beaa8cb3f86e0d34fa3892f233dcba2868b86590fcff51707a6fb73d2",
+    "driver_sha256": "5605a14d37f8c238dc4cc450e8e47c4eb2ce69bd836d8311e8d34586dce6d92b",
+    "terminal_attestation_sha256": "00ed3d91416be48bc7b4c0832a7e50956ca0e678bdd5b5e90b62ddd6a581f54f",
+    "fresh_sessions": 2,
+    "process_raw_records_per_session": 7,
+    "frames": 17,
+    "commands": 15,
+    "workflow": [
+      "Home",
+      "Apps",
+      "Home",
+      "Back"
+    ],
+    "first_session_idle_seconds": 125.9719505829853,
+    "idle_injected_keys": 0,
+    "idle_frame_dark_fraction": 1.0,
+    "idle_frame_mean_RGB": 0.0,
+    "idle_wake_counters": [
+      [
+        1,
+        1
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    "keyboard_counters_zero": true,
+    "fresh_OK_sample_bound_seconds": 5,
+    "atomic_focus_guarantee": false,
+    "native_process_exit_status_measured": false
+  },
+  "prerequisite_roundtrip": {
+    "forward_reverse_old20_restore_qualified": true,
+    "original_operator_exit": 1,
+    "separate_continuation_exit": 0,
+    "original_failure_reclassified": false,
+    "independent_report_sha256": "a2eb18cef6e3a8780c80af84f2e10177d49de83b8ca8fb3082051647ef33211d",
+    "root_replay_receipt_sha256": "53aa332763c841993afa50ac725457b275b298c5fc9c202413c5a655ef73a5cf"
+  },
+  "preservation": {
+    "preferences_bytes": 216,
+    "preference_content_and_owners_unchanged": true,
+    "state_directory_mode": "0700",
+    "state_file_mode": "0600",
+    "full_bundle_and_state_verified": true,
+    "Core_files": 5,
+    "state_domains": 20,
+    "staging_uploads_removed": 4,
+    "staging_directories_removed": 1,
+    "captures_removed": true,
+    "lease_released": true,
+    "host_agent_removed": true,
+    "normal_runtime_logs_retained": 2,
+    "runtime_parent_mode": "1777",
+    "old_runtime_deep_bytes_rehashed": false
+  },
+  "history": {
+    "initial_normal_operator": {
+      "actual_exit": 1,
+      "reason": "duplicate_host_evidence_filename_before_normal_UI_launch"
+    },
+    "active_power_gate_continuation": {
+      "actual_exit": 1,
+      "reason": "power_not_literal_Active_before_renewal_or_UI"
+    },
+    "Home_acknowledgement_continuation": {
+      "actual_exit": 1,
+      "reason": "one_Home_acknowledgement_then_Screen_Saver_through_bounded_observation_no_retry"
+    },
+    "failed_operators_reclassified": false
+  },
+  "independent_audit": {
+    "exit": 0,
+    "auditor_sha256": "c6d7c248c5d0dede1d9d9307c372f7949dcd61f7de579ca885eab4e9cb78b3f8",
+    "report_sha256": "2f96a0c47d7ee38c1186b28324a11a7044a54fa4b49da75f7c6b4e1214dd8ac6",
+    "named_checks": 126576,
+    "file_bindings": 23090,
+    "counts_are_coverage_metrics": false,
+    "root_replay_pending": false,
+    "root_replay_receipt_sha256": "c9e6947b160faf148af2409ff41bc7cc6fb2ddab03a2c6b0bfe76340f082e629",
+    "root_replay_exit": 0,
+    "root_replay_byte_identical": true
+  },
+  "unqualified": [
+    "normal_Root_artwork",
+    "C2_IME",
+    "physical_input",
+    "all_app_texture_counts",
+    "performance",
+    "panel_power",
+    "general_reliability"
+  ],
+  "framework": {
+    "name": "PlxNative",
+    "upstream": "https://github.com/GLinnik21/plx-native",
+    "integration_patch": "../patches/plxnative-framework-integration.patch",
+    "Plex_application_features": false
+  }
+}

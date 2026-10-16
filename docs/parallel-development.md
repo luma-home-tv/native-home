@@ -8,15 +8,20 @@ and application changes through one integration owner. This extends the
 It does not change device authorisation or the protections in `AGENTS.md`.
 G2 remains primary. The latest user authorization reopens both TVs for autonomous
 isolated tests from 00:00 Europe/London on 16 October 2026, superseding the earlier
-C2 cutoff. Start no new test after 08:45 and complete cleanup before the expected
-09:00 return. All TV access stays with the coordinator, with distinct leases and
-private agents. The fresh C2 baseline and its isolated 0.44 static icon test keep
-its retained 0.20 bundle/state unchanged; G2 results never establish C2 permissions. G2 now retains
-[0.37.0](retained-preview-037.md) after a backed-up update, two normal sessions,
-bounded idle/wake and same-install relaunch, with saved state preserved.
-The next product slice is [live app artwork](live-app-artwork.md). Its ordinary-jail
-access survey comes before implementation admission, with worker, shared decoder,
-integration and independent review lanes. HDMI detail and broader control inventory
+C2 cutoff. The overnight operators use the stricter new-start cutoff of 08:00
+BST and finish all contact/cleanup before 08:30 BST on 16 October; these are dated
+limits, not recurring authorization. All TV access stays with the coordinator,
+with distinct leases and private agents. Current retained deliveries are
+[G2 0.47](g2-retained-preview047.md) and [C2 0.48](c2-retained-preview-048.md),
+with device-specific resources, saved preferences and two fresh normal sessions.
+C2's ordinary-owner metadata roundtrip/restoration precedes its retained result;
+G2 evidence never establishes C2 permissions. The isolated 0.44 C2 static result
+and its preserved 0.20 baseline remain historical evidence.
+The [0.49 isolated G2 scheduling component](artwork-transition-049.md) now adds
+queued-work/local-intent/Back and known provider closure, with seven helper
+sessions and complete cleanup. Actual LG keyboard/external-app transition,
+closed-negative lifecycle and normal Root artwork activation remain open.
+Live artwork work retains separate worker, decoder, integration and review lanes. HDMI detail and broader control inventory
 remain subsequent feature work; the release gates below remain open.
 
 ## Broad remaining delivery steps
@@ -59,9 +64,10 @@ remain subsequent feature work; the release gates below remain open.
 6. **Promote and deliver.** After the interactive acceptance gate, perform backed-up
    retained updates, verify favourites/metadata and normal behaviour, exercise
    clean removal, publish scoped release/test documentation and separate generic
-   framework changes for possible upstream contribution. G2 now retains 0.37.0
-   after its separate normal qualification; C2 was last verified on 0.20.0. Component
-   tests alone do not admit a retained update.
+   framework changes for possible upstream contribution. G2 retains 0.47.0 and
+   C2 retains 0.48.0 after their own separate normal qualifications. Neither
+   result qualifies C2 IME, normal Root artwork or full release acceptance.
+   Component tests alone do not admit a retained update.
 
 ## How the parallel work shortens delivery
 

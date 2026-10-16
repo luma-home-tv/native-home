@@ -19,8 +19,11 @@ current native interface. G2 now retains [0.47.0](g2-retained-preview047.md) aft
 two fresh Home/Apps/Back sessions, a natural idle-black/wake and full saved-state,
 bundle and Core20 preservation. Its visual frames show the logo and unboxed
 available icons; broader artwork and physical-input/performance qualification
-remain separate. C2's [0.20 restoration](c2-native-preferences-047.md) is verified;
-its native preference migration and normal upgrade remain unqualified. The
+remain separate. C2 now retains [0.48.0](c2-retained-preview-048.md), following
+its own ordinary-owner forward/reverse metadata roundtrip and exact old-version
+restoration, then a fresh forward migration and two normal sessions. Original
+preference bytes/owners, C2 resources, Core files and checked state are preserved.
+This no-text trial does not qualify C2 IME, Root artwork or all-app coverage. The
 [numeric-control record](numeric-control-milestone.json) covers the latest G2
 native range path and the retained update; the
 [Home navigation record](home-navigation-milestone.json) covers the shared Home/drawer layout;
@@ -289,15 +292,19 @@ The [0.46 actual Preview diagnostic](preview-artwork-preflight-046.md) now has
 G2 resource and exact restoration evidence. Keep normal artwork disabled until
 the [transition lifecycle](artwork-transition-lifecycle.md) is qualified. The
 [C2 installer metadata measurement](c2-installer-metadata-045.md) supports one
-rollback mechanism component; ordinary-owner preference migration, reversal,
-same-ID restoration and current normal UI still require their own C2 tests.
+rollback mechanism component. The [C2 0.48 record](c2-retained-preview-048.md)
+now adds actual ordinary-owner migration/reversal, same-ID restoration and a
+separate current normal UI trial; these device-specific results do not transfer
+Root artwork or keyboard authority.
 The [0.48 SDK-argument candidate](preferences-sdk-arguments-048.md) accepts one
 bounded opaque launcher JSON object without granting operation authority. Its
-host/ARM checks precede separate C2 native forward/reverse and restoration proof.
+host/ARM checks are followed by the separately recorded C2 native roundtrip
+and normal retention evidence; the original failed attempts remain distinct.
 The [isolated C2 startup collection](c2-startup-collection.md) now confirms one
 ordinary Target's launch ABI and narrow live runtime mapping, followed by
-separately verified cleanup and unchanged retained 0.20. Actual Preview migration
-and the original missing-report cause remain separate open questions.
+separately verified cleanup and unchanged retained 0.20 at that stage. Later
+actual Preview migration is recorded separately; the earlier missing-report
+cause is not established merely by later success.
 
 Network reconfiguration, firmware, factory reset, service/calibration controls,
 OLED protections and compensation scheduling remain protected/delegated. An

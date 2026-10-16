@@ -1,8 +1,12 @@
 # Artwork across keyboard and foreground transitions
 
 The app-controlled pause/drain slice is now implemented in the
-[0.49 source candidate](artwork-transition-049.md), with host checks. Its native
-transition trial and the authenticated closed-negative slice below remain open.
+[0.49 component](artwork-transition-049.md), with host checks and one isolated G2
+queued-work/local-intent/Back result. Real LG keyboard/external-app handoffs and
+the authenticated closed-negative slice below remain open.
+The [next closure implementation plan](artwork-context-closure-next.md) specifies
+the transport, typed attempt and adversarial-test boundaries without enabling
+negative acceptance.
 Ordinary interactive artwork activation remains disabled. The admission experiment does not establish
 keyboard/departure recovery, physical input, performance or C2 Root access.
 
