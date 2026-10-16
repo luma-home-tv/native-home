@@ -62,6 +62,11 @@ or external-app handoff and authenticated closed-negative outcomes remain open;
 keep normal interactive Root artwork off. Frozen 0.48 C2 artifacts remain bound to their own
 source and receipts; never substitute a new 0.49 executable into those carriers.
 
+The 0.50 transport foundation in `docs/artwork-transport-eof-050.md` preserves
+legacy receive errors and adds no provider/server/bootstrap/Ticket acceptance.
+Host tests do not qualify its Linux socket cases or native deployment. Do not
+transfer 0.49 native evidence to a new executable; normal Root artwork stays off.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

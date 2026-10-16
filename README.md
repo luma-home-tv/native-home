@@ -149,6 +149,10 @@ keyboard/external-app handoffs remain open. Unknown outcomes stay blocked;
 normal Root artwork remains off. The [0.46 actual-ID diagnostic](docs/preview-artwork-preflight-046.md)
 is separate G2 resource evidence and does not qualify C2 Root access or this lifecycle.
 
+The [0.50 transport foundation](docs/artwork-transport-eof-050.md) adds a typed
+packet/EOF distinction while preserving legacy callers. Its host checks do not
+enable negative acceptance or change either retained TV installation.
+
 ## Layout
 
 | Path | Ownership and purpose |

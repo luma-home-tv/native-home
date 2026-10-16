@@ -18,6 +18,15 @@ pub struct Packet {
     pub bytes: Vec<u8>,
     pub credentials: Credentials,
 }
+/// A result of ONE sequenced-packet receive. EOF is not an empty packet.
+/// Peer write-half-close can also produce EOF; this proves no process/child exit.
+/// Foundation only: no protocol or session acceptance follows from this type.
+#[derive(Debug)]
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+pub(crate) enum Incoming {
+    Packet(Packet),
+    Eof,
+}
 #[derive(Debug)]
 pub struct Listener {
     #[cfg(target_os = "linux")]
@@ -115,6 +124,49 @@ fn credentials_from_control(
         return Err(invalid("Rejected ancillary data"));
     }
     credential.ok_or_else(|| invalid("Missing kernel credentials"))
+}
+
+// Classify the SAME recvmsg result while disposing of delivered rights first.
+// Synthetic host tests cover this classifier, not Linux kernel semantics.
+#[cfg(any(target_os = "linux", test))]
+fn incoming_from_received(
+    mut bytes: Vec<u8>,
+    received: usize,
+    max_bytes: usize,
+    control: &[u8],
+    truncated: bool,
+    control_truncated: bool,
+    close_fd: impl FnMut(i32),
+) -> io::Result<Incoming> {
+    let credentials = credentials_from_control(control, close_fd);
+    if max_bytes == 0 || max_bytes > MAX_MESSAGE_BYTES {
+        return Err(invalid("Invalid receive bound"));
+    }
+    if truncated || control_truncated || received > max_bytes || received > bytes.len() {
+        return Err(invalid("Empty, truncated or oversized packet"));
+    }
+    if received == 0 {
+        return if control.is_empty() {
+            Ok(Incoming::Eof)
+        } else {
+            Err(invalid("Empty, truncated or oversized packet"))
+        };
+    }
+    bytes.truncate(received);
+    Ok(Incoming::Packet(Packet {
+        bytes,
+        credentials: credentials?,
+    }))
+}
+
+fn packet_only(incoming: Incoming) -> io::Result<Packet> {
+    match incoming {
+        Incoming::Packet(packet) => Ok(packet),
+        Incoming::Eof => Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "Empty, truncated or oversized packet",
+        )),
+    }
 }
 
 #[cfg(target_os = "linux")]
@@ -397,6 +449,16 @@ mod linux {
             })
         }
         pub fn recv_until(&self, max_bytes: usize, deadline: Instant) -> io::Result<Packet> {
+            self.recv_or_eof_until(max_bytes, deadline)
+                .and_then(packet_only)
+        }
+        /// Classifies only this receive; a prior error remains terminal to callers.
+        /// No consumer currently uses EOF to clear a session or pending Ticket.
+        pub(crate) fn recv_or_eof_until(
+            &self,
+            max_bytes: usize,
+            deadline: Instant,
+        ) -> io::Result<Incoming> {
             if max_bytes == 0 || max_bytes > MAX_MESSAGE_BYTES {
                 return Err(invalid("Invalid receive bound"));
             }
@@ -435,21 +497,17 @@ mod linux {
                 let control_bytes = unsafe {
                     std::slice::from_raw_parts(control.as_ptr().cast::<u8>(), control_len)
                 };
-                // Close every received right even when packet flags/length are invalid.
-                let credentials = credentials_from_control(control_bytes, |fd| unsafe {
-                    libc::close(fd);
-                });
-                if message.msg_flags & (libc::MSG_TRUNC | libc::MSG_CTRUNC) != 0
-                    || rc == 0
-                    || rc as usize > max_bytes
-                {
-                    return Err(invalid("Empty, truncated or oversized packet"));
-                }
-                bytes.truncate(rc as usize);
-                return Ok(Packet {
+                return incoming_from_received(
                     bytes,
-                    credentials: credentials?,
-                });
+                    rc as usize,
+                    max_bytes,
+                    control_bytes,
+                    message.msg_flags & libc::MSG_TRUNC != 0,
+                    message.msg_flags & libc::MSG_CTRUNC != 0,
+                    |fd| unsafe {
+                        libc::close(fd);
+                    },
+                );
             }
         }
         pub fn send_until(&self, bytes: &[u8], deadline: Instant) -> io::Result<()> {
@@ -512,7 +570,15 @@ mod unsupported {
         pub fn peer_credentials(&self) -> io::Result<Credentials> {
             Err(unsupported())
         }
-        pub fn recv_until(&self, _max_bytes: usize, _deadline: Instant) -> io::Result<Packet> {
+        pub fn recv_until(&self, max_bytes: usize, deadline: Instant) -> io::Result<Packet> {
+            self.recv_or_eof_until(max_bytes, deadline)
+                .and_then(packet_only)
+        }
+        pub(crate) fn recv_or_eof_until(
+            &self,
+            _max_bytes: usize,
+            _deadline: Instant,
+        ) -> io::Result<Incoming> {
             Err(unsupported())
         }
         pub fn send_until(&self, _bytes: &[u8], _deadline: Instant) -> io::Result<()> {
@@ -540,6 +606,130 @@ mod tests {
         b.extend_from_slice(&123_u32.to_ne_bytes());
         b.extend_from_slice(&456_u32.to_ne_bytes());
         cmsg(1, 2, &b)
+    }
+    #[test]
+    fn same_receive_eof_is_typed_but_legacy_api_still_rejects_it() {
+        let incoming =
+            incoming_from_received(vec![0; 5], 0, 4, &[], false, false, |_| panic!("no rights"))
+                .unwrap();
+        assert!(matches!(&incoming, Incoming::Eof));
+        let error = packet_only(incoming).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+        assert_eq!(error.to_string(), "Empty, truncated or oversized packet");
+    }
+    #[test]
+    fn same_receive_preserves_packet_boundary_and_exact_credentials() {
+        let incoming =
+            incoming_from_received(vec![1, 2, 3, 9, 9], 3, 4, &good(), false, false, |_| {
+                panic!("no rights")
+            })
+            .unwrap();
+        let packet = packet_only(incoming).unwrap();
+        assert_eq!(packet.bytes, [1, 2, 3]);
+        assert_eq!(
+            packet.credentials,
+            Credentials {
+                pid: 12,
+                uid: 123,
+                gid: 456
+            }
+        );
+        let full = incoming_from_received(
+            vec![7; MAX_MESSAGE_BYTES + 1],
+            MAX_MESSAGE_BYTES,
+            MAX_MESSAGE_BYTES,
+            &good(),
+            false,
+            false,
+            |_| {},
+        )
+        .unwrap();
+        assert_eq!(packet_only(full).unwrap().bytes.len(), MAX_MESSAGE_BYTES);
+    }
+    #[test]
+    fn empty_credentialed_message_and_later_eof_are_distinct_results() {
+        let first = incoming_from_received(vec![0; 5], 0, 4, &good(), false, false, |_| {});
+        assert!(first.is_err());
+        let later = incoming_from_received(vec![0; 5], 0, 4, &[], false, false, |_| {}).unwrap();
+        assert!(matches!(later, Incoming::Eof));
+        // Consumer policy must retain the first failure; this stateless classifier
+        // does not prove a session latch or make the later EOF acceptable.
+    }
+    #[test]
+    fn truncation_oversize_and_inconsistent_lengths_never_become_eof() {
+        for (received, max, truncated, control_truncated) in [
+            (0, 4, true, false),
+            (0, 4, false, true),
+            (1, 4, true, false),
+            (1, 4, false, true),
+            (5, 4, false, false),
+            (1, 0, false, false),
+            (1, MAX_MESSAGE_BYTES + 1, false, false),
+        ] {
+            assert!(incoming_from_received(
+                vec![0; 5],
+                received,
+                max,
+                &good(),
+                truncated,
+                control_truncated,
+                |_| {}
+            )
+            .is_err());
+        }
+        assert!(incoming_from_received(vec![], 1, 4, &good(), false, false, |_| {}).is_err());
+        for flags in [(true, false), (false, true)] {
+            assert!(
+                incoming_from_received(vec![0; 5], 0, 4, &[], flags.0, flags.1, |_| {}).is_err()
+            );
+        }
+    }
+    #[test]
+    fn malformed_or_missing_ancillary_never_becomes_a_valid_packet() {
+        for control in [
+            vec![],
+            vec![0; 4],
+            cmsg(1, 99, &[]),
+            [good(), good()].concat(),
+        ] {
+            assert!(
+                incoming_from_received(vec![1; 5], 1, 4, &control, false, false, |_| {}).is_err()
+            );
+        }
+    }
+    #[test]
+    fn delivered_rights_are_closed_even_for_empty_or_truncated_receives() {
+        let fds = [9_i32.to_ne_bytes(), 10_i32.to_ne_bytes()].concat();
+        let control = [cmsg(1, 99, &[]), cmsg(1, 1, &fds), good()].concat();
+        for (received, truncated, control_truncated) in [
+            (0, false, false),
+            (0, true, false),
+            (1, false, true),
+            (5, false, false),
+        ] {
+            let mut closed = Vec::new();
+            assert!(incoming_from_received(
+                vec![0; 5],
+                received,
+                4,
+                &control,
+                truncated,
+                control_truncated,
+                |fd| closed.push(fd)
+            )
+            .is_err());
+            assert_eq!(closed, [9, 10]);
+        }
+        let mut truncated_rights = cmsg(1, 1, &fds);
+        truncated_rights.truncate(std::mem::size_of::<usize>() + 8 + 4);
+        let mut closed = Vec::new();
+        assert!(
+            incoming_from_received(vec![0; 5], 0, 4, &truncated_rights, false, true, |fd| {
+                closed.push(fd)
+            })
+            .is_err()
+        );
+        assert_eq!(closed, [9]);
     }
     #[test]
     fn abstract_name_is_fixed_and_nonce_cannot_select_path() {
@@ -622,6 +812,22 @@ mod tests {
             io::ErrorKind::Unsupported
         );
     }
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn typed_receive_has_no_unsupported_platform_fallback() {
+        let connection = Connection {};
+        assert_eq!(
+            connection
+                .recv_or_eof_until(4, Instant::now())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::Unsupported
+        );
+        assert_eq!(
+            connection.recv_until(4, Instant::now()).unwrap_err().kind(),
+            io::ErrorKind::Unsupported
+        );
+    }
     #[cfg(target_os = "linux")]
     mod actual {
         use super::*;
@@ -645,6 +851,76 @@ mod tests {
             let client = Connection::connect_until(&n, deadline()).unwrap();
             let server = listener.accept_until(deadline()).unwrap();
             (client, server)
+        }
+        #[test]
+        fn actual_typed_receive_and_legacy_eof_behavior_are_separate() {
+            let (client, server) = pair();
+            server.send_until(b"typed", deadline()).unwrap();
+            drop(server);
+            let Incoming::Packet(packet) = client.recv_or_eof_until(4096, deadline()).unwrap()
+            else {
+                panic!("packet required")
+            };
+            assert_eq!(packet.bytes, b"typed");
+            assert_eq!(
+                packet.credentials,
+                Credentials {
+                    pid: std::process::id() as i32,
+                    uid: unsafe { libc::geteuid() },
+                    gid: unsafe { libc::getegid() }
+                }
+            );
+            assert!(matches!(
+                client.recv_or_eof_until(4096, deadline()).unwrap(),
+                Incoming::Eof
+            ));
+            let (client, server) = pair();
+            drop(server);
+            let error = client.recv_until(4096, deadline()).unwrap_err();
+            assert_eq!(error.kind(), io::ErrorKind::InvalidData);
+            assert_eq!(error.to_string(), "Empty, truncated or oversized packet");
+        }
+        #[test]
+        fn actual_zero_byte_credentialed_packet_is_not_clean_eof() {
+            let (client, server) = pair();
+            assert_eq!(
+                unsafe {
+                    libc::send(
+                        server.fd.as_raw_fd(),
+                        std::ptr::null(),
+                        0,
+                        libc::MSG_NOSIGNAL,
+                    )
+                },
+                0
+            );
+            drop(server);
+            assert!(client.recv_or_eof_until(4096, deadline()).is_err());
+        }
+        #[test]
+        fn actual_eof_can_be_only_a_peer_write_half_close() {
+            let (client, server) = pair();
+            assert_eq!(
+                unsafe { libc::shutdown(server.fd.as_raw_fd(), libc::SHUT_WR) },
+                0
+            );
+            assert!(matches!(
+                client.recv_or_eof_until(4096, deadline()).unwrap(),
+                Incoming::Eof
+            ));
+            // The peer descriptor and its receive side are still alive. Typed EOF
+            // must never independently qualify helper exit or child cleanup.
+            assert_ne!(
+                unsafe { libc::fcntl(server.fd.as_raw_fd(), libc::F_GETFD) },
+                -1
+            );
+            client
+                .send_until(b"peer-still-receives", deadline())
+                .unwrap();
+            assert_eq!(
+                server.recv_until(4096, deadline()).unwrap().bytes,
+                b"peer-still-receives"
+            );
         }
         #[test]
         fn eof_after_finished_rejects_empty_or_extra_messages() {

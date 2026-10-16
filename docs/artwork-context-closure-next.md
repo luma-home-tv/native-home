@@ -17,9 +17,9 @@ An older pending record cannot be cleared by restart, elapsed time or a new nonc
 
 ## Implementation boundaries
 
-`broker_transport.rs` needs a same-receive distinction between a valid packet and
-clean kernel EOF. Its current receive error combines EOF, empty messages and
-truncation. Do not infer EOF from that error or consume a malformed packet and
+The [0.50 transport foundation](artwork-transport-eof-050.md) adds a same-receive
+distinction between a valid packet and EOF. Existing callers still receive the
+legacy error for EOF, empty messages and truncation. Do not infer EOF from that error or consume a malformed packet and
 then accept a later EOF. The new typed receive API must keep existing packet
 bounds, credentials, rights disposal and legacy receive behavior unchanged.
 Transport foundation work alone must not enable negative acceptance.
