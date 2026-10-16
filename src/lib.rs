@@ -86,3 +86,5 @@ pub mod preferences_migration;
 pub mod preferences_migration_proof;
 
 pub mod artwork_closed_negative_proof;
+
+pub mod caption_reads;

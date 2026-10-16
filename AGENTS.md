@@ -56,6 +56,15 @@ wrapper's String is lossy/postallocation and Drop exposes no unregister status.
 OS exit status, UK/DVB/app subtitle semantics, Preview permission, normal UI,
 performance and C2 remain unqualified. Retained G2 remains 0.56; this probe is removed.
 
+The 0.57 source in `docs/caption-read-057.md` adds one protected TV caption
+preference row and one fixed public GET in the existing ordinary read worker.
+It has no setter/editor/activation. All eight Accessibility rows are replaced
+per cycle; failed peers stay unavailable and all-failed withdraws freshness.
+Keep stored-preference meaning distinct from UK/DVB/app subtitle behavior.
+Host checks and source review do not transfer the isolated probe's permission
+to Preview or qualify native presentation. Current retained G2 stays 0.56 until
+a separate backed-up update and ordinary Preview observation are complete.
+
 The earlier verified retained G2 installation was 0.55.0, with dashboard ELF
 SHA-256 `9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a`
 from frozen functional source `46f431cd3f601810a41d76c929b9d7392d223ae1`.

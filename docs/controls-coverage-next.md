@@ -10,7 +10,9 @@ General with captured native presentation; it adds no setter. The matrix below
 retains the original coverage audit's scope rather than implying a new full audit.
 The [isolated ordinary caption GET](caption-read-native.md) now adds successful
 stored-preference access from a separate native identity with complete removal.
-It does not yet add a normal Accessibility row or establish UK/DVB semantics.
+The [0.57 source](caption-read-057.md) adds a protected Accessibility row with
+host checks; ordinary Preview access and native presentation remain unqualified.
+Neither result establishes UK/DVB or application subtitle semantics.
 Normal G2 Home/Apps/Search/keyboard/General smoke
 does not establish every control-page interaction, physical input or performance.
 The [isolated 0.31.0 readability qualification](read-only-values-031-milestone.json)

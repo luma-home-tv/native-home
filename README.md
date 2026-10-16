@@ -64,6 +64,8 @@ The separate [ordinary caption GET probe](docs/caption-read-native.md) now
 records one successful stored-preference read and complete removal on G2, with
 independently replayed preservation of retained 0.56. It does not establish
 Preview's caller permission, a normal caption row or UK subtitle behaviour.
+The [0.57 caption row source](docs/caption-read-057.md) now integrates a protected
+readout with explicit failure/expiry withdrawal. Its native qualification is separate.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
@@ -239,9 +241,9 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. The OLED55G26LA G2 now retains verified 0.47.0,
-with two fresh normal sessions, original private preferences and preserved Core
-checks recorded in the [G2 delivery record](docs/g2-retained-preview047.md).
+package modes and removal. The OLED55G26LA G2 retains verified 0.56.0,
+with captured General information, fresh normal sessions, original preferences
+and preserved Core checks in the [G2 delivery record](docs/g2-retained-preview056.md).
 The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata

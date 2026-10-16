@@ -363,6 +363,12 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
             Reading::Value(rows)
         }
     };
+    // Replace all eight rows on every cycle. A fresh legacy Accessibility
+    // reply cannot revive a failed caption value, or vice versa.
+    let mut accessibility = control_reads::read(
+        replies, "accessibility", "option", control_reads::ACCESSIBILITY, None,
+    ).unwrap_or_else(|_| unavailable(control_reads::ACCESSIBILITY, &global));
+    accessibility.push(crate::caption_reads::parse(replies));
     let controls = BTreeMap::from([
         (
             ControlSection::Sound,
@@ -373,13 +379,7 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         ),
         (
             ControlSection::Accessibility,
-            reading(control_reads::read(
-                replies,
-                "accessibility",
-                "option",
-                control_reads::ACCESSIBILITY,
-                None,
-            )),
+            Reading::Value(accessibility),
         ),
         (ControlSection::General, general),
         (
@@ -658,8 +658,13 @@ pub fn merge(snapshot: &mut Snapshot, update: &Update, fresh: &mut Freshness) {
                     row.context = snapshot.context.clone();
                     row.protected = true;
                 }
+                let any_available = rows.iter().any(|row| row.available);
                 snapshot.settings.insert(section.name().into(), rows);
-                fresh.controls.insert(section, update.observed_ms);
+                if section == ControlSection::Accessibility && !any_available {
+                    fresh.controls.remove(&section);
+                } else {
+                    fresh.controls.insert(section, update.observed_ms);
+                }
             }
             _ => {
                 fresh.controls.remove(&section);
@@ -1264,3 +1269,7 @@ pub(crate) mod tests {
 #[cfg(test)]
 #[path = "live_device_info_tests.rs"]
 mod device_info_tests;
+
+#[cfg(test)]
+#[path = "live_caption_reads_tests.rs"]
+mod caption_reads_tests;
