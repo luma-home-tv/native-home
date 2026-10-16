@@ -21,8 +21,30 @@ The [0.49 isolated G2 scheduling component](artwork-transition-049.md) now adds
 queued-work/local-intent/Back and known provider closure, with seven helper
 sessions and complete cleanup. Actual LG keyboard/external-app transition,
 closed-negative lifecycle and normal Root artwork activation remain open.
+The [0.50 transport probe](artwork-transport-eof-050.md) now records four ordinary
+G2 socket cases and scoped cleanup separately from the dashboard/helper builds.
 Live artwork work retains separate worker, decoder, integration and review lanes. HDMI detail and broader control inventory
 remain subsequent feature work; the release gates below remain open.
+
+## Current host foundation wave
+
+The next proposals stay outside the integration checkout until reviewed. They
+add evidence for failures without enabling closed-negative acceptance or changing
+either retained TV installation.
+
+| Owner | Independent output | Integration boundary |
+| --- | --- | --- |
+| Coordinator | Native-test closeout, central source review, shared host/ARM checks and public receipts | Sole TV/build/integration owner; freezes each executable before any new native trial |
+| Provider lane | Unconditional typed attempt trace and retained exchange-failure metadata | Provider and its tests only; no encoded image bytes in the trace, no Ticket recovery or changed settlement |
+| Helper lane | Typed ReadAfter/Finish context-withdrawal candidate and explicit endpoint closure | Server/bootstrap and their tests only; strict readers, unchanged peer/pins and known child cleanup; no successful Finished fabricated |
+| Independent audit lane | Saved native transport replay and adversarial review | New private audit files; no TV calls or shared source edits; Root replays the final auditor independently |
+
+Provider and helper owners agree their small report contract before coding.
+Root reviews and composes both foundations, then runs affected tests and ARM
+compilation. A separate strict negative grader and current-Ticket settlement
+remain future work under the [closure plan](artwork-context-closure-next.md).
+This overlap shortens host work; it does not remove the later native acceptance
+gate or make a reported closure sufficient authority for recovery.
 
 ## Broad remaining delivery steps
 

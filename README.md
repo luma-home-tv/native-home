@@ -151,7 +151,8 @@ is separate G2 resource evidence and does not qualify C2 Root access or this lif
 
 The [0.50 transport foundation](docs/artwork-transport-eof-050.md) adds a typed
 packet/EOF distinction while preserving legacy callers. Its host checks do not
-enable negative acceptance or change either retained TV installation.
+enable negative acceptance. A separate headless G2 native probe qualifies four
+local socket cases with clean removal; neither retained TV installation changes.
 
 ## Layout
 

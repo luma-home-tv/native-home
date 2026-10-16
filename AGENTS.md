@@ -66,6 +66,10 @@ The 0.50 transport foundation in `docs/artwork-transport-eof-050.md` preserves
 legacy receive errors and adds no provider/server/bootstrap/Ticket acceptance.
 Host tests do not qualify its Linux socket cases or native deployment. Do not
 transfer 0.49 native evidence to a new executable; normal Root artwork stays off.
+A separate ordinary headless G2 probe now qualifies four fixed local socket
+cases from the byte-identical transport module, with scoped removal and retained
+0.47 preservation. It does not qualify either new 0.50 dashboard/helper executable,
+C2 behavior, an artwork session or closed-negative acceptance.
 
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
