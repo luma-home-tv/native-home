@@ -165,6 +165,14 @@ grades only two fully authenticated, joined failures and resolves only their
 sealed current Ticket. Host checks pass; native qualification and normal
 activation remain separate.
 
+The [0.53 isolated context recipe](docs/artwork-context-qualification-053.md)
+adds fixed ReadAfter and Finish experiments. Its host checks and matching ARM
+builds pass; neither native case is qualified. The separate
+[ordinary surface prerequisite](docs/native-surface-scene-prerequisite.md) now
+has audited test packages and passing host checks, with device admission blocked.
+It also records the outstanding responsiveness gate before normal Root artwork
+activation.
+
 ## Layout
 
 | Path | Ownership and purpose |

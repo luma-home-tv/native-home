@@ -104,6 +104,9 @@ compile and lint failures remain recorded, together with the successful repairs.
 A final count-print error in the initial freeze wrapper is also preserved; a
 separate readback verified every frozen file.
 
-No 0.53 IPK has been created or run on a TV. Its host/build results do not transfer
-previous native qualification to either new executable. The independent native
-carrier and saved-receipt audit remain separate work.
+No 0.53 dashboard/helper IPK has been created or run on a TV. Its host/build
+results do not transfer previous native qualification to either new executable.
+The separate [ordinary surface prerequisite](native-surface-scene-prerequisite.md)
+now has audited ARM packages and passing host checks, with device admission still
+blocked. It establishes no artwork authority. The independent negative-case
+native carrier and saved-receipt audit remain separate work.
