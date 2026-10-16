@@ -86,7 +86,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
         receipt = json.loads((output / 'preview-package-receipt.json').read_text())
         ipk = Path(receipt['ipk'])
         self.assertEqual(ipk.parent, output)
-        self.assertEqual(ipk.name, _BASE.APP + '_0.61.0_arm.ipk')
+        self.assertEqual(ipk.name, _BASE.APP + '_0.62.0_arm.ipk')
         self.assertEqual(_BASE.sha(ipk.read_bytes()), receipt['sha256'])
         archives = _BASE.ar_members(ipk.read_bytes())
         self.assertEqual(set(archives), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -98,7 +98,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
             fields = dict(line.split(': ', 1) for line in
                           control.extractfile(members[0]).read().decode().splitlines())
             self.assertEqual(fields['Package'], _BASE.APP)
-            self.assertEqual(fields['Version'], '0.61.0')
+            self.assertEqual(fields['Version'], '0.62.0')
         files, modes = {}, {}
         prefix = 'usr/palm/applications/' + _BASE.APP + '/'
         with tarfile.open(fileobj=io.BytesIO(archives['data.tar.gz'])) as data:
@@ -130,7 +130,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
         self.assertEqual(files['icon.png'], (self.f.root / 'assets/luma-home/icon-160.png').read_bytes())
         info = json.loads(files['appinfo.json'])
         self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                         (_BASE.APP, '0.61.0', 'home-preview', 'native'))
+                         (_BASE.APP, '0.62.0', 'home-preview', 'native'))
         self.assertEqual(info['requiredPermissions'], [])
         self.assertIs(receipt['installed_artwork_proof'], True)
         self.assertIs(receipt['broker_startup_proof'], False)

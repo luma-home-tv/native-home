@@ -141,6 +141,9 @@ pub(crate) fn display_value(setting: &Setting) -> &str {
         ("soundOutput", "tv_speaker") => "TV speaker",
         (_, "on") => "On",
         (_, "off") => "Off",
+        ("localeInfo.clock", "12") => "12-hour",
+        ("localeInfo.clock", "24") => "24-hour",
+        ("localeInfo.clock", "locale") => "Follow regional format",
         ("pointerSpeed", "normal") => "Normal",
         ("pointerSpeed", "slow") => "Slow",
         ("pointerSpeed", "fast") => "Fast",
@@ -372,8 +375,8 @@ mod tests {
         let _serial = plx_base::testlock::serial();
         let replies = serde_json::json!({
             "locale_values": {"returnValue":true,"settings":{"localeInfo":{"locales":{
-                "UI":"en-GB","AUD":"fr-FR","AUD2":"de_DE"
-            }}}},
+                "UI":"en-GB","AUD":"fr-FR","AUD2":"de_DE","FMT":"en-GB"
+            },"clock":"locale","timezone":"Europe/London"}}},
             "region_values": {"returnValue":true,"category":"option","settings":{
                 "country":"GBR","smartServiceCountryCode2":"GB"
             }},
@@ -382,7 +385,7 @@ mod tests {
         });
         let current = context();
         let mut settings = crate::locale_reads::parse(&replies);
-        assert_eq!(settings.len(), 5);
+        assert_eq!(settings.len(), 8);
         // Live integration binds these globally validated readings to the current
         // presentation snapshot before building the same General form.
         for setting in &mut settings { setting.context = current.clone(); }
@@ -392,6 +395,9 @@ mod tests {
             ("localeInfo.locales.AUD2", 147, "de_DE"),
             ("country", 148, "GBR"),
             ("smartServiceCountryCode2", 149, "GB"),
+            ("localeInfo.clock", 153, "Follow regional format"),
+            ("localeInfo.timezone", 154, "Europe/London"),
+            ("localeInfo.locales.FMT", 155, "en-GB"),
         ];
         for pointer_enabled in [false, true] {
             let mut table = FormTable::new(2000);
@@ -420,6 +426,16 @@ mod tests {
             assert_eq!(table.activate(0), Some(Activation::Action(
                 Action::OpenLgSettingsSection(SettingsSection::General)
             )));
+        }
+    }
+
+    #[test]
+    fn stored_clock_format_labels_do_not_resolve_regional_hour_cycle() {
+        for (wire, label) in [("12", "12-hour"), ("24", "24-hour"), ("locale", "Follow regional format")] {
+            let mut value = setting("localeInfo.clock", true);
+            value.value = wire.into();
+            assert_eq!(display_value(&value), label);
+            assert_eq!(value.value, wire);
         }
     }
 

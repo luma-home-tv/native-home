@@ -10,7 +10,8 @@ fn full() -> Value {
         "modelName":"Example OLED 55","firmwareVersion":"24.10.01","sdkVersion":"10.0.0"});
     raw["replies"][crate::locale_reads::LOCALE_VALUES_REPLY] = json!({
         "returnValue":true,"settings":{"localeInfo":{"locales":{
-            "UI":"en-GB","AUD":"fr-FR","AUD2":"de_DE"}}}});
+            "UI":"en-GB","AUD":"fr-FR","AUD2":"de_DE","FMT":"en-GB"},
+            "clock":"locale","timezone":"Europe/London"}}});
     raw["replies"][crate::locale_reads::REGION_VALUES_REPLY] = json!({
         "returnValue":true,"category":"option",
         "settings":{"country":"GBR","smartServiceCountryCode2":"GB"}});
@@ -57,12 +58,12 @@ fn refuse_legacy(raw: &mut Value) {
 }
 fn identity(snapshot: &Snapshot) {
     let rows = &snapshot.settings["general"];
-    assert_eq!(rows.len(), 13);
+    assert_eq!(rows.len(), 16);
     assert_eq!(
         rows.iter().map(|r| r.focus_key).collect::<Vec<_>>(),
-        (140..=152).collect::<Vec<_>>()
+        (140..=149).chain(153..=155).chain(150..=152).collect::<Vec<_>>()
     );
-    for (row, key) in rows[10..].iter().zip(crate::device_info_reads::ALL) {
+    for (row, key) in rows[13..].iter().zip(crate::device_info_reads::ALL) {
         assert_eq!(row.id, key.id());
         assert_eq!(row.label, key.label());
         assert!(row.protected && row.constraint.is_none());
@@ -93,7 +94,7 @@ fn actual_general_form_keeps_information_inert_and_existing_routes_intact() {
             ),
             None,
         );
-        for (index, setting) in rows.iter().enumerate().skip(10) {
+        for (index, setting) in rows.iter().enumerate().skip(13) {
             let position = form.index_of(&setting.id).unwrap();
             let binding = form.binding_at(position).unwrap();
             assert_eq!(binding.id, setting.id);
@@ -131,10 +132,10 @@ fn failed_info_cannot_inherit_a_fresh_legacy_general_clock() {
     apply(&mut snapshot, &mut fresh, &failed, 200);
     identity(&snapshot);
     assert_eq!(fresh.controls.get(&ControlSection::General), Some(&200));
-    assert!(snapshot.settings["general"][..10]
+    assert!(snapshot.settings["general"][..13]
         .iter()
         .all(|r| r.available));
-    assert!(snapshot.settings["general"][10..]
+    assert!(snapshot.settings["general"][13..]
         .iter()
         .all(|r| !r.available && r.value == "Unavailable"));
 }
@@ -149,10 +150,10 @@ fn valid_info_cannot_resurrect_a_failed_pointer_or_locale_read() {
     refuse_legacy(&mut partial);
     apply(&mut snapshot, &mut fresh, &partial, 200);
     identity(&snapshot);
-    assert!(snapshot.settings["general"][..10]
+    assert!(snapshot.settings["general"][..13]
         .iter()
         .all(|r| !r.available && r.value == "Unavailable"));
-    assert!(snapshot.settings["general"][10..]
+    assert!(snapshot.settings["general"][13..]
         .iter()
         .all(|r| r.available));
     assert_eq!(fresh.controls.get(&ControlSection::General), Some(&200));
@@ -195,8 +196,8 @@ fn total_refusal_expiry_and_partial_recovery_keep_stable_context_and_no_old_valu
     recovered["replies"]["system_info"]["modelName"] = "New Example Model".into();
     apply(&mut snapshot, &mut fresh, &recovered, 15_300);
     identity(&snapshot);
-    assert_eq!(snapshot.settings["general"][10].value, "New Example Model");
-    assert!(snapshot.settings["general"][..10]
+    assert_eq!(snapshot.settings["general"][13].value, "New Example Model");
+    assert!(snapshot.settings["general"][..13]
         .iter()
         .all(|r| !r.available && r.value == "Unavailable"));
     assert!(!needs_expiry(&snapshot, &fresh, 30_300));
@@ -214,11 +215,11 @@ fn display_validity_never_qualifies_an_unknown_platform_for_keyboard_or_settings
     let Reading::Value(rows) = &update.controls[&ControlSection::General] else {
         panic!("info is displayable")
     };
-    assert!(rows[10..]
+    assert!(rows[13..]
         .iter()
         .all(|r| r.available && r.protected && r.constraint.is_none()));
     // A readable value supplies no new choice/range or write capability.
-    assert!(!rows[10..].iter().any(|r| matches!(
+    assert!(!rows[13..].iter().any(|r| matches!(
         r.constraint,
         Some(ControlConstraint::Choices { .. } | ControlConstraint::Range { .. })
     )));
