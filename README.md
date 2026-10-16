@@ -75,11 +75,13 @@ now verifies that held window beneath our own foreground Target, drawing stopped
 after departure, natural actor closure and complete known cleanup. Independent
 saved audit and replay agree. It adds no Root helper or normal artwork activation.
 
-The [ordinary icon-cache foundation](docs/durable-icon-cache-foundation.md) now
-passes 22 real-file cases, all 665 Rust host tests, strict Clippy and a
-matching ARM build. It is not connected to the dashboard yet; ordinary worker
-integration and separately qualified population come next. Neither retained TV
-installation changed.
+The [0.58 ordinary artwork cache](docs/ordinary-artwork-cache-058.md) now connects
+the storage foundation to the existing image worker and fresh catalogue, with
+an explicit diagnostic producer kept separate from ordinary interaction. All
+711 Rust host tests, strict Clippy, 72 Python packaging checks and matching ARM
+dashboard/helper builds pass. Normal navigation creates no Root artwork runtime.
+Native population, cache-hit frames and restoration remain unqualified; neither
+retained TV installation changed.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.

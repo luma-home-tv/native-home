@@ -3,9 +3,10 @@
 Normal interaction should read a bounded ordinary icon cache. Privileged fill
 and refresh should run through a separate, explicitly admitted operation, rather
 than starting a Root helper on each interactive miss. The
-[ordinary storage foundation](durable-icon-cache-foundation.md) now has passing
-host checks and a matching ARM build; worker/UI integration and qualified population
-remain unfinished. Retained G2 0.57 continues to use packaged art with normal
+[0.58 integration](ordinary-artwork-cache-058.md) connects the ordinary storage
+foundation to the existing worker/UI and an explicit diagnostic producer. Host
+checks and matching ARM builds pass; native population and presentation remain
+unqualified. Retained G2 0.57 continues to use packaged art with normal
 Root artwork off.
 
 The current installed broker admits one image per session. Historical non-first
@@ -74,11 +75,11 @@ It informs departure/teardown behavior for an active privileged refresh without
 qualifying that refresh. A prefilled ordinary cache needs no Root session merely
 to render.
 
-The ordinary cache storage/lookup/decoder foundation is now implemented and
-host-tested, with no callsite enabled. Next connect it to the existing ordinary
-worker and independently fresh catalogue, and add only an explicit diagnostic
-producer. Matching executable/positive-transfer qualification remains
-a prerequisite to native cache population. Native acceptance must establish normal
+The ordinary worker, independently fresh catalogue and explicit diagnostic
+producer are now connected in 0.58. Its normal consumer loads a fixed independently
+packaged producer association on the existing image worker; a cache miss does
+not dispatch privileged work. Matching executable/positive-transfer qualification
+remains a prerequisite to native cache population. Native acceptance must establish normal
 Home/Apps/keyboard/owned-app behavior with **zero Root dispatch on cache hits**,
 SourceKey invalidation, stale-result discard and joined texture shutdown.
 Measure cold refresh separately before selecting a bulk-producer scope and

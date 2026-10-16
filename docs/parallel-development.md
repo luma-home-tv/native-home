@@ -378,7 +378,10 @@ The [ordinary cache foundation](durable-icon-cache-foundation.md) now passes the
 coordinator's real-file/full Rust/Clippy checks and matching ARM build. Its owner
 authored the isolated module/tests, independent review found the final-scan writer
 race, and the coordinator repaired, integrated and executed the final checks.
-The next parallel lanes cover ordinary worker/controller consumption and an
-optional diagnostic publisher with independently packaged producer association.
-Both stay private until reviewed; main/UI activation, package admission and all
-native checks remain coordinator-owned. No cache code has run on either TV.
+The [0.58 integration](ordinary-artwork-cache-058.md) now combines reviewed private
+consumer, diagnostic-publisher and fixed producer-profile proposals. Separate
+agents reviewed the consumer, publisher, Main/Shell wiring and bounded capture
+receipts; the coordinator integrated them and ran all host checks and matching
+ARM builds. Independent local artifact auditing and native carrier preparation
+continue in parallel. Main/UI integration, artifact admission, publication and
+all TV contact remain coordinator-owned. No cache code has run on either TV.

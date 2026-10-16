@@ -26,6 +26,11 @@ Preserve its saved favourites and installed state. Do not apply the former
 diagnostic driver's unconditional uninstall/cleanup to a retained installation;
 use a separate test identity or a backed-up, verified update procedure.
 
+The G2 is always available for coordinator-owned tests. The C2 is available only
+from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
+supersedes earlier availability windows; fresh device leases and baseline checks
+still apply, and no G2 evidence establishes C2 behavior.
+
 The latest verified retained G2 installation is 0.57.0, with dashboard ELF
 SHA-256 `a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590`
 from functional source `da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0`.
@@ -61,9 +66,9 @@ known ordinary cleanup remain distinct; unknown ownership/transport retains barr
 normal interaction, with separately qualified privileged preparation. Preserve
 the current broker, source checks and pending guard. Do not merely remove its
 input wait, clear old Tickets or infer Root authority from app-writable cache
-metadata. Cache population and normal integration are future work; matching
-current executable/positive-transfer qualification remains necessary. Normal
-Root artwork stays off.
+metadata. The 0.58 source now integrates ordinary reads and an explicit
+diagnostic producer; matching current executable/positive-transfer qualification
+remains necessary. Normal Root artwork stays off.
 
 `docs/durable-icon-cache-foundation.md` records the unintegrated ordinary cache
 module: 22 real-file cases, all 665 Rust host tests, strict Clippy and a matching
@@ -76,6 +81,17 @@ SourceKey, expected producer and generation/selection through late-result admiss
 withdraw on independent catalogue failure/expiry, and keep all I/O/codec work off
 the render thread. Automatic eviction/old-version retirement after restart and
 stale-slot recovery remain open. Retained057 and normal Root-off state are unchanged.
+
+`docs/ordinary-artwork-cache-058.md` records the new source integration, passing
+711 Rust/72 Python checks, strict Clippy and matching ARM dashboard/helper builds.
+Ordinary cache/profile I/O and decoding stay on the existing single image worker;
+fresh source withdrawal applies even without RootRuntime. Only the separately
+admitted Preview diagnostic may publish after positive/joined/current-Ticket
+closure. Producer metadata grants no Root authority. Session-only cache-frame
+receipts are bounded observations, not foreground/pixel/provenance/performance
+proof. No 0.58 code has run on a TV; preserve retained057 and require fresh native
+population, ordinary hit evidence, known cleanup and exact restoration before
+promotion. Keep eviction and stale-slot recovery explicitly unfinished.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

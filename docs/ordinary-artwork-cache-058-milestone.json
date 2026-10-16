@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "version": "0.58.0",
+  "status": "ordinary_artwork_cache_source_host_ARM_packages_pass_native_unqualified",
+  "functional_source_revision": "aca11408628ea74e651ae0ed9427ca077918bb38",
+  "selected_source_inputs": 124,
+  "sources": {
+    "package-preview.py": {
+      "bytes": 43517,
+      "sha256": "27331b83b99b856f01dabd1f2c5f43f2e720eeb9094562eb5c574fc2909f0c8f"
+    },
+    "src/artwork_installed_provider.rs": {
+      "bytes": 101629,
+      "sha256": "48c6520d5ceedf4ca0b944aa8983028de625875292288d946c1630c56bce9eb9"
+    },
+    "src/artwork_installed_provider_tests.rs": {
+      "bytes": 100989,
+      "sha256": "7d1c43ae0801d948073b3c8a1d98a435eeed4d28ac64fb00312200d6b915b3b1"
+    },
+    "src/bin/home-preview.rs": {
+      "bytes": 188072,
+      "sha256": "e4bb31252c3eeef19b50e6bd6382ee4776bd787a225126bc36c9962d7a483c63"
+    },
+    "src/cache_producer_profile.rs": {
+      "bytes": 8376,
+      "sha256": "4b59a80b4ff62b79121891651df624f6e66270c77cbc7a6095c256867ce52392"
+    },
+    "src/cache_producer_profile_tests.rs": {
+      "bytes": 7160,
+      "sha256": "8b84fd055b8592a04c54acd98a43bed2813349a2f024865c0658ec6911f943a2"
+    },
+    "src/durable_icon_cache.rs": {
+      "bytes": 33756,
+      "sha256": "031b0b233b521efc86e4f99783919918c89761897f70f16ccbb88dee369b566e"
+    },
+    "src/lib.rs": {
+      "bytes": 1719,
+      "sha256": "b91dd08aff8940a5458d0dce5ca8f597590e797f4b94c42ec18d5786060cb8f3"
+    },
+    "src/packaged_icons.rs": {
+      "bytes": 39128,
+      "sha256": "d3a844392781459d3e74a793f7aa75420bdcf2809e373e3aff162c24f412b3a9"
+    },
+    "src/packaged_icons_cache_tests.rs": {
+      "bytes": 34486,
+      "sha256": "e0be1603409aafb0f50ba3b2518ebc583941b6a93b8397b97a7b8613a97cda16"
+    },
+    "src/shell.rs": {
+      "bytes": 186094,
+      "sha256": "658756b35bd0a2ed10a7d234216e22874b24d01142197d5ffaa17dc0849a0db1"
+    },
+    "src/shell_cache_frame_tests.rs": {
+      "bytes": 7755,
+      "sha256": "20beb4c5fa7cf1aad74bcba8ad6ced12f38f6e099e92e33a2e68fd8797b94666"
+    },
+    "src/shell_current_cache_tests.rs": {
+      "bytes": 9842,
+      "sha256": "91a39cdca776254e2a3f5d6568f91517a817f533febcfee743bf75a2db93d189"
+    },
+    "tests/test_broker_negative_package.py": {
+      "bytes": 13565,
+      "sha256": "af2f18b296abbbb1187b0a55f770de9a670b3fca0e865aed9cfc69a12dc6b215"
+    },
+    "tests/test_cache_producer_package.py": {
+      "bytes": 7839,
+      "sha256": "7f6a5460ad485e86560a1e58fcc15e7db814df46537cc305ec3efd6fb4f6954c"
+    },
+    "tests/test_closed_negative_artwork_package.py": {
+      "bytes": 8347,
+      "sha256": "01b53302cf828343184c516774757475d23eab46f3a28342917ee5647778daea"
+    },
+    "tests/test_installed_artwork_package.py": {
+      "bytes": 12349,
+      "sha256": "577bd0eba82f368722fd8e5aa388bf296de411038b2db16c3459a2f85d727fb4"
+    },
+    "tests/test_preferences_migration_package.py": {
+      "bytes": 13928,
+      "sha256": "7b841782d68f80be554ff799031d4d9054fbe70522190dc690ed893e4a1cbce8"
+    },
+    "tests/test_preview_artwork_package.py": {
+      "bytes": 14862,
+      "sha256": "da97f285acf714732cc3b79331a139e32402d63998584102fddff247b6809d13"
+    }
+  },
+  "artifacts": {
+    "home-preview": {
+      "bytes": 4345392,
+      "name": "home-preview",
+      "sha256": "260c42ff908adacba4c60c64b7137dc56a510c55e86e26ee78aed4c7b5a62441",
+      "build_receipt_sha256": "dcfc7d1bdcd066b455130266a164e17a9606dde588682126a1da7787c25d0846"
+    },
+    "artwork-broker": {
+      "bytes": 908124,
+      "name": "artwork-broker",
+      "sha256": "a738757aad017b5eaae6de61c427aa5e34e93407abbc06d6ff4aa1fbe73faf43",
+      "build_receipt_sha256": "8c12438b83a1439b7baa34350ca124e232be6d94e56bd074971e384de6ba2491"
+    },
+    "normal_package": {
+      "sha256": "aa25bddcfeb2cdfe06df213318d4665a843db1f1b81e780553912477ac99f6aa",
+      "bytes": 2545918,
+      "package_receipt_sha256": "b4ee54e3961fe684b007e9b26828b182d7c745c2e9752d8de154e0daef41af8c",
+      "producer_sidecar_sha256": "15432b0c518406302eab3f35f9b25382cd215386ebf2a62599a353e9c8a9e698"
+    },
+    "diagnostic_package": {
+      "sha256": "25284e951ad97d0b9d8e9e6c8d11782a4aff6254b8f663d00c315ddc49279498",
+      "bytes": 2546082,
+      "package_receipt_sha256": "c9df7a37fcd296659b472f3607c7c6344f40468869e53c97e9a7820f91c1778f",
+      "producer_sidecar_sha256": "15432b0c518406302eab3f35f9b25382cd215386ebf2a62599a353e9c8a9e698"
+    }
+  },
+  "checks": {
+    "Rust_all_targets": 711,
+    "Rust_library": 701,
+    "Rust_UI": 10,
+    "Rust_actual_exit": 0,
+    "Rust_terminal": "80ef72",
+    "strict_Clippy_actual_exit": 0,
+    "Clippy_terminal": "ea9066",
+    "Python_packaging_and_provenance": 72,
+    "Python_actual_exit": 0,
+    "Python_terminal": "761a1f",
+    "both_matching_ARM_builds_actual_exit": 0,
+    "ARM_terminal": "6ef1c8",
+    "UI_helper_snapshots_identical": true,
+    "both_package_roles_actual_exit": 0,
+    "package_terminal": "4f3980",
+    "independent_artifact_guard_fixtures": 8,
+    "guard_actual_exit": 0,
+    "guard_terminal": "d5e0d5",
+    "independent_scope_and_privacy_review": "clear",
+    "independent_local_artifact_audit": "passed_source_SDK_archives_ELF_local_only",
+    "actual_Rust_writer_independent_parser_agree": true,
+    "parser_fixtures": 12,
+    "native_checks": false,
+    "artifact_audit_actual_exit": 0,
+    "artifact_audit_terminal": "3fe8a3",
+    "artifact_audit_report_sha256": "8b768a0db92bb6a5138fb9582ba506957acd39446169c749aa61a9b2d893b6d6",
+    "Root_reread_all_bound_files_actual_exit": 0,
+    "Root_reread_terminal": "76cf04",
+    "exact057_rollback_archive_matches_saved_full_bundle": true
+  },
+  "preserved_failures": [
+    {
+      "kind": "new Python fixture setup",
+      "terminal": "bb39ca",
+      "exit": 1,
+      "product_or_package_executed": false
+    },
+    {
+      "kind": "consumer fixture strict Clippy type complexity",
+      "terminal": "571e0f",
+      "exit": 101
+    },
+    {
+      "kind": "artifact guard macOS linked temporary ancestor",
+      "terminal": "3c49f6",
+      "exit": 1,
+      "corrected_fixture_only": true
+    },
+    {
+      "kind": "local artifact helper GLIBC compared to UI-only version needs",
+      "terminal": "e1cbb0",
+      "exit": 1,
+      "native_contact": false
+    }
+  ],
+  "contract": {
+    "normal_uses_existing_single_image_worker": true,
+    "normal_Root_artwork_runtime_constructed": false,
+    "normal_miss_dispatches_Root": false,
+    "complete_fresh_SourceKey_and_independent_expected_producer_required": true,
+    "freshness_withdrawal_milliseconds": 15000,
+    "diagnostic_only_optional_publication": true,
+    "requires_authenticated_positive_join_current_Ticket_close": true,
+    "cache_metadata_grants_Root_authority": false,
+    "session_only_cache_frame_budget": 2,
+    "capture_work_qualifies_performance": false
+  },
+  "framework_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+  "framework_patch_sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf",
+  "framework_changed": false,
+  "TV_contacted": false,
+  "retained_G2": "0.57.0 unchanged",
+  "retained_C2": "0.48.0 not contacted",
+  "unqualified": [
+    "native new UI/helper positive population",
+    "ordinary cache-hit Home/Apps rendering and zero Root dispatch",
+    "native SourceKey invalidation and lifecycle",
+    "backed-up diagnostic update and exact057 restoration",
+    "automatic eviction, restart retirement and stale writer-slot recovery",
+    "same-key source-file mutation and continuous freshness",
+    "cold refresh and normal performance, broad app coverage",
+    "C2"
+  ],
+  "ABI_comparison": {
+    "UI": "matches retained057 exact loader/directNEEDED/GLIBC requirements",
+    "helper": "matches hash-bound native046 helper exact loader/directNEEDED/GLIBC requirements",
+    "native058_permission_lifecycle_or_transitive_libraries_qualified": false
+  },
+  "native_restore_policy": {
+    "retained057_bundle_and_preferences": "exact current baseline required",
+    "existing_runtime_event_log": "preserve old complete prefix and account for legitimate appended bytes; never truncate",
+    "other_existing_runtime_files": "unchanged bytes or explicit reviewed mutation rule",
+    "sampled_Core": "independently compared"
+  }
+}
