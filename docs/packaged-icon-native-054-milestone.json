@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "version": "0.54.0",
+  "status": "G2_controlled_packaged_render_shutdown_cleanup_and_later_preservation_verified",
+  "publication_ready": true,
+  "device_family": "G2",
+  "source_revision": "3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb",
+  "artifacts": {
+    "arm_ui_sha256": "a1bd31cc4e3ce7b9141f3e33a7db81392f4d0e7893d6a0c8e77193b6e90ae418",
+    "build_receipt_sha256": "817aeb0b50cdd806d2edfef06be1e736d6560483302416993bfff65e353259a2",
+    "isolated_ipk_sha256": "d468e2977a556378c2f01d05c03344ba6e7989e55db5fec34cc472802c642216",
+    "package_receipt_sha256": "703cc106b58751f11af7855884c75587745a83b0f18b94183d94fa5dce078191",
+    "independent_package_admission_sha256": "93e054cf65b14547f0e21a1329814266e658e3aecc2f7a70bc7c8119b4c7caf7"
+  },
+  "controlled_graphics": {
+    "verified": true,
+    "fixture_count": 4,
+    "packaged_image_count": 3,
+    "missing_image_count": 1,
+    "strict_icon_frame_count": 6,
+    "standard_frame_format_count": 10,
+    "worker_joined": true,
+    "worker_panicked": false,
+    "packaged_uploads": 3,
+    "packaged_deletes": 3,
+    "remaining_packaged_textures": 0,
+    "reported_packaged_backend_errors": 0,
+    "texture_scope": "Three packaged image textures only; separate branding/navigation texture deletion and total memory not qualified",
+    "existing_output_validation_sha256": "bf4373081862dbff8d48ba97c499faa3f63829fdf698aba5e2e95d89c7640a68"
+  },
+  "failure_history": [
+    {
+      "operation": "original_operator",
+      "actual_exit_code": 1,
+      "reason": "Output-publication observation timeout",
+      "result_preserved": true
+    },
+    {
+      "operation": "existing_output_continuation",
+      "actual_exit_code": 1,
+      "rendering_and_packaged_shutdown_verified": true,
+      "full_preservation_and_closeout_complete": false,
+      "new_install_or_launch": false,
+      "result_preserved": true
+    },
+    {
+      "operation": "full_finisher",
+      "actual_exit_code": 1,
+      "result_preserved": true
+    }
+  ],
+  "scoped_cleanup": {
+    "actual_exit_code": 0,
+    "known_test_app_runtime_state_staging_absence_verified": true,
+    "coordination_lease_released": true,
+    "private_host_agent_closed": true,
+    "independent_saved_review_sha256": "67a561f3620fb3e2fa246c2de6819e89610476daf1c5a80de3f11bb1ae2033af",
+    "full_preservation_qualified_by_this_review": false
+  },
+  "fresh_full_preservation_audit": {
+    "actual_exit_code": 0,
+    "read_only": true,
+    "new_app_operations": 0,
+    "new_Root_broker_or_HBC_sessions": 0,
+    "full_preservation_verified": true,
+    "complete_retained_bundle_current_preferences_and_runtime_compared_to_original_backups": true,
+    "Core_hashes_verified": 5,
+    "known_test_artifact_absence_verified": true,
+    "coordination_lease_released": true,
+    "private_host_agent_closed": true,
+    "summary_sha256": "42d7899e037752806b95b67fd2a3f0c6c76ba4b844048ee0b9699f3b52fb6d7d",
+    "actual_terminal_receipt_sha256": "be66ef2ab375f7f89ac86cbd66f10b0368fce3e41b1400d8cfe8eeba4dcd60d3",
+    "Core_getter_reply_groups_verified": 19
+  },
+  "independent_full_preservation_review": {
+    "actual_exit_code": 0,
+    "audit_source_sha256": "5de3281e277b9afb6b1800bce88f460945c8d2bd5a804c3bde16507591310db9",
+    "report_sha256": "10b3362e6a7c1946f9ac7d5604ccd24a3381b19112465cdc411c26b88ea258e9",
+    "coordinator_replay_actual_exit_code": 0,
+    "coordinator_replay_identical_report": true,
+    "coordinator_replay_receipt_sha256": "42aa3deff5834c438b2b1d90a959dea6face32cba4e286a7da9e534e5fa362a3",
+    "retained_bundle_entries": 32,
+    "retained_bundle_files": 30,
+    "private_state_entries": 2,
+    "private_state_files": 1,
+    "retained_runtime_entries": 110,
+    "retained_runtime_files": 73,
+    "full_file_hashes": 104,
+    "sampled_readback_not_atomic_uninterrupted_interval": true
+  },
+  "normal_retained_promotion": false,
+  "normal_Root_artwork_activation": false,
+  "artwork_broker_or_HBC_test_session_started": false,
+  "C2_native_qualification": false,
+  "over64_native_qualification": false,
+  "rapid_scroll_or_cancellation_native_qualification": false,
+  "live_icon_version_refresh_qualification": false,
+  "performance_qualification": false,
+  "physical_panel_qualification": false,
+  "full_preservation_verified_by_fresh_read_only_audit": true,
+  "independent_composite_verification_complete": true,
+  "retained_G2_version": "0.47.0",
+  "retained_C2_version": "0.48.0",
+  "C2_contact_in_this_experiment": false
+}

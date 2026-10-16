@@ -107,8 +107,12 @@ app-version authority, drawing references borrowed, and all GL ownership on the
 render thread. Pause dispatch/uploads immediately for departure/idle/keyboard/
 external intent, including window close before tick. Capture diagnostics require
 bounded readiness; frame counts alone do not qualify asynchronous image arrival.
-No 0.54 TV execution or retained promotion is qualified; preserve G2 0.47/C2 0.48
-and the independent frozen 0.53 artifacts. The separate ordinary scene packages
+The isolated G2 0.54 four-fixture test in `docs/packaged-icon-native-054.md` now
+qualifies controlled framebuffer pixels and three-texture worker shutdown,
+with separate known cleanup and a fresh full preservation readback independently
+replayed. Three failed operators remain failures; no normal input/performance,
+all-app, C2 or retained promotion is qualified. Preserve G2 0.47/C2 0.48 and the
+independent frozen 0.53 artifacts. The separate ordinary scene packages
 were installed then removed without launch requests; their limited cleanup is
 recorded in `docs/native-surface-prepared-cleanup-milestone.json`, not native scene
 or test-UID execution evidence.

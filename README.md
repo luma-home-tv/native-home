@@ -177,9 +177,10 @@ activation.
 The [0.54 packaged-icon candidate](docs/packaged-icon-demand.md) replaces the
 first-64 synchronous loader with ordinary, bounded demand loading. Icons keep
 their own alpha/shape on black; known images stay blank while loading, and only
-unavailable artwork uses the monogram fallback. Host verification is separate
-from native rendering/performance and a retained update; normal Root artwork
-remains off.
+unavailable artwork uses the monogram fallback.
+Its [isolated G2 component test](docs/packaged-icon-native-054.md)
+now verifies controlled native pixels, texture shutdown, removal and subsequent
+preservation; normal-use/performance checks remain open. Normal Root artwork stays off.
 
 ## Layout
 

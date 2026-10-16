@@ -3,8 +3,9 @@
 The 0.54 candidate replaces synchronous first-64 icon loading with a separate
 ordinary worker and a render-thread demand cache. It reads only icons already
 packaged with Luma. The retained G2 0.47 and C2 0.48 installations are unchanged;
-this candidate has no TV rendering, physical-input, performance or retained-update
-qualification. Normal Root artwork remains off.
+its [isolated G2 rendering/shutdown test](packaged-icon-native-054.md) is now
+qualified for four controlled fixtures. Physical input, performance and a
+retained update remain separate. Normal Root artwork remains off.
 
 The old loader read each whole file before checking its encoded length and
 decoded before checking dimensions. It also omitted packaged images beyond its
@@ -71,8 +72,9 @@ source `3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb` to 620 passing Rust tests,
 64 passing Python packaging tests, clean strict Clippy and two successful ARM32
 builds. The frozen dashboard and Proof helper have identical snapshots of all
 110 selected source inputs and the verified framework. Independent source and
-scope review is clear. Neither new executable has run on a TV; these builds do
-not replace the separately frozen 0.53 diagnostic artifacts.
+scope review is clear. The build record predates the subsequent isolated G2
+dashboard test; the Proof helper has not run. These builds do not replace the
+separately frozen 0.53 diagnostic artifacts.
 
 The component tests use real temporary files, the ordinary worker and actual PNG
 decoder, with a simulated GL ownership backend. They cover bounded/escaped/
@@ -81,8 +83,7 @@ demand, abandoned/changed epochs, pauses, capacity, aliased/recycled handles,
 shutdown, and the actual Shell's focus/press/loading/close behavior. Host checks
 do not prove native permissions, graphics-driver deletion or physical latency.
 
-Before a retained update, freeze the actual candidate, inspect an isolated native
-render and removal, verify G2/C2 independently, and preserve each complete current
+Before a retained update, verify normal flows and G2/C2 independently, and preserve each complete current
 bundle, resource set and fresh favourites. Compare matched normal startup,
 navigation, scrolling and idle/wake workloads. Newly installed or revised apps
 still need a separately qualified fresh artwork route: an old packaged binding
