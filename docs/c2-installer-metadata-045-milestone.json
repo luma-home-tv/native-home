@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "milestone": "C2 inert Proof installer metadata, 0.45",
+  "status": "metadata_component_verified",
+  "operator_execution": {
+    "handle_kind": "Root tool execution handle, not a TV process ID",
+    "handle": 7450,
+    "terminal_exit": 0
+  },
+  "identities": {
+    "candidate_sha256": "103f9ccdb8f515246cc0689904d5a8b8a28888905c600527e3d491ea3dfc133d",
+    "carrier_sha256": "8ad0d973aaa1e3c7ede9a4661d8d0947b0caa651afce2ed783dcf44065410bbc",
+    "contract_sha256": "ce9b819651e72d776487dbf612dd183d8cf99cbac44e1b8a4cf31635c3ba9398",
+    "ipk_sha256": "86332714626c39fb2eba28f0a9042201b8dacbe375b73ff8a655c52e3a73c7b5",
+    "historical_ui_source_revision": "9c6af7247fe62f22f34c2cdbfac6d53808e73e5f",
+    "historical_ui_sha256": "eeb70d4cab122debff46c98131bbff856268cb867beb6466622daccd5fac5528",
+    "historical_source_inputs_verified": 99,
+    "current_source_equivalence_claimed": false,
+    "historical_reference_ipk_sha256": "3876ef89c8fce43058ae31fd794a1a0f6ec7118d20debe8840cc5ef6178661a8"
+  },
+  "installed_component": {
+    "role": "isolated Proof, never launched by this component",
+    "own_new_directories": 1,
+    "own_regular_files": 3,
+    "archive_requested_own_modes": "0777",
+    "installed_own_modes": "0777",
+    "standard_archive_ancestor_modes": "0755",
+    "requested_own_modes_honored": true,
+    "exact_installed_bytes_verified": true,
+    "snapshot_or_trial_marker_bundled": false,
+    "helper_service_root_configuration_or_webos_permission_grant_bundled": false,
+    "permission_metadata_requested_in_archive": true,
+    "direct_chmod_chown_requested": false,
+    "retained_or_system_permission_operation_requested": false,
+    "application_launches_requested": 0,
+    "keys_sent": 0,
+    "settings_writes_requested": 0,
+    "ordinary_producer_expected": false,
+    "proof_execution_observed_in_sampled_guards": false
+  },
+  "preservation": {
+    "retained_version": "0.20.0",
+    "retained_application_files": 40,
+    "full_bundle_and_state_bytes_and_metadata_unchanged": true,
+    "actual_retained_modes_preserved": "0777",
+    "reference_archive_file_bytes_match": true,
+    "reference_archive_metadata_equated_to_installed_metadata": false,
+    "reference_archive_installed": false,
+    "core_file_hashes_preserved": 5,
+    "preservation_domains": 20,
+    "quiet_home_before_and_after": true,
+    "retained_application_updated_or_reset": false
+  },
+  "cleanup": {
+    "original_installer_subscription_terminal_replayed": true,
+    "supported_own_removal_acknowledged": true,
+    "sampled_process_guards": 7,
+    "own_runtime_state_registration_jail_and_mount_references_absent": true,
+    "guarded_own_upload_cleanup_verified": true,
+    "no_wake_lease_adapter_verified": true,
+    "lease_release_and_absence_verified": true,
+    "private_agent_cleanup_verified": true,
+    "recorded_closeout_errors": 0
+  },
+  "verification": {
+    "host_tests_passed": 16,
+    "initial_host_fixture_errors_preserved": 3,
+    "initial_host_fixture_error": "missing run label in synthetic fixture setup",
+    "independent_auditor_version": 2,
+    "independent_auditor_sha256": "bfc7ca41563daa565c20a64c04ea9f950427d3b9a7f1d6531d03fd012e405b06",
+    "independent_audit_sha256": "c75dba12ceaf13f5a7f83b2f2b7fac6de845b084bf462c536d888d90b9119a4a",
+    "independent_audit_terminal_exit": 0,
+    "independent_assertions_passed": 2961,
+    "first_auditor_terminal_exit": 1,
+    "first_auditor_error": "incorrect settings-envelope assumption for input-source replies",
+    "first_auditor_log_preserved": true,
+    "corrected_replay_used_same_saved_evidence": true,
+    "tv_retry_for_auditor_repair": false
+  },
+  "qualification": {
+    "new_inert_proof_installer_metadata": true,
+    "same_identity_retained_rollback": false,
+    "normal_upgrade_or_metadata_migration": false,
+    "application_runtime_or_rendering": false,
+    "root_artwork": false,
+    "physical_input": false,
+    "performance": false,
+    "continuous_execution_tracing": false,
+    "exhaustive_system_metadata_preservation": false
+  }
+}

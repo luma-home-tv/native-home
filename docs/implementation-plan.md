@@ -282,6 +282,13 @@ no normal UI caller yet.
 
 ## Protected and unsupported operations
 
+The [0.46 actual Preview diagnostic](preview-artwork-preflight-046.md) now has
+G2 resource and exact restoration evidence. Keep normal artwork disabled until
+the [transition lifecycle](artwork-transition-lifecycle.md) is qualified. The
+[C2 installer metadata measurement](c2-installer-metadata-045.md) supports one
+rollback mechanism component; ordinary-owner preference migration, reversal,
+same-ID restoration and current normal UI still require their own C2 tests.
+
 Network reconfiguration, firmware, factory reset, service/calibration controls,
 OLED protections and compensation scheduling remain protected/delegated. An
 unsupported control routes to LG Settings or stays unavailable; the UI never

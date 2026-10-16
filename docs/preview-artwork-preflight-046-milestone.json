@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "version": "0.46.0",
+  "status": "Scoped actual Preview resource diagnostic completed; exact normal37 restored, normal activation off",
+  "functional_source_revision": "f9e9b02b020d99ce55dda78320bd441a3f14390a",
+  "selected_source_inputs": 99,
+  "artifacts": {
+    "ui": {
+      "bytes": 3815332,
+      "name": "home-preview",
+      "sha256": "0affb5bfa9925eba3bc78d96230f9c27fac7cb15be224c987d8aced56636c386"
+    },
+    "preview_helper": {
+      "bytes": 847792,
+      "name": "artwork-broker",
+      "sha256": "d604bdb5f1ae7a44d35c39effa9c0c694f7b050ed785592e5c94ec000391a3b1"
+    },
+    "build_receipt_sha256": {
+      "home-preview": "89e0ec716c2792445e3a5432cbad6f3778118cdeef58a2a1041847a74306f6c4",
+      "artwork-broker": "2feb17bfe5dddeffc0d30c3e8b20156228399b4bfee5276e2099931cdae1b3d5"
+    },
+    "ipk_sha256": "e1130a5155b5636a44d964b93ced0ad52b67f35395726041241fd96e8055e02e",
+    "ipk_bytes": 2308382,
+    "candidate_sha256": "0b542c8a9af80d5bfaede2b362b8b6ef582bb09f522b8c3e69fd2b518523d1e2",
+    "carrier_sha256": "d57b81dbffce4dfbbfd8293598701b1cab09d6533603f74154972cefd6a98d53"
+  },
+  "host_checks": {
+    "library_tests": 443,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "python_tests": 57,
+    "private_carrier_cases": 25
+  },
+  "native": {
+    "device": "G2",
+    "webos_generation": 24,
+    "device_carrier_exit": 0,
+    "actual_preview_role_verified": true,
+    "mode": "resource",
+    "initial_inert_check_root_calls": 1,
+    "initial_inert_outcome": "root_true",
+    "fresh_fetch_capability_checks": 6,
+    "fixed_root_startup_exec_sessions": 6,
+    "not_one_total_hbc_request": true,
+    "resource_results": 6,
+    "accepted_transfers": 6,
+    "known_helpers": 6,
+    "known_core_children": 96,
+    "first_helper_external_raw_process_records": 7,
+    "ordinary_raw_process_records": 6,
+    "later_helpers_kernel_self_and_joined_hbc_bound": 5,
+    "pages": [
+      "Home",
+      "Applications"
+    ],
+    "fully_visible_live_targets_per_page": [
+      3,
+      3
+    ],
+    "distinct_visible_live_targets": 3,
+    "visible_targets_shared_between_pages": true,
+    "first_context_fresh_preview_card_observed": true,
+    "first_context_grants_authority": false,
+    "current_before_after_contexts_remain_admission_authority": true,
+    "foreground_gate_seconds_unchanged": 5,
+    "operation_budget_seconds_unchanged": 8,
+    "clock_normal_polling_qualified": false
+  },
+  "closure_and_restoration": {
+    "first_pending_record_binds_measured_caller_before_external_root_process_read": true,
+    "all_resource_results_helpers_and_known_children_closed": true,
+    "pending_absent_before_supported_restore": true,
+    "protected_exact_helper_configuration_and_directory_removed": true,
+    "same_id_supported_restore_without_uninstall": true,
+    "old_version": "0.37.0",
+    "full_original_bundle_and_state_bytes_and_metadata_restored": true,
+    "diagnostic_preference_write_attempts": 0,
+    "state_domains_preserved": 20,
+    "core_hashes_preserved": 5,
+    "only_new_runtime_files_removed": 21,
+    "preexisting_runtime_folders_preserved": true,
+    "uploads_device_lease_and_private_agent_removed": true,
+    "lg_home_current": true,
+    "unknown_barrier": false,
+    "closeout_errors": {},
+    "old_code_execution_tested": false,
+    "normal_product_activated": false
+  },
+  "independent_audit": {
+    "execution_exit": 0,
+    "byte_identical_saved_replay_exit": 0,
+    "assertions_passed": 28351,
+    "script_sha256": "91215b12a3e9ce5ea87eb0585ed128920a5e75d02abe9d596c534f45567a4c27",
+    "result_sha256": "d2dc01f27feaf33f207b2ca0f19e2dc4e77546704a2e8f3ad11e71a599206bfc",
+    "replay_result_sha256": "d2dc01f27feaf33f207b2ca0f19e2dc4e77546704a2e8f3ad11e71a599206bfc",
+    "historical_git_inputs_not_mutable_checkout": true
+  },
+  "visual_observation": {
+    "root_reviewed_two_saved_native_frames": true,
+    "review_receipt_sha256": "ebbb98a1f2b79b47a5203ff18043756d642a40429e032311ab238f5753d9d24c",
+    "icons_black_canvas_labels_branding_and_focus_visible": true,
+    "branding_header_raw_rgb_equal_between_pages": true,
+    "branding_header_nonzero_channel_bytes": 15857,
+    "branding_header_rgb_sha256": "fddf32038955865077949073530d723ee68353e1adbec30bb5afab6e2ec546bb",
+    "independent_encoded_image_pixel_identity_qualified": false,
+    "physical_panel_observation": false,
+    "full_text_ocr": false
+  },
+  "history_and_limits": {
+    "045_record_preserved": "preview-artwork-admission-045.md",
+    "045_render_order_hypothesis_supported_by_followup": true,
+    "controlled_causal_proof": false,
+    "reliability_qualified": false,
+    "normal_interactive_artwork_enabled": false,
+    "production_startup_qualified": false,
+    "all_apps_or_installation_classes_qualified": false,
+    "c2_resource_or_migration_qualified": false,
+    "transition_lifecycle_qualified": false,
+    "physical_input_qualified": false,
+    "performance_power_or_hard_lifetime_qualified": false
+  },
+  "compiled_candidate_snapshot": "preview-artwork-preflight-046-candidate.json",
+  "transition_plan": "artwork-transition-lifecycle.md",
+  "c2_migration_plan": "c2-retained-upgrade-plan.md",
+  "framework_attribution": "README.md#plxnative-framework-dependency"
+}

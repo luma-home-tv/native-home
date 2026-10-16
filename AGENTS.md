@@ -119,6 +119,19 @@ The actual 0.45 Preview experiment in `docs/preview-artwork-admission-045.md`
 completed a known-no-worker decline and exact normal 0.37 restoration. Its context
 expired before checkRoot: no HBC request, resource worker or Root command ran.
 This proves the controlled restoration path, not Preview permission/resource
-access. The 0.46 candidate in `docs/preview-artwork-preflight-046.md` renders while
+access. The 0.46 result in `docs/preview-artwork-preflight-046.md` renders while
 collecting the same inert preflight and retains its first context for diagnosis;
-all admission gates remain strict. It needs fresh native qualification.
+all admission gates remain strict. Its actual G2 Preview-ID diagnostic completed
+six resource/helper sessions and restored exact normal 0.37, with independent
+saved-evidence replay. Normal interactive artwork stays off; transition/departure
+closure and retained promotion remain separate gates. C2 Root access is not
+established by this G2 result.
+
+The inert C2 installer result in `docs/c2-installer-metadata-045.md` verifies
+requested metadata on a new never-launched Proof package and preserves exact
+normal 0.20. Its reference archive has different modes from the installed app;
+do not use it as an exact rollback without reconciling actual metadata. Any
+preference migration must run as the ordinary owning Preview identity, preserve
+the original bytes/owners, change only its own directory and preferences file,
+and prove reversal separately. No Root chmod/chown, state reset, parent-directory
+permission change or retained-app uninstall is authorized by that procedure.
