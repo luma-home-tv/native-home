@@ -80,8 +80,12 @@ the storage foundation to the existing image worker and fresh catalogue, with
 an explicit diagnostic producer kept separate from ordinary interaction. All
 711 Rust host tests, strict Clippy, 72 Python packaging checks and matching ARM
 dashboard/helper builds pass. Normal navigation creates no Root artwork runtime.
-Native population, cache-hit frames and restoration remain unqualified; neither
-retained TV installation changed. A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequisite.md)
+Native population and cache-hit frames remain unqualified. The
+[first G2 installation attempt](docs/ordinary-artwork-cache-058-first-attempt.md)
+stopped before an explicit launch request on an installer diagnostic check; a
+separate verified restore returned the complete retained G2 installation to 0.57.
+C2 was untouched.
+A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequisite.md)
 now passes with independent saved replay; it grants no 0.58 execution or cache
 permission qualification.
 

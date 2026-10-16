@@ -102,6 +102,21 @@ code, ordinary cache IO/permissions/live namespace, pixels or full runtime/Core
 preservation is qualified. Future native trials need fresh state/new leases;
 this catalogue and dated prerequisite window cannot grant later freshness.
 
+`docs/ordinary-artwork-cache-058-first-attempt.md` preserves the first native
+trial's exit1 after a known completed diagnostic install. It stopped before
+explicit app launch or Root staging because the installer rejected a known PTY
+close diagnostic. A separate restore-only continuation exited0 under the same
+original lease and conservative original deadline, restoring exact057 and
+preserving fresh private preferences, complete measured Host runtime and sampled
+Core5+19. Only original journal-bound staging was removed; lease and agent cleanup
+passed. Preserve the failed trial independently.
+Independent saved audit and byte-identical coordinator replay also pass; preserve
+the first two reader-adapter failures separately. No cache population, ordinary
+hit, native image/performance or launched-producer restoration is qualified.
+Future carriers need fresh state/leases/dates and strict matching completion
+before accepting known installer PTY diagnostics; never infer success from ACK
+or connection close alone. Normal Root artwork remains off; C2 was not contacted.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.
