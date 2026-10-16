@@ -79,6 +79,15 @@ artwork off. A reported closed candidate is not authority to clear a Ticket.
 Finish failure still has no typed observed-EOF evidence. Retained G2/C2 baselines
 and frozen earlier carriers/artifacts remain unchanged.
 
+The 0.52 source in `docs/artwork-closed-negative-052.md` implements a strict
+ReadAfter/Finish negative grader, consuming byte discard, finite joined
+observation and a sealed current-Ticket-only resolver. All 17 host groups pass;
+there is no 0.52 native execution qualification. Normal Root artwork stays off.
+Do not transfer previous native evidence or recover an old pending record.
+Post-unlink sync failure remains Unknown and may leave no marker; it grants no
+power-loss or crash-recovery claim. Native cases require a separately reviewed
+isolated design and a fresh permitted device window.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

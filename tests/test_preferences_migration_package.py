@@ -75,7 +75,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
     def unpack(self, output):
         receipt = json.loads((output / 'preview-package-receipt.json').read_text())
         ipk = Path(receipt['ipk'])
-        self.assertEqual(ipk.name, APP + '_0.51.0_arm.ipk')
+        self.assertEqual(ipk.name, APP + '_0.52.0_arm.ipk')
         self.assertEqual(_BASE.sha(ipk.read_bytes()), receipt['sha256'])
         members = _BASE.ar_members(ipk.read_bytes())
         self.assertEqual(set(members), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -87,7 +87,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
             self.assertEqual(set(line.split(': ', 1)[0] for line in text.splitlines()),
                              {'Package', 'Version', 'Section', 'Priority',
                               'Architecture', 'Maintainer', 'Description'})
-            self.assertIn('Version: 0.51.0\n', text)
+            self.assertIn('Version: 0.52.0\n', text)
         files = {}
         prefix = 'usr/palm/applications/' + APP + '/'
         with tarfile.open(fileobj=io.BytesIO(members['data.tar.gz'])) as data:
@@ -122,7 +122,7 @@ class PreferencesMigrationPackageTests(unittest.TestCase):
                 self.assertEqual(files['icon.png'], (self.f.root / 'assets/luma-home/icon-160.png').read_bytes())
                 info = json.loads(files['appinfo.json'])
                 self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                                 (APP, '0.51.0', 'home-preview', 'native'))
+                                 (APP, '0.52.0', 'home-preview', 'native'))
                 self.assertEqual(info['requiredPermissions'], [])
                 self.assertIs(receipt['preferences_migration_proof'], True)
                 self.assertEqual(receipt['preferences_migration_direction'], direction)

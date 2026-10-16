@@ -156,6 +156,10 @@ local socket cases with clean removal; neither retained TV installation changes.
 The [0.51 attempt/shutdown foundation](docs/artwork-attempt-foundation-051.md)
 adds typed failure metadata and narrow helper closure candidates. Host checks
 pass; failed exchanges remain Unknown and normal Root artwork stays off.
+The later [0.52 closed-negative source](docs/artwork-closed-negative-052.md)
+grades only two fully authenticated, joined failures and resolves only their
+sealed current Ticket. Host checks pass; native qualification and normal
+activation remain separate.
 
 ## Layout
 

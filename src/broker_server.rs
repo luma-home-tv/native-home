@@ -88,13 +88,13 @@ impl std::error::Error for ContextWithdrawal {}
 
 #[cfg(any(target_arch = "arm", test))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum InstalledContextOutcome {
+pub(crate) enum InstalledContextOutcome {
     Admitted,
     Withdrawn,
 }
 
 #[cfg(any(target_arch = "arm", test))]
-fn installed_context_outcome(
+pub(crate) fn installed_context_outcome(
     value: &serde_json::Value,
     expected: &str,
     profile: crate::broker_installation::Profile,

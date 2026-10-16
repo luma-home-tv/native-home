@@ -487,6 +487,79 @@ fn begin_pending(
     }
     attempt
 }
+// Per-fetch only: never serialized, persisted, or accepted from a producer.
+#[cfg(any(target_arch = "arm", test))]
+type AttemptSeal = std::sync::Arc<()>;
+
+#[cfg(any(target_arch = "arm", test))]
+struct CurrentAttempt {
+    captured: Option<crate::artwork_session_guard::Ticket>,
+    identity: crate::artwork_session_guard::PendingIdentity,
+    seal: AttemptSeal,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl CurrentAttempt {
+    fn begin(
+        provider: &mut InstalledProvider,
+        own: &crate::broker_probe::OwnIdentity,
+    ) -> Result<Self, ProviderError> {
+        let captured = begin_pending(provider, own)?;
+        Ok(Self {
+            captured: Some(captured),
+            identity: crate::artwork_session_guard::PendingIdentity {
+                schema: 1,
+                profile: provider.profile,
+                caller_pid: own.pid,
+                caller_start_ticks: own.start_ticks,
+                ui_sha256: own.ui_sha256.clone(),
+                nonce: provider.marker.nonce.clone(),
+            },
+            seal: std::sync::Arc::new(()),
+        })
+    }
+    fn identity(&self) -> &crate::artwork_session_guard::PendingIdentity {
+        &self.identity
+    }
+    fn seal(&self) -> &AttemptSeal {
+        &self.seal
+    }
+    #[cfg(target_arch = "arm")]
+    fn into_ticket(
+        mut self,
+        provider: &mut InstalledProvider,
+    ) -> Result<crate::artwork_session_guard::Ticket, ProviderError> {
+        self.captured.take().ok_or_else(|| {
+            provider.quarantined = true;
+            provider.ticket_resolved = false;
+            ProviderError::Invalid
+        })
+    }
+    fn resolve_negative(
+        self,
+        provider: &mut InstalledProvider,
+        proof: negative::KnownClosed,
+    ) -> Result<(), ProviderError> {
+        self.resolve_with(provider, proof, |ticket| ticket.finish_known())
+    }
+    fn resolve_with(
+        mut self,
+        provider: &mut InstalledProvider,
+        proof: negative::KnownClosed,
+        finish: impl FnOnce(crate::artwork_session_guard::Ticket) -> std::io::Result<()>,
+    ) -> Result<(), ProviderError> {
+        provider.ticket_resolved = false;
+        provider.quarantined = true;
+        if !proof.matches_current(self.seal()) {
+            return Err(ProviderError::Denied);
+        }
+        let ticket = self.captured.take().ok_or(ProviderError::Invalid)?;
+        finish(ticket).map_err(|_| ProviderError::Invalid)?;
+        provider.quarantined = false;
+        provider.ticket_resolved = true;
+        Ok(())
+    }
+}
+
 /// Only the existing lifecycle grader may clear quarantine. Unknown completion
 /// drops the ticket without unlinking, blocking a new provider/process too.
 #[cfg(any(target_arch = "arm", test))]
@@ -577,6 +650,11 @@ mod session {
             }
         }
 
+        pub(super) fn after_exchange_error(&self, trace: &AttemptTrace) {
+            if !trace.bounded_eof_candidate() {
+                self.cancel.store(true, Ordering::Release);
+            }
+        }
         pub(super) fn join(mut self) -> Result<serde_json::Value, ProviderError> {
             self.handle
                 .take()
@@ -611,13 +689,16 @@ mod session {
             && header.class == source.class.into()
             && header.kind == source.kind.into()
     }
-    fn known_reader(
-        value: &Value,
-        catalogue: bool,
-        expected: &str,
-        events: &mut Vec<Value>,
-        profile: Profile,
-    ) -> Result<(), ProviderError> {
+    #[derive(Clone, Copy)]
+    pub(super) enum ReaderKind {
+        Context,
+        Catalogue,
+    }
+    pub(super) struct ReaderEvidence {
+        pub(super) events: Vec<Value>,
+        pub(super) measurement: Value,
+    }
+    fn reader_header(value: &Value, expected: &str) -> Result<(), ProviderError> {
         let reader = &value["_reader"];
         if reader["schema"] != 1
             || reader["kind"] != "fixed_core_luna_send"
@@ -631,6 +712,15 @@ mod session {
         {
             return Err(ProviderError::Invalid);
         }
+        Ok(())
+    }
+    fn reader_operations(
+        value: &Value,
+        catalogue: bool,
+        expected: &str,
+        events: &mut Vec<Value>,
+    ) -> Result<(), ProviderError> {
+        let reader = &value["_reader"];
         let context_ops = [
             (
                 "system_info",
@@ -661,9 +751,6 @@ mod session {
         } else {
             &context_ops
         };
-        if !catalogue && !crate::broker_probe::context_valid_for_profile(value, profile) {
-            return Err(ProviderError::Denied);
-        }
         if catalogue
             && (value["app_count"].as_u64().is_none()
                 || value["launch_point_count"].as_u64().is_none())
@@ -723,18 +810,68 @@ mod session {
         }
         Ok(())
     }
-    pub(super) fn lifecycle<'a>(
-        hbc: &'a Value,
-        exchange: &Exchange,
-        marker: &Marker,
+    pub(super) fn reader_evidence(
+        value: &Value,
+        kind: ReaderKind,
+        expected: &str,
+    ) -> Result<ReaderEvidence, ProviderError> {
+        reader_header(value, expected)?;
+        let mut events = Vec::new();
+        reader_operations(
+            value,
+            matches!(kind, ReaderKind::Catalogue),
+            expected,
+            &mut events,
+        )?;
+        Ok(ReaderEvidence {
+            events,
+            measurement: value["_reader"]["executable"].clone(),
+        })
+    }
+    fn known_reader(
+        value: &Value,
+        catalogue: bool,
+        expected: &str,
+        events: &mut Vec<Value>,
         profile: Profile,
-    ) -> Result<&'a Value, ProviderError> {
+    ) -> Result<(), ProviderError> {
+        reader_header(value, expected)?;
+        if !catalogue && !crate::broker_probe::context_valid_for_profile(value, profile) {
+            return Err(ProviderError::Denied);
+        }
+        reader_operations(value, catalogue, expected, events)
+    }
+    pub(super) struct IdentityBindings<'a> {
+        pub(super) own: &'a OwnIdentity,
+        pub(super) own_after: &'a OwnIdentity,
+        pub(super) root: Credentials,
+        pub(super) identify_message: Credentials,
+        pub(super) client: Credentials,
+        pub(super) identity: &'a wire::Identity,
+    }
+    pub(super) struct BoundInvocation<'a> {
+        pub(super) helper: &'a Value,
+        pub(super) journals: &'a Value,
+        pub(super) envelope_success: bool,
+        pub(super) stderr: &'a str,
+        pub(super) error_text: &'a Value,
+    }
+    pub(super) struct BoundOrigin<'a> {
+        pub(super) core_sha256: &'a str,
+        pub(super) peer: Value,
+        pub(super) client: Value,
+    }
+    pub(super) fn validate_invocation<'a>(
+        hbc: &'a Value,
+        own: &OwnIdentity,
+        profile: Profile,
+    ) -> Result<BoundInvocation<'a>, ProviderError> {
         if hbc["uri"] != crate::broker_startup_proof::EXEC_URI
             || hbc["command"] != crate::broker_startup_proof::fixed_command(profile)
             || hbc["attempts"] != 1
             || !hbc["error"].is_null()
             || hbc["raw_truncated"] != false
-            || hbc["own_at_call"] != json!(exchange.own)
+            || hbc["own_at_call"] != json!(own)
             || !crate::broker_probe::context_valid_for_profile(&hbc["context"], profile)
         {
             return Err(ProviderError::Invalid);
@@ -752,9 +889,9 @@ mod session {
             || cap["identity_stable"] != true
             || cap["operation_deadline_expired"] != false
             || !cap["error"].is_null()
-            || cap["own_before"] != json!(exchange.own)
-            || cap["own_at_call"] != json!(exchange.own)
-            || cap["own_after"] != json!(exchange.own)
+            || cap["own_before"] != json!(own)
+            || cap["own_at_call"] != json!(own)
+            || cap["own_after"] != json!(own)
             || !crate::broker_probe::context_valid_for_profile(&cap["context_before"], profile)
             || !crate::broker_probe::context_valid_for_profile(&cap["context_after"], profile)
             || cap["response"] != crate::artwork_startup_probe::parse_response(cap_raw)
@@ -769,34 +906,40 @@ mod session {
         let parsed =
             crate::broker_startup_proof::parse_exec_resource_reply_for_profile(raw, profile)
                 .map_err(|_| ProviderError::Invalid)?;
-        if hbc["parsed"] != parsed || parsed["envelope_success"] != true || parsed["stderr"] != "" {
+        if hbc["parsed"] != parsed {
             return Err(ProviderError::Invalid);
         }
-        let helper = &hbc["parsed"]["helper_report"];
-        let own = &exchange.own;
-        let root = exchange.root;
+        let parsed = &hbc["parsed"];
+        Ok(BoundInvocation {
+            helper: &parsed["helper_report"],
+            journals: &parsed["journals"],
+            envelope_success: parsed["envelope_success"]
+                .as_bool()
+                .ok_or(ProviderError::Invalid)?,
+            stderr: parsed["stderr"].as_str().ok_or(ProviderError::Invalid)?,
+            error_text: &parsed["error_text"],
+        })
+    }
+    pub(super) fn validate_origin<'a>(
+        helper: &'a Value,
+        binding: &IdentityBindings<'_>,
+        marker: &Marker,
+        profile: Profile,
+    ) -> Result<BoundOrigin<'a>, ProviderError> {
+        let own = binding.own;
+        let root = binding.root;
         crate::broker_probe::bind_response_for_profile(
             marker,
             own,
-            own,
+            binding.own_after,
             root,
-            exchange.message,
-            &exchange.identity,
+            binding.identify_message,
+            binding.identity,
             profile,
         )
         .map_err(|_| ProviderError::Denied)?;
         let root_process = &helper["root_process"];
-        if !exchange.clean_eof
-            || exchange.finished.is_none()
-            || helper["qualified"] != true
-            || helper["profile"] != json!(profile)
-            || helper["outcome"] != "identified_artwork_finished"
-            || helper["resource_mode"] != true
-            || helper["artwork_session_completed"] != true
-            || helper["connection_closed"] != true
-            || helper["response_sent"] != true
-            || helper["icon_reads"] != true
-            || !helper["error"].is_null()
+        if helper["profile"] != json!(profile)
             || helper["server_pid"] != root.pid
             || root_process["pid"] != root.pid
             || root_process["uid_fields"] != json!([0, 0, 0, 0])
@@ -806,10 +949,7 @@ mod session {
             || root_process["exe_sha256"] != marker.broker_sha256
             || helper["broker_sha256"] != marker.broker_sha256
             || helper["nonce"] != marker.nonce
-            || helper["response"] != json!(exchange.identity)
-            || helper["finished_sent"] != true
-            || helper["finished"] != json!(exchange.finished)
-            || helper["artwork_finished"] != json!(exchange.finished)
+            || helper["response"] != json!(binding.identity)
         {
             return Err(ProviderError::Invalid);
         }
@@ -826,11 +966,9 @@ mod session {
             }
         }
         let client =
-            json!({"pid":exchange.client.pid,"uid":exchange.client.uid,"gid":exchange.client.gid});
+            json!({"pid":binding.client.pid,"uid":binding.client.uid,"gid":binding.client.gid});
         if helper["connect_credentials"] != client
             || helper["identify_message_credentials"] != client
-            || helper["artwork_finish_connect_credentials"] != client
-            || helper["artwork_finish_message_credentials"] != client
         {
             return Err(ProviderError::Denied);
         }
@@ -865,12 +1003,62 @@ mod session {
             return Err(ProviderError::Invalid);
         }
         let peer = json!({"pid":own.pid,"uid_fields":[own.uid,own.uid,own.uid,own.uid],"start_ticks":own.start_ticks,"exe_path":profile.peer_exe_path(),"root_path":profile.jail_root(),"exe_sha256":own.ui_sha256});
-        for key in [
-            "peer_before",
-            "peer_at_identify_send",
-            "artwork_finish_peer_before",
-            "artwork_finish_peer_after",
-        ] {
+        for key in ["peer_before", "peer_at_identify_send"] {
+            if helper[key] != peer {
+                return Err(ProviderError::Denied);
+            }
+        }
+        Ok(BoundOrigin {
+            core_sha256: core,
+            peer,
+            client,
+        })
+    }
+    pub(super) fn lifecycle<'a>(
+        hbc: &'a Value,
+        exchange: &Exchange,
+        marker: &Marker,
+        profile: Profile,
+    ) -> Result<&'a Value, ProviderError> {
+        let invocation = validate_invocation(hbc, &exchange.own, profile)?;
+        if !invocation.envelope_success || !invocation.stderr.is_empty() {
+            return Err(ProviderError::Invalid);
+        }
+        let helper = invocation.helper;
+        let binding = IdentityBindings {
+            own: &exchange.own,
+            own_after: &exchange.own,
+            root: exchange.root,
+            identify_message: exchange.message,
+            client: exchange.client,
+            identity: &exchange.identity,
+        };
+        let origin = validate_origin(helper, &binding, marker, profile)?;
+        if !exchange.clean_eof
+            || exchange.finished.is_none()
+            || helper["qualified"] != true
+            || helper["outcome"] != "identified_artwork_finished"
+            || helper["resource_mode"] != true
+            || helper["artwork_session_completed"] != true
+            || helper["connection_closed"] != true
+            || helper["response_sent"] != true
+            || helper["icon_reads"] != true
+            || !helper["error"].is_null()
+            || helper["finished_sent"] != true
+            || helper["finished"] != json!(exchange.finished)
+            || helper["artwork_finished"] != json!(exchange.finished)
+        {
+            return Err(ProviderError::Invalid);
+        }
+        let client = origin.client;
+        let peer = origin.peer;
+        let core = origin.core_sha256;
+        if helper["artwork_finish_connect_credentials"] != client
+            || helper["artwork_finish_message_credentials"] != client
+        {
+            return Err(ProviderError::Denied);
+        }
+        for key in ["artwork_finish_peer_before", "artwork_finish_peer_after"] {
             if helper[key] != peer {
                 return Err(ProviderError::Denied);
             }
@@ -946,7 +1134,7 @@ mod session {
             .collect::<std::collections::BTreeSet<_>>();
         if events.len() != expected_count
             || unique.len() != expected_count
-            || parsed["journals"] != json!(events)
+            || *invocation.journals != json!(events)
         {
             return Err(ProviderError::Invalid);
         }
@@ -1112,8 +1300,9 @@ mod session {
     }
 }
 
-// A trace is metadata about this attempt, never proof of settlement. In
-// particular, unexpected EOF remains the same failed operation as before.
+// A trace is metadata about this attempt, never proof of settlement. EOF alone
+// remains Unknown; only the joined strict grader may create a current-job proof.
+// This covers worker-start/exchange attempts, not outer fetch preconditions.
 #[cfg(any(target_arch = "arm", test))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum AttemptStage {
@@ -1158,6 +1347,9 @@ struct AttemptFailure {
 #[cfg(any(target_arch = "arm", test))]
 #[derive(Clone, Debug)]
 struct AttemptTrace {
+    seal: AttemptSeal,
+    discarded_read: Option<crate::artwork_transfer::DiscardedRead>,
+    final_root_peer: Option<crate::broker_transport::Credentials>,
     profile: Profile,
     source_key: crate::app_artwork::SourceKey,
     stage: AttemptStage,
@@ -1191,6 +1383,9 @@ struct AttemptTrace {
 impl AttemptTrace {
     fn new(profile: Profile, source: &crate::app_artwork::SourceKey) -> Self {
         Self {
+            seal: std::sync::Arc::new(()),
+            discarded_read: None,
+            final_root_peer: None,
             profile,
             source_key: source.clone(),
             stage: AttemptStage::AwaitStartup,
@@ -1271,6 +1466,38 @@ impl AttemptTrace {
         }
         Ok(ended)
     }
+    fn bounded_eof_candidate(&self) -> bool {
+        if !self.identify_bound
+            || !self.observed_unexpected_eof
+            || self.clean_eof
+            || self.failure.is_none_or(|f| {
+                f.kind != AttemptFailureKind::UnexpectedEof || f.stage != self.stage
+            })
+            || self.root.is_none()
+            || self.final_root_peer != self.root
+            || self.own.is_none()
+            || self.own_after != self.own
+            || self.finished.is_some()
+        {
+            return false;
+        }
+        match self.stage {
+            AttemptStage::ReadArtwork => {
+                self.discarded_read.is_some()
+                    && self.header_matches == Some(true)
+                    && self.complete.is_none()
+                    && self.refusal.is_none()
+                    && self.finish_request.is_none()
+            }
+            AttemptStage::Finish => {
+                self.resource_complete_validated == Some(true)
+                    && self.complete.is_some()
+                    && self.refusal.is_none()
+                    && self.finish_request.is_some()
+            }
+            _ => false,
+        }
+    }
     fn report(&self) -> serde_json::Value {
         use serde_json::json;
         let failure = self.failure.map(|f| json!({
@@ -1282,7 +1509,7 @@ impl AttemptTrace {
             "proof_binding_hold_ms":self.proof_binding_hold_ms,
             "attempt_source_key":self.source_key,"attempt_failure":failure,
             "observed_unexpected_eof":self.observed_unexpected_eof,
-            "failure_evidence_retained":true,"negative_acceptance_enabled":false});
+            "failure_evidence_retained":true,"closed_negative_grader_available":true});
         // Preserve successful optional-JSON field names and values. Absence of
         // an unobserved field stays absence, not an invented typed observation.
         macro_rules! optional {
@@ -1303,6 +1530,10 @@ impl AttemptTrace {
         optional!("own_after", self.own_after);
         optional_credentials!("client_credentials", self.client);
         optional_credentials!("root_peer", self.root);
+        optional_credentials!("final_root_peer", self.final_root_peer);
+        if let Some(discarded) = &self.discarded_read {
+            value["discarded_read"] = json!({"header":discarded.header(),"validated_bytes":discarded.validated_bytes(),"validated_chunks":discarded.validated_chunks(),"encoded_sha256":discarded.encoded_sha256()});
+        }
         optional_credentials!("root_message_credentials", self.identify_message);
         optional!("identify_request", self.identify_request);
         optional!("identify_response", self.identify_response);
@@ -1383,6 +1614,83 @@ fn retain_attempt(provider: &mut InstalledProvider, trace: AttemptTrace) {
     // Metadata only. No-writer workers retain it in this provider instance;
     // final diagnostic projection occurs only after the existing join/settle.
     provider.last_attempt = Some(trace);
+}
+
+#[cfg(any(target_arch = "arm", test))]
+#[path = "artwork_installed_provider_negative.rs"]
+mod negative;
+
+#[cfg(any(target_arch = "arm", test))]
+fn settle_closed_negative(
+    provider: &mut InstalledProvider,
+    current: CurrentAttempt,
+    source: &crate::app_artwork::SourceKey,
+    joined: Result<serde_json::Value, ProviderError>,
+    cancelled: bool,
+    expired: bool,
+) -> Result<EncodedFile, ProviderError> {
+    provider.quarantined = true;
+    provider.ticket_resolved = false;
+    let joined = joined?;
+    let trace = provider
+        .last_attempt
+        .as_ref()
+        .ok_or(ProviderError::Invalid)?;
+    let proof = negative::grade_closed_negative(negative::NegativeEvidence {
+        trace,
+        joined_hbc: &joined,
+        marker: &provider.marker,
+        profile: provider.profile,
+        source,
+        current_pending: current.identity(),
+    })?;
+    current.resolve_negative(provider, proof)?;
+    // No encoded object can escape this branch, even after validated Complete.
+    Err(if cancelled {
+        ProviderError::Cancelled
+    } else if expired {
+        ProviderError::Expired
+    } else {
+        ProviderError::Denied
+    })
+}
+
+// Only terminal typed EOF enters this cleanup measurement seam. Cancellation is
+// handled by the final result, not used to erase authenticated closure evidence.
+#[cfg(any(target_arch = "arm", test))]
+fn authenticate_eof(
+    trace: &mut AttemptTrace,
+    marker: &Marker,
+    deadline: Instant,
+    measure_peer: impl FnOnce() -> Result<crate::broker_transport::Credentials, ProviderError>,
+    measure_own: impl FnOnce() -> Result<crate::broker_probe::OwnIdentity, ProviderError>,
+) -> Result<(), ProviderError> {
+    if Instant::now() >= deadline {
+        return Err(ProviderError::Expired);
+    }
+    let root = trace.root.ok_or(ProviderError::Denied)?;
+    let final_peer = measure_peer()?;
+    if final_peer != root {
+        return Err(ProviderError::Denied);
+    }
+    let own = trace.own.as_ref().ok_or(ProviderError::Denied)?;
+    let own_after = measure_own()?;
+    crate::broker_probe::bind_response_for_profile(
+        marker,
+        own,
+        &own_after,
+        final_peer,
+        trace.identify_message.ok_or(ProviderError::Denied)?,
+        trace.identity.as_ref().ok_or(ProviderError::Denied)?,
+        trace.profile,
+    )
+    .map_err(|_| ProviderError::Denied)?;
+    if Instant::now() >= deadline {
+        return Err(ProviderError::Expired);
+    }
+    trace.final_root_peer = Some(final_peer);
+    trace.own_after = Some(own_after);
+    Ok(())
 }
 
 #[cfg(target_arch = "arm")]
@@ -1501,9 +1809,39 @@ mod native {
         let mut receiver = wire::Receiver::new_for_profile(&read, &identity, root, profile)
             .map_err(|_| ProviderError::Invalid)?;
         loop {
-            let packet = receive_attempt_packet(&mut observation.trace, || {
-                connection.recv_or_eof_until(wire::MESSAGE_LIMIT, deadline)
-            })?;
+            let packet =
+                match receive_attempt_packet(&mut observation.trace, || {
+                    connection.recv_or_eof_until(wire::MESSAGE_LIMIT, deadline)
+                }) {
+                    Ok(packet) => packet,
+                    Err(error) => {
+                        if observation.trace.failure.is_some_and(|failure| {
+                            failure.kind == AttemptFailureKind::UnexpectedEof
+                        }) {
+                            // Consumes and discards the complete body; metadata alone
+                            // is retained. Partial/digest-invalid streams stay Unknown.
+                            let discarded = receiver
+                                .discard_incomplete_after_eof()
+                                .map_err(|_| ProviderError::Invalid)?;
+                            authenticate_eof(
+                                &mut observation.trace,
+                                marker,
+                                deadline,
+                                || {
+                                    connection
+                                        .peer_credentials()
+                                        .map_err(|_| ProviderError::Denied)
+                                },
+                                || {
+                                    probe::own_identity_for_profile(profile)
+                                        .map_err(|_| ProviderError::Denied)
+                                },
+                            )?;
+                            observation.trace.discarded_read = Some(discarded);
+                        }
+                        return Err(error);
+                    }
+                };
             if observation.trace.push_resource(&mut receiver, &packet)? {
                 break;
             }
@@ -1523,7 +1861,7 @@ mod native {
         observation.trace.stage = AttemptStage::Finish;
         wire::send_finish_request(&connection, &finish, deadline)
             .map_err(|_| ProviderError::Unavailable)?;
-        let finished = wire::receive_finished_for_profile(
+        let finished = wire::receive_finished_or_eof_for_profile(
             &connection,
             &finish,
             &identity,
@@ -1532,6 +1870,30 @@ mod native {
             profile,
         )
         .map_err(|_| ProviderError::Unavailable)?;
+        let finished = match finished {
+            wire::FinishedOrEof::Finished(finished) => finished,
+            wire::FinishedOrEof::Eof => {
+                // Complete may already have validated, but no image is released
+                // from a withdrawal candidate. EOF is not a Finished response.
+                drop(outcome);
+                observation.trace.fail(
+                    AttemptFailureKind::UnexpectedEof,
+                    ProviderError::Unavailable,
+                );
+                authenticate_eof(
+                    &mut observation.trace,
+                    marker,
+                    deadline,
+                    || {
+                        connection
+                            .peer_credentials()
+                            .map_err(|_| ProviderError::Denied)
+                    },
+                    || probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied),
+                )?;
+                return Err(ProviderError::Unavailable);
+            }
+        };
         let own_after =
             probe::own_identity_for_profile(profile).map_err(|_| ProviderError::Denied)?;
         probe::bind_response_for_profile(
@@ -1577,7 +1939,9 @@ mod native {
             provider.quarantined = true;
             ProviderError::Denied
         })?;
-        let pending = begin_pending(provider, &own)?;
+        let mut trace = AttemptTrace::new(profile, source.key());
+        let current = CurrentAttempt::begin(provider, &own)?;
+        trace.seal = current.seal().clone();
         let stop = Arc::new(AtomicBool::new(false));
         let invoke_stop = stop.clone();
         let marker = provider.marker.clone();
@@ -1596,7 +1960,6 @@ mod native {
             }) {
             Ok(handle) => handle,
             Err(_) => {
-                let mut trace = AttemptTrace::new(profile, source.key());
                 trace.stage = AttemptStage::ExecWorkerNotStarted;
                 trace.fail(
                     AttemptFailureKind::ProviderError,
@@ -1604,6 +1967,7 @@ mod native {
                 );
                 retain_attempt(provider, trace);
                 provider.quarantined = false;
+                let pending = current.into_ticket(provider)?;
                 resolve_pending(provider, pending)?;
                 if let Some(ticket) = ticket {
                     let protocol = provider
@@ -1626,7 +1990,7 @@ mod native {
             let mut observation = Observation {
                 writer: provider.observation.as_ref(),
                 ticket,
-                trace: AttemptTrace::new(profile, source.key()),
+                trace,
             };
             let result = exchange(
                 &marker,
@@ -1646,9 +2010,21 @@ mod native {
             (result, observation.trace)
         };
         retain_attempt(provider, trace);
+        let closed_candidate = result.is_err()
+            && provider
+                .last_attempt
+                .as_ref()
+                .is_some_and(AttemptTrace::bounded_eof_candidate);
         if result.is_err() {
-            stop.store(true, Ordering::Release);
+            worker.after_exchange_error(
+                provider
+                    .last_attempt
+                    .as_ref()
+                    .ok_or(ProviderError::Invalid)?,
+            );
         }
+        // A bounded candidate keeps only this already-started HBC observer alive
+        // through its original finite deadline; join remains mandatory.
         let completion = worker.join();
         let worker_panicked = completion.is_err();
         let hbc = if ticket.is_some() {
@@ -1658,15 +2034,29 @@ mod native {
         };
         let cancelled = cancellation.is_cancelled();
         let expired = Instant::now() >= deadline;
-        let result = session::settle(
-            provider,
-            source.key(),
-            result,
-            completion,
-            cancelled,
-            expired,
-        );
-        let result = guard_result(provider, pending, result);
+        let result = if closed_candidate {
+            settle_closed_negative(
+                provider,
+                current,
+                source.key(),
+                completion,
+                cancelled,
+                expired,
+            )
+        } else {
+            let result = session::settle(
+                provider,
+                source.key(),
+                result,
+                completion,
+                cancelled,
+                expired,
+            );
+            let pending = current.into_ticket(provider)?;
+            guard_result(provider, pending, result)
+        };
+        let closed_negative_qualified =
+            closed_candidate && provider.ticket_resolved && !provider.quarantined;
         if let Some(ticket) = ticket {
             let protocol = provider
                 .last_attempt
@@ -1678,7 +2068,7 @@ mod native {
                 .map(|value| value["parsed"]["helper_report"].clone())
                 .unwrap_or(serde_json::Value::Null);
             let record = &helper["artwork_reads"][0];
-            let value = serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":protocol,"hbc":hbc,"root_helper":helper,"source_key_before":record["source_key"],"source_key_after":record["source_key_after"],"outcome":observed_outcome(&result),"encoded_release_eligible":result.is_ok(),"result_requires_successful_observation_write":true,"quarantined":provider.quarantined,"cancelled":cancelled,"expired":expired,"exec_worker_started":true,"exec_worker_joined":true,"exec_worker_panicked":worker_panicked,"proof_first_fetch_hold":ticket.hold,"performance_qualified":false,"encoded_image_bytes_logged":false});
+            let value = serde_json::json!({"schema":1,"index":ticket.index,"source_key":source.key(),"protocol":protocol,"hbc":hbc,"root_helper":helper,"source_key_before":record["source_key"],"source_key_after":record["source_key_after"],"outcome":observed_outcome(&result),"encoded_release_eligible":result.is_ok(),"closed_negative_qualified":closed_negative_qualified,"current_ticket_resolved":provider.ticket_resolved,"result_requires_successful_observation_write":true,"quarantined":provider.quarantined,"cancelled":cancelled,"expired":expired,"exec_worker_started":true,"exec_worker_joined":true,"exec_worker_panicked":worker_panicked,"proof_first_fetch_hold":ticket.hold,"performance_qualified":false,"encoded_image_bytes_logged":false});
             write_observed_result(provider, ticket, &value)?;
         }
         result

@@ -759,8 +759,33 @@ fn connection_peer(
     check(conn.peer_credentials()? == server, Error::Credentials)
 }
 
-/// Pure transaction assembler. Any error, including an extra packet after a
-/// terminal, poisons the receiver and prevents later retrieval of its bytes.
+/// Metadata from a consumed body, without image bytes or closure authority.
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct DiscardedRead {
+    header: Header,
+    validated_bytes: u32,
+    validated_chunks: u32,
+    encoded_sha256: String,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl DiscardedRead {
+    pub(crate) fn header(&self) -> &Header {
+        &self.header
+    }
+    pub(crate) fn validated_bytes(&self) -> u32 {
+        self.validated_bytes
+    }
+    pub(crate) fn validated_chunks(&self) -> u32 {
+        self.validated_chunks
+    }
+    pub(crate) fn encoded_sha256(&self) -> &str {
+        &self.encoded_sha256
+    }
+}
+
+/// Pure transaction assembler. Any error poisons later byte retrieval; only a
+/// validated Complete exports encoded bytes.
 pub struct Receiver {
     profile: Profile,
     request: Request,
@@ -877,6 +902,35 @@ impl Receiver {
         })));
         Ok(true)
     }
+    /// Consumes and frees a complete body that has no terminal packet. The caller
+    /// must establish actual same-connection EOF separately. This metadata is
+    /// neither Complete nor session-closure/settlement authority.
+    #[cfg(any(target_arch = "arm", test))]
+    pub(crate) fn discard_incomplete_after_eof(mut self) -> Result<DiscardedRead, Error> {
+        check(!self.failed && self.terminal.is_none(), Error::Incomplete)?;
+        let header = self.header.take().ok_or(Error::Incomplete)?;
+        check(
+            self.next_chunk == header.chunk_count
+                && self.bytes.len() == header.encoded_bytes as usize,
+            Error::Incomplete,
+        )?;
+        let digest = self
+            .digest
+            .clone()
+            .finish()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>();
+        check(digest == header.encoded_sha256, Error::Digest)?;
+        let validated_bytes = u32::try_from(self.bytes.len()).map_err(|_| Error::Bounds)?;
+        drop(std::mem::take(&mut self.bytes));
+        Ok(DiscardedRead {
+            header,
+            validated_bytes,
+            validated_chunks: self.next_chunk,
+            encoded_sha256: digest,
+        })
+    }
     pub fn finish(self) -> Result<Outcome, Error> {
         if self.failed {
             return Err(Error::Incomplete);
@@ -938,12 +992,76 @@ pub fn receive_finished_for_profile(
     request.validate()?;
     connection_peer(conn, session, server, profile)?;
     let packet = conn.recv_until(MESSAGE_LIMIT, deadline)?;
-    check(packet.credentials == server, Error::Credentials)?;
-    let finished = parse_finished_for_profile(&packet.bytes, profile)?;
-    finished.validate_for_in_profile(request, session, profile)?;
+    let finished = checked_finished_packet(&packet, request, session, server, profile)?;
     conn.expect_eof_until(deadline)?;
     connection_peer(conn, session, server, profile)?;
     Ok(finished)
+}
+
+fn checked_finished_packet(
+    packet: &crate::broker_transport::Packet,
+    request: &FinishRequest,
+    session: &Identity,
+    server: Credentials,
+    profile: Profile,
+) -> Result<Finished, Error> {
+    check(packet.credentials == server, Error::Credentials)?;
+    let finished = parse_finished_for_profile(&packet.bytes, profile)?;
+    finished.validate_for_in_profile(request, session, profile)?;
+    Ok(finished)
+}
+
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum FinishedOrEof {
+    Finished(Finished),
+    Eof,
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn classify_finished_incoming(
+    incoming: crate::broker_transport::Incoming,
+    request: &FinishRequest,
+    session: &Identity,
+    server: Credentials,
+    profile: Profile,
+) -> Result<FinishedOrEof, Error> {
+    request.validate()?;
+    expected_peer(session, server, profile)?;
+    check(request.nonce == session.nonce, Error::Identity)?;
+    match incoming {
+        crate::broker_transport::Incoming::Eof => Ok(FinishedOrEof::Eof),
+        crate::broker_transport::Incoming::Packet(packet) => {
+            checked_finished_packet(&packet, request, session, server, profile)
+                .map(FinishedOrEof::Finished)
+        }
+    }
+}
+
+/// Distinguishes an actual same-receive EOF from a strict Finished exchange.
+/// EOF has no process, child, HBC or pending-record authority.
+#[cfg(target_arch = "arm")]
+pub(crate) fn receive_finished_or_eof_for_profile(
+    conn: &Connection,
+    request: &FinishRequest,
+    session: &Identity,
+    server: Credentials,
+    deadline: Instant,
+    profile: Profile,
+) -> Result<FinishedOrEof, Error> {
+    request.validate()?;
+    check(request.nonce == session.nonce, Error::Identity)?;
+    connection_peer(conn, session, server, profile)?;
+    let incoming = conn.recv_or_eof_until(MESSAGE_LIMIT, deadline)?;
+    let outcome = classify_finished_incoming(incoming, request, session, server, profile)?;
+    if matches!(&outcome, FinishedOrEof::Finished(_)) {
+        conn.expect_eof_until(deadline)?;
+    }
+    connection_peer(conn, session, server, profile)?;
+    if Instant::now() >= deadline {
+        return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+    }
+    Ok(outcome)
 }
 
 #[cfg(test)]
@@ -1530,5 +1648,220 @@ mod tests {
     fn unsupported_platform_never_uses_stream_or_filesystem_fallback() {
         let error = Connection::connect_until(&"a".repeat(32), Instant::now()).unwrap_err();
         assert_eq!(error.kind(), io::ErrorKind::Unsupported);
+    }
+
+    #[test]
+    fn discarded_read_consumes_valid_full_body_without_fabricating_complete() {
+        for length in [1, CHUNK_BYTES, CHUNK_BYTES + 7] {
+            let (receiver, header, bytes, _, _) = receiver_with_body(length);
+            let witness = receiver.discard_incomplete_after_eof().unwrap();
+            assert_eq!(witness.header(), &header);
+            assert_eq!(witness.validated_bytes(), bytes.len() as u32);
+            assert_eq!(witness.validated_chunks(), header.chunk_count);
+            assert_eq!(witness.encoded_sha256(), header.encoded_sha256);
+            let projected = serde_json::to_value(&witness).unwrap();
+            let keys = projected
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect::<std::collections::BTreeSet<_>>();
+            assert_eq!(
+                keys,
+                [
+                    "header",
+                    "validated_bytes",
+                    "validated_chunks",
+                    "encoded_sha256"
+                ]
+                .into_iter()
+                .collect()
+            );
+            assert!(projected.get("complete").is_none());
+            assert!(projected.get("bytes").is_none());
+        }
+    }
+    #[test]
+    fn discarded_read_requires_all_chunks_and_verified_digest() {
+        let (request, session, server, header, mut bytes, _) = fixture(CHUNK_BYTES + 7, 1);
+        let empty = Receiver::new(&request, &session, server).unwrap();
+        assert!(matches!(
+            empty.discard_incomplete_after_eof(),
+            Err(Error::Incomplete)
+        ));
+        let mut partial = Receiver::new(&request, &session, server).unwrap();
+        partial
+            .push_packet(&json(&header).unwrap(), server)
+            .unwrap();
+        partial
+            .push_packet(&encode_chunk(1, 0, &bytes[..CHUNK_BYTES]).unwrap(), server)
+            .unwrap();
+        assert!(matches!(
+            partial.discard_incomplete_after_eof(),
+            Err(Error::Incomplete)
+        ));
+        let mut corrupt = Receiver::new(&request, &session, server).unwrap();
+        corrupt
+            .push_packet(&json(&header).unwrap(), server)
+            .unwrap();
+        bytes[0] ^= 1;
+        for (index, payload) in bytes.chunks(CHUNK_BYTES).enumerate() {
+            corrupt
+                .push_packet(&encode_chunk(1, index as u32, payload).unwrap(), server)
+                .unwrap();
+        }
+        assert!(matches!(
+            corrupt.discard_incomplete_after_eof(),
+            Err(Error::Digest)
+        ));
+    }
+    #[test]
+    fn discarded_read_rejects_poisoned_complete_and_refusal_receivers() {
+        let (request, session, server, _, _, _) = fixture(1, 1);
+        let mut poisoned = Receiver::new(&request, &session, server).unwrap();
+        assert!(poisoned.push_packet(b"broken", server).is_err());
+        assert!(matches!(
+            poisoned.discard_incomplete_after_eof(),
+            Err(Error::Incomplete)
+        ));
+        let (mut complete, _, _, delimiter, _) = receiver_with_body(1);
+        assert!(complete
+            .push_packet(&json(&delimiter).unwrap(), server)
+            .unwrap());
+        assert!(matches!(
+            complete.discard_incomplete_after_eof(),
+            Err(Error::Incomplete)
+        ));
+        let mut refused = Receiver::new(&request, &session, server).unwrap();
+        let refusal = Refusal::new(&request, &session, RefusalReason::Denied).unwrap();
+        assert!(refused
+            .push_packet(&json(&refusal).unwrap(), server)
+            .unwrap());
+        assert!(matches!(
+            refused.discard_incomplete_after_eof(),
+            Err(Error::Incomplete)
+        ));
+    }
+    #[test]
+    fn typed_finished_classifier_binds_profile_request_peer_and_actual_incoming_kind() {
+        for profile in [Profile::Proof, Profile::Preview] {
+            let (_, session, server, _, _, _) = if profile == Profile::Proof {
+                fixture(1, 1)
+            } else {
+                preview_fixture(1)
+            };
+            let request = FinishRequest::new(2, &session.nonce).unwrap();
+            let finished = Finished::new_for_profile(&request, &session, profile).unwrap();
+            let packet = crate::broker_transport::Packet {
+                bytes: json(&finished).unwrap(),
+                credentials: server,
+            };
+            assert_eq!(
+                classify_finished_incoming(
+                    crate::broker_transport::Incoming::Packet(packet),
+                    &request,
+                    &session,
+                    server,
+                    profile
+                )
+                .unwrap(),
+                FinishedOrEof::Finished(finished)
+            );
+            assert_eq!(
+                classify_finished_incoming(
+                    crate::broker_transport::Incoming::Eof,
+                    &request,
+                    &session,
+                    server,
+                    profile
+                )
+                .unwrap(),
+                FinishedOrEof::Eof
+            );
+            let mut wrong = request.clone();
+            wrong.nonce = "f".repeat(32);
+            assert!(matches!(
+                classify_finished_incoming(
+                    crate::broker_transport::Incoming::Eof,
+                    &wrong,
+                    &session,
+                    server,
+                    profile
+                ),
+                Err(Error::Identity)
+            ));
+            let mut wrong_peer = server;
+            wrong_peer.pid += 1;
+            assert!(matches!(
+                classify_finished_incoming(
+                    crate::broker_transport::Incoming::Eof,
+                    &request,
+                    &session,
+                    wrong_peer,
+                    profile
+                ),
+                Err(Error::Credentials)
+            ));
+            let other = if profile == Profile::Proof {
+                Profile::Preview
+            } else {
+                Profile::Proof
+            };
+            let other_profile_eof = classify_finished_incoming(
+                crate::broker_transport::Incoming::Eof,
+                &request,
+                &session,
+                server,
+                other,
+            );
+            if profile == Profile::Preview {
+                assert!(other_profile_eof.is_err());
+            } else {
+                // Existing wire validation is structural: a Proof fixture's
+                // UID is also structurally valid for Preview. Protected role
+                // admission remains the caller's separate required check.
+                assert_eq!(other_profile_eof.unwrap(), FinishedOrEof::Eof);
+            }
+        }
+    }
+    #[test]
+    fn typed_finished_classifier_never_turns_malformed_or_wrong_credentials_into_eof() {
+        let (_, session, server, _, _, _) = fixture(1, 1);
+        let request = FinishRequest::new(2, &session.nonce).unwrap();
+        let finished = Finished::new(&request, &session).unwrap();
+        for bytes in [Vec::new(), b"broken".to_vec(), b"{}".to_vec()] {
+            let incoming =
+                crate::broker_transport::Incoming::Packet(crate::broker_transport::Packet {
+                    bytes,
+                    credentials: server,
+                });
+            assert!(classify_finished_incoming(
+                incoming,
+                &request,
+                &session,
+                server,
+                Profile::Proof
+            )
+            .is_err());
+        }
+        let mut wrong = server;
+        wrong.uid = 6583;
+        let incoming = crate::broker_transport::Incoming::Packet(crate::broker_transport::Packet {
+            bytes: json(&finished).unwrap(),
+            credentials: wrong,
+        });
+        assert!(matches!(
+            classify_finished_incoming(incoming, &request, &session, server, Profile::Proof),
+            Err(Error::Credentials)
+        ));
+        let wrong_request = FinishRequest::new(3, &session.nonce).unwrap();
+        let incoming = crate::broker_transport::Incoming::Packet(crate::broker_transport::Packet {
+            bytes: json(&finished).unwrap(),
+            credentials: server,
+        });
+        assert!(matches!(
+            classify_finished_incoming(incoming, &wrong_request, &session, server, Profile::Proof),
+            Err(Error::Identity)
+        ));
     }
 }

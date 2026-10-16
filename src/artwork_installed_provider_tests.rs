@@ -11,7 +11,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-fn source() -> Source {
+pub(super) fn source() -> Source {
     let id = "synthetic.fixture.installed";
     let raw = json!({"replies":{"apps":{"returnValue":true,"apps":[{"id":id,"title":"Fixture","type":"native","visible":true,"version":"1.0.0","folderPath":format!("/media/developer/apps/usr/palm/applications/{id}"),"icon":"icon.png","largeIcon":"images/large.png"}]},"launch_points":{"returnValue":true,"launchPoints":[{"id":id}]}}});
     app_artwork::sources_from_raw(&raw, crate::identity::PROOF).unwrap()[id]
@@ -19,7 +19,7 @@ fn source() -> Source {
         .unwrap()
         .clone()
 }
-fn marker() -> Marker {
+pub(super) fn marker() -> Marker {
     Marker {
         schema: 1,
         nonce: "a".repeat(32),
@@ -27,7 +27,7 @@ fn marker() -> Marker {
         broker_sha256: "c".repeat(64),
     }
 }
-fn context() -> Value {
+pub(super) fn context() -> Value {
     json!({"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"},"foreground":{"returnValue":true,"appId":crate::identity::PROOF},"windows":{"returnValue":true,"windows":[{"appId":crate::identity::PROOF,"windowType":"_WEBOS_WINDOW_TYPE_CARD"}]}})
 }
 fn hex(bytes: &[u8]) -> String {
@@ -38,7 +38,7 @@ fn hex(bytes: &[u8]) -> String {
     }
     out
 }
-fn base64(bytes: &[u8]) -> String {
+pub(super) fn base64(bytes: &[u8]) -> String {
     let table = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::new();
     for b in bytes.chunks(3) {
@@ -59,7 +59,7 @@ fn base64(bytes: &[u8]) -> String {
     }
     out
 }
-fn reader(catalogue: bool, next: &mut u64) -> Value {
+pub(super) fn reader(catalogue: bool, next: &mut u64) -> Value {
     let context_ops = [
         (
             "system_info",
@@ -105,10 +105,10 @@ fn reader(catalogue: bool, next: &mut u64) -> Value {
     value["_reader"] = json!({"schema":1,"kind":"fixed_core_luna_send","program":"/usr/bin/luna-send","approved":true,"qualified":true,"cleanup_known":true,"error":null,"executable":measurement,"executable_after":measurement,"operations":operations});
     value
 }
-fn sync(hbc: &mut Value) {
+pub(super) fn sync(hbc: &mut Value) {
     sync_for_profile(hbc, Profile::Proof);
 }
-fn sync_for_profile(hbc: &mut Value, profile: Profile) {
+pub(super) fn sync_for_profile(hbc: &mut Value, profile: Profile) {
     let helper = &hbc["parsed"]["helper_report"];
     let record = &helper["artwork_reads"][0];
     let mut events = Vec::new();
@@ -140,7 +140,7 @@ fn sync_for_profile(hbc: &mut Value, profile: Profile) {
     hbc["parsed"] =
         crate::broker_startup_proof::parse_exec_resource_reply_for_profile(&raw, profile).unwrap();
 }
-fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
+pub(super) fn fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
     let marker = marker();
     let source = source();
     let own = OwnIdentity {
@@ -293,7 +293,7 @@ fn preview_values(value: &mut Value, key: Option<&str>) {
         _ => (),
     }
 }
-fn preview_fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
+pub(super) fn preview_fixture() -> (InstalledProvider, Source, session::Exchange, Value) {
     let (mut provider, source, mut exchange, mut hbc) = fixture();
     provider.profile = Profile::Preview;
     exchange.own.uid = 5724;
@@ -1342,7 +1342,8 @@ fn successful_trace_projection_preserves_existing_protocol_metadata() {
     assert_eq!(report["resource_complete_validated"], true);
     assert_eq!(report["clean_eof"], true);
     assert!(report["attempt_failure"].is_null());
-    assert_eq!(report["negative_acceptance_enabled"], false);
+    assert_eq!(report["closed_negative_grader_available"], true);
+    assert!(report.get("negative_acceptance_enabled").is_none());
 }
 #[test]
 fn pre_identify_eof_and_all_stage_names_supply_no_session_authority() {
@@ -1367,7 +1368,8 @@ fn pre_identify_eof_and_all_stage_names_supply_no_session_authority() {
         trace.stage = stage;
         let report = trace.report();
         assert_eq!(report["stage"], name);
-        assert_eq!(report["negative_acceptance_enabled"], false);
+        assert_eq!(report["closed_negative_grader_available"], true);
+        assert!(report.get("negative_acceptance_enabled").is_none());
         assert!(report.get("identity").is_none());
         assert_eq!(
             report["clean_eof"], false,
@@ -1457,4 +1459,488 @@ fn next_fetch_preconditions_clear_prior_trace_without_inventing_attempt_or_settl
     release.send(()).unwrap();
     let finished = worker.finish();
     assert!(finished.joined && !finished.panicked);
+}
+
+// The candidate controls observation lifetime only; it is not a closure grant.
+fn read_eof_candidate() -> (InstalledProvider, Source, AttemptTrace) {
+    let (provider, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let packets = fixture_packets(&exchange);
+    for packet in packets.iter().take(2) {
+        trace.push_resource(&mut receiver, packet).unwrap();
+    }
+    assert!(
+        receive_attempt_packet(&mut trace, || Ok(crate::broker_transport::Incoming::Eof)).is_err()
+    );
+    trace.discarded_read = Some(receiver.discard_incomplete_after_eof().unwrap());
+    trace.final_root_peer = Some(exchange.root);
+    trace.own_after = Some(exchange.own);
+    (provider, source, trace)
+}
+#[test]
+fn authenticated_body_eof_is_candidate_only_and_projection_contains_no_encoded_body() {
+    let (mut provider, source, trace) = read_eof_candidate();
+    assert!(trace.bounded_eof_candidate());
+    let report = trace.report();
+    assert!(report["discarded_read"].is_object());
+    assert!(!contains_fixture_payload(
+        &report,
+        b"bounded encoded fixture bytes"
+    ));
+    retain_attempt(&mut provider, trace);
+    assert!(session::settle(
+        &mut provider,
+        source.key(),
+        Err(ProviderError::Unavailable),
+        Err(ProviderError::Unavailable),
+        false,
+        false
+    )
+    .is_err());
+    assert!(provider.quarantined);
+    assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+}
+#[test]
+fn candidate_requires_final_kernel_peer_own_after_and_no_prior_failure() {
+    let (_, _, trace) = read_eof_candidate();
+    let mut changed = trace.clone();
+    changed.final_root_peer.as_mut().unwrap().pid += 1;
+    assert!(!changed.bounded_eof_candidate());
+    changed = trace.clone();
+    changed.own_after.as_mut().unwrap().start_ticks += 1;
+    assert!(!changed.bounded_eof_candidate());
+    changed = trace.clone();
+    changed.discarded_read = None;
+    assert!(!changed.bounded_eof_candidate());
+    changed = trace.clone();
+    changed.failure.as_mut().unwrap().kind = AttemptFailureKind::ReceiveError;
+    assert!(!changed.bounded_eof_candidate());
+    changed = trace.clone();
+    changed.stage = AttemptStage::Identify;
+    assert!(!changed.bounded_eof_candidate());
+}
+#[test]
+fn only_bounded_candidate_preserves_existing_observer_until_join() {
+    use std::sync::mpsc;
+    for candidate in [false, true] {
+        let (_, _, mut trace) = read_eof_candidate();
+        if !candidate {
+            trace.discarded_read = None;
+        }
+        let stop = Arc::new(AtomicBool::new(false));
+        let observed = stop.clone();
+        let (release, wait) = mpsc::channel();
+        let handle = std::thread::spawn(move || {
+            wait.recv().unwrap();
+            json!({"stop_before_join":observed.load(Ordering::Acquire),"one_existing_worker":true})
+        });
+        let worker = session::ExecWorker::new(handle, stop.clone());
+        worker.after_exchange_error(&trace);
+        release.send(()).unwrap();
+        let joined = worker.join().unwrap();
+        assert_eq!(joined["stop_before_join"], !candidate);
+        assert_eq!(joined["one_existing_worker"], true);
+        // Drop after join may set stop, but cannot replace the observed result.
+        assert!(stop.load(Ordering::Acquire));
+    }
+}
+#[test]
+fn invalid_packet_then_later_eof_cannot_keep_observer_alive() {
+    let (_, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let mut packets = fixture_packets(&exchange);
+    trace
+        .push_resource(&mut receiver, &packets.remove(0))
+        .unwrap();
+    packets[0].credentials.uid += 1;
+    assert!(trace.push_resource(&mut receiver, &packets[0]).is_err());
+    assert!(receive_attempt_packet(&mut trace, || panic!(
+        "Failed attempt cannot receive later EOF"
+    ))
+    .is_err());
+    assert!(!trace.bounded_eof_candidate());
+    let stop = Arc::new(AtomicBool::new(false));
+    let handle = std::thread::spawn(|| json!({"not_a_closure_proof":true}));
+    let worker = session::ExecWorker::new(handle, stop.clone());
+    worker.after_exchange_error(&trace);
+    assert!(stop.load(Ordering::Acquire));
+    worker.join().unwrap();
+}
+
+fn current_negative_fixture(
+    directory: &ObservationDirectory,
+    finish: bool,
+) -> (
+    InstalledProvider,
+    Source,
+    AttemptTrace,
+    Value,
+    CurrentAttempt,
+) {
+    let (mut provider, source, mut trace, hbc, pending) =
+        negative::tests::fixture_for_current(finish, Profile::Proof, std::process::id());
+    provider.guard = Some(
+        crate::artwork_session_guard::Guard::open_for_test(&directory.0, provider.profile).unwrap(),
+    );
+    let current = CurrentAttempt::begin(&mut provider, trace.own.as_ref().unwrap()).unwrap();
+    trace.seal = current.seal().clone();
+    assert_eq!(current.identity(), &pending);
+    (provider, source, trace, hbc, current)
+}
+fn proof_for_current(
+    provider: &InstalledProvider,
+    current: &CurrentAttempt,
+    source: &Source,
+    trace: &AttemptTrace,
+    hbc: &Value,
+) -> negative::KnownClosed {
+    negative::grade_closed_negative(negative::NegativeEvidence {
+        trace,
+        joined_hbc: hbc,
+        marker: &provider.marker,
+        profile: provider.profile,
+        source: source.key(),
+        current_pending: current.identity(),
+    })
+    .unwrap()
+}
+#[test]
+fn group16_current_ticket_only_clears_after_opaque_proof_and_preserves_preferences() {
+    for finish in [false, true] {
+        let directory = ObservationDirectory::new();
+        let preferences = directory.0.join("preferences.json");
+        std::fs::write(&preferences, b"synthetic untouched favourites").unwrap();
+        let before = std::fs::read(&preferences).unwrap();
+        let (mut provider, source, trace, hbc, current) =
+            current_negative_fixture(&directory, finish);
+        retain_attempt(&mut provider, trace);
+        assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+        assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+        let result =
+            settle_closed_negative(&mut provider, current, source.key(), Ok(hbc), false, false);
+        assert!(matches!(result, Err(ProviderError::Denied)));
+        assert!(provider.ticket_resolved);
+        assert!(!provider.quarantined);
+        assert!(!provider.guard.as_ref().unwrap().pending().unwrap());
+        assert_eq!(
+            provider.transition_settlement(),
+            SessionSettlement::KnownClosed
+        );
+        assert_eq!(std::fs::read(&preferences).unwrap(), before);
+    }
+}
+#[test]
+fn group16_old_trace_and_hbc_cannot_clear_new_ticket_even_with_equal_pending_identity() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, trace, hbc, first) = current_negative_fixture(&directory, false);
+    let stale = proof_for_current(&provider, &first, &source, &trace, &hbc);
+    let legitimate = proof_for_current(&provider, &first, &source, &trace, &hbc);
+    let old_identity = first.identity().clone();
+    first.resolve_negative(&mut provider, legitimate).unwrap();
+    let next = CurrentAttempt::begin(&mut provider, trace.own.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        next.identity(),
+        &old_identity,
+        "Persistent comparison fields can be identical across jobs"
+    );
+    let marker = directory.0.join("artwork-session-pending.json");
+    let before = std::fs::read(&marker).unwrap();
+    assert!(matches!(
+        next.resolve_negative(&mut provider, stale),
+        Err(ProviderError::Denied)
+    ));
+    assert_eq!(std::fs::read(&marker).unwrap(), before);
+    assert!(provider.quarantined);
+    assert!(!provider.ticket_resolved);
+    assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+}
+#[test]
+fn group16_missing_captured_ticket_cannot_be_replaced_by_pending_comparison_data() {
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, trace, hbc, mut current) =
+        current_negative_fixture(&directory, false);
+    let proof = proof_for_current(&provider, &current, &source, &trace, &hbc);
+    drop(current.captured.take());
+    assert!(current.resolve_negative(&mut provider, proof).is_err());
+    assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+    assert!(provider.quarantined);
+    assert!(!provider.ticket_resolved);
+}
+#[test]
+fn group16_storage_failure_before_or_after_unlink_never_claims_known_settlement() {
+    for after_unlink in [false, true] {
+        let directory = ObservationDirectory::new();
+        let preferences = directory.0.join("preferences.json");
+        std::fs::write(&preferences, b"unchanged synthetic favourites").unwrap();
+        let (mut provider, source, trace, hbc, current) =
+            current_negative_fixture(&directory, false);
+        let proof = proof_for_current(&provider, &current, &source, &trace, &hbc);
+        let result = current.resolve_with(&mut provider, proof, |ticket| {
+            if after_unlink {
+                ticket.finish_known()?;
+            } else {
+                drop(ticket);
+            }
+            // Models a failing storage operation, including failure after a
+            // successful unlink. Marker survival is deliberately not promised.
+            Err(std::io::Error::other("Controlled storage failure"))
+        });
+        assert!(result.is_err());
+        assert!(provider.quarantined);
+        assert!(!provider.ticket_resolved);
+        assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+        assert_eq!(
+            provider.guard.as_ref().unwrap().pending().unwrap(),
+            !after_unlink
+        );
+        assert_eq!(
+            std::fs::read(&preferences).unwrap(),
+            b"unchanged synthetic favourites"
+        );
+    }
+}
+#[test]
+fn group17_cancellation_or_expiry_after_known_closure_releases_no_encoded_file() {
+    for (cancelled, expired, expected) in [
+        (true, false, ProviderError::Cancelled),
+        (false, true, ProviderError::Expired),
+    ] {
+        let directory = ObservationDirectory::new();
+        let (mut provider, source, trace, hbc, current) =
+            current_negative_fixture(&directory, true);
+        assert!(trace.complete.is_some());
+        retain_attempt(&mut provider, trace);
+        let result = settle_closed_negative(
+            &mut provider,
+            current,
+            source.key(),
+            Ok(hbc),
+            cancelled,
+            expired,
+        );
+        assert!(matches!(result,Err(error) if error==expected));
+        assert_eq!(
+            provider.transition_settlement(),
+            SessionSettlement::KnownClosed
+        );
+        assert!(provider.ticket_resolved);
+    }
+}
+#[test]
+fn group17_pending_is_not_cleared_before_existing_worker_join_and_full_grade() {
+    use std::sync::mpsc;
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, trace, hbc, current) = current_negative_fixture(&directory, false);
+    let stop = Arc::new(AtomicBool::new(false));
+    let worker_stop = stop.clone();
+    let joined = Arc::new(AtomicBool::new(false));
+    let joined_witness = joined.clone();
+    let (release, wait) = mpsc::channel();
+    let handle = std::thread::spawn(move || {
+        wait.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert!(!worker_stop.load(Ordering::Acquire));
+        joined_witness.store(true, Ordering::Release);
+        hbc
+    });
+    let worker = session::ExecWorker::new(handle, stop);
+    worker.after_exchange_error(&trace);
+    retain_attempt(&mut provider, trace);
+    assert!(!joined.load(Ordering::Acquire));
+    assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+    assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+    release.send(()).unwrap();
+    let completion = worker.join();
+    assert!(joined.load(Ordering::Acquire));
+    assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+    assert!(matches!(
+        settle_closed_negative(
+            &mut provider,
+            current,
+            source.key(),
+            completion,
+            false,
+            false
+        ),
+        Err(ProviderError::Denied)
+    ));
+    assert_eq!(
+        provider.transition_settlement(),
+        SessionSettlement::KnownClosed
+    );
+}
+#[test]
+fn group17_join_failure_or_invalid_terminal_retains_current_pending_and_quarantine() {
+    for panic_worker in [false, true] {
+        let directory = ObservationDirectory::new();
+        let (mut provider, source, trace, _, current) = current_negative_fixture(&directory, false);
+        let worker = session::ExecWorker::new(
+            std::thread::spawn(move || {
+                if panic_worker {
+                    panic!("Controlled observer panic");
+                }
+                json!({"not_the_required_joined_hbc":true})
+            }),
+            Arc::new(AtomicBool::new(false)),
+        );
+        worker.after_exchange_error(&trace);
+        retain_attempt(&mut provider, trace);
+        let completion = worker.join();
+        assert!(settle_closed_negative(
+            &mut provider,
+            current,
+            source.key(),
+            completion,
+            false,
+            false
+        )
+        .is_err());
+        assert!(provider.guard.as_ref().unwrap().pending().unwrap());
+        assert!(provider.quarantined);
+        assert!(!provider.ticket_resolved);
+        assert_eq!(provider.transition_settlement(), SessionSettlement::Unknown);
+    }
+}
+
+#[test]
+fn group17_cancelled_token_does_not_erase_bounded_terminal_eof_authentication_or_join() {
+    use std::sync::mpsc;
+    struct Held {
+        token: mpsc::Sender<Cancellation>,
+        release: mpsc::Receiver<()>,
+    }
+    impl Provider for Held {
+        fn fetch(
+            &mut self,
+            _: &Source,
+            _: Instant,
+            token: &Cancellation,
+        ) -> Result<EncodedFile, ProviderError> {
+            self.token.send(token.clone()).unwrap();
+            self.release.recv_timeout(Duration::from_secs(2)).unwrap();
+            Err(ProviderError::Cancelled)
+        }
+    }
+    let (send, receive) = mpsc::channel();
+    let (release, wait) = mpsc::channel();
+    let mut held = crate::artwork_worker::Worker::start(move || Held {
+        token: send,
+        release: wait,
+    })
+    .unwrap();
+    let id = "synthetic.fixture.installed";
+    let raw = json!({"replies":{"apps":{"returnValue":true,"apps":[{"id":id,"title":"Fixture","type":"native","visible":true,"version":"1.0.0","folderPath":format!("/media/developer/apps/usr/palm/applications/{id}"),"icon":"icon.png","largeIcon":"images/large.png"}]},"launch_points":{"returnValue":true,"launchPoints":[{"id":id}]}}});
+    let sources = app_artwork::sources_from_raw(&raw, crate::identity::PROOF).unwrap();
+    let mut cache =
+        crate::artwork_cache::ArtworkCache::new(crate::artwork_cache::Config::default()).unwrap();
+    cache.update_catalogue(&sources).unwrap();
+    cache.set_interest(&[id.to_owned()], &[]).unwrap();
+    held.try_submit(
+        cache.next_work(0).unwrap(),
+        sources[id].preferred().unwrap().clone(),
+        Instant::now() + Duration::from_secs(30),
+    )
+    .unwrap();
+    let cancellation = receive.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert!(held.cancel());
+    assert!(cancellation.is_cancelled());
+    let directory = ObservationDirectory::new();
+    let (mut provider, source, mut trace, hbc, current) =
+        current_negative_fixture(&directory, false);
+    trace.final_root_peer = None;
+    trace.own_after = None;
+    let root = trace.root.unwrap();
+    let own = trace.own.clone().unwrap();
+    authenticate_eof(
+        &mut trace,
+        &provider.marker,
+        Instant::now() + Duration::from_secs(30),
+        || Ok(root),
+        || Ok(own),
+    )
+    .unwrap();
+    assert!(trace.bounded_eof_candidate());
+    let stop = Arc::new(AtomicBool::new(false));
+    let observed = stop.clone();
+    let worker = session::ExecWorker::new(
+        std::thread::spawn(move || {
+            assert!(!observed.load(Ordering::Acquire));
+            hbc
+        }),
+        stop.clone(),
+    );
+    worker.after_exchange_error(&trace);
+    assert!(!stop.load(Ordering::Acquire));
+    retain_attempt(&mut provider, trace);
+    let joined = worker.join();
+    assert!(matches!(
+        settle_closed_negative(
+            &mut provider,
+            current,
+            source.key(),
+            joined,
+            cancellation.is_cancelled(),
+            false
+        ),
+        Err(ProviderError::Cancelled)
+    ));
+    assert_eq!(
+        provider.transition_settlement(),
+        SessionSettlement::KnownClosed
+    );
+    release.send(()).unwrap();
+    assert!(held.finish().joined);
+}
+#[test]
+fn terminal_eof_authentication_still_refuses_expired_deadline_before_measurement() {
+    let (provider, _, mut trace) = read_eof_candidate();
+    trace.final_root_peer = None;
+    trace.own_after = None;
+    let called = std::cell::Cell::new(false);
+    assert!(matches!(
+        authenticate_eof(
+            &mut trace,
+            &provider.marker,
+            Instant::now(),
+            || {
+                called.set(true);
+                Err(ProviderError::Unavailable)
+            },
+            || panic!("Expired auth must not measure own identity")
+        ),
+        Err(ProviderError::Expired)
+    ));
+    assert!(!called.get());
+    assert!(!trace.bounded_eof_candidate());
+}
+
+#[test]
+fn terminal_eof_authentication_rejects_changed_measured_peer_or_self_without_candidate() {
+    for change in 0..4 {
+        let (provider, _, mut trace) = read_eof_candidate();
+        trace.final_root_peer = None;
+        trace.own_after = None;
+        let mut root = trace.root.unwrap();
+        let mut own = trace.own.clone().unwrap();
+        match change {
+            0 => root.pid += 1,
+            1 => own.pid += 1,
+            2 => own.start_ticks += 1,
+            _ => own.ui_sha256 = "f".repeat(64),
+        }
+        assert!(authenticate_eof(
+            &mut trace,
+            &provider.marker,
+            Instant::now() + Duration::from_secs(30),
+            || Ok(root),
+            || Ok(own)
+        )
+        .is_err());
+        assert!(trace.final_root_peer.is_none());
+        assert!(trace.own_after.is_none());
+        assert!(!trace.bounded_eof_candidate());
+    }
 }
