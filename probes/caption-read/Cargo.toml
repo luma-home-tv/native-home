@@ -1,0 +1,19 @@
+[package]
+name = "luma-caption-read-proof"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+publish = false
+[workspace]
+[[bin]]
+name = "caption-read-proof"
+path = "src/main.rs"
+[dependencies]
+plx_base = { path = "../../.dependencies/plx-native/rust-modules/base" }
+plx_platform = { path = "../../.dependencies/plx-native/rust-modules/platform" }
+libc = "=0.2.186"
+serde_json = "1"
+[profile.release]
+panic = "abort"
+lto = true
+codegen-units = 1

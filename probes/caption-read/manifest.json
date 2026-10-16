@@ -1,0 +1,479 @@
+{
+  "appinfo": {
+    "handlesRelaunch": false,
+    "icon": "icon.png",
+    "id": "com.ash.nativehome.captionreadproof",
+    "largeIcon": "icon.png",
+    "main": "caption-read-proof",
+    "nativeLifeCycleInterfaceVersion": 2,
+    "requiredMemory": 32,
+    "requiredPermissions": [],
+    "title": "Luma Caption Read Test",
+    "transparent": false,
+    "type": "native",
+    "vendor": "Native Home development",
+    "version": "0.1.0"
+  },
+  "external_inputs": {
+    ".dependencies/plx-native/LICENSE": {
+      "bytes": 34674,
+      "sha256": "fb981668c18a279e285fc4d83fba1e836cc84dd4daa73c9697d3cfd2d8aca6e0"
+    },
+    ".dependencies/plx-native/ci/install-identities.json": {
+      "bytes": 318,
+      "sha256": "97a582302698a1ef58a2efec7c73944a105e02023bd75f6d7cc00ecbf11639c1"
+    },
+    ".dependencies/plx-native/locales/be/browse.json": {
+      "bytes": 40577,
+      "sha256": "e8e46b4001db300e4f23798f1af2a720c98282da0465ba04edf585e3ed605e10"
+    },
+    ".dependencies/plx-native/locales/be/core.json": {
+      "bytes": 3441,
+      "sha256": "d3fc1bf2e34a51869e7f8dfffd17f4751057c9c749e2e10073386c9efe535afa"
+    },
+    ".dependencies/plx-native/locales/be/settings.json": {
+      "bytes": 57209,
+      "sha256": "266f4fb7d6811379f2445fdcfa9b3a5a94cf1253beff0079a197d50b7441ffa1"
+    },
+    ".dependencies/plx-native/locales/be/widgets.json": {
+      "bytes": 23231,
+      "sha256": "c23a09bb880431e5b6b64446a9a3b4ae1a726c75782d90b3b3c3252035cc8747"
+    },
+    ".dependencies/plx-native/locales/en/browse.json": {
+      "bytes": 74798,
+      "sha256": "a010d3e1dfc316d0ec5af0cdd60589e5fb08f6d210ac5d5e3c790a91f2275545"
+    },
+    ".dependencies/plx-native/locales/en/core.json": {
+      "bytes": 10186,
+      "sha256": "e65ef631ee2fa2b5b6b29514f2c621fa621dd6c5867c5a8be3b2b5c4c97cc073"
+    },
+    ".dependencies/plx-native/locales/en/settings.json": {
+      "bytes": 78261,
+      "sha256": "b0ec4156bc20c6af54ac40abd17d70b3638f050a6d96fa480e2458e03b7404b4"
+    },
+    ".dependencies/plx-native/locales/en/widgets.json": {
+      "bytes": 50039,
+      "sha256": "963636398459cdf2e34bb73b38dcd849269e7c3baed3c535c63e11da646ca63d"
+    },
+    ".dependencies/plx-native/locales/es/browse.json": {
+      "bytes": 30792,
+      "sha256": "246f4f2a16ea0c4feebf3609c8c2e6688dffa3f4d6bda6eeebede836961c7b9f"
+    },
+    ".dependencies/plx-native/locales/es/core.json": {
+      "bytes": 2829,
+      "sha256": "58a38e0762bd2afa7d259f3db573f88595753b5dd6cfc22749a721019e0a5fef"
+    },
+    ".dependencies/plx-native/locales/es/settings.json": {
+      "bytes": 38788,
+      "sha256": "c9b65e2791a6a03ddf1ad91bd73269b40c4d20d60a23caf87e00be3fe32ccddf"
+    },
+    ".dependencies/plx-native/locales/es/widgets.json": {
+      "bytes": 17371,
+      "sha256": "9c7dcb0d11926ef59c3e58f9c056660b850f2bda762c8f134e76461bf5ff4600"
+    },
+    ".dependencies/plx-native/locales/fr/browse.json": {
+      "bytes": 31022,
+      "sha256": "a9dc3d272ca8df0a3ca7b653070904a96a0601f52053007d6b715bcc15ae91bb"
+    },
+    ".dependencies/plx-native/locales/fr/core.json": {
+      "bytes": 2743,
+      "sha256": "bc17be6ff72cc17d8df31eefb180a8ffb6c91819c53abe70f50f1be2c3d2eb94"
+    },
+    ".dependencies/plx-native/locales/fr/settings.json": {
+      "bytes": 43228,
+      "sha256": "3b7fd26c05cb3a22d616a4232a04f16fdbb4cc3d3884eb45e581ec0d83117da3"
+    },
+    ".dependencies/plx-native/locales/fr/widgets.json": {
+      "bytes": 17501,
+      "sha256": "bc5f291cd5778689f4562cf353da0670bed38b690568224e3431fe5a51b14765"
+    },
+    ".dependencies/plx-native/rust-modules/Cargo.toml": {
+      "bytes": 22419,
+      "sha256": "7db3cb936ef1d265e33c1c287fb58210a3749b42a4efb7a7ed2a239bfd202e39"
+    },
+    ".dependencies/plx-native/rust-modules/base/Cargo.toml": {
+      "bytes": 1180,
+      "sha256": "ebe0b95553bd44f33f422f7d8e22b75ddeb53c7ee81bbe738f675690694568f7"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/b64.rs": {
+      "bytes": 1438,
+      "sha256": "1b6819b3c89e7484be591ba8f60e62499dc87bfa0f4d889fe718ee805ac8754a"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/cbuf.rs": {
+      "bytes": 1426,
+      "sha256": "a90261fa1d19a7b02ccb75312b922848fcb627a685b910749a489f9ba4407a50"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/checkpoint.rs": {
+      "bytes": 7843,
+      "sha256": "44e62ea8d41ecfe00bd87bab76cffe2e9ce623acb9a9863d7f0106d55b1eba6b"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/devtrig.rs": {
+      "bytes": 18783,
+      "sha256": "ba4da1113babb4311c2e0196245aaafcd98641f23c60a96df3fff72d9aebfc2d"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/diag.rs": {
+      "bytes": 540,
+      "sha256": "829d4892cfa0eecaf8e982e185956a0ce26c18ed9cc935c22b659d02518de2ae"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/diag/heartbeat.rs": {
+      "bytes": 43297,
+      "sha256": "07d49732e3c9c9528f5b52515226d5561faf5469f7294b6e9e2ad0c152775eb7"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/diag/spans.rs": {
+      "bytes": 3728,
+      "sha256": "de026f2cc1ce21571a86ad1fc3b07ce8cf320e03ee7fb828c3ab8138f3d35beb"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/diag/zlib.rs": {
+      "bytes": 5775,
+      "sha256": "2080a33dee0be5b025cbca759dbfd3cbb0d1aa7796da008097c6c0e6f9850fc0"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/dynlib.rs": {
+      "bytes": 26077,
+      "sha256": "b35f921332882818fb6a89e70d4580e9df9852a6936970d55c1a4827175ea643"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/eventlog.rs": {
+      "bytes": 25055,
+      "sha256": "dd372695c3d23ca139d878d09c8c54986719fe6824cb77f07f4ee70be2f46db0"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/eventlog/ring.rs": {
+      "bytes": 7361,
+      "sha256": "aafc5666ae86a99d69e2803d1461f0e06b70421988149cbcb97fd3c4927509b5"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/eventlog/scrub.rs": {
+      "bytes": 59091,
+      "sha256": "dd013dd249cb1666180ea9aff7dcb34f623b2ba30cd8e9141ca3c3d54bd344a3"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/fontcov.rs": {
+      "bytes": 44877,
+      "sha256": "39afedef9277ecd3d5bc6ae75e0c4046ed7cf42985ce788f8877d2fc4337eae9"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/lib.rs": {
+      "bytes": 2539,
+      "sha256": "dff8cb4bbe771e43ac71b504d032419263ba903cc5174efc56a8cf5366b37442"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/paths.rs": {
+      "bytes": 67116,
+      "sha256": "31119cfa310acf27ccd7731f524bca91f2e8b3ddf944bbefef59f94158c2d59d"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/sha256.rs": {
+      "bytes": 11501,
+      "sha256": "68f4c6a230fe64553bae7534eda4a0d9222baa53fd8934a590cbfa23c078d0d7"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/spki.rs": {
+      "bytes": 13874,
+      "sha256": "3aad1a2a54a60a29a9d1422fbcb4902e15dfc2d9e642cb8df64f43ab811a661d"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/storage_worker.rs": {
+      "bytes": 19861,
+      "sha256": "31d3cb987ebbc5fe5d9a04235c620d1fd8bd5754eb00377a617307e907cecc37"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/surface.rs": {
+      "bytes": 24797,
+      "sha256": "091bc2831c7f1c6215e095f1d285fa78f102033d75acb1bbeeefd6f40dd908f5"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/task.rs": {
+      "bytes": 25505,
+      "sha256": "a512e629f6f5d0edbd7205cb910370029a0719f839631cbd2419db545ecfef88"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/task/blocking.rs": {
+      "bytes": 10714,
+      "sha256": "a6f57672e0bc7891a4a4103469d5b125249c61b0ba7038039950347a095eedf3"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/task/runtime_check.rs": {
+      "bytes": 10415,
+      "sha256": "e1c6589c3951376f65383068777175b1ced3d2ab482b8e271e135ab36181ad65"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/task/watchdog.rs": {
+      "bytes": 28451,
+      "sha256": "645456aa1925820655b7d69dd154d94836a6c147995bdcab7f0af9b882d9e54f"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/testlock.rs": {
+      "bytes": 13015,
+      "sha256": "9cf8bf40a67934494b3927b26f25ad83857eb3f2dea5b354a38d5db3d8132e43"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/testnet.rs": {
+      "bytes": 922,
+      "sha256": "b1d219dcc3c48185a8c6cdfd36aca6d90716eba2175ac31a7b39c98730110e16"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/testscratch.rs": {
+      "bytes": 4005,
+      "sha256": "810e574713a0be37ad4bd798e0738c36b0ed15ce5de396fcd71f2e25f8c673fb"
+    },
+    ".dependencies/plx-native/rust-modules/base/src/tile.rs": {
+      "bytes": 1378,
+      "sha256": "ec1e846a478de4acc900aa198a437ccb820d892cc17c035d1daf1a20e5ee4925"
+    },
+    ".dependencies/plx-native/rust-modules/build_support/host_link.rs": {
+      "bytes": 7378,
+      "sha256": "823c4e50fef509d7356427f3e405593e4e799d53ae38eb5150c436770f115f3f"
+    },
+    ".dependencies/plx-native/rust-modules/build_support/install_identities.rs": {
+      "bytes": 2937,
+      "sha256": "8039b85c09d27c1f9a80aded1245dd4a0c7b7ac3b633e28cb9b7a0f6d62ed621"
+    },
+    ".dependencies/plx-native/rust-modules/machine/Cargo.toml": {
+      "bytes": 1623,
+      "sha256": "0bc99e95272916b8d00e1a8dad81440bc4998de12ccd9a00e7853f438c813d03"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/idle.rs": {
+      "bytes": 58540,
+      "sha256": "1b3ce82c22f0ed7bb920ce64c18df5548cc2d0a90e5b4898e6cb25e8b46bfc75"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/landgate.rs": {
+      "bytes": 49610,
+      "sha256": "d6f90ab4dc843e311e470683cfb6bb2e7f8eaea01500188e0998db6966ee1654"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/landing.rs": {
+      "bytes": 26255,
+      "sha256": "c67b83cd832d681ab710d0f28fe968c0c4f526fbbe2832d7860cc3a69c20aadc"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/landing/stream_tests.rs": {
+      "bytes": 8545,
+      "sha256": "4dd05986511d793a73282aa659d404aaa65d54afac253fbc17381d64c50a3416"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/lib.rs": {
+      "bytes": 1476,
+      "sha256": "0652396a125ffd7ec4f61234c7e1b94c97b4709df1acdfa076c0a61604659e0b"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/machine.rs": {
+      "bytes": 39262,
+      "sha256": "2707ee6ed84a9265a91a9ca2e88d3bd9705d17173c1f4f8f63cc9a564c2018fa"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/motion.rs": {
+      "bytes": 21074,
+      "sha256": "3de887129ab5c8b7961c7183ff8ecd007a0b61f51cf935aad0fa47c7e1dd2999"
+    },
+    ".dependencies/plx-native/rust-modules/machine/src/present.rs": {
+      "bytes": 8647,
+      "sha256": "e7e45c333cec0ddf70e85620862889a289fedf05e60ced6546505ba12e68486b"
+    },
+    ".dependencies/plx-native/rust-modules/platform/Cargo.toml": {
+      "bytes": 2162,
+      "sha256": "29cc8596075910ff3080c269e77c5cdbf832209c3eb277b0f1de2da41a7d4bdb"
+    },
+    ".dependencies/plx-native/rust-modules/platform/build.rs": {
+      "bytes": 1672,
+      "sha256": "9190c25e054da77b5deacef6f5a8cfd0738ee49765ab4e7870e201a3f86f0450"
+    },
+    ".dependencies/plx-native/rust-modules/platform/build_support/catalog.rs": {
+      "bytes": 18123,
+      "sha256": "d0c028ae875a5a67cc59e50bd6b825fb77db6cd19599d9ea91aa825867b5f2e5"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/devcaps.rs": {
+      "bytes": 35679,
+      "sha256": "e5177ef21d40782273465d68b130312136c8a50202117f1edda1fdf13370438f"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/devcaps/dv.rs": {
+      "bytes": 4313,
+      "sha256": "362a39c2c520580dde67376c1955e65069a42b329836ee6d3ba86556366a8300"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/i18n/mod.rs": {
+      "bytes": 15765,
+      "sha256": "c297eb9915c95ddc34f6d7b4f181ee378b02182f461107fe944db1dcd6f605cd"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/i18n/tests.rs": {
+      "bytes": 5402,
+      "sha256": "d34d5c9740ae4345989d7df5871449a7d1428d3330e081b0d9ce322af1462834"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/imgcache.rs": {
+      "bytes": 25602,
+      "sha256": "a4e858d94107352f2afa292696eb7053e9940f0de63a72889a498dd14724bb90"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/imgcache/tests.rs": {
+      "bytes": 18456,
+      "sha256": "224ca742304e8448f576645cbce7c18a1a517e95b77f3f99cba3197fb896e480"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/keymanager.rs": {
+      "bytes": 13230,
+      "sha256": "f7296e8d9551592acb9f89dea3aceddd367360fc8fd3c18b40a0d513bca199c9"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/labcfg/config.rs": {
+      "bytes": 9508,
+      "sha256": "b89df0e2084a0ba2226c85cde383a8eee2442e322b0c27f572de2c970bdbb415"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/labcfg/mod.rs": {
+      "bytes": 2108,
+      "sha256": "7272880b691ed556738e43ebbaf60803d6d64629547a8dd726b3ee292290e720"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/lib.rs": {
+      "bytes": 2356,
+      "sha256": "c66ae58e262b6ca939adb87c484ab2e3811584fc4db231fe9b25348566ac7db7"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage/client.rs": {
+      "bytes": 42840,
+      "sha256": "702066ba0e8ca1d938caaac5853ef71094197c18d194f20c9a879f94dd7ac5e1"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage/diagnostics.rs": {
+      "bytes": 45069,
+      "sha256": "62d1aee11324cfdc5de3a3f7652a6f63fb06aa90a48baac4f21ec30d600d742c"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage/mod.rs": {
+      "bytes": 44583,
+      "sha256": "97de39d49341f96754629780a6f3d87652b71848c9d0575e3589b7e8cedc3a8c"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage/state.rs": {
+      "bytes": 79424,
+      "sha256": "a0667ad94f65b0ca933845c9721a2f218228be59caf2b6951984d8df1a154bcb"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/activation.rs": {
+      "bytes": 7944,
+      "sha256": "4704e4b0e66c43a26ac2d317743e78110de8f52178c754d654fcca651eaf6fce"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/auxv.rs": {
+      "bytes": 1382,
+      "sha256": "4295f284f727f3d50879f4779521c1f9e3325b346664ab12d38687f78d4213bb"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/backend.rs": {
+      "bytes": 140098,
+      "sha256": "856ab0712cdef5257754cb91693525a0d85865f306d6cef610b0beb9f7735c04"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/bus.rs": {
+      "bytes": 7531,
+      "sha256": "71244db1fbfa36c0d1f8ce37ec01ea93d31fcdabfd37281daec926ab8ec52645"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/failure.rs": {
+      "bytes": 10989,
+      "sha256": "b599dc8ca4fb9a4096ae5e73030ad938ed4b9a7c0a9f7bd1bc9774a0f468b2be"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/keymanager.rs": {
+      "bytes": 18201,
+      "sha256": "6433aa82fde7a656c5d6fe6b3cfce00d2d38058310bc1f8a11e88b51a25d9f69"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/runtime.rs": {
+      "bytes": 11381,
+      "sha256": "5c14570e47a53b9f4f938f3b25cb7ee9d8b71f5f2490696087f581ff4952e442"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/service.rs": {
+      "bytes": 4833,
+      "sha256": "f0bd06be32a79ee8a6397761e202e9e518cee6c18aebc59f70f81a39644fd5f9"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/storage_service/wire.rs": {
+      "bytes": 16668,
+      "sha256": "461378ff51e52a0661ee39070a2a517076990e51cfb5f951cce8266b67cd520f"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv.rs": {
+      "bytes": 3991,
+      "sha256": "699bf9cd31e1703c4b9e6788aaaeed80bd574fa5f88abc83ec23bcc7edcdea8b"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/device.rs": {
+      "bytes": 6883,
+      "sha256": "713e02b4051b54a553d51432075c82855c079e507fc9c25168e21006c374f6cc"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/home.rs": {
+      "bytes": 5749,
+      "sha256": "64f1762baab3deb1fc381f00baa5255ae35650900df1234418629ceb8756381e"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/sandbox.rs": {
+      "bytes": 5937,
+      "sha256": "28eab33ce6a06126d59b2fbc9fa110a190e97726b9db1e156d668fe4d23e58b5"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/secure.rs": {
+      "bytes": 1858,
+      "sha256": "48a9f7a5c138ab2ca2538a9de7c8c7ed6c8b7096b06f21e471314f1270b4977b"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/sink.rs": {
+      "bytes": 7515,
+      "sha256": "8b0239412ace46215d6bbc5752b2b410347668d1724030dcfb3b210455ab384c"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/toast.rs": {
+      "bytes": 5061,
+      "sha256": "0c7fd42351efe484d579ee71c91c1f8dca075eaa98437171355d50f4d4401ef5"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/tv/window.rs": {
+      "bytes": 2449,
+      "sha256": "147af282b0988e0b006d37fa68ab3c69ecf61c79e43f3cf2a0b54933494a3cdf"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/webos.rs": {
+      "bytes": 56312,
+      "sha256": "43c4f00ad216f8ba70c1db0394d396a1c55cd0614d90a428b18b163a6fad15a8"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/webos/caps.rs": {
+      "bytes": 13170,
+      "sha256": "6136a3972622b4b7133fe5878c99715f328e6e0360d8bf36e316e0491fb182cc"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/webos/jail_repair.rs": {
+      "bytes": 8437,
+      "sha256": "29af570b05ea4fb2c3a197edb482b1fe7653dd2f4df5f1d3cec5f0d10d1661bc"
+    },
+    ".dependencies/plx-native/rust-modules/platform/src/webos/toast.rs": {
+      "bytes": 7056,
+      "sha256": "d4b7c846ead2671de2943bc227621a4ea3e4b5b5f4bdab008af9627d2b502cb2"
+    },
+    "Cargo.lock": {
+      "bytes": 18174,
+      "sha256": "8d5dc2fa4800e49bdb9cdf8aac005d254934066f5b32f5e8a9a6f44be7986ed6"
+    },
+    "dependency-lock.json": {
+      "bytes": 2587,
+      "sha256": "93c6e5099d20b3f527b57765eae1f56b5901736977da567de746eb4cc48ba07b"
+    },
+    "patches/plxnative-framework-integration.patch": {
+      "bytes": 65548,
+      "sha256": "74dc505cd46291a5c76e288c0c91edd14427d6a8ac755cf9f9796c5008c490cf"
+    },
+    "tools/verify-framework.py": {
+      "bytes": 10910,
+      "sha256": "b281b86c92487394bf49ae4cc6922addbb1343015202b7533b90eaa72c1d9016"
+    }
+  },
+  "files": {
+    "Cargo.lock": {
+      "bytes": 13043,
+      "sha256": "f6720b2940cb571f83268fc07faf64c4ac0e4b1ba9be6a9de7de757f4ce5e31e"
+    },
+    "Cargo.toml": {
+      "bytes": 459,
+      "sha256": "f6b919b1b3778c877097a5d4e8e8ac7f407df502b9f34fa3505f8edf0f6c8481"
+    },
+    "LICENSE": {
+      "bytes": 34674,
+      "sha256": "fb981668c18a279e285fc4d83fba1e836cc84dd4daa73c9697d3cfd2d8aca6e0"
+    },
+    "README.md": {
+      "bytes": 2450,
+      "sha256": "30b54aeaf5eec155037346815c6b6af133d1400324d83eefeeded05618c4aa2f"
+    },
+    "appinfo.json": {
+      "bytes": 341,
+      "sha256": "0f4f848afbc0402dc96294c84434a50f7dc0a540912b87a2a492ca7aa10e02c9"
+    },
+    "build-arm.py": {
+      "bytes": 6935,
+      "sha256": "b6fb48487183b5c9d83a8b9eec5fe49a3e8cf6822b94647e1f715e360fd1cd7d"
+    },
+    "build.rs": {
+      "bytes": 585,
+      "sha256": "bcfe666397e8fd008b3957d66b557ec125362eeed2687582802ded6ad27456cc"
+    },
+    "icon.png": {
+      "bytes": 12504,
+      "sha256": "2eba9e2831a925c1785627e685467abbfbf309ca1e24270dba18028abf3f269a"
+    },
+    "package-caption-read-proof.py": {
+      "bytes": 6197,
+      "sha256": "fc0c1cb99363a99a22cde13cc2c93d2ee73796b448aea8d34343fc6566ff3821"
+    },
+    "src/main.rs": {
+      "bytes": 16065,
+      "sha256": "5770af82381c8f994998a04dbfbfca88bbb27ac532378a3ba040d714e095c100"
+    }
+  },
+  "fixed_app_id": "com.ash.nativehome.captionreadproof",
+  "lock_status": "standalone_offline_workspace_update_preserves_production_registry_versions_checksums",
+  "main": "caption-read-proof",
+  "official_reference": "https://webostv.developer.lge.com/develop/references/settings-service",
+  "private_proposal_manifest_sha256": "1ea7e532fd09dedd88f296948f1eb36dba0e81e8f8124dbe3120ced2ebab3254",
+  "production_revision": "776e3d91855c588411c72e19409d9bda6f226144",
+  "project_root": "../..",
+  "report_files": [
+    "ready.json",
+    "result.json"
+  ],
+  "revision": "public_probe_relative_paths_and_before_call_clone",
+  "root_reviewed": true,
+  "runtime_leaf": "caption-<actualPID>",
+  "runtime_parent": "/tmp/luma-caption-read-proof",
+  "schema": 1,
+  "scope": "ONE anonymous ordinary fixed GET; compatibility observation only; no rendering/regional/write/Preview-authority claim",
+  "version": "0.1.0"
+}
