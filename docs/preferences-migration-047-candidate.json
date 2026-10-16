@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "version": "0.47.0",
+  "functional_source_revision": "be6c06a341d72be1d06e92819a1be6c71ed52048",
+  "selected_source_inputs": 101,
+  "binaries": {
+    "home-preview": {
+      "bytes": 3879936,
+      "name": "home-preview",
+      "sha256": "72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb"
+    }
+  },
+  "build_receipt_sha256": {
+    "home-preview": "581a7f64ee47c548eb1a98038465f3fd8c5ff9ea7ad18b17465312979145abd7"
+  },
+  "host_checks": {
+    "library_tests": 458,
+    "dashboard_tests": 5,
+    "clippy_warnings_denied": true,
+    "python_tests": 70
+  },
+  "native_migration_qualified": false,
+  "native_reverse_qualified": false,
+  "same_id_restore_qualified": false,
+  "normal_updated": false,
+  "normal_interactive_artwork_enabled": false
+}

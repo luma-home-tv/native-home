@@ -75,8 +75,10 @@ current APIs intentionally provide no generic partial-state recovery shortcut.
 A known refusal **before mutation** may permit package restoration only when all
 of the following independently hold: authoritative installer state, no remaining
 application process, the exact original preference bytes and metadata, and a
-bound report showing both chmod-attempt flags false. Otherwise HOLD applies.
-Those flags alone, or a mode/digest readback alone, are insufficient.
+bound report showing `migration_attempted: false` with no API receipt or failure.
+That is a source-bound pre-call refusal: no permission-step flags exist because
+the metadata API was never invoked. An API error with a step receipt remains
+HOLD. The pre-call flag alone, or a mode/digest readback alone, is insufficient.
 
 ## Qualification work still required
 
@@ -86,8 +88,9 @@ replacement and injected first-step failures. It also targets strict markers,
 ordinary UID4/GID4 and private runtime ownership. Host validation passed 458
 library tests, five dashboard tests, warnings-denied Clippy and 70 Python checks.
 The 13 new packaging cases use synthetic build receipts and inspect actual
-archives; they do not compile or install a TV package. ARM compilation and all
-native outcomes remain separate checks.
+archives; they do not compile or install a TV package. The matching ARM dashboard
+also compiled. The [compiled candidate](preferences-migration-047-candidate.json)
+preserves those build-stage facts and keeps all native qualification flags false.
 
 Before a native trial, independently admit the exact four-file package and its
 installed modes, refresh the retained bundle/state backup, bind the real
