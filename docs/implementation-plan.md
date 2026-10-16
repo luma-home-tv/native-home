@@ -86,9 +86,12 @@ remain open; normal interaction must keep Root artwork off.
 
 The [0.61 source](controls-and-icon-observations-061.md) moves each existing LG
 category shortcut before long native readings and adds a bounded, session-only
-per-key cached drawing ledger. Host validation passes. It closes the first-frame
-observation limit in source; native multi-batch continuity, full-key comparison
-and retained delivery still need their own matching evidence.
+per-key cached drawing ledger. Host validation passes. Its
+[first temporary G2 attempt](controls-and-icon-observations-061-first-attempt.md)
+now has independently reproduced two-batch preparation and exact supplied
+24-key body coverage. The ordinary browsing test timed out; separate restoration
+and cleanup completed, with their saved audit pending. Ordinary full-key drawing,
+current-build performance, daily flows and retained delivery remain open.
 
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:

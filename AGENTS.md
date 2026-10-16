@@ -46,6 +46,18 @@ failure/expiry, physical input, broad controls/performance/reliability and C2 re
 open. Future backup/rollback must use actual057 and fresh state; older056-baseline
 carriers must not run against057.
 
+The first temporary 0.61 attempt is recorded in
+`docs/controls-and-icon-observations-061-first-attempt.md`. Its original operator
+exited 1 at the bounded frame-command wait. Both 16+8 preparation batches and
+the exact supplied 24-key body union pass saved regrading and byte-identical
+replay. Ordinary browsing/full-key drawing remain unqualified. Separate recovery
+verified exact057 restoration and scoped cleanup under the original lease and
+deadline; the recovery saved audit is pending. Preserve all failed attempts.
+Future carriers must include source-declared `session-idle.ppm` and
+`session-awake.ppm` in their literal output allowlist, with the existing mapped
+identity/hash guards; never wildcard the session output names. Fresh sessions,
+nonces and device baseline are required. Normal Root artwork remains off.
+
 `probes/native-surface` now preserves the ordinary held-window prerequisite,
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing

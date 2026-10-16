@@ -47,8 +47,11 @@ current-build performance and retained 0.60 delivery remain open.
 
 The [0.61 candidate](docs/controls-and-icon-observations-061.md) puts existing LG
 Settings shortcuts first in Controls and adds bounded per-icon observations for
-test sessions. Host checks and matching ARM builds pass; it has not been deployed
-or retained on a TV.
+test sessions. Host checks and matching ARM builds pass. Its
+[first temporary G2 attempt](docs/controls-and-icon-observations-061-first-attempt.md)
+prepared two batches covering the supplied 24 preferred sources, but the ordinary
+browsing check was interrupted. Separate restoration and cleanup returned the G2
+to 0.57; their saved-evidence audit is pending. No 0.61 retained delivery follows.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
