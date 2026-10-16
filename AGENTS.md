@@ -38,6 +38,12 @@ in `docs/c2-native-preferences-047.md`. Its earlier native migration history
 remains unknown. The 0.48 SDK-argument source candidate has separate host/ARM
 build checks; G2's 0.47 result and any isolated Target collection mechanics do
 not grant C2 Preview migration, Root-artwork or retained-upgrade authority.
+The isolated C2 startup collection in `docs/c2-startup-collection.md` now has
+independently replayed observation and separate cleanup evidence. Its new Target
+identity confirms the observed opaque SDK argument and only its own measured
+runtime mapping. Both earlier host operators remain failures. This grants no
+Preview credential/permission authority or general temporary-path mapping; the
+retained C2 installation remains 0.20.0.
 
 The isolated 0.38.0 check in `docs/artwork-startup-capability-038.md` qualifies one
 ordinary native HBC `checkRoot` request and complete temporary cleanup. It did

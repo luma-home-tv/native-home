@@ -7,3 +7,5 @@ The new diagnostic accepts the executable alone or one UTF-8 JSON object of at m
 All operation admission remains separate: the ordinary Preview identity, protected marker, executable and bundle verification, expected ownership and original preference hash still gate the existing operation on its two fixed state paths. The normal interface, artwork activation and permission policy are unchanged. Version 0.48 identifies the new candidate; it has not yet qualified C2 migration or a retained upgrade.
 
 Host validation passed 465 library and five dashboard tests, 57 Python packaging/provenance tests and Clippy with warnings denied. These are host results. A separately admitted C2 native forward/reverse transaction, complete restoration and normal UI sessions remain required before promotion. The [earlier trial and separate restoration](c2-native-preferences-047.md) retain their original outcomes.
+
+A [separate isolated C2 observation](c2-startup-collection.md) also received an executable path and one opaque JSON object. It qualifies that measured Target ABI sample and collection mechanics, not Preview migration or the earlier missing-report cause.

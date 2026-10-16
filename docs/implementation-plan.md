@@ -294,6 +294,10 @@ same-ID restoration and current normal UI still require their own C2 tests.
 The [0.48 SDK-argument candidate](preferences-sdk-arguments-048.md) accepts one
 bounded opaque launcher JSON object without granting operation authority. Its
 host/ARM checks precede separate C2 native forward/reverse and restoration proof.
+The [isolated C2 startup collection](c2-startup-collection.md) now confirms one
+ordinary Target's launch ABI and narrow live runtime mapping, followed by
+separately verified cleanup and unchanged retained 0.20. Actual Preview migration
+and the original missing-report cause remain separate open questions.
 
 Network reconfiguration, firmware, factory reset, service/calibration controls,
 OLED protections and compensation scheduling remain protected/delegated. An
