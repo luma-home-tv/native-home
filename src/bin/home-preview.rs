@@ -65,6 +65,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    // Metadata-only admission precedes snapshots, Window/GL, service clients,
+    // input and persistence workers. This retained-ID test cannot act as a UI.
+    if assets.join("preferences-migration-proof.json").exists() {
+        if !device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PREVIEW
+            || unsafe { libc::geteuid() } < 1000
+            || args.len() != 1
+        {
+            return Err(
+                "Preference migration requires ordinary native Preview without arguments".into(),
+            );
+        }
+        const MIGRATION_FILES: &[&str] = &[
+            "appinfo.json",
+            "home-preview",
+            "icon.png",
+            "preferences-migration-proof.json",
+        ];
+        for entry in std::fs::read_dir(&assets)? {
+            let name = entry?.file_name();
+            if !MIGRATION_FILES.contains(&name.to_str().unwrap_or("")) {
+                return Err("Preference migration cannot mix with another asset or trial".into());
+            }
+        }
+        native_home::preferences_migration_proof::run(&assets)?;
+        return Ok(());
+    }
     let preview_artwork_marker = if assets.join("preview-artwork-admission.json").exists() {
         if !device
             || interactive

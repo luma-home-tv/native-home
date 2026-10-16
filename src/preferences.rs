@@ -57,6 +57,21 @@ fn private_file(file: &File) -> io::Result<()> {
     }
     Ok(())
 }
+/// Shared schema/identity validation for private storage and the explicit
+/// owner-only legacy permission migration. This function performs no I/O.
+pub(crate) fn decode_record(bytes: &[u8]) -> io::Result<Preferences> {
+    if bytes.len() as u64 > MAX_BYTES {
+        return Err(invalid("Preference file too large"));
+    }
+    let record: Record =
+        serde_json::from_slice(bytes).map_err(|_| invalid("Malformed preference record"))?;
+    if record.schema != 1 {
+        return Err(invalid("Unsupported preference schema"));
+    }
+    validate(&record.preferences)?;
+    Ok(record.preferences)
+}
+
 pub struct Store {
     dir: File,
 }
@@ -124,13 +139,7 @@ impl Store {
         if bytes.len() > MAX_BYTES as usize {
             return Err(invalid("Preference file grew past its limit"));
         }
-        let record: Record =
-            serde_json::from_slice(&bytes).map_err(|_| invalid("Malformed preference record"))?;
-        if record.schema != 1 {
-            return Err(invalid("Unsupported preference schema"));
-        }
-        validate(&record.preferences)?;
-        Ok(Some(record.preferences))
+        decode_record(&bytes).map(Some)
     }
     pub fn save(&self, prefs: &Preferences) -> io::Result<()> {
         validate(prefs)?;

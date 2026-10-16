@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.46.0' if main == 'home-preview' else '0.1.0'
+version = '0.47.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -46,7 +46,44 @@ broker_negative_proof = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_PROOF') == '
 installed_artwork_proof = os.environ.get('NATIVE_HOME_INSTALLED_ARTWORK_PROOF') == '1'
 artwork_guard_relaunch_proof = os.environ.get('NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF') == '1'
 preview_artwork_admission = os.environ.get('NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION') == '1'
-if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof, preview_artwork_admission)) > 1:
+preferences_migration_mode = os.environ.get('NATIVE_HOME_PREFERENCES_MIGRATION_PROOF', '')
+if preferences_migration_mode not in ('', '1'):
+    raise ValueError('Preferences migration mode must be explicitly 1')
+preferences_migration_proof = preferences_migration_mode == '1'
+preferences_migration_marker = None
+preferences_migration_pins_sha256 = None
+if preferences_migration_proof:
+    allowed = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
+               'NATIVE_HOME_RUST_TOOLCHAIN', 'NATIVE_HOME_CARGO', 'NATIVE_HOME_PREVIEW_ICON',
+               'NATIVE_HOME_PREFERENCES_MIGRATION_PROOF', 'NATIVE_HOME_PREFERENCES_MIGRATION_PINS'}
+    others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and k not in allowed]
+    if (main != 'home-preview' or build_receipt['target'] != 'arm' or
+        app_id != 'com.ash.nativehome.preview' or test_identity or interactive or others):
+        raise ValueError('Preferences migration requires only actual non-interactive Preview and no other assets or mode parameters')
+    def migration_pairs(pairs):
+        value = {}
+        for key,item in pairs:
+            if key in value: raise ValueError('Duplicate preferences migration pin')
+            value[key] = item
+        return value
+    from build_provenance import _read as read_migration_input
+    pins_raw = read_migration_input(Path(os.environ['NATIVE_HOME_PREFERENCES_MIGRATION_PINS']).absolute(),
+                                    private=True, limit=1024)
+    pins = json.loads(pins_raw, object_pairs_hook=migration_pairs)
+    if (type(pins) is not dict or set(pins) != {'schema', 'direction', 'expected_preferences_sha256',
+        'ui_sha256', 'expected_uid', 'expected_gid'} or type(pins['schema']) is not int or pins['schema'] != 1 or
+        type(pins['direction']) is not str or pins['direction'] not in ('forward', 'reverse') or
+        any(type(pins[k]) is not str or len(pins[k]) != 64 or any(c not in '0123456789abcdef' for c in pins[k])
+            for k in ('expected_preferences_sha256', 'ui_sha256')) or
+        type(pins['expected_uid']) is not int or not 1000 <= pins['expected_uid'] <= 0xffffffff or
+        type(pins['expected_gid']) is not int or not 0 <= pins['expected_gid'] <= 0xffffffff or
+        pins['ui_sha256'] != build_receipt['binary']['sha256']):
+        raise ValueError('Closed preferences migration pins must match the actual ARM UI')
+    preferences_migration_marker = pins
+    preferences_migration_pins_sha256 = hashlib.sha256(pins_raw).hexdigest()
+elif os.environ.get('NATIVE_HOME_PREFERENCES_MIGRATION_PINS'):
+    raise ValueError('Preferences migration pins require explicit mode')
+if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof, preview_artwork_admission, preferences_migration_proof)) > 1:
     raise ValueError('Only one installed helper proof mode is allowed')
 broker_negative_case = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_CASE', '')
 if broker_negative_proof:
@@ -201,7 +238,7 @@ staged_binary_sha256 = hashlib.sha256((stage / main).read_bytes()).hexdigest()
 if (staged_binary_sha256 != build_receipt['binary']['sha256'] or
         (stage / main).stat().st_size != build_receipt['binary']['bytes']):
     raise RuntimeError('Staged binary differs from verified build receipt')
-for name in ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt'):
+for name in (() if preferences_migration_proof else ('appfont.ttf', 'appfont-bold.ttf', 'OFL.txt')):
     shutil.copy2(repo / 'resources/fonts' / name, stage / name)
     (stage / name).chmod(0o644)
 # Independent Luma Home branding; no PlxNative mark is used as this client's identity.
@@ -217,7 +254,12 @@ info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
 if artwork_target_fixture:
     info['title']='AAA Luma Artwork Fixture'
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
-if main == 'home-preview':
+if preferences_migration_proof:
+    (stage / 'appinfo.json').chmod(0o644)
+    marker_path = stage / 'preferences-migration-proof.json'
+    marker_path.write_text(json.dumps(preferences_migration_marker, separators=(',', ':')) + '\n')
+    marker_path.chmod(0o644)
+if main == 'home-preview' and not preferences_migration_proof:
     assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
     if broker_startup_marker is not None:
         marker_path=stage/'broker-startup-proof.json'
@@ -339,6 +381,11 @@ if main == 'home-preview':
         shutil.copy2(source, stage / relative)
         (stage / relative).chmod(0o644)
 
+if preferences_migration_proof and {p.name for p in stage.iterdir() if p.is_file() and not p.is_symlink()} != {
+        'appinfo.json', 'home-preview', 'icon.png', 'preferences-migration-proof.json'}:
+    raise RuntimeError('Preferences migration payload must contain exactly four ordinary files')
+if preferences_migration_proof and any(not p.is_file() or p.is_symlink() for p in stage.iterdir()):
+    raise RuntimeError('Preferences migration payload must not contain directories or links')
 if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
     raise RuntimeError('Build receipt changed during packaging')
 control = ('Package: ' + app_id + '\nVersion: ' + version + '\nSection: misc\nPriority: optional\n'
@@ -383,6 +430,9 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'installed_artwork_proof': installed_artwork_proof,
            'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
            'preview_artwork_admission': preview_artwork_admission,
+           'preferences_migration_proof': preferences_migration_proof,
+           'preferences_migration_pins_sha256': preferences_migration_pins_sha256,
+           'preferences_migration_direction': preferences_migration_marker['direction'] if preferences_migration_proof else None,
            'broker_startup_helper': broker_startup_helper,
            'broker_startup_root_pins_sha256': broker_startup_pins_sha256,
            'artwork_target_fixture': artwork_target_fixture or None,
