@@ -28,7 +28,14 @@ message and a write-half-close; they have not run. The local container daemon
 was unavailable and was left stopped. Pure host classification does not qualify
 Linux kernel behavior.
 
-ARM compilation and native execution remain unqualified for this candidate.
+Both ARM executables compiled from frozen functional source
+`b5b49503d16ecac45168785758d1d31bd6a23e51`, with matching 102-input build
+snapshots. Dashboard SHA-256 is
+`fa4de63950a40d520269ef15f6813f28878ed7d295972b0ad7b02212acbd1290`;
+the installed Proof helper is
+`8582867f66acbe57e76a3025b3a1067217a044e262df9c87d624e8e4373961ac`.
+Compilation does not qualify native execution, which remains unverified for
+these executables. No 0.50 UI package or helper has been deployed.
 The [next closure plan](artwork-context-closure-next.md) still requires an
 unconditional typed attempt trace, explicit bootstrap closure, joined HBC
 evidence, a separate strict negative grader and successful resolution of only
