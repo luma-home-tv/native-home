@@ -166,8 +166,12 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. Version 0.37.0 is installed on the OLED55G26LA G2;
-the OLED65C26LD C2 was last verified on 0.20.0. The [branding/status milestone](docs/branding-status-milestone.json)
+package modes and removal. The OLED55G26LA G2 now retains verified 0.47.0,
+with two fresh normal sessions, original private preferences and preserved Core
+checks recorded in the [G2 delivery record](docs/g2-retained-preview047.md).
+The OLED65C26LD C2 remains on exactly restored 0.20.0; its
+[isolated startup observation](docs/c2-startup-collection.md) does not qualify a
+Preview upgrade. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
 [Controls layout milestone](docs/controls-layout-milestone.json) records the
 category/detail composition, native navigation, G2 Settings-return regression
@@ -253,8 +257,10 @@ stay outside tracked source. The [responsiveness milestone](docs/responsiveness-
 records native SDL input, bounded frame/CPU/RSS measurements and the shared
 presentation gate. In the matched G2 workload, sampled foreground CPU fell from
 8.2% to 1.7% of one core; physical remote/panel latency and long-run performance
-remain unverified. A black OLED canvas with graphite tiles is the
-design direction; sustained performance, physical input and complete controls
+remain unverified. The design uses a black OLED canvas. Available app icons
+keep their own shape and transparency without an added graphite plate; graphite
+is reserved for missing-art fallbacks and controls. Sustained performance,
+physical input and complete controls
 still require device verification. The [drawer milestone](docs/drawer-milestone.json)
 adds native All/Favourites filtering and on-screen search, tested through
 scripted shared focus/OK on the G2. Keyboard input is currently Latin/digits.
