@@ -37,3 +37,15 @@ tests** and Clippy with warnings denied. The pinned, explicitly attributed PlxNa
 The [LG Settings Service reference](https://webostv.developer.lge.com/develop/references/settings-service)
 documents the caption category and `captionEnable` string values. That reference
 alone does not map this preference to UK broadcast or application subtitles.
+
+The SDK ARM dashboard build passed from functional source
+`da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0`, with all 117 selected inputs
+matched to that Git revision. Its ELF SHA-256 is
+`a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590`.
+The existing unstable `neon` warning remains. The normal 0.57 package preserves
+all 28 packaged resources from actual 0.56; only the dashboard ELF and appinfo
+version change. It requests no additional permissions or services. Local build
+and archive checks do not establish TV access or native presentation. An
+independently authored archive reader, executed by the coordinator, matched the
+complete package and all 117 inputs at the frozen source revision; its
+[scoped record](caption-read-057-milestone.json) preserves the hashes.

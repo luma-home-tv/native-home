@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "status": "caption057_host_checks_and_ARM_build_native_Preview_pending",
+  "functional_source_revision": "da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0",
+  "build_inputs": 117,
+  "ELF": {
+    "bytes": 4187324,
+    "name": "home-preview",
+    "sha256": "a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590"
+  },
+  "ARM_build_actual_exit": 0,
+  "ARM_build_terminal": "3900aa",
+  "ARM_build_receipt_sha256": "6e6afb9e0d6dbf2ea709fbbf0166c3fae3abddfc73d65433f62f758b63e13969",
+  "normal_IPK_sha256": "280846fde1cf58f2ea86cd091e6f4a0ef486c002c04000f7712285a7325da7e3",
+  "package_receipt_sha256": "96b2a39844c6e9d30a95827f727734ec339ebbb0b0b14eaefd9d539c150f0d7b",
+  "package_actual_exit": 0,
+  "package_terminal": "a7edcf",
+  "host": {
+    "focused_caption_tests": 8,
+    "library_tests": 635,
+    "UI_tests": 8,
+    "Python_build_packaging_tests": 64,
+    "clippy_warnings_denied": true,
+    "all_passed": true,
+    "independent_source_review": "clear"
+  },
+  "behavior": {
+    "protected_read_only_caption_row": true,
+    "new_fixed_GET_per_collection": 1,
+    "extra_worker_or_subscription": false,
+    "setter_or_action_or_constraint_added": false,
+    "Accessibility_rows_replaced_each_cycle": 8,
+    "all_failed_withdraws_group_freshness": true,
+    "legacy15s_expiry_preserved": true,
+    "unknown_or_failed_never_inferred_off": true
+  },
+  "preservation": {
+    "framework_unchanged": true,
+    "all28_G2_packaged_resources_unchanged": true,
+    "only_installed_file_changes": [
+      "home-preview",
+      "appinfo.json"
+    ],
+    "only_appinfo_change": "version",
+    "additional_permissions_services_hooks": false,
+    "TV_contact_for_this_source": false,
+    "G2_retained": "0.56.0",
+    "C2_contacted": false
+  },
+  "unqualified": [
+    "ordinary Preview caller permission",
+    "native normal row presentation/failure/expiry",
+    "UK/DVB/app subtitle meaning and active rendering",
+    "performance and C2"
+  ],
+  "independent_archive_audit": {
+    "source_sha256": "df4212e04c56dc8f466d383a398be4d891cd007984dd010c7e797e76e30c4670",
+    "report_sha256": "f5b947935ef8c65f736d394841de4ae9960a43d69540629b08af263621d8b035",
+    "actual_exit": 0,
+    "terminal": "b6f87f",
+    "archive_files": 30,
+    "bundle_attributes": 32,
+    "identical_resources": 28,
+    "selected_source_inputs_verified_at_Git_revision": 117,
+    "native_qualified": false,
+    "python_literal_escape_warning": "saved; no functional reader failure"
+  }
+}
