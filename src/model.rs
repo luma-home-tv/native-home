@@ -139,6 +139,8 @@ pub(crate) fn display_value(setting: &Setting) -> &str {
         ("soundOutput", "external_optical") => "Optical",
         ("soundOutput", "external_arc") => "HDMI ARC",
         ("soundOutput", "tv_speaker") => "TV speaker",
+        // These are opaque preferences, not boolean setting values.
+        ("localeInfo.timezone" | "localeInfo.locales.FMT", _) => &setting.value,
         (_, "on") => "On",
         (_, "off") => "Off",
         ("localeInfo.clock", "12") => "12-hour",
@@ -436,6 +438,35 @@ mod tests {
             value.value = wire.into();
             assert_eq!(display_value(&value), label);
             assert_eq!(value.value, wire);
+        }
+    }
+
+    #[test]
+    fn opaque_time_preferences_keep_wire_case_in_the_actual_general_form() {
+        let _serial = plx_base::testlock::serial();
+        let current = context();
+        for wire in ["on", "off", "On", "OFF"] {
+            let replies = serde_json::json!({
+                "locale_values": {"returnValue":true,"settings":{"localeInfo":{
+                    "clock":"locale","timezone":wire,"locales":{"FMT":wire}
+                }}}
+            });
+            let mut settings = crate::locale_reads::parse(&replies);
+            for setting in &mut settings { setting.context = current.clone(); }
+            let mut form = FormTable::new(2000);
+            form.set(controls_form_for_section(&settings, &current, Some(SettingsSection::General)), None);
+            for id in ["localeInfo.timezone", "localeInfo.locales.FMT"] {
+                let row = settings.iter().position(|setting| setting.id == id).unwrap();
+                assert!(settings[row].available && settings[row].protected);
+                assert_eq!(settings[row].value, wire);
+                let position = form.index_of(&id.into()).unwrap();
+                assert!(form.binding_at(position).unwrap().disabled);
+                assert_eq!(form.activate(position), None);
+                assert_eq!(form.table.sections[1].rows[row].value.as_deref(), Some(wire));
+            }
+            let clock = settings.iter().position(|setting| setting.id == "localeInfo.clock").unwrap();
+            assert_eq!(settings[clock].value, "locale");
+            assert_eq!(form.table.sections[1].rows[clock].value.as_deref(), Some("Follow regional format"));
         }
     }
 
