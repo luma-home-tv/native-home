@@ -191,6 +191,69 @@ fn withdrawal_supported(
 }
 
 #[cfg(any(target_arch = "arm", test))]
+const PROOF_READ_AFTER_HOLD: std::time::Duration = std::time::Duration::from_millis(5000);
+
+// No plan takes the old path without extra peer checks, waits or operations.
+// The production closures below are fixed; injection is private test plumbing,
+// not a caller-selected URI, command, duration, profile or authority surface.
+#[cfg(any(target_arch = "arm", test))]
+fn read_after_context_with(
+    plan: Option<&crate::broker_installation::ProofReadAfterPlan>,
+    deadline: std::time::Instant,
+    diagnostic: &mut serde_json::Value,
+    mut clock: impl FnMut() -> std::time::Instant,
+    mut wait: impl FnMut(std::time::Duration) -> std::io::Result<()>,
+    mut revalidate_peer: impl FnMut() -> Result<(), Box<dyn std::error::Error>>,
+    collect: impl FnOnce() -> serde_json::Value,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    use serde_json::json;
+    use std::{io, time::Duration};
+    let Some(plan) = plan else {
+        return Ok(collect());
+    };
+    *diagnostic = json!({"schema":1,"phase":"read_after","request_id":1,
+        "requested_ms":5000,"completed":false,"reported_elapsed_ms":0,
+        "plan_sha256":plan.sha256(),"stage":"pre_verify"});
+    let require_budget = |now: std::time::Instant| -> io::Result<()> {
+        if deadline
+            .checked_duration_since(now)
+            .is_none_or(|remaining| remaining < PROOF_READ_AFTER_HOLD)
+        {
+            return Err(io::Error::from(io::ErrorKind::TimedOut));
+        }
+        Ok(())
+    };
+    require_budget(clock())?;
+    revalidate_peer()?;
+    // Revalidation itself performs bounded-source I/O. Check again immediately
+    // before waiting; it cannot spend part of the mandatory five-second budget.
+    let began = clock();
+    require_budget(began)?;
+    diagnostic["stage"] = json!("waiting");
+    loop {
+        let now = clock();
+        diagnostic["reported_elapsed_ms"] =
+            json!(now.saturating_duration_since(began).as_millis() as u64);
+        if now >= deadline {
+            return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+        }
+        let elapsed = now.saturating_duration_since(began);
+        if elapsed >= PROOF_READ_AFTER_HOLD {
+            break;
+        }
+        wait((PROOF_READ_AFTER_HOLD - elapsed).min(Duration::from_millis(20)))?;
+    }
+    diagnostic["stage"] = json!("post_verify");
+    revalidate_peer()?;
+    if clock() >= deadline {
+        return Err(io::Error::from(io::ErrorKind::TimedOut).into());
+    }
+    diagnostic["stage"] = json!("complete");
+    diagnostic["completed"] = json!(true);
+    Ok(collect())
+}
+
+#[cfg(any(target_arch = "arm", test))]
 mod proof {
     use crate::broker_installation::Profile;
     use crate::broker_protocol as protocol;
@@ -937,15 +1000,47 @@ mod proof {
                     )
                     .into());
                 }
-                let after_context =
-                    crate::broker_context::collect(deadline, &enrolled.context_reader_sha256);
-                record["context_after"] = after_context.clone();
                 let withdrawal_eligible = super::withdrawal_supported(
                     matches!(authority, ResourceAuthority::Installed(_)),
                     super::WithdrawalStage::ReadAfter,
                     request.request_id,
                     prepared.is_ok() && readback.is_ok() && header.is_some(),
                 );
+                let plan = match authority {
+                    ResourceAuthority::Installed(installation) if withdrawal_eligible => {
+                        installation.proof_read_after_plan()
+                    }
+                    _ => None,
+                };
+                let mut hold = serde_json::Value::Null;
+                let context = super::read_after_context_with(
+                    plan,
+                    deadline,
+                    &mut hold,
+                    std::time::Instant::now,
+                    |duration| {
+                        std::thread::sleep(duration);
+                        Ok(())
+                    },
+                    || {
+                        // resource_peer revalidates protected Installation,
+                        // actual peer/proc identity and enrollment on both sides.
+                        let current =
+                            resource_peer(enrolled, &connect, &packet.credentials, authority)?;
+                        if current != before {
+                            return Err(
+                                invalid("Artwork caller changed during ReadAfter hold").into()
+                            );
+                        }
+                        Ok(())
+                    },
+                    || crate::broker_context::collect(deadline, &enrolled.context_reader_sha256),
+                );
+                if !hold.is_null() {
+                    report["proof_read_after_hold"] = hold;
+                }
+                let after_context = context?;
+                record["context_after"] = after_context.clone();
                 let context_outcome = if withdrawal_eligible {
                     super::installed_context_outcome(
                         &after_context,
@@ -1770,5 +1865,239 @@ mod context_withdrawal_foundation_tests {
         assert!(error.to_string().contains("finish request 2"));
         let text: Box<dyn std::error::Error> = std::io::Error::other(error.to_string()).into();
         assert!(text.downcast_ref::<ContextWithdrawal>().is_none());
+    }
+    #[test]
+    fn absent_read_after_plan_collects_once_without_new_wait_or_revalidation() {
+        let mut diagnostic = serde_json::Value::Null;
+        let called = std::cell::Cell::new(0);
+        let observed = read_after_context_with(
+            None,
+            std::time::Instant::now(),
+            &mut diagnostic,
+            || panic!("Default path must not read hold clock"),
+            |_| panic!("Default path must not wait"),
+            || panic!("Default path must not add peer I/O"),
+            || {
+                called.set(called.get() + 1);
+                serde_json::json!({"fixed_get_result":"unchanged"})
+            },
+        )
+        .unwrap();
+        assert_eq!(called.get(), 1);
+        assert_eq!(observed["fixed_get_result"], "unchanged");
+        assert!(diagnostic.is_null());
+    }
+    #[test]
+    fn fixed_read_after_wait_revalidates_both_sides_then_collects_once() {
+        use std::{
+            cell::{Cell, RefCell},
+            time::{Duration, Instant},
+        };
+        let plan = crate::broker_installation::ProofReadAfterPlan::fixture();
+        let began = Instant::now();
+        let now = Cell::new(began);
+        let events = RefCell::new(Vec::new());
+        let mut diagnostic = serde_json::Value::Null;
+        let result = read_after_context_with(
+            Some(&plan),
+            began + Duration::from_secs(10),
+            &mut diagnostic,
+            || now.get(),
+            |duration| {
+                assert!(duration <= Duration::from_millis(20));
+                events.borrow_mut().push("wait");
+                now.set(now.get() + duration);
+                Ok(())
+            },
+            || {
+                events.borrow_mut().push("verify");
+                Ok(())
+            },
+            || {
+                events.borrow_mut().push("collect");
+                serde_json::json!({"raw_fixed_get_result":true})
+            },
+        )
+        .unwrap();
+        assert_eq!(result["raw_fixed_get_result"], true);
+        let order = events.borrow();
+        assert_eq!(order.first(), Some(&"verify"));
+        assert_eq!(&order[order.len() - 2..], &["verify", "collect"]);
+        assert_eq!(order.iter().filter(|e| **e == "verify").count(), 2);
+        assert!(order[1..order.len() - 2].iter().all(|e| *e == "wait"));
+        assert_eq!(now.get().duration_since(began), Duration::from_secs(5));
+        assert_eq!(diagnostic["completed"], true);
+        assert_eq!(diagnostic["requested_ms"], 5000);
+        assert_eq!(diagnostic["reported_elapsed_ms"], 5000);
+        assert_eq!(diagnostic["plan_sha256"], plan.sha256());
+    }
+    #[test]
+    fn hold_refuses_insufficient_budget_including_time_spent_in_preverification() {
+        use std::{
+            cell::Cell,
+            time::{Duration, Instant},
+        };
+        let plan = crate::broker_installation::ProofReadAfterPlan::fixture();
+        for preverify_cost in [false, true] {
+            let began = Instant::now();
+            let now = Cell::new(began);
+            let calls = Cell::new(0);
+            let collected = Cell::new(false);
+            let mut diagnostic = serde_json::Value::Null;
+            let deadline = began + Duration::from_secs(if preverify_cost { 6 } else { 4 });
+            assert!(read_after_context_with(
+                Some(&plan),
+                deadline,
+                &mut diagnostic,
+                || now.get(),
+                |_| panic!("Insufficient budget cannot begin wait"),
+                || {
+                    calls.set(calls.get() + 1);
+                    now.set(now.get() + Duration::from_secs(2));
+                    Ok(())
+                },
+                || {
+                    collected.set(true);
+                    serde_json::Value::Null
+                }
+            )
+            .is_err());
+            assert_eq!(calls.get(), u32::from(preverify_cost));
+            assert!(!collected.get());
+            assert_eq!(diagnostic["completed"], false);
+            assert_eq!(diagnostic["stage"], "pre_verify");
+        }
+    }
+    #[test]
+    fn exact_five_seconds_remaining_cannot_run_get_at_expired_deadline() {
+        use std::{
+            cell::Cell,
+            time::{Duration, Instant},
+        };
+        let plan = crate::broker_installation::ProofReadAfterPlan::fixture();
+        let began = Instant::now();
+        let now = Cell::new(began);
+        let mut diagnostic = serde_json::Value::Null;
+        let verifies = Cell::new(0);
+        let collected = Cell::new(false);
+        assert!(read_after_context_with(
+            Some(&plan),
+            began + Duration::from_secs(5),
+            &mut diagnostic,
+            || now.get(),
+            |duration| {
+                now.set(now.get() + duration);
+                Ok(())
+            },
+            || {
+                verifies.set(verifies.get() + 1);
+                Ok(())
+            },
+            || {
+                collected.set(true);
+                serde_json::Value::Null
+            }
+        )
+        .is_err());
+        assert_eq!(verifies.get(), 1);
+        assert!(!collected.get());
+        assert_eq!(diagnostic["completed"], false);
+    }
+    #[test]
+    fn changed_peer_plan_or_pins_on_either_side_prevents_context_collection() {
+        use std::{
+            cell::Cell,
+            time::{Duration, Instant},
+        };
+        let plan = crate::broker_installation::ProofReadAfterPlan::fixture();
+        for fail_call in [1, 2] {
+            let began = Instant::now();
+            let now = Cell::new(began);
+            let calls = Cell::new(0);
+            let collected = Cell::new(false);
+            let mut diagnostic = serde_json::Value::Null;
+            let result = read_after_context_with(
+                Some(&plan),
+                began + Duration::from_secs(10),
+                &mut diagnostic,
+                || now.get(),
+                |duration| {
+                    now.set(now.get() + duration);
+                    Ok(())
+                },
+                || {
+                    let next = calls.get() + 1;
+                    calls.set(next);
+                    if next == fail_call {
+                        Err(
+                            std::io::Error::other("Controlled protected installation/peer drift")
+                                .into(),
+                        )
+                    } else {
+                        Ok(())
+                    }
+                },
+                || {
+                    collected.set(true);
+                    serde_json::Value::Null
+                },
+            );
+            assert!(result.is_err());
+            assert_eq!(calls.get(), fail_call);
+            assert!(!collected.get());
+            assert_eq!(diagnostic["completed"], false);
+            assert_eq!(
+                diagnostic["stage"],
+                if fail_call == 1 {
+                    "pre_verify"
+                } else {
+                    "post_verify"
+                }
+            );
+        }
+    }
+    #[test]
+    fn wait_failure_or_deadline_spent_in_postverification_never_collects() {
+        use std::{
+            cell::Cell,
+            time::{Duration, Instant},
+        };
+        let plan = crate::broker_installation::ProofReadAfterPlan::fixture();
+        for failed_wait in [false, true] {
+            let began = Instant::now();
+            let now = Cell::new(began);
+            let calls = Cell::new(0);
+            let collected = Cell::new(false);
+            let mut diagnostic = serde_json::Value::Null;
+            assert!(read_after_context_with(
+                Some(&plan),
+                began + Duration::from_secs(6),
+                &mut diagnostic,
+                || now.get(),
+                |duration| {
+                    if failed_wait {
+                        Err(std::io::Error::other("Controlled wait failure"))
+                    } else {
+                        now.set(now.get() + duration);
+                        Ok(())
+                    }
+                },
+                || {
+                    calls.set(calls.get() + 1);
+                    if calls.get() == 2 {
+                        now.set(now.get() + Duration::from_secs(1));
+                    }
+                    Ok(())
+                },
+                || {
+                    collected.set(true);
+                    serde_json::Value::Null
+                }
+            )
+            .is_err());
+            assert!(!collected.get());
+            assert_eq!(diagnostic["completed"], false);
+            assert_eq!(calls.get(), if failed_wait { 1 } else { 2 });
+        }
     }
 }

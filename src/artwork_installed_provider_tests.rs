@@ -1944,3 +1944,230 @@ fn terminal_eof_authentication_rejects_changed_measured_peer_or_self_without_can
         assert!(!trace.bounded_eof_candidate());
     }
 }
+
+#[test]
+fn closed_recipe_caps_one_job_and_keeps_ordinary_connected_hold() {
+    let directory = ObservationDirectory::new();
+    let mut ordinary = directory.observer();
+    assert!(ordinary.begin().unwrap().hold);
+    assert!(ordinary.begin().is_ok());
+    let mut recipe = directory.observer();
+    recipe.closed_case = Some(crate::artwork_closed_negative_proof::Case::ReadAfter);
+    assert!(!recipe.begin().unwrap().hold);
+    assert!(matches!(recipe.begin(), Err(ObservationError::Limit)));
+    assert!(!directory.0.join("installed-artwork-cap.json").exists());
+}
+#[test]
+fn closed_progress_publication_is_fixed_private_and_ordinary_mode_cannot_write_it() {
+    use crate::artwork_closed_negative_proof::ProgressFile;
+    use std::os::unix::fs::MetadataExt;
+    let directory = ObservationDirectory::new();
+    let mut observer = directory.observer();
+    assert!(observer
+        .write(ProgressFile::ReadBodyReady.name(), &json!({"schema":1}))
+        .is_err());
+    observer.closed_case = Some(crate::artwork_closed_negative_proof::Case::ReadAfter);
+    observer
+        .write(
+            ProgressFile::ReadBodyReady.name(),
+            &json!({"schema":1,"body_digest_validated":false,"complete_validated":false}),
+        )
+        .unwrap();
+    let path = directory.0.join(ProgressFile::ReadBodyReady.name());
+    let metadata = std::fs::symlink_metadata(&path).unwrap();
+    assert_eq!(metadata.mode() & 0o7777, 0o600);
+    assert_eq!(metadata.nlink(), 1);
+    let before = std::fs::read(&path).unwrap();
+    assert!(observer
+        .write(ProgressFile::ReadBodyReady.name(), &json!({"schema":2}))
+        .is_err());
+    assert_eq!(std::fs::read(path).unwrap(), before);
+}
+#[test]
+fn closed_recipe_wrong_target_and_second_fetch_cannot_reach_inner_provider() {
+    fn work(id: &str) -> (crate::artwork_cache::Work, Source) {
+        let raw = json!({"replies":{"apps":{"returnValue":true,"apps":[{"id":id,"title":"Fixture","type":"native","visible":true,"version":"1.0.0","folderPath":format!("/media/developer/apps/usr/palm/applications/{id}"),"icon":"icon.png"}]},"launch_points":{"returnValue":true,"launchPoints":[{"id":id}]}}});
+        let sources = app_artwork::sources_from_raw(&raw, crate::identity::PROOF).unwrap();
+        let mut cache =
+            crate::artwork_cache::ArtworkCache::new(crate::artwork_cache::Config::default())
+                .unwrap();
+        cache.update_catalogue(&sources).unwrap();
+        (
+            cache.next_work(0).unwrap(),
+            sources[id].preferred().unwrap().clone(),
+        )
+    }
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    let mut worker = crate::artwork_worker::Worker::start(move || ClosedNegativeProvider {
+        inner: Init(Err(ProviderError::Unavailable)),
+        case: crate::artwork_closed_negative_proof::Case::Finish,
+        sent: false,
+        observation: tx,
+    })
+    .unwrap();
+    for id in ["synthetic.fixture.wrong", crate::identity::TARGET] {
+        let (work, source) = work(id);
+        worker
+            .try_submit(work, source, Instant::now() + Duration::from_secs(2))
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(2);
+        let done = loop {
+            if let Some(done) = worker.poll() {
+                break done;
+            }
+            assert!(Instant::now() < deadline);
+            std::thread::yield_now();
+        };
+        assert_eq!(
+            done.status,
+            crate::artwork_worker::Status::ProviderFailed(ProviderError::Denied)
+        );
+        assert_eq!(done.settlement, SessionSettlement::Unknown);
+        assert!(rx.try_recv().is_err());
+    }
+    assert!(worker.finish().joined);
+}
+#[test]
+fn closed_recipe_discards_positive_file_before_actual_worker_decoder() {
+    struct DropBeforeDecode(Option<EncodedFile>);
+    impl Provider for DropBeforeDecode {
+        fn initial_settlement(&self) -> SessionSettlement {
+            SessionSettlement::NoExternalSession
+        }
+        fn transition_settlement(&self) -> SessionSettlement {
+            SessionSettlement::KnownClosed
+        }
+        fn fetch(
+            &mut self,
+            _: &Source,
+            _: Instant,
+            _: &Cancellation,
+        ) -> Result<EncodedFile, ProviderError> {
+            let (result, outcome) = discard_closed_recipe_result(Ok(self.0.take().unwrap()), false);
+            assert_eq!(outcome, ClosedNegativeOutcome::PositiveTimingMiss);
+            result
+        }
+    }
+    let (_, _, exchange, _) = fixture();
+    let wire::Outcome::Artwork(image) = exchange.outcome else {
+        panic!("synthetic file")
+    };
+    let encoded = EncodedFile {
+        identity: FileIdentity {
+            device: 1,
+            inode: 1,
+            bytes: image.bytes.len() as u64,
+            mode: 0o100644,
+            uid: 0,
+            gid: 0,
+            modified_seconds: 0,
+            modified_nanos: 0,
+            changed_seconds: 0,
+            changed_nanos: 0,
+        },
+        digest: plx_base::sha256::sha256(&image.bytes),
+        bytes: image.bytes,
+        png_dimensions: None,
+    };
+    let source = source();
+    let id = source.app_id().to_owned();
+    let raw = json!({"replies":{"apps":{"returnValue":true,"apps":[{"id":id,"title":"Fixture","type":"native","visible":true,"version":"1.0.0","folderPath":format!("/media/developer/apps/usr/palm/applications/{id}"),"icon":"icon.png","largeIcon":"images/large.png"}]},"launch_points":{"returnValue":true,"launchPoints":[{"id":id}]}}});
+    let sources = app_artwork::sources_from_raw(&raw, crate::identity::PROOF).unwrap();
+    let mut cache =
+        crate::artwork_cache::ArtworkCache::new(crate::artwork_cache::Config::default()).unwrap();
+    cache.update_catalogue(&sources).unwrap();
+    let work = cache.next_work(0).unwrap();
+    let mut worker =
+        crate::artwork_worker::Worker::start(move || DropBeforeDecode(Some(encoded))).unwrap();
+    worker
+        .try_submit(work, source, Instant::now() + Duration::from_secs(2))
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let completed = loop {
+        if let Some(done) = worker.poll() {
+            break done;
+        }
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    };
+    assert_eq!(
+        completed.status,
+        crate::artwork_worker::Status::ProviderFailed(ProviderError::Denied)
+    );
+    assert!(matches!(
+        completed.result,
+        crate::artwork_cache::FetchResult::Failed
+    ));
+    assert_eq!(completed.settlement, SessionSettlement::KnownClosed);
+    assert!(worker.finish().joined);
+}
+
+#[test]
+fn closed_read_progress_requires_all_validated_chunks_and_is_not_complete_or_digest_proof() {
+    use crate::artwork_closed_negative_proof::Case;
+    let (_, source, exchange, _) = fixture();
+    let mut trace = trace_for(&exchange, &source);
+    let mut receiver =
+        wire::Receiver::new(&exchange.request, &exchange.identity, exchange.root).unwrap();
+    let packets = fixture_packets(&exchange);
+    assert!(!closed_read_body_ready(Some(Case::ReadAfter), &trace));
+    trace.push_resource(&mut receiver, &packets[0]).unwrap();
+    assert!(!closed_read_body_ready(Some(Case::ReadAfter), &trace));
+    trace.push_resource(&mut receiver, &packets[1]).unwrap();
+    assert!(closed_read_body_ready(Some(Case::ReadAfter), &trace));
+    assert!(!closed_read_body_ready(Some(Case::Finish), &trace));
+    assert!(!closed_read_body_ready(None, &trace));
+    assert!(trace.complete.is_none());
+    assert!(trace.discarded_read.is_none());
+    trace.push_resource(&mut receiver, &packets[2]).unwrap();
+    assert!(!closed_read_body_ready(Some(Case::ReadAfter), &trace));
+}
+
+#[test]
+fn closed_recipe_reports_only_its_selected_negative_stage_without_weakening_generic_closure() {
+    use crate::artwork_closed_negative_proof::Case;
+    for (finish, expected, other) in [
+        (false, Case::ReadAfter, Case::Finish),
+        (true, Case::Finish, Case::ReadAfter),
+    ] {
+        let (_, _, trace, _, _) =
+            negative::tests::fixture_for_current(finish, Profile::Proof, std::process::id());
+        assert!(trace.bounded_eof_candidate());
+        assert!(closed_case_stage_matches(expected, &trace));
+        assert!(!closed_case_stage_matches(other, &trace));
+        let mut missing = trace.clone();
+        missing.failure = None;
+        assert!(!closed_case_stage_matches(expected, &missing));
+        let mut mismatched = trace.clone();
+        mismatched.failure.as_mut().unwrap().stage = AttemptStage::Identify;
+        assert!(!closed_case_stage_matches(expected, &mismatched));
+        let directory = ObservationDirectory::new();
+        let (mut provider, source, trace, hbc, current) =
+            current_negative_fixture(&directory, finish);
+        retain_attempt(&mut provider, trace);
+        assert!(matches!(
+            settle_closed_negative(&mut provider, current, source.key(), Ok(hbc), false, false),
+            Err(ProviderError::Denied)
+        ));
+        assert_eq!(
+            provider.transition_settlement(),
+            SessionSettlement::KnownClosed
+        );
+        assert!(closed_negative_for_case(expected, &provider));
+        assert!(!closed_negative_for_case(other, &provider));
+        let (_, matching) = discard_closed_recipe_result(
+            Err(ProviderError::Denied),
+            closed_negative_for_case(expected, &provider),
+        );
+        let (_, cross_case) = discard_closed_recipe_result(
+            Err(ProviderError::Denied),
+            closed_negative_for_case(other, &provider),
+        );
+        assert_eq!(matching, ClosedNegativeOutcome::ClosedNegative);
+        assert_eq!(cross_case, ClosedNegativeOutcome::Unknown);
+        assert_eq!(
+            provider.transition_settlement(),
+            SessionSettlement::KnownClosed
+        );
+    }
+}

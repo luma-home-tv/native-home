@@ -53,7 +53,155 @@ impl Provider for Init {
         }
     }
 }
+/// Diagnostic only. This does not grant remote/process/guard authority.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ClosedNegativeOutcome {
+    ClosedNegative,
+    PositiveTimingMiss,
+    Unknown,
+}
+#[derive(Debug, serde::Serialize)]
+pub struct ClosedNegativeObservation {
+    pub case: crate::artwork_closed_negative_proof::Case,
+    pub source_key: crate::app_artwork::SourceKey,
+    pub outcome: ClosedNegativeOutcome,
+    pub encoded_bytes_returned_to_worker: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+struct ClosedNegativeProvider {
+    inner: Init,
+    case: crate::artwork_closed_negative_proof::Case,
+    sent: bool,
+    observation: std::sync::mpsc::SyncSender<ClosedNegativeObservation>,
+}
+#[cfg(any(target_arch = "arm", test))]
+fn closed_case_stage_matches(
+    case: crate::artwork_closed_negative_proof::Case,
+    trace: &AttemptTrace,
+) -> bool {
+    let expected = match case {
+        crate::artwork_closed_negative_proof::Case::ReadAfter => AttemptStage::ReadArtwork,
+        crate::artwork_closed_negative_proof::Case::Finish => AttemptStage::Finish,
+    };
+    trace.stage == expected
+        && trace
+            .failure
+            .is_some_and(|failure| failure.stage == expected)
+}
+#[cfg(any(target_arch = "arm", test))]
+fn closed_negative_for_case(
+    case: crate::artwork_closed_negative_proof::Case,
+    provider: &InstalledProvider,
+) -> bool {
+    provider.ticket_resolved
+        && !provider.quarantined
+        && provider.last_attempt.as_ref().is_some_and(|trace| {
+            trace.bounded_eof_candidate() && closed_case_stage_matches(case, trace)
+        })
+}
+#[cfg(any(target_arch = "arm", test))]
+fn discard_closed_recipe_result(
+    result: Result<EncodedFile, ProviderError>,
+    negative_closed: bool,
+) -> (Result<EncodedFile, ProviderError>, ClosedNegativeOutcome) {
+    match result {
+        Ok(encoded) => {
+            drop(encoded); // Always before Worker can hash/decode an image.
+            (
+                Err(ProviderError::Denied),
+                ClosedNegativeOutcome::PositiveTimingMiss,
+            )
+        }
+        Err(ProviderError::Denied) if negative_closed => (
+            Err(ProviderError::Denied),
+            ClosedNegativeOutcome::ClosedNegative,
+        ),
+        Err(error) => (Err(error), ClosedNegativeOutcome::Unknown),
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+impl Provider for ClosedNegativeProvider {
+    fn initial_settlement(&self) -> SessionSettlement {
+        self.inner.initial_settlement()
+    }
+    fn transition_settlement(&self) -> SessionSettlement {
+        self.inner.transition_settlement()
+    }
+    fn fetch(
+        &mut self,
+        source: &Source,
+        deadline: Instant,
+        cancellation: &Cancellation,
+    ) -> Result<EncodedFile, ProviderError> {
+        if self.sent {
+            return Err(ProviderError::Denied);
+        }
+        self.sent = true;
+        if source.app_id() != crate::identity::TARGET {
+            return Err(ProviderError::Denied);
+        }
+        let result = self.inner.fetch(source, deadline, cancellation);
+        #[cfg(any(target_arch = "arm", test))]
+        let negative_closed = self
+            .inner
+            .0
+            .as_ref()
+            .is_ok_and(|provider| closed_negative_for_case(self.case, provider));
+        #[cfg(not(any(target_arch = "arm", test)))]
+        let negative_closed = false;
+        let (result, outcome) = discard_closed_recipe_result(result, negative_closed);
+        // A full/disconnected diagnostic channel cannot block a current worker.
+        let _ = self.observation.try_send(ClosedNegativeObservation {
+            case: self.case,
+            source_key: source.key().clone(),
+            outcome,
+            encoded_bytes_returned_to_worker: false,
+        });
+        result
+    }
+}
+
 impl InstalledProvider {
+    /// Exclusive source-selected Proof recipe: one Target fetch, no decoded
+    /// image result, no old-latch recovery and no change to ordinary factories.
+    pub fn start_closed_negative_proof_worker(
+        marker: Marker,
+        case: crate::artwork_closed_negative_proof::Case,
+        output: PathBuf,
+    ) -> std::io::Result<(
+        crate::artwork_worker::Worker,
+        std::sync::mpsc::Receiver<ClosedNegativeObservation>,
+    )> {
+        #[cfg(target_arch = "arm")]
+        {
+            let (tx, rx) = std::sync::mpsc::sync_channel(1);
+            let worker = crate::artwork_worker::Worker::start(move || {
+                let result = Self::new(marker).and_then(|mut provider| {
+                    let mut observer = ProofObservation::open(output, Profile::Proof)
+                        .map_err(|_| ProviderError::Denied)?;
+                    observer.closed_case = Some(case);
+                    provider.observation = Some(observer);
+                    Ok(provider)
+                });
+                ClosedNegativeProvider {
+                    inner: Init(result),
+                    case,
+                    sent: false,
+                    observation: tx,
+                }
+            })?;
+            Ok((worker, rx))
+        }
+        #[cfg(not(target_arch = "arm"))]
+        {
+            let _ = (marker, case, output);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "Closed negative recipe requires native Proof",
+            ))
+        }
+    }
     pub fn start_worker(marker: Marker) -> std::io::Result<crate::artwork_worker::Worker> {
         crate::artwork_worker::Worker::start(move || Init(Self::new(marker)))
     }
@@ -227,6 +375,7 @@ struct ProofObservation {
     stamp: (u64, u64, u32, u32, u32),
     started: u8,
     cap_written: bool,
+    closed_case: Option<crate::artwork_closed_negative_proof::Case>,
 }
 #[cfg(any(target_arch = "arm", test))]
 impl ProofObservation {
@@ -310,6 +459,7 @@ impl ProofObservation {
             stamp,
             started: 0,
             cap_written: false,
+            closed_case: None,
         })
     }
     fn verify(&self) -> std::io::Result<()> {
@@ -345,7 +495,9 @@ impl ProofObservation {
                 unix::fs::MetadataExt,
             },
         };
-        if name != "installed-artwork-cap.json"
+        if !(self.closed_case.is_some()
+            && crate::artwork_closed_negative_proof::ProgressFile::allows(name))
+            && name != "installed-artwork-cap.json"
             && !(1..=16).any(|index| {
                 Self::filename(index, true).is_ok_and(|v| v == name)
                     || Self::filename(index, false).is_ok_and(|v| v == name)
@@ -417,11 +569,14 @@ impl ProofObservation {
             }
             return Err(ObservationError::Limit);
         }
+        if self.closed_case.is_some() && self.started != 0 {
+            return Err(ObservationError::Limit);
+        }
         self.verify().map_err(|_| ObservationError::Io)?;
         self.started += 1;
         Ok(ProofTicket {
             index: self.started,
-            hold: self.started == 1,
+            hold: self.started == 1 && self.closed_case.is_none(),
         })
     }
     fn connected(
@@ -434,6 +589,32 @@ impl ProofObservation {
     }
     fn result(&self, ticket: ProofTicket, value: &serde_json::Value) -> std::io::Result<()> {
         self.write(&Self::filename(ticket.index, false)?, value)
+    }
+}
+
+#[cfg(target_arch = "arm")]
+pub(crate) struct ClosedNegativeWriter {
+    #[cfg(any(target_arch = "arm", test))]
+    inner: ProofObservation,
+}
+#[cfg(target_arch = "arm")]
+impl ClosedNegativeWriter {
+    #[cfg(target_arch = "arm")]
+    pub(crate) fn open(
+        output: PathBuf,
+        case: crate::artwork_closed_negative_proof::Case,
+    ) -> std::io::Result<Self> {
+        let mut inner = ProofObservation::open(output, Profile::Proof)?;
+        inner.closed_case = Some(case);
+        Ok(Self { inner })
+    }
+    #[cfg(any(target_arch = "arm", test))]
+    pub(crate) fn write(
+        &self,
+        file: crate::artwork_closed_negative_proof::ProgressFile,
+        value: &serde_json::Value,
+    ) -> std::io::Result<()> {
+        self.inner.write(file.name(), value)
     }
 }
 
@@ -1376,6 +1557,7 @@ struct AttemptTrace {
     last_received_credentials: Option<crate::broker_transport::Credentials>,
     last_validated_credentials: Option<crate::broker_transport::Credentials>,
     proof_binding_hold_ms: u64,
+    closed_negative_finish_hold_ms: Option<u64>,
     clean_eof: bool,
     observed_unexpected_eof: bool,
 }
@@ -1412,6 +1594,7 @@ impl AttemptTrace {
             last_received_credentials: None,
             last_validated_credentials: None,
             proof_binding_hold_ms: 0,
+            closed_negative_finish_hold_ms: None,
             clean_eof: false,
             observed_unexpected_eof: false,
         }
@@ -1526,6 +1709,10 @@ impl AttemptTrace {
                 }
             };
         }
+        optional!(
+            "closed_negative_finish_hold_ms",
+            self.closed_negative_finish_hold_ms
+        );
         optional!("own", self.own);
         optional!("own_after", self.own_after);
         optional_credentials!("client_credentials", self.client);
@@ -1593,6 +1780,22 @@ fn receive_attempt_packet(
     }
 }
 #[cfg(any(target_arch = "arm", test))]
+fn closed_read_body_ready(
+    case: Option<crate::artwork_closed_negative_proof::Case>,
+    trace: &AttemptTrace,
+) -> bool {
+    case == Some(crate::artwork_closed_negative_proof::Case::ReadAfter)
+        && trace.failure.is_none()
+        && trace.identify_bound
+        && trace.header_matches == Some(true)
+        && trace.complete.is_none()
+        && trace.refusal.is_none()
+        && trace
+            .header
+            .as_ref()
+            .is_some_and(|header| trace.resource_packets_validated == header.chunk_count + 1)
+}
+#[cfg(any(target_arch = "arm", test))]
 struct Observation<'a> {
     writer: Option<&'a ProofObservation>,
     ticket: Option<ProofTicket>,
@@ -1600,6 +1803,31 @@ struct Observation<'a> {
 }
 #[cfg(any(target_arch = "arm", test))]
 impl Observation<'_> {
+    #[cfg(target_arch = "arm")]
+    fn closed_case(&self) -> Option<crate::artwork_closed_negative_proof::Case> {
+        self.writer.and_then(|writer| writer.closed_case)
+    }
+    #[cfg(target_arch = "arm")]
+    fn closed_progress(
+        &self,
+        file: crate::artwork_closed_negative_proof::ProgressFile,
+    ) -> Result<(), ProviderError> {
+        if let Some(writer) = self.writer {
+            writer
+                .write(
+                    file.name(),
+                    &serde_json::json!({"schema":1,"case":writer.closed_case,
+                "stage":match file {crate::artwork_closed_negative_proof::ProgressFile::ReadBodyReady=>"read_body_ready",crate::artwork_closed_negative_proof::ProgressFile::FinishReady=>"finish_ready",_=>"invalid"},
+                "target_id":crate::identity::TARGET,"source_key":self.trace.source_key,
+                "own":self.trace.own,"root_peer":self.trace.root.map(|peer|serde_json::json!({"pid":peer.pid,"uid":peer.uid,"gid":peer.gid})),
+                "body_digest_validated":matches!(file,crate::artwork_closed_negative_proof::ProgressFile::FinishReady),
+                "complete_validated":self.trace.resource_complete_validated==Some(true),"finish_request_sent":false,
+                "protocol":self.trace.report(),"progress_is_not_closure_authority":true}),
+                )
+                .map_err(|_| ProviderError::Invalid)?;
+        }
+        Ok(())
+    }
     fn connected(&self, source: &Source) -> Result<(), ProviderError> {
         if let (Some(writer), Some(ticket)) = (self.writer, self.ticket) {
             writer
@@ -1845,11 +2073,31 @@ mod native {
             if observation.trace.push_resource(&mut receiver, &packet)? {
                 break;
             }
+            if closed_read_body_ready(observation.closed_case(), &observation.trace) {
+                observation.closed_progress(
+                    crate::artwork_closed_negative_proof::ProgressFile::ReadBodyReady,
+                )?;
+            }
         }
         let header_matches = observation.trace.header_matches.unwrap_or(true);
         let outcome = receiver.finish().map_err(|_| ProviderError::Invalid)?;
         observation.trace.resource_complete_validated =
             Some(matches!(&outcome, wire::Outcome::Artwork(_)));
+        if observation.closed_case() == Some(crate::artwork_closed_negative_proof::Case::Finish)
+            && matches!(&outcome, wire::Outcome::Artwork(_))
+        {
+            observation
+                .closed_progress(crate::artwork_closed_negative_proof::ProgressFile::FinishReady)?;
+            let began = Instant::now();
+            while began.elapsed() < Duration::from_secs(5) {
+                if Instant::now() >= deadline {
+                    return Err(ProviderError::Expired);
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            observation.trace.closed_negative_finish_hold_ms =
+                Some(began.elapsed().as_millis() as u64);
+        }
         // Once a bounded transaction ended, Finish is cleanup even if the job
         // was cancelled. Its bytes can still never be returned after cancellation.
         if Instant::now() >= deadline {

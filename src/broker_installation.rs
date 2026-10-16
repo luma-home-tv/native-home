@@ -194,8 +194,119 @@ struct RootProcess {
     exe_sha256: String,
     root_path: String,
 }
+// Fixed diagnostic artifact only. It supplies no peer, role, read-set or path
+// authority. Preview never opens or selects this Proof-only file.
+pub(crate) const PROOF_READ_AFTER_PLAN_PATH: &str =
+    "/var/lib/luma-home-proof/context-qualification.json";
+#[cfg(any(target_arch = "arm", test))]
+const PROOF_READ_AFTER_PLAN_NAME: &str = "context-qualification.json";
+#[cfg(any(target_arch = "arm", test))]
+const PROOF_READ_AFTER_PLAN_LIMIT: u64 = 256;
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReadAfterPlanRecord {
+    schema: u32,
+    // A String deliberately refuses externally-tagged enum maps.
+    phase: String,
+}
+/// Sealed immutable metadata from the fixed protected Proof installation.
+/// There is no public parser/constructor or caller-selected duration.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct ProofReadAfterPlan {
+    measurement: Measurement,
+    raw_bytes: Vec<u8>,
+    plan: ReadAfterPlanRecord,
+}
+impl ProofReadAfterPlan {
+    #[cfg(any(target_arch = "arm", test))]
+    fn admit(profile: Profile, measurement: Measurement, raw_bytes: Vec<u8>) -> io::Result<Self> {
+        if profile != Profile::Proof {
+            return Err(invalid("ReadAfter plan requires its protected Proof role"));
+        }
+        measurement
+            .identity
+            .admit(0o600, PROOF_READ_AFTER_PLAN_LIMIT)?;
+        let sha256: String = plx_base::sha256::sha256(&raw_bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        if measurement.identity.bytes != raw_bytes.len() as u64 || measurement.sha256 != sha256 {
+            return Err(invalid(
+                "ReadAfter plan bytes differ from measured identity/digest",
+            ));
+        }
+        let plan: ReadAfterPlanRecord = serde_json::from_slice(&raw_bytes)
+            .map_err(|_| invalid("Closed ReadAfter plan JSON required"))?;
+        if plan.schema != 1 || plan.phase != "read_after" {
+            return Err(invalid(
+                "Only fixed ReadAfter qualification phase is allowed",
+            ));
+        }
+        Ok(Self {
+            measurement,
+            raw_bytes,
+            plan,
+        })
+    }
+    #[cfg(any(target_arch = "arm", test))]
+    pub(crate) fn sha256(&self) -> &str {
+        &self.measurement.sha256
+    }
+    fn evidence(&self) -> Value {
+        json!({"path":PROOF_READ_AFTER_PLAN_PATH,"present":true,"raw_bytes":self.raw_bytes,
+            "sha256":self.measurement.sha256,"identity":self.measurement.identity,"plan":self.plan})
+    }
+    #[cfg(test)]
+    pub(crate) fn fixture() -> Self {
+        let raw_bytes = br#"{"schema":1,"phase":"read_after"}"#.to_vec();
+        let measurement = Measurement {
+            sha256: plx_base::sha256::sha256(&raw_bytes)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect(),
+            identity: FileIdentity {
+                device: 1,
+                inode: 2,
+                bytes: raw_bytes.len() as u64,
+                mode: 0o100600,
+                uid: 0,
+                gid: 0,
+                links: 1,
+                mtime: 1,
+                mtime_ns: 0,
+                ctime: 1,
+                ctime_ns: 0,
+            },
+        };
+        Self::admit(Profile::Proof, measurement, raw_bytes)
+            .expect("Controlled host metadata fixture")
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn proof_plan_for_profile(
+    profile: Profile,
+    load_fixed_proof_plan: impl FnOnce() -> io::Result<Option<ProofReadAfterPlan>>,
+) -> io::Result<Option<ProofReadAfterPlan>> {
+    match profile {
+        Profile::Proof => load_fixed_proof_plan(),
+        Profile::Preview => Ok(None),
+    }
+}
+fn read_after_plan_evidence(profile: Profile, plan: Option<&ProofReadAfterPlan>) -> Value {
+    if profile != Profile::Proof {
+        return Value::Null;
+    }
+    plan.map(ProofReadAfterPlan::evidence).unwrap_or_else(|| {
+        json!({
+            "path":PROOF_READ_AFTER_PLAN_PATH,"present":false,"raw_bytes":null,
+            "sha256":null,"identity":null,"plan":null
+        })
+    })
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Snapshot {
+    proof_read_after_plan: Option<ProofReadAfterPlan>,
     config: Measurement,
     ui: Measurement,
     helper: Measurement,
@@ -226,18 +337,30 @@ impl Installation {
     pub fn pins(&self) -> &Pins {
         &self.pins
     }
+    #[cfg(any(target_arch = "arm", test))]
+    pub(crate) fn proof_read_after_plan(&self) -> Option<&ProofReadAfterPlan> {
+        if self.pins.profile == Profile::Proof {
+            self.snapshot.proof_read_after_plan.as_ref()
+        } else {
+            None
+        }
+    }
     pub fn evidence(&self) -> Value {
         let profile = self.pins.profile;
         json!({"schema":1,"profile":profile,"app_id":profile.app_id(),"bundle":profile.bundle(),"pins":self.pins,
             "files":{"configuration":{"path":profile.config_path(),"sha256":self.snapshot.config.sha256,"identity":self.snapshot.config.identity,"trusted_for_execution":true},
             "ui":{"path":profile.ui_path(),"sha256":self.snapshot.ui.sha256,"identity":self.snapshot.ui.identity,"trusted_for_execution":false},
             "helper":{"path":profile.helper_path(),"sha256":self.snapshot.helper.sha256,"identity":self.snapshot.helper.identity,"trusted_for_execution":true}},
+            "proof_read_after_plan":read_after_plan_evidence(profile,self.snapshot.proof_read_after_plan.as_ref()),
             "authority_anchors":self.snapshot.authority_anchors,"ui_lookup_anchors":self.snapshot.ui_lookup_anchors,
             "root_process":self.snapshot.root_process,"context_reader_measured_here":false,"normal_runtime_qualified":false,
             "scope":"Protected installed pins plus kernel peer identity; UI ancestry, HBC/loader/environment are not made trusted by a hash"})
     }
     pub fn revalidate(&self) -> io::Result<()> {
         let current = Self::load(self.pins.profile)?;
+        self.compare_reloaded(&current)
+    }
+    fn compare_reloaded(&self, current: &Self) -> io::Result<()> {
         if self.pins != current.pins || self.snapshot != current.snapshot {
             return Err(invalid("Installed authorization or Root process changed"));
         }
@@ -486,6 +609,34 @@ mod native {
         )?;
         walk.verify()
     }
+    fn optional_proof_plan(walk: &Walk) -> io::Result<Option<ProofReadAfterPlan>> {
+        let mut file = match child(walk.last()?, PROOF_READ_AFTER_PLAN_NAME, false) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {
+                walk.verify()?;
+                return Ok(None);
+            }
+            Err(error) => return Err(error),
+        };
+        let (measurement, raw) = measure(&mut file, 0o600, PROOF_READ_AFTER_PLAN_LIMIT, true)?;
+        verify_named(walk, PROOF_READ_AFTER_PLAN_NAME, &measurement)?;
+        let plan = ProofReadAfterPlan::admit(Profile::Proof, measurement, raw)?;
+        walk.verify()?;
+        Ok(Some(plan))
+    }
+    fn verify_optional_proof_plan(
+        walk: &Walk,
+        expected: Option<&ProofReadAfterPlan>,
+    ) -> io::Result<()> {
+        // A fresh complete bounded read compares named bytes as well as the
+        // held measurement. Absent-to-present and present-to-absent both fail.
+        if optional_proof_plan(walk)?.as_ref() != expected {
+            return Err(invalid(
+                "Protected ReadAfter plan presence/bytes/identity changed",
+            ));
+        }
+        walk.verify()
+    }
     fn proc_text(name: &str) -> io::Result<String> {
         let mut value = String::new();
         File::open(format!("/proc/self/{name}"))?
@@ -589,6 +740,8 @@ mod native {
         if pins.profile != profile {
             return Err(invalid("Installed profile differs from fixed helper role"));
         }
+        let proof_read_after_plan =
+            proof_plan_for_profile(profile, || optional_proof_plan(&trusted))?;
         let (helper, _) = fixed_file(&trusted, profile.helper_basename(), 0o700, ELF_LIMIT, false)?;
         // Writable app ancestry is not policy or a Root execution path. It is
         // opened only for additional pinned UI measurement; actual /proc peer
@@ -601,9 +754,13 @@ mod native {
         verify_named(&trusted, "broker-installation.json", &config)?;
         verify_named(&trusted, profile.helper_basename(), &helper)?;
         verify_named(&ui_walk, "home-preview", &ui)?;
+        if profile == Profile::Proof {
+            verify_optional_proof_plan(&trusted, proof_read_after_plan.as_ref())?;
+        }
         Ok(Installation {
             pins,
             snapshot: Snapshot {
+                proof_read_after_plan,
                 config,
                 ui,
                 helper,
@@ -948,5 +1105,266 @@ mod tests {
                 io::ErrorKind::Unsupported
             );
         }
+    }
+    fn measured_plan(raw: &[u8]) -> Measurement {
+        Measurement {
+            sha256: plx_base::sha256::sha256(raw)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect(),
+            identity: FileIdentity {
+                bytes: raw.len() as u64,
+                mode: 0o100600,
+                ..meta()
+            },
+        }
+    }
+    fn admit_plan(raw: &[u8]) -> io::Result<ProofReadAfterPlan> {
+        ProofReadAfterPlan::admit(Profile::Proof, measured_plan(raw), raw.to_vec())
+    }
+    fn installation_fixture(profile: Profile, plan: Option<ProofReadAfterPlan>) -> Installation {
+        let measurement = Measurement {
+            sha256: "e".repeat(64),
+            identity: meta(),
+        };
+        Installation {
+            pins: pins(profile),
+            snapshot: Snapshot {
+                proof_read_after_plan: plan,
+                config: measurement.clone(),
+                ui: measurement.clone(),
+                helper: measurement,
+                authority_anchors: vec![Anchor {
+                    path: profile.installation_dir().into(),
+                    identity: DirectoryIdentity {
+                        device: 1,
+                        inode: 20,
+                        mode: 0o40700,
+                        uid: 0,
+                        gid: 0,
+                    },
+                }],
+                ui_lookup_anchors: vec![],
+                root_process: RootProcess {
+                    pid: 789,
+                    uid_fields: [0; 4],
+                    start_ticks: 1,
+                    exe_path: profile.helper_path(),
+                    exe_sha256: "c".repeat(64),
+                    root_path: "/".into(),
+                },
+            },
+        }
+    }
+    fn copy_installation(value: &Installation) -> Installation {
+        Installation {
+            pins: value.pins.clone(),
+            snapshot: value.snapshot.clone(),
+        }
+    }
+    #[test]
+    fn read_after_plan_is_exact_closed_and_never_extends_six_field_pins() {
+        let raw = br#"{"schema":1,"phase":"read_after"}"#;
+        let plan = admit_plan(raw).unwrap();
+        assert_eq!(plan.raw_bytes, raw);
+        assert_eq!(plan.evidence()["path"], PROOF_READ_AFTER_PLAN_PATH);
+        for bad in [
+            br#"{"schema":1,"phase":"finish"}"#.as_slice(),
+            br#"{"schema":true,"phase":"read_after"}"#,
+            br#"{"schema":1,"phase":{"read_after":null}}"#,
+            br#"{"schema":1,"phase":"read_after","hold_ms":5000}"#,
+            br#"{"schema":1,"phase":"read_after","profile":"proof"}"#,
+            br#"{"schema":1,"schema":1,"phase":"read_after"}"#,
+            br#"{"schema":1,"phase":"read_after","phase":"read_after"}"#,
+            b"{}",
+            b"[]",
+            b"",
+            &[b' '; 257],
+        ] {
+            assert!(admit_plan(bad).is_err(), "Closed plan rejected {bad:?}");
+        }
+        assert!(
+            ProofReadAfterPlan::admit(Profile::Preview, measured_plan(raw), raw.to_vec()).is_err()
+        );
+        for profile in [Profile::Proof, Profile::Preview] {
+            let raw_pins = serde_json::to_vec(&pins(profile)).unwrap();
+            assert!(Pins::parse(&raw_pins).is_ok());
+            let mut changed = serde_json::to_value(pins(profile)).unwrap();
+            changed["proof_read_after_plan"] = json!({"schema":1,"phase":"read_after"});
+            assert!(Pins::parse(&serde_json::to_vec(&changed).unwrap()).is_err());
+        }
+    }
+    #[test]
+    fn read_after_plan_requires_root_exact_file_identity_and_measured_full_bytes() {
+        let raw = br#"{"schema":1,"phase":"read_after"}"#;
+        let base = measured_plan(raw);
+        for identity in [
+            FileIdentity {
+                uid: 1000,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                gid: 1000,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                links: 2,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                inode: 0,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                mode: 0o120600,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                mode: 0o104600,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                mode: 0o100644,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                bytes: 257,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                bytes: 0,
+                ..base.identity.clone()
+            },
+            FileIdentity {
+                mtime_ns: 1_000_000_000,
+                ..base.identity.clone()
+            },
+        ] {
+            assert!(ProofReadAfterPlan::admit(
+                Profile::Proof,
+                Measurement {
+                    identity,
+                    ..base.clone()
+                },
+                raw.to_vec()
+            )
+            .is_err());
+        }
+        let mut wrong = base.clone();
+        wrong.sha256 = "f".repeat(64);
+        assert!(ProofReadAfterPlan::admit(Profile::Proof, wrong, raw.to_vec()).is_err());
+        let mut wrong = base;
+        wrong.identity.bytes += 1;
+        assert!(ProofReadAfterPlan::admit(Profile::Proof, wrong, raw.to_vec()).is_err());
+    }
+    #[test]
+    fn optional_plan_presence_full_bytes_identity_and_ancestry_are_immutable() {
+        let absent = installation_fixture(Profile::Proof, None);
+        let same = copy_installation(&absent);
+        assert!(absent.compare_reloaded(&same).is_ok());
+        let present = installation_fixture(Profile::Proof, Some(ProofReadAfterPlan::fixture()));
+        assert!(absent.compare_reloaded(&present).is_err());
+        assert!(present.compare_reloaded(&absent).is_err());
+        assert!(present
+            .compare_reloaded(&copy_installation(&present))
+            .is_ok());
+        for change in 0..5 {
+            let mut next = copy_installation(&present);
+            match change {
+                0 => {
+                    let raw = b"{ \"schema\": 1, \"phase\": \"read_after\" }\n";
+                    next.snapshot.proof_read_after_plan = Some(admit_plan(raw).unwrap());
+                }
+                1 => {
+                    next.snapshot
+                        .proof_read_after_plan
+                        .as_mut()
+                        .unwrap()
+                        .measurement
+                        .identity
+                        .inode += 1
+                }
+                2 => {
+                    next.snapshot
+                        .proof_read_after_plan
+                        .as_mut()
+                        .unwrap()
+                        .measurement
+                        .identity
+                        .ctime_ns += 1
+                }
+                3 => next.snapshot.authority_anchors[0].identity.inode += 1,
+                _ => next
+                    .snapshot
+                    .proof_read_after_plan
+                    .as_mut()
+                    .unwrap()
+                    .raw_bytes
+                    .push(b' '),
+            }
+            assert!(present.compare_reloaded(&next).is_err());
+        }
+        let evidence = present.evidence();
+        let plan = present.proof_read_after_plan().unwrap();
+        assert_eq!(evidence["proof_read_after_plan"], plan.evidence());
+        assert_eq!(
+            evidence["authority_anchors"],
+            json!(present.snapshot.authority_anchors)
+        );
+        let absent_evidence = absent.evidence();
+        assert_eq!(absent_evidence["proof_read_after_plan"]["present"], false);
+        for key in ["raw_bytes", "sha256", "identity", "plan"] {
+            assert!(absent_evidence["proof_read_after_plan"][key].is_null());
+        }
+    }
+    #[test]
+    fn preview_never_consults_or_selects_proof_plan() {
+        assert!(proof_plan_for_profile(Profile::Preview, || panic!(
+            "Preview must not open Proof plan"
+        ))
+        .unwrap()
+        .is_none());
+        assert!(proof_plan_for_profile(Profile::Proof, || Ok(None))
+            .unwrap()
+            .is_none());
+        let loaded =
+            proof_plan_for_profile(Profile::Proof, || Ok(Some(ProofReadAfterPlan::fixture())))
+                .unwrap();
+        assert!(loaded.is_some());
+        let inconsistent_host_fixture = installation_fixture(Profile::Preview, loaded);
+        assert!(inconsistent_host_fixture.proof_read_after_plan().is_none());
+        assert!(inconsistent_host_fixture.evidence()["proof_read_after_plan"].is_null());
+    }
+    #[test]
+    fn actual_fixed_plan_open_refuses_symlinks_instead_of_treating_them_as_absence() {
+        use std::os::unix::fs::symlink;
+        let dir =
+            std::env::temp_dir().join(format!("luma-proof-plan-nofollow-{}", std::process::id()));
+        std::fs::create_dir(&dir).unwrap();
+        let fd = std::fs::File::open(&dir).unwrap();
+        assert_eq!(
+            native::nofollow_fixture(&fd, PROOF_READ_AFTER_PLAN_NAME, false)
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::NotFound
+        );
+        std::fs::write(dir.join("fixture"), b"not authority").unwrap();
+        symlink("fixture", dir.join(PROOF_READ_AFTER_PLAN_NAME)).unwrap();
+        assert_ne!(
+            native::nofollow_fixture(&fd, PROOF_READ_AFTER_PLAN_NAME, false)
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::NotFound
+        );
+        std::fs::remove_file(dir.join(PROOF_READ_AFTER_PLAN_NAME)).unwrap();
+        symlink("missing", dir.join(PROOF_READ_AFTER_PLAN_NAME)).unwrap();
+        assert_ne!(
+            native::nofollow_fixture(&fd, PROOF_READ_AFTER_PLAN_NAME, false)
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::NotFound
+        );
+        drop(fd);
+        std::fs::remove_dir_all(&dir).unwrap();
     }
 }

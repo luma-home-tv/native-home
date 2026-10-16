@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.52.0' if main == 'home-preview' else '0.1.0'
+version = '0.53.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -44,6 +44,16 @@ startup_capability_proof = os.environ.get('NATIVE_HOME_STARTUP_CAPABILITY_PROOF'
 broker_startup_proof = os.environ.get('NATIVE_HOME_BROKER_STARTUP_PROOF') == '1'
 broker_negative_proof = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_PROOF') == '1'
 installed_artwork_proof = os.environ.get('NATIVE_HOME_INSTALLED_ARTWORK_PROOF') == '1'
+closed_negative_mode = os.environ.get('NATIVE_HOME_CLOSED_NEGATIVE_ARTWORK_PROOF', '')
+closed_negative_case = os.environ.get('NATIVE_HOME_CLOSED_NEGATIVE_ARTWORK_CASE', '')
+if closed_negative_mode not in ('', '1'):
+    raise ValueError('Closed-negative artwork mode must be explicitly 1')
+closed_negative_artwork_proof = closed_negative_mode == '1'
+if closed_negative_artwork_proof:
+    if closed_negative_case not in ('read_after', 'finish'):
+        raise ValueError('Closed-negative artwork requires one fixed case')
+elif closed_negative_case:
+    raise ValueError('Closed-negative artwork case requires explicit mode')
 artwork_guard_relaunch_proof = os.environ.get('NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF') == '1'
 preview_artwork_admission = os.environ.get('NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION') == '1'
 preferences_migration_mode = os.environ.get('NATIVE_HOME_PREFERENCES_MIGRATION_PROOF', '')
@@ -83,7 +93,7 @@ if preferences_migration_proof:
     preferences_migration_pins_sha256 = hashlib.sha256(pins_raw).hexdigest()
 elif os.environ.get('NATIVE_HOME_PREFERENCES_MIGRATION_PINS'):
     raise ValueError('Preferences migration pins require explicit mode')
-if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, artwork_guard_relaunch_proof, preview_artwork_admission, preferences_migration_proof)) > 1:
+if sum((broker_startup_proof, broker_negative_proof, installed_artwork_proof, closed_negative_artwork_proof, artwork_guard_relaunch_proof, preview_artwork_admission, preferences_migration_proof)) > 1:
     raise ValueError('Only one installed helper proof mode is allowed')
 broker_negative_case = os.environ.get('NATIVE_HOME_BROKER_NEGATIVE_CASE', '')
 if broker_negative_proof:
@@ -94,19 +104,32 @@ elif broker_negative_case:
 broker_startup_marker = None
 broker_negative_marker = None
 installed_artwork_marker = None
+closed_negative_artwork_marker = None
 artwork_guard_marker = None
 preview_artwork_marker = None
 broker_startup_helper = None
 broker_startup_pins_sha256 = None
-if broker_startup_proof or broker_negative_proof or installed_artwork_proof or artwork_guard_relaunch_proof or preview_artwork_admission:
+if broker_startup_proof or broker_negative_proof or installed_artwork_proof or closed_negative_artwork_proof or artwork_guard_relaunch_proof or preview_artwork_admission:
     allowed = {'NATIVE_HOME_BROKER_STARTUP_PINS',
+               'NATIVE_HOME_CLOSED_NEGATIVE_ARTWORK_PROOF' if closed_negative_artwork_proof else
                'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION' if preview_artwork_admission else
                'NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF' if artwork_guard_relaunch_proof else
                'NATIVE_HOME_INSTALLED_ARTWORK_PROOF' if installed_artwork_proof else
                'NATIVE_HOME_BROKER_NEGATIVE_PROOF' if broker_negative_proof else 'NATIVE_HOME_BROKER_STARTUP_PROOF'}
     others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and
               (k.endswith('_PROOF') or k.endswith('_PROBE') or k.endswith('_PINS')) and k not in allowed]
-    if preview_artwork_admission:
+    if closed_negative_artwork_proof:
+        closed_environment = {'NATIVE_HOME_CLOSED_NEGATIVE_ARTWORK_PROOF',
+            'NATIVE_HOME_CLOSED_NEGATIVE_ARTWORK_CASE', 'NATIVE_HOME_TEST_IDENTITY',
+            'NATIVE_HOME_BROKER_STARTUP_PINS', 'NATIVE_HOME_STARTUP_BROKER_BINARY',
+            'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
+            'NATIVE_HOME_SNAPSHOT_ASSETS', 'NATIVE_HOME_PREVIEW_ICON', 'NATIVE_HOME_CARGO',
+            'NATIVE_HOME_RUST_TOOLCHAIN'}
+        others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and k not in closed_environment]
+        if (main != 'home-preview' or build_receipt['target'] != 'arm' or
+            not test_identity or interactive or others or artwork_target_fixture):
+            raise ValueError('Closed-negative artwork requires only isolated non-interactive ARM Proof and closed parameters')
+    elif preview_artwork_admission:
         # Closed configuration surface: no current or future trial/action
         # parameter may silently coexist with actual Preview-ID admission.
         preview_environment = {'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION',
@@ -142,7 +165,10 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof or a
         helper_build['binary']['sha256']!=pins['broker_sha256'] or helper_build['snapshot']!=build_receipt['snapshot']):
         raise ValueError('Root helper must share actual UI source/framework build context')
     broker_startup_marker={'schema':1,'nonce':pins['rendezvous_nonce'],'ui_sha256':pins['ui_sha256'],'broker_sha256':pins['broker_sha256']}
-    if preview_artwork_admission:
+    if closed_negative_artwork_proof:
+        closed_negative_artwork_marker=broker_startup_marker | {'case': closed_negative_case}
+        broker_startup_marker=None
+    elif preview_artwork_admission:
         preview_artwork_marker=broker_startup_marker
         broker_startup_marker=None
     elif broker_negative_proof:
@@ -269,6 +295,10 @@ if main == 'home-preview' and not preferences_migration_proof:
         marker_path=stage/'broker-negative-proof.json'
         marker_path.write_text(json.dumps(broker_negative_marker,separators=(',',':'))+'\n')
         marker_path.chmod(0o644)
+    if closed_negative_artwork_marker is not None:
+        marker_path=stage/'artwork-closed-negative-proof.json'
+        marker_path.write_text(json.dumps(closed_negative_artwork_marker,separators=(',',':'))+'\n')
+        marker_path.chmod(0o644)
     if installed_artwork_marker is not None:
         marker_path=stage/'installed-artwork-proof.json'
         marker_path.write_text(json.dumps(installed_artwork_marker,separators=(',',':'))+'\n')
@@ -311,6 +341,8 @@ if main == 'home-preview' and not preferences_migration_proof:
     if os.environ.get('NATIVE_HOME_DRAWER_PROBE') == '1':
         (stage / 'drawer-proof.json').write_text('{}\n')
     snapshot = json.loads((assets / 'snapshot.json').read_text())
+    if closed_negative_artwork_proof and (type(snapshot) is not dict or snapshot.get('applications') != []):
+        raise ValueError('Closed-negative artwork requires an empty packaged catalogue; its fixed Target source must be live')
     shutil.copy2(assets / 'snapshot.json', stage / 'snapshot.json')
     (stage / 'snapshot.json').chmod(0o644)
     if os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1':
@@ -436,6 +468,8 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'broker_negative_proof': broker_negative_proof,
            'broker_negative_case': broker_negative_case or None,
            'installed_artwork_proof': installed_artwork_proof,
+           'closed_negative_artwork_proof': closed_negative_artwork_proof,
+           'closed_negative_artwork_case': closed_negative_case or None,
            'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
            'preview_artwork_admission': preview_artwork_admission,
            'preferences_migration_proof': preferences_migration_proof,

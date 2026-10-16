@@ -67,6 +67,38 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    // Exclusive recipe branches before any ordinary main worker, persistence,
+    // scripted capture or dispatcher is constructed.
+    if let Some(marker) = native_home::artwork_closed_negative_proof::read_marker(&assets)? {
+        if !device
+            || interactive
+            || plx_base::paths::app_id() != native_home::identity::PROOF
+            || unsafe { libc::geteuid() } < 1000
+            || unsafe { libc::geteuid() } == 5724
+            || args.iter().skip(1).any(|arg| arg.starts_with("--"))
+        {
+            return Err("Closed-negative recipe requires ordinary noninteractive Proof".into());
+        }
+        const FILES: &[&str] = &[
+            "appinfo.json",
+            "home-preview",
+            "icon.png",
+            "appfont.ttf",
+            "appfont-bold.ttf",
+            "OFL.txt",
+            "snapshot.json",
+            "artwork-closed-negative-proof.json",
+        ];
+        for entry in std::fs::read_dir(&assets)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_file()
+                || !FILES.contains(&entry.file_name().to_str().unwrap_or(""))
+            {
+                return Err("Closed-negative recipe cannot mix another mode or asset".into());
+            }
+        }
+        return run_closed_negative_mode(&assets, &marker);
+    }
     // Metadata-only admission precedes snapshots, Window/GL, service clients,
     // input and persistence workers. This retained-ID test cannot act as a UI.
     if assets.join("preferences-migration-proof.json").exists() {
@@ -2597,6 +2629,67 @@ fn sync_text_keyboard(
         PauseReason::KeyboardActive,
         keyboard.active() || !keyboard.accepts_input(now),
     );
+}
+
+#[cfg(target_arch = "arm")]
+fn run_closed_negative_mode(
+    assets: &std::path::Path,
+    marker: &native_home::artwork_closed_negative_proof::Marker,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use std::os::unix::fs::DirBuilderExt;
+    let bytes = std::fs::read(assets.join("snapshot.json"))?;
+    if bytes.len() > 1024 * 1024 {
+        return Err("Closed-negative snapshot bound".into());
+    }
+    let snapshot: Snapshot = serde_json::from_slice(&bytes)?;
+    if !snapshot.applications.is_empty() {
+        return Err("Closed-negative bootstrap must have no packaged applications".into());
+    }
+
+    let output = plx_base::paths::in_runtime_dir(&format!("shell-{}", std::process::id()));
+    let window = Window::new(true)?;
+    std::fs::DirBuilder::new().mode(0o700).create(&output)?;
+    let mut shell = Shell::new(snapshot, Preferences::default());
+    shell.load_icons(assets); // Existing packaged baseline only; no transfer GL path.
+    shell.open(Page::Home);
+    let origin = Instant::now();
+    let live = native_home::live::Worker::native(native_home::identity::PROOF.to_owned(), origin)?;
+    let mut now = 0;
+    let result = native_home::artwork_closed_negative_proof::run(
+        &mut shell,
+        &window,
+        &output,
+        marker,
+        &mut now,
+        |shell| {
+            let update = live.poll()?;
+            let current = origin.elapsed().as_millis() as u32;
+            let sources = match &update.artwork {
+                native_home::live::Reading::Value(sources)
+                    if !update.simulated
+                        && matches!(&update.catalogue, native_home::live::Reading::Value(_))
+                        && native_home::live::Freshness::current(
+                            Some(update.observed_ms),
+                            current,
+                        ) =>
+                {
+                    Some(sources.clone())
+                }
+                _ => None,
+            };
+            shell.apply_live(&update, current);
+            sources
+        },
+    );
+    live.finish(); // Actual registration-worker join, including recipe failure.
+    result.map(|_| ())
+}
+#[cfg(not(target_arch = "arm"))]
+fn run_closed_negative_mode(
+    _assets: &std::path::Path,
+    _marker: &native_home::artwork_closed_negative_proof::Marker,
+) -> Result<(), Box<dyn std::error::Error>> {
+    Err("Closed-negative mode requires native Proof".into())
 }
 
 fn poll_live(

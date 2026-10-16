@@ -79,3 +79,5 @@ pub mod preview_artwork_admission;
 
 pub mod preferences_migration;
 pub mod preferences_migration_proof;
+
+pub mod artwork_closed_negative_proof;
