@@ -28,9 +28,11 @@ remain subsequent feature work; the release gates below remain open.
 
 ## Current host foundation wave
 
-The next proposals stay outside the integration checkout until reviewed. They
-add evidence for failures without enabling closed-negative acceptance or changing
-either retained TV installation.
+This wave's reviewed provider/helper proposals are integrated as the
+[0.51 host foundation](artwork-attempt-foundation-051.md), with host checks and
+both ARM builds complete. They add evidence for failures without enabling
+closed-negative acceptance or changing either retained TV installation. Further
+proposals stay outside the integration checkout until reviewed.
 
 | Owner | Independent output | Integration boundary |
 | --- | --- | --- |

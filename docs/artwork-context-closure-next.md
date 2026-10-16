@@ -3,6 +3,9 @@
 This is an implementation plan, not deployed behavior. The existing positive
 image checks, successful Finished response, helper roles and durable pending
 records remain unchanged. Ordinary interactive Root artwork remains disabled.
+The [0.51 host foundation](artwork-attempt-foundation-051.md) now implements
+typed attempt metadata and narrow helper withdrawal/endpoint-closure candidates.
+It adds no negative grader or recovery, and has no native execution qualification.
 
 The first supported closed-negative cases should be a context change after a
 prepared image read or while checking Finish, following a valid authenticated
@@ -37,8 +40,10 @@ self and ordinary peer bindings. An error or missing final report cannot be
 replaced by a flag claiming closure. Report a closed negative separately from
 successful Finished; do not manufacture Finished after policy withdrawal.
 
-`artwork_installed_provider.rs` needs an unconditional typed attempt trace. The
-optional Proof observation JSON is diagnostic and cannot be its authority.
+`artwork_installed_provider.rs` now retains a typed attempt trace independently
+of the optional Proof observation writer. That JSON remains diagnostic and cannot
+be its authority. Finish failure still lacks a typed observed-EOF distinction;
+complete that shared receiver path before supporting Finish recovery.
 Preserve authenticated Identify, actual kernel credentials, request sequence,
 validated packet progress and exact EOF through a failed exchange. For that
 narrow candidate, join the single already-started HBC observer within its finite

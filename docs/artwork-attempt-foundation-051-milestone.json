@@ -1,0 +1,72 @@
+{
+  "schema": 1,
+  "version": "0.51.0",
+  "status": "Typed attempt/helper withdrawal foundations pass host checks and ARM compilation; no native execution or negative acceptance",
+  "functional_source_revision": "b6afa9af0125921499ba0a23065511c3f45fa177",
+  "selected_source_inputs": 102,
+  "artifacts": {
+    "dashboard": {
+      "name": "home-preview",
+      "sha256": "120bb61e45c07ca6a1a45fd64f9d7325d4a99bc0074d2e5480ee5ebedf3fb3df",
+      "bytes": 3922632,
+      "build_receipt_sha256": "2608a7512c975926fca77ebcb2f3eaa8024416b7b2eb728ac949106584d769ba"
+    },
+    "installed_Proof_helper": {
+      "name": "artwork-broker-startup-proof",
+      "sha256": "91e4a2dcbcc2bcd4256c548843e1d02a76a6df979a802ccf35bbe78b310cdfb3",
+      "bytes": 874176,
+      "build_receipt_sha256": "e0be5e03cc2b7df5be7417500ccfdc90b6914111d9f5dbfb241a619f967892a4"
+    },
+    "same_source_snapshot_for_both": true,
+    "UI_ipk_produced": false
+  },
+  "host_checks": {
+    "rust_library_tests": 521,
+    "dashboard_tests": 7,
+    "rust_total": 528,
+    "new_behavioral_tests": 16,
+    "python_tests": 58,
+    "clippy_warnings_denied": true,
+    "arm_dashboard_exit": 0,
+    "arm_Proof_helper_exit": 0,
+    "root_host_receipt_sha256": "3632eabeab4561ccf727b14fd06a5d82e04eea354ffd55e6614f371b5777f982",
+    "first_host_build_exit": 101,
+    "first_host_build_reason": "New test used nonexistent Cache type; corrected to existing ArtworkCache",
+    "first_failure_log_preserved": true
+  },
+  "source_review": {
+    "provider_and_helper_contracts_reviewed_independently": true,
+    "stale_trace_cleared_before_new_fetch_preconditions": true,
+    "failed_packet_cannot_consume_later_EOF": true,
+    "validated_progress_requires_Receiver_acceptance": true,
+    "trace_contains_no_encoded_image_payload": true,
+    "final_diagnostic_JSON_only_optional_after_join_and_settlement": true,
+    "positive_session_and_Ticket_logic_unchanged": true,
+    "operator_and_ReadBefore_strict_checks_preserved": true,
+    "helper_withdrawal_stages": [
+      "ReadAfter request1 after successful preparation/streaming/readback",
+      "Finish request2 after one successful Complete"
+    ],
+    "supported_rejected_contexts": [
+      "matching sole foreign CARD",
+      "own CARD and exact LG keyboard window"
+    ],
+    "explicit_owned_endpoint_drop_before_closure_receipt": true,
+    "closed_candidate_qualified": false,
+    "closed_candidate_Finished_sent": false
+  },
+  "boundaries": {
+    "native_051_execution_qualified": false,
+    "closed_negative_grader_implemented": false,
+    "negative_acceptance_enabled": false,
+    "failed_exchange_settlement": "Unknown",
+    "pending_recovery_enabled": false,
+    "typed_Finish_EOF_observed": false,
+    "normal_Root_artwork_enabled": false,
+    "retained_G2_version": "0.47.0",
+    "retained_C2_version": "0.48.0",
+    "retained_update_performed": false,
+    "real_input_handoff_performance_or_reliability_qualified": false,
+    "prior_native_evidence_transferred_to_new_executables": false
+  }
+}

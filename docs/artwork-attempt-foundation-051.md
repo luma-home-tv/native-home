@@ -43,7 +43,17 @@ retention/validation, malformed-packet stickiness, payload exclusion, actual
 worker cancellation, context matrices, drop-before-receipt ordering and
 contradictory-success rejection. The first host build failed because a new test
 used the wrong cache type name; its log is preserved and the corrected build
-passes. ARM compilation and any native qualification remain separate.
+passes.
+
+Both ARM builds passed from frozen functional source
+`b6afa9af0125921499ba0a23065511c3f45fa177`, with matching 102-input snapshots.
+Dashboard SHA-256 is
+`120bb61e45c07ca6a1a45fd64f9d7325d4a99bc0074d2e5480ee5ebedf3fb3df`;
+the installed Proof helper is
+`91e4a2dcbcc2bcd4256c548843e1d02a76a6df979a802ccf35bbe78b310cdfb3`.
+The [milestone](artwork-attempt-foundation-051-milestone.json) binds their
+receipts and host results. No 0.51 UI package was produced, and neither new
+executable was run on a TV. Compilation does not qualify native behavior.
 
 The [0.50 ordinary G2 socket probe](artwork-transport-eof-050.md) remains bound
 to its own frozen source and executable. It does not qualify this new provider
