@@ -44,8 +44,11 @@ the [responsiveness record](responsiveness-milestone.json) retains the bounded
 performance evidence from 0.14.0.
 
 The [0.59 explicit preparation path](artwork-catalogue-preparation-059.md) now has
-host checks, matching ARM builds and local package/ABI inspection. Native
-preparation, ordinary consumer coverage and retained delivery are still pending.
+host checks, matching ARM builds and local package/ABI inspection. Its first
+[native batch](artwork-catalogue-preparation-059-native.md) prepared 15 of 16
+images and returned to exact 0.57 with independently audited known cleanup.
+The original operator exit 1 remains explicit; the ordinary consumer was skipped.
+Complete preparation, ordinary consumer coverage and retained delivery remain open.
 This component does not complete the dashboard or qualify a new normal release.
 
 The [0.53 exclusive departure-test recipe](artwork-context-qualification-053.md)
@@ -67,9 +70,10 @@ Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
 
-The next cache delivery step is a fresh, reviewed 0.59 native batch and ordinary
+The next cache delivery step is a bounded thumbnail fix for the observed oversized
+icon, followed by matching ARM artifacts and a fresh reviewed batch/ordinary
 Root-free consumer trial, with per-attempt disposition and known restoration.
-The SDK mount comparison now preserves all measured aliases; it still needs a
+The SDK mount comparison preserves all measured aliases; each trial needs a
 fresh native baseline. Follow with multiple batches where needed, final current
 per-key body/decode coverage, invalidation/failure behavior and a backed-up normal
 delivery. A cursor, index Ready or aggregate GL count is not all-app coverage. Measure

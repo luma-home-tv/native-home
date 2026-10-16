@@ -194,6 +194,19 @@ new059 native permissions/lifecycle/transitive loading or Root admission. Fresh
 reader hash/stat, lease, scene and full retained baseline remain mandatory before
 any TV trial; the new carrier proposal remains undated/unadmitted.
 
+The later `docs/artwork-catalogue-preparation-059-native.md` records the actual
+temporary G2 trial: 16 positive transfers/256 known children, 15 prepared images
+and one oversized-image decode failure. Preserve its operator exit1 and skipped
+ordinary consumer. The corrected saved auditor and byte-identical coordinator
+replay pass with exact057/private state/preferences, sampled Core5+19 and old
+runtime preservation; known trial cleanup and original lease/agent closeout pass.
+Preserve the first single-snapshot saved-reader refusal. Original238 mount rows
+remain an exact prefix of240 with one existing read-only SDK duplicate pair;
+no mount operation or restored-mount claim. The bounded-thumbnail candidate has
+isolated host codec evidence only and is not integrated or ARM-qualified.
+Normal Root artwork stays off, C2 was not contacted, and the product goal remains
+incomplete. Future native work requires fresh state, leases and matching artifacts.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

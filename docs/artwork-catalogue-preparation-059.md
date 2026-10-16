@@ -7,8 +7,10 @@ cache miss does not launch Root work.
 
 The source, host checks, matching ARM builds and local package/ABI inspection now
 pass. This is not a retained TV update: the last verified G2 preview remains
-0.57. Independent native observation and verified removal/restoration are still
-required before deployment or promotion.
+0.57. A later [temporary native batch](artwork-catalogue-preparation-059-native.md)
+prepared 15 of 16 images, skipped the consumer and restored exact 0.57 with
+independently audited known cleanup. Its operator exit 1 remains preserved;
+complete preparation and normal delivery remain open.
 
 ## Exclusive selection and execution
 
@@ -109,8 +111,9 @@ inputs and 501 saved inspector outputs. The exact 0.57 rollback archive matches
 its saved complete bundle. No TV, target ELF or helper was executed by this
 local inspection. Packages and household resources remain private.
 
-The next step is a fresh separately reviewed G2 trial against its actual retained bundle and
-preferences. Native acceptance must independently establish every attempted
+The next step is the bounded icon fix identified by that partial native batch,
+then matching artifacts and a fresh separately reviewed G2 trial against its
+actual retained bundle and preferences. Native acceptance must independently establish every attempted
 helper's disposition, current-Ticket/child/socket closure, ordinary cache
 publication and eventual consumer behavior, then verified restoration/removal.
 Unknown ownership or lifecycle retains its barrier.
