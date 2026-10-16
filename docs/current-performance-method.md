@@ -1,5 +1,10 @@
 # Current dashboard measurement
 
+The [0.54 isolated G2 workload](current-performance-054.md) is the latest
+measurement, with native idle/wake, natural exit, removal and independently
+replayed preservation. It remains separate from normal Preview total cost,
+physical latency and matched comparisons. Its early draw outlier remains open.
+
 Historical result: the frozen 0.26.0 performance-only Proof profile completed on G2, with
 [current results and complete removal/preservation](current-performance-milestone.json).
 The roughly 199-second run collected 73 process/native samples. The old
@@ -8,8 +13,8 @@ current dashboard performance proof. The later
 [0.28.0 profile and normal delivery](apps-scroll-rest-milestone.json) records the
 next independent result. G2 now retains [0.47.0](g2-retained-preview047.md);
 neither those older measurements nor the [0.54 icon-rendering
-test](packaged-icon-native-054.md) qualify its current performance. A separate
-0.54 performance-only profile is being prepared and has no native result yet.
+test](packaged-icon-native-054.md) qualify its current performance. The separate
+0.54 performance-only result above binds its own artifact and workload.
 This document preserves the 0.26.0 measurement's artifact boundaries and the
 measurement method for subsequent profiles.
 

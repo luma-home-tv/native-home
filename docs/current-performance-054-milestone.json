@@ -1,0 +1,332 @@
+{
+  "schema": 1,
+  "status": "isolated_G2_current_workload_and_known_cleanup_verified",
+  "date": "2026-10-16",
+  "version": "0.54.0",
+  "compiled_source_revision": "3833c5b2ad54c1154d7b7cb71aa59a13fe978ffb",
+  "binary_sha256": "a1bd31cc4e3ce7b9141f3e33a7db81392f4d0e7893d6a0c8e77193b6e90ae418",
+  "package_sha256": "3146c75e365314f6c895e53cd7db055ca8af61495131d4491580300d879d2589",
+  "profile": {
+    "identity": "isolated ordinary Proof",
+    "markers": [
+      "interactive-session.json",
+      "performance-proof.json"
+    ],
+    "root_artwork_enabled": false,
+    "screenshots_during_workload": false,
+    "normal_app_action_capabilities_enabled": false
+  },
+  "operator": {
+    "actual_exit_code": 0,
+    "driver_sha256": "0035d3af5c0250c19a4da3130fb92295d827b63490530f97120a0a0825ddb1e8",
+    "terminal_receipt_sha256": "cb20cdff896bd719369ec07cc330a44286c049c446a8b52c1abedb8e32bc7fb4"
+  },
+  "accepted_raw_samples": 89,
+  "retained_workload_samples": 82,
+  "actual_injected_key_requests": 17,
+  "native_elapsed_seconds": 208.41458388,
+  "phases": [
+    {
+      "name": "home",
+      "requested_host_hold_seconds": 8,
+      "sample_count": 4,
+      "endpoint_scope_only": true,
+      "cpu": {
+        "cpu_ticks_delta": 13,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 6.471953478496289,
+        "cpu_percent_one_core_midpoint": 2.008667096139334,
+        "cpu_percent_one_core_lower": 1.6818881226842775,
+        "cpu_percent_one_core_upper": 2.493048868679731,
+        "rss_sample_max_kib": 30692,
+        "process_hwm_kib": 30940
+      },
+      "native_integer_delta": {
+        "frames": 6,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 6,
+          "swap_call": 6,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "settled_apps",
+      "requested_host_hold_seconds": 8,
+      "sample_count": 4,
+      "endpoint_scope_only": true,
+      "cpu": {
+        "cpu_ticks_delta": 15,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 6.404839187496691,
+        "cpu_percent_one_core_midpoint": 2.34197917557126,
+        "cpu_percent_one_core_lower": 1.9575055134882615,
+        "cpu_percent_one_core_upper": 2.91439562686537,
+        "rss_sample_max_kib": 32440,
+        "process_hwm_kib": 32932
+      },
+      "native_integer_delta": {
+        "frames": 6,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 6,
+          "swap_call": 6,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "controls_sound",
+      "requested_host_hold_seconds": 8,
+      "sample_count": 4,
+      "endpoint_scope_only": true,
+      "cpu": {
+        "cpu_ticks_delta": 13,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 7.920315687500988,
+        "cpu_percent_one_core_midpoint": 1.641348718020828,
+        "cpu_percent_one_core_lower": 1.4229591513295523,
+        "cpu_percent_one_core_upper": 1.9389267408176516,
+        "rss_sample_max_kib": 35272,
+        "process_hwm_kib": 35452
+      },
+      "native_integer_delta": {
+        "frames": 7,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 7,
+          "swap_call": 7,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "native_idle_blank",
+      "requested_host_hold_seconds": 8,
+      "sample_count": 4,
+      "endpoint_scope_only": true,
+      "cpu": {
+        "cpu_ticks_delta": 9,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 6.586964624992106,
+        "cpu_percent_one_core_midpoint": 1.3663349528024504,
+        "cpu_percent_one_core_lower": 1.1439503538199631,
+        "cpu_percent_one_core_upper": 1.6960475630635758,
+        "rss_sample_max_kib": 34992,
+        "process_hwm_kib": 35568
+      },
+      "native_integer_delta": {
+        "frames": 0,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 0,
+          "swap_call": 0,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    },
+    {
+      "name": "post_wake",
+      "requested_host_hold_seconds": 8,
+      "sample_count": 5,
+      "endpoint_scope_only": true,
+      "cpu": {
+        "cpu_ticks_delta": 17,
+        "clk_tck": 100,
+        "wall_seconds_midpoint": 8.64339539600769,
+        "cpu_percent_one_core_midpoint": 1.9668196606916946,
+        "cpu_percent_one_core_lower": 1.7125508498454205,
+        "cpu_percent_one_core_upper": 2.3097580518251273,
+        "rss_sample_max_kib": 35276,
+        "process_hwm_kib": 35568
+      },
+      "native_integer_delta": {
+        "frames": 7,
+        "idle_blank_presentations": 0,
+        "key_down": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "histogram_sample_counts": {
+          "draw_submission": 7,
+          "swap_call": 7,
+          "foreground_swap_intervals": 0,
+          "dequeued_input_to_next_swap_submission": 0
+        }
+      }
+    }
+  ],
+  "navigation_setup_seconds": 12.279447542008711,
+  "native_idle_bracket": {
+    "source_idle_threshold_seconds": 120,
+    "native_before_final_key": 59.38155814,
+    "native_after_final_key": 61.39779628,
+    "first_observed_idle": 182.13871446
+  },
+  "sampled_peak_RSS_kib": 35452,
+  "sampled_kernel_lifetime_HWM_kib": 35568,
+  "whole_session_native_metrics": {
+    "dequeued_input_to_next_swap_submission": {
+      "max_ms": 13.639,
+      "mean_ms": 1.9842941176470588,
+      "p50_upper_ms": 2,
+      "p95_upper_ms": 14,
+      "p99_upper_ms": 14,
+      "samples": 17
+    },
+    "draw_submission": {
+      "max_ms": 183.667,
+      "mean_ms": 1.5631104477611941,
+      "p50_upper_ms": 1,
+      "p95_upper_ms": 2,
+      "p99_upper_ms": 19,
+      "samples": 670
+    },
+    "foreground_swap_intervals": {
+      "max_ms": 183.968,
+      "mean_ms": 17.33975,
+      "p50_upper_ms": 17,
+      "p95_upper_ms": 18,
+      "p99_upper_ms": 29,
+      "samples": 504
+    },
+    "frames": 670,
+    "idle_blank_presentations": 1,
+    "key_down": [
+      0,
+      1,
+      5,
+      4,
+      2,
+      2,
+      3
+    ],
+    "scope": "App-thread draw submission, swap call and intervals. No GPU completion timestamp, physical remote latency or panel photon measurement.",
+    "swap_call": {
+      "max_ms": 1.827,
+      "mean_ms": 0.18316119402985076,
+      "p50_upper_ms": 1,
+      "p95_upper_ms": 1,
+      "p99_upper_ms": 1,
+      "samples": 670
+    }
+  },
+  "packaged_shutdown": {
+    "completed": 7,
+    "discarded": 0,
+    "gl": {
+      "deletes": 7,
+      "deletion_failures": 0,
+      "last_gl_error": 0,
+      "observed_gl_errors": 0,
+      "upload_failures": 0,
+      "uploads": 7
+    },
+    "remaining_textures": 0,
+    "submitted": 7,
+    "texture_bytes_before_cleanup": 1138384,
+    "unavailable_sources": 0,
+    "worker_joined": true,
+    "worker_panicked": false
+  },
+  "preserved_tree_counts": {
+    "bundle": {
+      "entries": 32,
+      "files": 30
+    },
+    "normal-runtime": {
+      "entries": 113,
+      "files": 75
+    },
+    "state": {
+      "entries": 2,
+      "files": 1
+    }
+  },
+  "preserved_getter_reply_groups": 19,
+  "preserved_protected_file_hashes": 5,
+  "cleanup": {
+    "one_supported_install_launch_remove": true,
+    "natural_back_exit": true,
+    "test_paths_registrations_mounts_staging_absent": true,
+    "own_lease_and_host_agent_closed": true
+  },
+  "independent_saved_audit": {
+    "source_sha256": "986c81a4990a25c903c23b9da91fa75a8826a57ddfeac88c614d9345dff0f60a",
+    "report_sha256": "e41b72142bec9355d1f497122aadc7fc358e8b4780dfae6c52ef48df5192b2b1",
+    "Root_replay_byte_identical": true,
+    "Root_replay_receipt_sha256": "8a8917bbc83f6499acb5f3030b338dafb4f7c16fe926b7392ea003bac47f5f01"
+  },
+  "prior_attempt": {
+    "actual_operator_exit_code": 0,
+    "performance_qualified": false,
+    "reason": "Observer overhead exhausted the remaining-workload reserve before the ninth key request.",
+    "accepted_raw_samples": 23,
+    "actual_key_requests": 8,
+    "one_supported_own_close_and_known_cleanup_verified": true,
+    "independent_report_sha256": "d850caf2d96b824e4975b25fb91eb5c298d70d18060e60a4435a86f018a49674",
+    "Root_replay_byte_identical": true
+  },
+  "retained_installations_updated": false,
+  "normal_Preview_performance_qualified": false,
+  "physical_latency_or_GPU_completion_qualified": false,
+  "matched_comparison_or_speedup_qualified": false,
+  "C2_qualified": false,
+  "limits": [
+    "Exactly this isolated ordinary Proof/current frozen package and observed workload, not normal Preview total cost or a matched performance gain.",
+    "Five source-enforced >=8s hold loops; persisted endpoint CPU retrieval intervals are separately reported and need not span8s.",
+    "Raw scene/identity sampled; reused packet age is at source selection, not at global-key delivery; object identity enforcement remains source-bound.",
+    "CPU uses one process utime+stime and observed CLK_TCK with retrieval uncertainty; no companion service/SSH total or whole-system power.",
+    "Histogram summaries are whole-session summaries; deltas subtract only integer cumulative counts, never percentiles/maxima.",
+    "No GPU completion/panel/physical remote/photon or whole-window FPS claim; source blank count is not pixel/power measurement. The183.667ms earliest-observed Home draw outlier remains; no first-frame/shader/font/decode cause or absence of submax stalls is inferred.",
+    "Later complete fingerprint/Core20 equality is sampled readback, not atomic no-change or future persistence guarantee.",
+    "SDK internal removal and process OS exit status are not measured; original ACKs, observed UID/namespace closure and each recorded operator unlink are separate evidence.",
+    "V4 remains explicitly unqualified with its independently closed scope."
+  ]
+}

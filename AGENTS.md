@@ -117,6 +117,14 @@ were installed then removed without launch requests; their limited cleanup is
 recorded in `docs/native-surface-prepared-cleanup-milestone.json`, not native scene
 or test-UID execution evidence.
 
+The separate 0.54 performance-only G2 profile in
+`docs/current-performance-054.md` now qualifies one isolated navigation/idle/wake
+workload, natural exit and full known cleanup/preservation, independently replayed
+by both reviewer and coordinator. Its earlier observer-limited attempt remains
+unqualified. Retain the early 183.667 ms draw outlier and metric boundaries;
+normal Preview total cost, physical latency/smoothness, C2 and retained promotion
+remain open. Neither retained installation changed; normal Root artwork stays off.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

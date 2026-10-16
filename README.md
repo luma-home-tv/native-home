@@ -180,7 +180,10 @@ their own alpha/shape on black; known images stay blank while loading, and only
 unavailable artwork uses the monogram fallback.
 Its [isolated G2 component test](docs/packaged-icon-native-054.md)
 now verifies controlled native pixels, texture shutdown, removal and subsequent
-preservation; normal-use/performance checks remain open. Normal Root artwork stays off.
+preservation. A separate [0.54 G2 measurement](docs/current-performance-054.md)
+completes an isolated navigation/idle/wake workload and cleanup, retaining its
+early draw outlier. Normal Preview input/performance qualification remains open.
+Normal Root artwork stays off.
 
 ## Layout
 

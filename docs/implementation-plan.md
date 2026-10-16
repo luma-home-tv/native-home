@@ -75,6 +75,13 @@ the [surface preparation record](native-surface-scene-prerequisite.md) explains
 why old positive Root helper timings cannot qualify release responsiveness.
 Keep normal Root artwork off while its independent feature work continues.
 
+The separate [0.54 G2 performance-only workload](current-performance-054.md)
+now completes Home/Apps/Controls, actual idle/wake and natural Back exit, followed
+by verified removal/preservation and byte-identical independent audit replay.
+Its earlier observer-limited attempt remains unqualified. The completed run
+retains a 183.667 ms draw outlier already present in the earliest Home sample;
+normal Preview cost, physical input/smoothness and C2 remain separate checks.
+
 ## Direction
 
 The agreed visual direction is the Apple TV / tvOS feel that PlxNative interprets
