@@ -2137,6 +2137,18 @@ impl Shell {
     pub fn enable_current_icon_cache(&mut self) {
         self.current_icon_cache = true;
     }
+    /// Borrow independently observed source metadata for preparation planning.
+    /// apply_live withdraws simulated/failed catalogue or source-map updates.
+    /// Every planner operation must recheck this stamp against the same live
+    /// clock domain; this view grants no Root, cache or execution authority.
+    pub fn cache_preparation_catalogue(&self) -> crate::artwork_cache_preparation::Catalogue<'_> {
+        crate::artwork_cache_preparation::Catalogue::new(
+            self.current_icon_sources.as_ref(),
+            self.current_icon_sources_observed,
+            false,
+            self.current_icon_sources.is_some(),
+        )
+    }
     fn update_current_icon_sources(
         &mut self,
         sources: Option<&crate::app_artwork::SourceMap>,

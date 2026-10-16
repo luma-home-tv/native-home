@@ -261,3 +261,76 @@ fn paused_withdrawal_drops_borrowed_pixels_without_poll_upload_delete_or_press_r
     assert_eq!(done["worker_joined"], true);
     assert_eq!(done["remaining_textures"], 0);
 }
+
+#[test]
+fn preparation_view_uses_the_independent_source_clock_without_starting_workers() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(
+        snapshot(false),
+        Preferences {
+            initialized: true,
+            ..Default::default()
+        },
+    );
+    assert!(crate::artwork_cache_preparation::Plan::from_current(
+        s.cache_preparation_catalogue(),
+        0
+    )
+    .is_err());
+    s.apply_live(&update(100, "1"), 100);
+    let mut plan =
+        crate::artwork_cache_preparation::Plan::from_current(s.cache_preparation_catalogue(), 100)
+            .unwrap();
+    assert_eq!(
+        plan.next_batch(s.cache_preparation_catalogue(), 100, None)
+            .unwrap()
+            .sources()
+            .len(),
+        1
+    );
+    assert!(s.packaged_icons.is_none());
+    root_off(&mut s);
+    // General catalogue freshness cannot refresh an older independent source map.
+    s.live_state.as_mut().unwrap().catalogue = Some(15_101);
+    assert!(plan
+        .next_batch(s.cache_preparation_catalogue(), 15_101, None)
+        .is_err());
+    assert!(plan.withdrawn());
+    root_off(&mut s);
+}
+
+#[test]
+fn preparation_view_withdraws_failed_or_simulated_data_and_never_queues_actions() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(
+        snapshot(false),
+        Preferences {
+            initialized: true,
+            ..Default::default()
+        },
+    );
+    let before = s.preferences().clone();
+    for case in 0..3 {
+        s.apply_live(&update(0, "1"), 0);
+        let mut plan = crate::artwork_cache_preparation::Plan::from_current(
+            s.cache_preparation_catalogue(),
+            0,
+        )
+        .unwrap();
+        let mut failure = update(1, "1");
+        match case {
+            0 => failure.artwork = Reading::Failed("source map unavailable".into()),
+            1 => failure.catalogue = Reading::Failed("catalogue unavailable".into()),
+            _ => failure.simulated = true,
+        }
+        s.apply_live(&failure, 1);
+        assert!(plan
+            .next_batch(s.cache_preparation_catalogue(), 1, None)
+            .is_err());
+        assert!(plan.withdrawn());
+        assert!(s.take_requests().is_empty());
+        assert_eq!(s.preferences(), &before);
+        assert!(s.packaged_icons.is_none());
+        root_off(&mut s);
+    }
+}

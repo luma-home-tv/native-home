@@ -12,6 +12,12 @@ workflow, broad coverage and performance qualification remain open. Retained G2
 0.57 continues to use packaged art with normal
 Root artwork off.
 
+The [0.59 catalogue-planning foundation](artwork-catalogue-planning-059.md)
+now enumerates the entire independently fresh preferred-source map in bounded
+batches. Host checks pass. It performs no preparation or Root dispatch; the
+separate execution runner, completion accounting and native qualification remain
+the next integration work.
+
 The current installed broker admits one image per session. Historical non-first
 helper intervals were 2.562–2.875 seconds; they are not complete-fetch timings or
 a current benchmark. Diagnostics deliberately allow 30 seconds; the generic

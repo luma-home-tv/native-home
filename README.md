@@ -95,6 +95,11 @@ A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequis
 now passes with independent saved replay; it grants no 0.58 execution or cache
 permission qualification.
 
+The [0.59 catalogue planner](docs/artwork-catalogue-planning-059.md) now enumerates
+all preferred sources in bounded batches, with independent freshness and full
+source-change withdrawal. All 725 Rust host tests and strict Clippy pass. It adds
+no worker or Root dispatch; execution and native preparation remain unfinished.
+
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
 It prepares two one-job artwork-withdrawal cases; normal Root artwork loading remains off.

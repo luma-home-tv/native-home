@@ -149,6 +149,18 @@ synthetic tests and private 35+15 host fixtures/offline checks pass. Preserve th
 failed canonical-only parser; do not shrink scope by dropping mirrored mounts.
 The carrier remains undated/unadmitted and no new TV execution follows.
 
+`docs/artwork-catalogue-planning-059.md` records the pure 512-source/16-per-batch
+planner and independent Shell source-clock view. All 715 library/10 UI host
+tests and strict Clippy pass; preserve the first test-name lint failure. Every
+operation rechecks explicit NOW in the SAME live_origin wrapping clock domain;
+observed stale/failed/simulated/incoherent/changed maps permanently withdraw the
+plan. Cursors and manifest hashes prove enumeration only, not execution,
+publication, generation continuity, capacity or Root authority. No worker/IO/GL,
+ARM build, package or TV execution is added by this foundation. Retained057 and
+normal Root-off state remain unchanged. The future explicit runner must match
+actual current-key publication and known closure, handle partial capacity,
+and retain Unknown barriers; never promote cursor progress into completion.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

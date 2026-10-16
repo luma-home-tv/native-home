@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "stage": "0.59 catalogue preparation planning foundation",
+  "status": "source_host_checked_execution_unimplemented",
+  "sources": {
+    "src/artwork_cache_preparation.rs": {
+      "sha256": "9cb5fa5e45b2618fbf06e2617bf8f65e38ab7600d440fda2e0947f1301e50686",
+      "bytes": 12311
+    },
+    "src/artwork_cache_preparation_tests.rs": {
+      "sha256": "0fdbd43e59ae6e60d366ce081048e6a0c9250d1b91b0fe8a5784a5facd2790a3",
+      "bytes": 13871
+    },
+    "src/lib.rs": {
+      "sha256": "1a74011bded25ea6c93614e37d6a5026114d84fc8971f92e7b366ff563e91687",
+      "bytes": 1754
+    },
+    "src/shell.rs": {
+      "sha256": "d834f632b4909ac727fd1891259d4db5458e6d1fe680dea5dea20de774a0d760",
+      "bytes": 186746
+    },
+    "src/shell_current_cache_tests.rs": {
+      "sha256": "77a9f74cf7bcc646825a5fc8f1556da3b2621f6d95401e6162e8e705f1c6297b",
+      "bytes": 12204
+    }
+  },
+  "checks": {
+    "library-tests": {
+      "exit_code": 0,
+      "log_sha256": "a8cb245c6b1d3777c535944c999c5505bfed2905f34b7dca92f92497405a6428",
+      "receipt_sha256": "346f91cd3614e333784f1219fffbc39a2b2ad038f767cf014386834fd43c9b38"
+    },
+    "strict-clippy": {
+      "exit_code": 101,
+      "log_sha256": "8bc33e45d968f0627d4bd93297ae0f289434c931ccc80ebe3ff43d022e9ac7dc",
+      "receipt_sha256": "7529877380c9f9b6b6b791a41e9ad288efbd67cccc08ba41bcde52754dc6cd9c",
+      "inputs_unchanged": true
+    },
+    "strict-clippy-v2": {
+      "exit_code": 0,
+      "log_sha256": "e6a599c3d5b6e956167c26fc01627e30525455b4d803709255b32bbb3f61d558",
+      "receipt_sha256": "e89222d9cf7a93c40369b25f6dbeb4e83acf75163e7fc77d2d9b579728b2428c",
+      "inputs_unchanged": true
+    },
+    "planner-tests-v2": {
+      "exit_code": 0,
+      "log_sha256": "a76bad9fc4061326825f6adbedcfb32b06a785fd9f8875ff8dc602535d0d45f1",
+      "receipt_sha256": "7b81770b5361457a74c5037e6e3176d1af82bfec701d37c9c08940833741f32c",
+      "inputs_unchanged": true
+    },
+    "home-preview-tests": {
+      "exit_code": 0,
+      "log_sha256": "96ea1607a66e147bd443ab910d69b76c87f83265d51319c4b1185fec52a1904e",
+      "receipt_sha256": "05e72e29ca37f2742a789963d9971576ca06fe08520eab8b7563e4383e33a560",
+      "inputs_unchanged": true
+    }
+  },
+  "passing_cases": {
+    "library": 715,
+    "planner_in_library": 12,
+    "Shell_integration_in_library": 2,
+    "home_preview_UI": 10,
+    "planner_after_test_identifier_fix": 12
+  },
+  "independent_source_review": "clear; before identifier-only lint fix",
+  "limits": {
+    "source_entries": 512,
+    "preferred_per_batch": 16,
+    "inclusive_freshness_ms": 15000,
+    "default_cache_entries": 256,
+    "default_cache_encoded_bytes": 16777216
+  },
+  "contract": {
+    "time_domain": "current Main live_origin.elapsed() wrapping milliseconds at each operation",
+    "whole_typed_SourceMap_digest": true,
+    "observed_withdrawal_sticky": true,
+    "cursor_grants_enumeration_only": true,
+    "execution_verified": false,
+    "prepared_coverage_verified": false,
+    "generation_continuity_verified": false,
+    "cache_capacity_checked": false,
+    "Root_authority_granted": false,
+    "IO_or_worker_or_GL_added": false
+  },
+  "TV_contacted": false,
+  "new_ARM_build": false,
+  "new_package": false,
+  "retained_G2_last_verified": "0.57.0",
+  "retained_C2_contacted": false,
+  "normal_Root_artwork_enabled": false,
+  "preserved_failures": [
+    "strict-clippy exit101: uppercase A in one test identifier; identifier only corrected"
+  ],
+  "unimplemented": [
+    "explicit diagnostic execution runner and Main lifecycle",
+    "matching per-job publication and completion accounting",
+    "cross-process batch completion and capacity/partial results",
+    "new ARM artifacts/packages/native qualification",
+    "all-app preparation and normal performance",
+    "same-key content refresh, eviction and stale-slot recovery"
+  ]
+}
