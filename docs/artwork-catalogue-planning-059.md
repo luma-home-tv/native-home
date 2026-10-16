@@ -57,6 +57,15 @@ The selected build inputs and attributed framework remained unchanged during
 each successful command. The [machine-readable record](artwork-catalogue-planning-059-milestone.json)
 binds source and check logs.
 
+A follow-on source review found that the existing diagnostic preflight could
+capture after observing input or departure. It now polls again after saving the
+joined capability result and guards draw, capture, permission normalization and
+swap together with the latched interruption flag. Capability join and result
+save remain unconditional. The existing admission-refusal unit case and strict
+Clippy pass after this change, and independent source review is clear. Those
+checks do not execute a native interrupted-window capture or guarantee observing
+an event that arrives during a synchronous capture already in progress.
+
 These checks do not qualify a new ARM executable, a diagnostic package, native
 catalogue preparation, all-app coverage, performance or either TV. No TV was
 contacted for this source milestone. The last verified retained G2 remains

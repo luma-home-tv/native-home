@@ -98,5 +98,33 @@
     "new ARM artifacts/packages/native qualification",
     "all-app preparation and normal performance",
     "same-key content refresh, eviction and stale-slot recovery"
-  ]
+  ],
+  "follow_on_preflight_departure_correction": {
+    "source": {
+      "path": "src/preview_artwork_admission.rs",
+      "bytes": 6972,
+      "sha256": "b985f33e5333605a26c0095bc61ea8c927f9b19a46f23e2d55b18fda458196f4"
+    },
+    "checks": {
+      "preflight-departure-tests": {
+        "exit_code": 0,
+        "log_sha256": "a555ebc5cde8d1d2b5f64b09d1e9e904059e3bcb597cf59c154fb4ba90c1bf47",
+        "receipt_sha256": "ed228a51ddd8326d3dcd3ed726eda376d46a41d9eb6df48915b922c688d2dff9",
+        "inputs_unchanged": true
+      },
+      "preflight-strict-clippy": {
+        "exit_code": 0,
+        "log_sha256": "dabf68d73faf66385ad8c5c7eaca5d73440dc765ab3f93215697cfdaa3f96795",
+        "receipt_sha256": "62578fdf645d7c330a7df22d32e23fdf1ec565ce973b19a49e945a6d4617516b",
+        "inputs_unchanged": true
+      }
+    },
+    "existing_admission_refusal_unit_cases": 1,
+    "independent_source_review": "clear",
+    "capability_join_and_save_unconditional": true,
+    "presentation_stops_after_observed_interruption": true,
+    "native_interrupted_window_test": false,
+    "events_during_synchronous_capture_qualified": false,
+    "TV_contacted": false
+  }
 }

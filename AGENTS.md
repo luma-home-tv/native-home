@@ -160,6 +160,10 @@ ARM build, package or TV execution is added by this foundation. Retained057 and
 normal Root-off state remain unchanged. The future explicit runner must match
 actual current-key publication and known closure, handle partial capacity,
 and retain Unknown barriers; never promote cursor progress into completion.
+The follow-on preflight correction joins/saves capability unconditionally but
+guards draw/capture/normalization/swap after observed input/departure. Source
+review, the existing admission-refusal unit case and strict Clippy pass; a native
+interrupted-window test and observation during synchronous capture remain open.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

@@ -66,18 +66,19 @@ pub fn preflight(
     capability["worker_joined"] = json!(true);
     interrupted |= external_input();
     save(&output.join("preview-artwork-capability.json"), &capability)?;
+    // Saving the joined capability can take time. Observe queued input again
+    // before any presentation, and latch departure across draw/capture/swap.
+    interrupted |= external_input();
     if !interrupted {
         shell.draw();
-    }
-    let frame = output.join("preview-artwork-preflight-home.ppm");
-    window.capture(&frame)?;
-    // Only this newly created own diagnostic capture is normalized.
-    let file = std::fs::OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-        .open(&frame)?;
-    file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
-    if !interrupted {
+        let frame = output.join("preview-artwork-preflight-home.ppm");
+        window.capture(&frame)?;
+        // Only this newly created own diagnostic capture is normalized.
+        let file = std::fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+            .open(&frame)?;
+        file.set_permissions(std::fs::Permissions::from_mode(0o600))?;
         window.swap();
     }
     interrupted |= external_input();
