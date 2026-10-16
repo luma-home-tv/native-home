@@ -117,6 +117,32 @@ impl Marker {
     }
 }
 
+/// Wait only in explicitly requested capture diagnostics. Frame counts alone
+/// cannot establish completion of an asynchronous ordinary image worker.
+pub fn settle_packaged_for_capture(
+    shell: &mut Shell,
+    now: &mut u32,
+    deadline: Instant,
+) -> Result<(), Box<dyn std::error::Error>> {
+    loop {
+        if shell.packaged_icons_settled() {
+            return Ok(());
+        }
+        while let Some(event) = crate::runtime::poll() {
+            if matches!(event.kind, 1..=8 | 10 | 11) {
+                shell.request_exit();
+                return Err("Packaged capture lost its quiet foreground".into());
+            }
+        }
+        if Instant::now() >= deadline {
+            return Err("Visible packaged artwork did not settle before capture deadline".into());
+        }
+        *now = now.wrapping_add(17);
+        shell.tick(*now, 1.0 / 60.0);
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+}
+
 pub fn run(
     shell: &mut Shell,
     window: &Window,
@@ -162,6 +188,7 @@ pub fn run(
             shell.draw();
             window.swap();
         }
+        settle_packaged_for_capture(shell, now, deadline.min(Instant::now() + std::time::Duration::from_secs(5)))?;
         let before = window.graphics_state();
         shell.draw();
         let graphics = window.graphics_state();

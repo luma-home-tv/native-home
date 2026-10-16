@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "scope": "G2 known prepared ordinary packages: supported installation and separate no-launch-request cleanup only",
+  "date": "2026-10-16",
+  "original_operator_exit_code": 1,
+  "separate_cleanup_exit_code": 0,
+  "known_original_installer_terminals": 2,
+  "launch_requests": 0,
+  "supported_remove_requests": 2,
+  "native_scene_qualified": false,
+  "test_UID_execution_qualified": false,
+  "auto_launch_impossibility_claimed": false,
+  "Root_broker_or_HBC_session_started": false,
+  "retained_G2_version": "0.47.0",
+  "retained_C2_version": "0.48.0",
+  "C2_contact_in_this_experiment": false,
+  "normal_Root_artwork_enabled": false,
+  "preserved": {
+    "full_bundle_entries": 32,
+    "full_bundle_files": 30,
+    "private_state_entries": 2,
+    "private_state_files": 1,
+    "normal_runtime_entries": 110,
+    "normal_runtime_files": 73,
+    "checked_reply_domains": 19,
+    "Core_file_hashes": 5,
+    "raw_preferences_and_metadata_equal": true
+  },
+  "cleanup": {
+    "both_registrations_bundles_state_runtime_jails_mounts_absent": true,
+    "known_staged_IPKs_removed": 2,
+    "exact_empty_staging_directory_removed": true,
+    "exact_successful_release_stdout_and_status_verified": true,
+    "following_whole_lock_absence_verified": true,
+    "fresh_host_agent_closeout_verified": true,
+    "unmeasured_test_UID_absence_claimed": false
+  },
+  "bindings": {
+    "prepared_source_sha256": "c2ca1cb23fd66a248bf02ca947fe0cf7a3c83a396594a0179b3a12f49a41fa90",
+    "separate_cleanup_source_sha256": "8b01c3e0b1ae1475630ba55efcdce024fde77d2cd15178243e6f8fcaca75be1a",
+    "original_saved_file_map_sha256": "f97a49de99a650fedb9f87e34984dacfc00b230938e567ffffea40bc8c3f6bc3",
+    "cleanup_summary_sha256": "b5207fd91594da5de1b8dd04aec5d089fa5f3d5dc51081c43d19471e6e42b639",
+    "actual_exit_receipt_sha256": "be5014b68773768431d9456bb43ac089f22a5a9577fc509594944a648706b004",
+    "Root_saved_audit_sha256": "aaf5668a5b150181b00b7941cebbf751cb97c784509adbd6bcbf4e94074767ff",
+    "independent_saved_review_sha256": "f199c19ac0fd7b7026d01645a582850ae7470f89bff791ebd3390d7f2556d6ac"
+  }
+}

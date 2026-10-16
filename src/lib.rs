@@ -50,6 +50,9 @@ pub mod locale_reads;
 
 pub mod app_artwork;
 
+pub mod packaged_icon_reader;
+pub mod packaged_icons;
+
 pub mod artwork_cache;
 pub mod artwork_gl;
 pub mod artwork_installed_proof;

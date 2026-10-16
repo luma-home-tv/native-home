@@ -3,12 +3,15 @@
 Before the two [0.53 artwork context tests](artwork-context-qualification-053.md),
 verify that an owned native Target can become the sole foreground CARD while an
 owned native Proof process keeps its window alive. This prerequisite uses no
-artwork broker or HBC session. It has **host and package evidence only**; neither
-new test package has been installed or run on a TV.
+artwork broker or HBC session. Both packages now have a G2 installation/removal
+record, with **no launch requests or native scene qualification**. The separate
+[prepared-package cleanup milestone](native-surface-prepared-cleanup-milestone.json)
+binds that limited result.
 
 The retained G2 0.47 and C2 0.48 applications remain the current verified normal
 installations, with normal Root artwork disabled. There is no new native,
-performance, physical-input or cleanup qualification here.
+performance or physical-input qualification here. Cleanup of the known prepared
+packages is qualified separately below.
 
 ## Why a separate probe
 
@@ -45,11 +48,11 @@ not creating threads or children do not characterize SDK internals.
 | Item | Result |
 | --- | --- |
 | Probe host checks | Two Rust rendering/input gate tests; Python test covering 28 inherited build-override cases; Clippy with warnings denied |
-| Scene carrier host checks | 22 fixtures, including parser strictness, publication races, empty held SDK stdin, actor identity, admission and cleanup barriers |
+| Scene carrier host checks | Initial 22 fixtures, then 26 after correcting grouped GET stdin handling; no empty reply is accepted as a scene |
 | Builds | Both actual ARM32 release builds succeeded; existing SDK target-feature warning retained |
 | Package audit | Exact SDK-created archives: three Probe files and six Target files; no added services, hooks or permissions |
 | ELF audit | Same loader and a subset of the saved retained G2 binary's direct library and GLIBC requirements |
-| Device admission | Refused before agent or SSH because no dated device window is configured |
+| Device outcome | Both SDK installations completed; the active-screen guard stopped before any launch request; a separate cleanup-only continuation completed |
 
 The private Probe uses a 34-package lock seeded and pruned from the production
 lock. An earlier unseeded lock was rejected during admission and remains a
@@ -64,6 +67,40 @@ objects and output. This is not a fully hermetic toolchain claim.
 | Target ELF | `9b8620aef4fdea0758a740881f40cbf581a65e6f9afe016a842918a2f3dd0cee` |
 | Target IPK | `f6294283357ad34a1964f18229fd79dd15df3e7137287d6c7b467eee4ac3844e` |
 | Root host consolidation | `efba7d194d07ba39f381c6a31dd9aa3182280dd38d3dc9262801ba13035cb502` |
+
+## Prepared installation and separate cleanup
+
+The original device operator exited 1. Early attempts stopped before installation
+because of grouped-query EOF handling or an unsuitable foreground/idle state;
+their exact coordination locks were closed separately. The corrected operator
+then completed both original SDK installer subscriptions and verified the exact
+installed inventories. After preparation, the prelaunch guard observed LG's
+screensaver state before the first launch. Neither package received
+a launch request. This does not prove that auto-launch is impossible or qualify
+execution under a measured test UID.
+
+A separately reviewed cleanup-only operation exited zero. It rebound the exact
+known packages, uploads and original lease, checked executable and namespace
+absence, issued one supported remove per identity, and verified registration,
+bundle, runtime, state, jail and mount absence. It removed only the two positively
+identified IPKs and their empty staging directory. Full original retained bundle
+(32 entries/30 files), private state (two entries/one file), runtime (110 entries/
+73 files), all 19 checked reply domains and the five Core hashes matched. Raw
+preference bytes and ownership/modes were preserved. No Root broker/HBC session
+started, and no unmeasured test-UID absence claim was made.
+
+The independent saved review replayed those file/readback comparisons and the
+actual successful-release output, return status, subsequent whole-lock absence
+and host-agent closeout. A zero release exit status alone was insufficient:
+the coordination tool also returns zero for already-absent or foreign locks.
+Original failure and separate cleanup remain distinct records.
+
+The next actor experiment needs a prepared-then-launch workflow, fresh actual
+LG Home/Active confirmation immediately before dispatch, and enough time left
+for the native lifetime and removal. Baseline preparation time must not consume
+the actor's own lifetime allowance. Natural screensaver activity can be accepted
+for final cleanup when the actual Home/window/power replies agree; it grants no
+native admission, wake command or change to LG's idle/panel protections.
 
 ## Required device evidence
 

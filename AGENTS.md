@@ -100,6 +100,19 @@ the actual failure stage. Preserve G2 0.47/C2 0.48 and keep normal Root artwork 
 No 0.53 package has been installed or run; the next native carrier needs its own
 reviewed artifacts, external Target/process/child/namespace evidence and cleanup.
 
+The 0.54 source in `docs/packaged-icon-demand.md` adds an ordinary packaged-icon
+reader/worker/cache and Shell integration. It does not use Root sources, Tickets
+or transition waits. Keep initial packaged bindings distinct from fresh live
+app-version authority, drawing references borrowed, and all GL ownership on the
+render thread. Pause dispatch/uploads immediately for departure/idle/keyboard/
+external intent, including window close before tick. Capture diagnostics require
+bounded readiness; frame counts alone do not qualify asynchronous image arrival.
+No 0.54 TV execution or retained promotion is qualified; preserve G2 0.47/C2 0.48
+and the independent frozen 0.53 artifacts. The separate ordinary scene packages
+were installed then removed without launch requests; their limited cleanup is
+recorded in `docs/native-surface-prepared-cleanup-milestone.json`, not native scene
+or test-UID execution evidence.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

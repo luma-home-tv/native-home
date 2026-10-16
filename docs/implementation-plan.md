@@ -63,11 +63,12 @@ artifacts and serialising each TV's tests:
 | Live artwork | Ordinary surface prerequisite, real negative cases and interactive transition evidence | Ordered lifecycle, actual Preview role and responsiveness gates precede backed normal activation |
 | Integration and release | Known update/removal, fresh preference preservation and a scoped release record | Current source, package and native receipts must agree; unknown outcomes retain their barriers |
 
-For packaged icons, the current startup loader visits only the first 64 catalogue
-entries and checks encoded size and image dimensions after reading/decoding.
-Review bounded reads/decode and demand-driven coverage separately from the Root
-provider. The retained trials establish no over-64 failure or measured memory
-fault. Measure normal navigation and return flows with the exact current artifact;
+The pre-0.54 packaged startup loader visited only the first 64 catalogue entries
+and checked size/dimensions after reading/decoding. The current 0.54 source adds
+a separate [bounded ordinary reader and demand cache](packaged-icon-demand.md);
+its host evidence does not update either retained installation or establish TV
+performance/all-app coverage. The retained trials establish no over-64 failure
+or measured memory fault. Measure normal navigation and return flows with the exact current artifact;
 the [surface preparation record](native-surface-scene-prerequisite.md) explains
 why old positive Root helper timings cannot qualify release responsiveness.
 Keep normal Root artwork off while its independent feature work continues.

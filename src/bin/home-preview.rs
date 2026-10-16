@@ -920,6 +920,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 shell.draw();
                 window.swap();
             }
+            native_home::icon_presentation_proof::settle_packaged_for_capture(
+                &mut shell, &mut now, Instant::now() + Duration::from_secs(5),
+            )?;
             let before = window.graphics_state();
             shell.draw();
             let after = window.graphics_state();
@@ -1840,7 +1843,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         1 => {
                             decision = observation::Decision::Accepted;
                             reason = "window_closed";
-                            shell.cancel_press();
+                            shell.request_exit();
                         }
                         7 | 8 => {
                             decision = observation::Decision::Accepted;
@@ -2192,9 +2195,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 std::thread::sleep(period - elapsed);
             }
         }
-        if shell.should_exit() {
-            reason = "back_from_home";
-        }
+        reason = session_exit_reason(shell.should_exit(), reason);
     }
     if shell.page() == Page::Applications && shell.drawer_state().editing {
         shell.back();
@@ -2277,6 +2278,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             exit,
         )?;
     }
+    let packaged_icon_shutdown = shell.finish_packaged_icons();
     let persistent_readback = committed_preferences.as_ref() == Some(shell.preferences())
         || (loaded_preferences.as_ref() == Some(shell.preferences()) && storage_error.is_none());
     let mut report = serde_json::json!({"device":device,"app_id":plx_base::paths::app_id(),"uid":unsafe{libc::geteuid()},"renderer":window.renderer,
@@ -2291,6 +2293,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof && broker_startup_marker.is_none() && broker_negative_marker.is_none() && installed_artwork_marker.is_none()
         && preview_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
+    report["packaged_icon_shutdown"] = serde_json::json!(packaged_icon_shutdown);
     report["broker_negative_proof"] = serde_json::json!(broker_negative_receipt);
     report["installed_artwork_proof"] = serde_json::json!(installed_artwork_receipt);
     report["preview_artwork_admission"] = serde_json::json!(preview_artwork_admission);
@@ -2365,6 +2368,14 @@ fn observation_stamp(
         batch_seq,
     }
 }
+fn session_exit_reason(shell_exit: bool, reason: &str) -> &str {
+    if shell_exit && reason != "window_closed" {
+        "back_from_home"
+    } else {
+        reason
+    }
+}
+
 fn observation_class(kind: u32) -> observation::EventClass {
     use observation::EventClass::*;
     match kind {
@@ -2940,6 +2951,11 @@ fn drawer_capture(
         shell.draw();
         window.swap();
     }
+    native_home::icon_presentation_proof::settle_packaged_for_capture(
+        shell,
+        now,
+        Instant::now() + Duration::from_secs(5),
+    )?;
     shell.draw();
     if window.graphics_state().error != 0 {
         return Err("Diagnostic capture found a GL error".into());
@@ -4394,5 +4410,15 @@ mod artwork_transition_dispatch_tests {
             "no automatic retry on a missing worker"
         );
         shell.finish_live_artwork();
+    }
+}
+
+#[cfg(test)]
+mod window_exit_tests {
+    #[test]
+    fn window_close_keeps_its_terminal_reason_when_shell_exit_is_latched() {
+        assert_eq!(super::session_exit_reason(true, "window_closed"), "window_closed");
+        assert_eq!(super::session_exit_reason(true, "lifetime_complete"), "back_from_home");
+        assert_eq!(super::session_exit_reason(false, "proof_limit"), "proof_limit");
     }
 }

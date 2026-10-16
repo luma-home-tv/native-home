@@ -169,9 +169,17 @@ The [0.53 isolated context recipe](docs/artwork-context-qualification-053.md)
 adds fixed ReadAfter and Finish experiments. Its host checks and matching ARM
 builds pass; neither native case is qualified. The separate
 [ordinary surface prerequisite](docs/native-surface-scene-prerequisite.md) now
-has audited test packages and passing host checks, with device admission blocked.
+has audited test packages and passing host checks. Those packages were installed
+and removed without launch requests; native scene admission remains unqualified.
 It also records the outstanding responsiveness gate before normal Root artwork
 activation.
+
+The [0.54 packaged-icon candidate](docs/packaged-icon-demand.md) replaces the
+first-64 synchronous loader with ordinary, bounded demand loading. Icons keep
+their own alpha/shape on black; known images stay blank while loading, and only
+unavailable artwork uses the monogram fallback. Host verification is separate
+from native rendering/performance and a retained update; normal Root artwork
+remains off.
 
 ## Layout
 

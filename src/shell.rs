@@ -340,6 +340,7 @@ struct Card {
     caption: CString,
     initials: CString,
     texture: (u32, f32, f32),
+    loading_icon: bool,
     context_selected: bool,
     compact_labels: bool,
 }
@@ -368,7 +369,7 @@ impl CardSource<HomeHost> for Cards {
     }
     fn art(&self, i: usize) -> Art<'_> {
         let c = &self.items[i];
-        if c.has_icon() {
+        if c.has_icon() || c.loading_icon {
             Art::Icon {
                 id: c.texture.0,
                 width: c.texture.1,
@@ -454,7 +455,7 @@ impl CardSource<HomeHost> for Cards {
                     ),
                 );
             }
-        } else if !c.has_icon() {
+        } else if !c.has_icon() && !c.loading_icon {
             Label::new(
                 c.initials.as_ptr(),
                 theme::size::DISPLAY,
@@ -463,6 +464,14 @@ impl CardSource<HomeHost> for Cards {
             .bold()
             .h(HAlign::Center)
             .draw(p, tile.rect);
+        }
+        if c.loading_icon && !c.has_icon() && tile.focused {
+            p.rring(
+                tile.rect,
+                theme::CARD_RING_RAD,
+                theme::CARD_SHEEN_W,
+                theme::TEXT_SECONDARY,
+            );
         }
         if input_key(&c.id).is_none() && !tile.focused {
             let text = cstr(&plx_gfx::text::elide(
@@ -1052,7 +1061,11 @@ pub struct Shell {
     prefs: Preferences,
     input: InputMachine<u32>,
     surface: Surface,
+    // Borrowed drawing references only; packaged_icons owns their GL handles.
     textures: BTreeMap<String, (u32, f32, f32)>,
+    packaged_bindings: crate::packaged_icons::Bindings,
+    packaged_icons: Option<crate::packaged_icons::PackagedIcons<crate::artwork_gl::Backend>>,
+    packaged_gl: crate::artwork_gl::Diagnostics,
     live_textures: crate::artwork_textures::ArtworkTextures<crate::artwork_gl::Backend>,
     artwork_gl: crate::artwork_gl::Diagnostics,
     artwork: Option<crate::artwork_runtime::Runtime>,
@@ -1113,6 +1126,20 @@ impl Shell {
         .expect("Default live texture limits");
         let mut catalogue = Catalogue::default();
         catalogue.refresh(&snapshot.applications, &snapshot.launch_ids);
+        // Preserve the package's mappings before live catalogue merges. These
+        // are packaged snapshots, not live app-version/source authority.
+        let packaged_bindings = catalogue
+            .applications
+            .iter()
+            .filter_map(|app| {
+                crate::packaged_icon_reader::RelativeIconPath::parse(app.icon.as_deref()?)
+                    .ok()
+                    .map(|path| (app.id.clone(), path))
+            })
+            .collect();
+        let packaged_gl = crate::artwork_gl::Diagnostics::default();
+        #[cfg(test)]
+        packaged_gl.reuse_test_handle(1_000_000);
         let seeded = !prefs.initialized;
         if seeded {
             let preferred = [
@@ -1146,6 +1173,9 @@ impl Shell {
             input: InputMachine::new(),
             surface: Self::blank(Page::Home),
             textures: BTreeMap::new(),
+            packaged_bindings,
+            packaged_icons: None,
+            packaged_gl,
             live_textures,
             artwork_gl,
             artwork: None,
@@ -1369,6 +1399,8 @@ impl Shell {
                         }),
                         initials: cstr(&initials),
                         texture: tex,
+                        loading_icon: self.packaged_icons.as_ref()
+                            .is_some_and(|icons| icons.will_load(&app.id)),
                         compact_labels: page == Page::Applications,
                         context_selected: self.menu.as_ref().is_some_and(|m| m.id == app.id),
                     });
@@ -1603,6 +1635,7 @@ impl Shell {
                         caption: cstr(&caption),
                         initials: cstr(&input.id.replace('_', " ")),
                         texture: (0, 0.0, 0.0),
+                        loading_icon: false,
                         context_selected: false,
                         compact_labels: false,
                     })
@@ -2031,36 +2064,169 @@ impl Shell {
                     plx_gfx::gfx::upload_rgba(0, w as i32, h as i32, pixels.as_ptr());
             }
         }
-        for (id, _, _) in self.textures.values() {
-            plx_gfx::gfx::delete_tex(*id);
-        }
-        self.textures.clear();
-        for app in self.catalogue.applications.iter().take(64) {
-            let Some(path) = &app.icon else { continue };
-            let path = std::path::Path::new(path);
-            if path.is_absolute()
-                || path
-                    .components()
-                    .any(|c| matches!(c, std::path::Component::ParentDir))
-            {
-                continue;
-            }
-            let Ok(bytes) = std::fs::read(assets.join(path)) else {
-                continue;
-            };
-            if bytes.len() > 1024 * 1024 {
-                continue;
-            }
-            if let Some((w, h, pixels)) = plx_gfx::img::img_decode_owned(&bytes) {
-                if w > 512 || h > 512 {
-                    continue;
-                }
-                let id = plx_gfx::gfx::upload_rgba(0, w as i32, h as i32, pixels.as_ptr());
-                self.textures
-                    .insert(app.id.clone(), (id, w as f32, h as f32));
-            }
-        }
+        self.configure_packaged_icons(assets);
         self.rebuild(self.surface.page);
+    }
+    fn configure_packaged_icons(&mut self, assets: &std::path::Path) {
+        let _ = self.finish_packaged_icons();
+        self.textures.clear();
+        if !self.packaged_bindings.is_empty() {
+            self.packaged_icons = crate::packaged_icons::PackagedIcons::start(
+                assets.to_owned(),
+                self.packaged_bindings.clone(),
+                crate::artwork_gl::Backend::new(self.packaged_gl.clone()),
+            )
+            .ok();
+        }
+    }
+    fn packaged_visible(&self) -> Vec<String> {
+        if !matches!(self.surface.page, Page::Home | Page::Applications) {
+            return Vec::new();
+        }
+        let cx = self.context(&LegacyMeasure);
+        let focused_key = self
+            .input
+            .engine
+            .current(InputOwner::Entry(entry(self.surface.page)))
+            .map(|key| key.elem);
+        let mut visible = self
+            .surface
+            .cards
+            .items
+            .iter()
+            .filter_map(|card| {
+                let (placed, clip) = if self.surface.page == Page::Home {
+                    (
+                        self.surface.home_favourites.place(
+                            &cx,
+                            &self.surface.cards,
+                            &card.key,
+                            HOME_FAVOURITES,
+                            At::Drawn,
+                        )?,
+                        HOME_FAVOURITES.clip,
+                    )
+                } else {
+                    (
+                        self.surface
+                            .grid
+                            .place(&cx, &self.surface.cards, &card.key, At::Drawn)?,
+                        self.surface.grid_area(),
+                    )
+                };
+                let r = placed.rect;
+                // Applications uses GridSpec::whole_tiles(): unfocused partial
+                // tiles are not painted. Focused motion keeps its clipped image.
+                if self.surface.page == Page::Applications
+                    && focused_key != Some(card.key)
+                    && !(r.x >= clip.x
+                        && r.y >= clip.y
+                        && r.x + r.w <= clip.x + clip.w
+                        && r.y + r.h <= clip.y + clip.h)
+                {
+                    return None;
+                }
+                (r.w > 0.0
+                    && r.h > 0.0
+                    && r.x < clip.x + clip.w
+                    && r.x + r.w > clip.x
+                    && r.y < clip.y + clip.h
+                    && r.y + r.h > clip.y)
+                    .then(|| card.id.clone())
+            })
+            .collect::<Vec<_>>();
+        if let Some(focused) = self.focused_item() {
+            if let Some(index) = visible.iter().position(|id| id == &focused) {
+                visible.swap(0, index);
+            }
+        }
+        visible
+    }
+    fn pump_packaged_icons(&mut self) {
+        if self.packaged_icons.is_none() {
+            return;
+        }
+        let allowed = !self.exit
+            && ![
+                PauseReason::ForegroundLost,
+                PauseReason::Idle,
+                PauseReason::KeyboardIntent,
+                PauseReason::KeyboardActive,
+                PauseReason::ExternalIntent,
+            ]
+            .into_iter()
+            .any(|reason| self.artwork_pause.contains(reason));
+        let visible = if allowed {
+            self.packaged_visible()
+        } else {
+            Vec::new()
+        };
+        let ids = visible.iter().map(String::as_str).collect::<Vec<_>>();
+        let controller = self
+            .packaged_icons
+            .as_mut()
+            .expect("Packaged controller exists");
+        let update = controller.frame(&ids, allowed);
+        let mut references_changed = false;
+        let mut visible_references_changed = false;
+        // Check each borrowed reference even on a paused/reset frame. Only
+        // current controller-owned handles may reach the next draw.
+        self.textures.retain(|id, _| {
+            let keep = controller.texture(id).is_some();
+            if !keep {
+                references_changed = true;
+                visible_references_changed |= visible.contains(id);
+            }
+            keep
+        });
+        for id in &visible {
+            if let Some(view) = controller.texture(id) {
+                let next = (view.handle, view.width as f32, view.height as f32);
+                if self.textures.get(id) != Some(&next) {
+                    self.textures.insert(id.clone(), next);
+                    references_changed = true;
+                    visible_references_changed = true;
+                }
+            }
+        }
+        for card in &mut self.surface.cards.items {
+            let loading = controller.will_load(&card.id);
+            if card.loading_icon != loading {
+                card.loading_icon = loading;
+                references_changed = true;
+                visible_references_changed |= visible.contains(&card.id);
+            }
+        }
+        if references_changed {
+            self.refresh_artwork_cards();
+        }
+        if allowed && (visible_references_changed || update.visible_pixels_changed) {
+            plx_machine::idle::invalidate();
+        }
+    }
+    pub fn finish_packaged_icons(&mut self) -> Option<serde_json::Value> {
+        let mut controller = self.packaged_icons.take()?;
+        let before = controller.stats();
+        let done = controller.finish();
+        self.textures.clear();
+        for card in &mut self.surface.cards.items {
+            card.loading_icon = false;
+        }
+        self.refresh_artwork_cards();
+        Some(serde_json::json!({"worker_joined":done.worker_joined,
+            "worker_panicked":done.worker_panicked,"remaining_textures":done.remaining_textures,
+            "submitted":before.submitted,"completed":before.completed,
+            "discarded":before.discarded,"unavailable_sources":before.unavailable_sources,
+            "texture_bytes_before_cleanup":before.texture_bytes_estimate,
+            "gl":self.packaged_gl.receipt()}))
+    }
+    /// Diagnostic readiness only. Ordinary navigation never waits for artwork.
+    pub fn packaged_icons_settled(&self) -> bool {
+        self.packaged_icons.as_ref().is_none_or(|icons| {
+            self.packaged_visible()
+                .iter()
+                .all(|id| icons.texture(id).is_some() || !icons.will_load(id))
+        })
     }
     pub fn enable_live_artwork(
         &mut self,
@@ -3215,6 +3381,7 @@ impl Shell {
         // intent reasons suppress dispatch; paused frames still poll results.
         self.reconcile_artwork_pause();
         self.pump_artwork();
+        self.pump_packaged_icons();
     }
     /// Diagnostic geometry for an existing control binding; never grants activation.
     /// Values and app inventory are intentionally excluded.
@@ -4288,6 +4455,11 @@ impl Shell {
                 .map(|c| c.id.clone())
         }
     }
+    pub fn request_exit(&mut self) {
+        self.exit = true;
+        self.cancel_press();
+        self.set_artwork_pause(PauseReason::ForegroundLost, true);
+    }
     pub fn should_exit(&self) -> bool {
         self.exit
     }
@@ -4513,6 +4685,7 @@ impl Shell {
 impl Drop for Shell {
     fn drop(&mut self) {
         let _ = self.finish_live_artwork();
+        let _ = self.finish_packaged_icons();
         if self.brand_texture != 0 {
             plx_gfx::gfx::delete_tex(self.brand_texture);
         }
@@ -4520,9 +4693,6 @@ impl Drop for Shell {
             if texture != 0 {
                 plx_gfx::gfx::delete_tex(texture);
             }
-        }
-        for (id, _, _) in self.textures.values() {
-            plx_gfx::gfx::delete_tex(*id);
         }
     }
 }
@@ -4534,3 +4704,7 @@ mod tests;
 #[cfg(test)]
 #[path = "shell_artwork_tests.rs"]
 mod artwork_tests;
+
+#[cfg(test)]
+#[path = "shell_packaged_tests.rs"]
+mod packaged_tests;

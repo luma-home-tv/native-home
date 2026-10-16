@@ -505,6 +505,7 @@ fn app_artwork_uses_unmatted_icons_and_missing_or_input_cards_keep_fallbacks() {
             caption: cstr(""),
             initials: cstr("F"),
             texture: (77, 160.0, 90.0),
+            loading_icon: false,
             context_selected: false,
             compact_labels: false,
         }],
