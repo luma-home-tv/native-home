@@ -52,6 +52,7 @@ pub mod device_info_reads;
 
 pub mod app_artwork;
 
+pub mod durable_icon_cache;
 pub mod packaged_icon_reader;
 pub mod packaged_icons;
 
