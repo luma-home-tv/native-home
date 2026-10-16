@@ -48,6 +48,8 @@ pub mod sound_reads;
 
 pub mod locale_reads;
 
+pub mod device_info_reads;
+
 pub mod app_artwork;
 
 pub mod packaged_icon_reader;

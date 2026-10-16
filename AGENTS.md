@@ -155,6 +155,12 @@ individual empty/error-state typography cases remain unqualified on the TV.
 Keep its package version distinct from frozen 0.54 artifacts and preserve the
 attributed framework unchanged.
 
+The 0.56 source in `docs/device-information-056.md` adds three read-only General
+rows from the already-collected system_info reply. Host checks pass; no new API,
+setter, permission or display-to-capability admission is added. Preserve mixed
+failure withdrawal and the existing pointer/keyboard gates. ARM and native
+results remain unqualified for this source; retained G2 remains frozen 0.55.
+
 The following earlier component records describe their historical baselines;
 they do not replace the current retained versions above.
 

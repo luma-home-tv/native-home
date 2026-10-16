@@ -51,6 +51,10 @@ Search/IME. Normal Root artwork remains off. The separate
 [0.49 isolated G2 scheduling result](docs/artwork-transition-049.md) does not
 activate that provider in either retained app.
 
+The [0.56 TV-information source](docs/device-information-056.md) adds native
+read-only model, software and SDK-version rows under General using existing
+readings. Host checks pass; it has not been deployed to either TV.
+
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
 It prepares two one-job artwork-withdrawal cases; normal Root artwork loading remains off.

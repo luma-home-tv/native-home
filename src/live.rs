@@ -348,15 +348,18 @@ pub fn parse(raw: &Value, own_id: &str, observed_ms: u32, simulated: bool) -> Up
         None,
     );
     let locale = crate::locale_reads::parse(replies);
+    let device_info = crate::device_info_reads::parse(replies);
     let general = match (option, home) {
-        (Err(a), Err(_)) if !locale.iter().any(|row| row.available) => Reading::Failed(a),
+        (Err(a), Err(_))
+            if !locale.iter().chain(&device_info).any(|row| row.available) => Reading::Failed(a),
         (a, b) => {
             let mut rows =
                 a.unwrap_or_else(|_| unavailable(control_reads::GENERAL_OPTION, &global));
             rows.extend(b.unwrap_or_else(|_| unavailable(control_reads::GENERAL_HOME, &global)));
-            // Each cycle supplies all five rows, including per-group failures.
-            // Old locale values cannot inherit another General group's freshness.
+            // Every optional row is supplied each cycle, including failures.
+            // Cached locale/info values cannot inherit another group's freshness.
             rows.extend(locale);
+            rows.extend(device_info);
             Reading::Value(rows)
         }
     };
@@ -785,13 +788,13 @@ pub(crate) mod tests {
     }
     fn assert_general_locale_identity(snapshot: &Snapshot) {
         let rows = &snapshot.settings["general"];
-        assert_eq!(rows.len(), 10);
+        assert_eq!(rows.len(), 13);
         let legacy = control_reads::GENERAL_OPTION.iter()
             .chain(control_reads::GENERAL_HOME.iter());
         for (row, spec) in rows[..5].iter().zip(legacy) {
             assert_eq!((&row.id, row.focus_key), (&spec.id.to_string(), spec.key));
         }
-        for (row, key) in rows[5..].iter().zip(crate::locale_reads::Key::ALL) {
+        for (row, key) in rows[5..10].iter().zip(crate::locale_reads::Key::ALL) {
             assert_eq!(row.id, key.id());
             assert_eq!(row.focus_key, key.focus_key());
             assert!(row.constraint.is_none());
@@ -804,7 +807,7 @@ pub(crate) mod tests {
         let mut fresh = Freshness::default();
         merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
         assert_general_locale_identity(&snapshot);
-        assert!(snapshot.settings["general"].iter().all(|row| row.available));
+        assert!(snapshot.settings["general"][..10].iter().all(|row| row.available));
         let mut failed = locale_data();
         for name in [crate::locale_reads::LOCALE_VALUES_REPLY, crate::locale_reads::REGION_VALUES_REPLY] {
             failed["replies"][name] = json!({"returnValue":false});
@@ -826,8 +829,8 @@ pub(crate) mod tests {
         merge(&mut snapshot, &parse(&data, "self", 300, false), &mut fresh);
         assert_general_locale_identity(&snapshot);
         assert!(snapshot.settings["general"][..5].iter().all(|row| !row.available));
-        assert!(snapshot.settings["general"][5..].iter().all(|row| row.available));
-        assert_eq!(snapshot.settings["general"][5..].iter().map(|row| row.value.as_str()).collect::<Vec<_>>(),
+        assert!(snapshot.settings["general"][5..10].iter().all(|row| row.available));
+        assert_eq!(snapshot.settings["general"][5..10].iter().map(|row| row.value.as_str()).collect::<Vec<_>>(),
             ["fr-CA", "en-CA", "de_DE", "CAN", "CA"]);
         assert_eq!(fresh.controls.get(&ControlSection::General), Some(&300));
     }
@@ -846,7 +849,7 @@ pub(crate) mod tests {
             let rows = &snapshot.settings["general"];
             assert!(rows[..5].iter().all(|row| row.available));
             assert!(rows[5..8].iter().all(|row| row.available != locale_failed));
-            assert!(rows[8..].iter().all(|row| row.available == locale_failed));
+            assert!(rows[8..10].iter().all(|row| row.available == locale_failed));
         }
     }
     #[test]
@@ -915,7 +918,7 @@ pub(crate) mod tests {
         };
         let mut fresh = Freshness::default();
         merge(&mut snapshot, &first, &mut fresh);
-        assert_eq!(snapshot.settings["general"].len(), 10);
+        assert_eq!(snapshot.settings["general"].len(), 13);
         assert!(snapshot.settings["panel_care"]
             .iter()
             .all(|r| r.protected && r.available));
@@ -1257,3 +1260,7 @@ pub(crate) mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "live_device_info_tests.rs"]
+mod device_info_tests;
