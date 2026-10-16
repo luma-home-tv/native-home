@@ -4,12 +4,14 @@ Large app icons can now be decoded and scaled on the existing image worker,
 while the renderer still receives at most 512 pixels per axis and 1 MiB of RGBA.
 This fixes the source limitation found by the partial 0.59 G2 batch. Source and
 host validation, matching ARM builds and local package/ABI inspection pass.
-Native qualification remains pending.
+The later [second temporary G2 trial](bounded-icon-decoding-060-native.md)
+qualifies one complete sixteen-image batch and ordinary Home/Apps cache
+consumption, with independently audited restoration and cleanup.
 The last verified retained G2 remains 0.57. C2 was not contacted.
 The later [first temporary G2 trial](bounded-icon-decoding-060-first-native.md)
 declined on unavailable foreground context before submitting any image job.
 Exact 0.57 restoration and known cleanup pass independent saved audit/replay;
-this preserves native nonqualification of the decoder.
+that first scope did not exercise the decoder and remains separately recorded.
 
 ## Shared policy and attributed framework
 
@@ -91,8 +93,8 @@ does not establish fresh native reader identity, permissions or transitive loadi
 Private package receipts were created with mode 0600; household resources and
 temporary Root selection pins remain outside the public repository.
 
-Next: run an isolated G2 batch and ordinary consumer with a fresh baseline,
-lease and verified restoration. Host success does not establish native memory,
-pixels, all-catalogue coverage, normal performance or retained promotion. LG Home,
+The later native component result does not establish final all-catalogue coverage,
+native pixel identity, normal performance or retained promotion. Continue with
+current per-key coverage, capacity/invalidation and a matched normal daily loop. LG Home,
 core services and OLED protections remain untouched; normal interaction keeps
 Root artwork off.

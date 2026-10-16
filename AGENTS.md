@@ -238,6 +238,26 @@ no mount operation/restored-mount/cause claim. Five saved startupRSS/HWM samples
 scope is closed, never re-adopt dates/nonce/lease. A new trial needs new private
 pins/package inspection/admission/fresh baseline; retain every context gate.
 
+The second060 scope in `docs/bounded-icon-decoding-060-native.md` is closed with
+actual operator0, sixteen positive publications/local preparations and ordinary
+Home/Apps cache associations. Independent saved audit, seven guards and
+byte-identical Root replay pass;20169 bound inputs rehashed. Ordinary8cache+4packaged
+textures all deleted, joined/no recorded GLerrors. Exact057/privateprefs/Core5+19,
+old140runtime entries/92immutablefiles/eventlogprefix+262B and known scoped
+cleanup/originallease+agent closeout pass. Original242mountrows remain exactprefix246
+with two existing readonly SDKpairs across four measured aliases; no mount
+operation/restored-mount/cause claim. Only firsthelper has external live raw7;
+later authenticated identities have final external absence checks. Counts and
+frame associations are not allcatalogue/body-to-pixels/physical/performance
+proof. RetainedG2 remains057, normalRoot off, C2 untouched. Never reuse either
+closed060 scope's dates/nonce/lease; fresh native work needs matching current
+artifacts, fresh state and unchanged context/cleanup guards.
+Its saved-memory reader/fourguards/byte-identical replay also pass,5162bindings
+rehashed.118diagnostic samples maxRSS44408KiB/HWM51344KiB;36ordinary samples
+42308/49380KiB. One literal exit-race group supplies no memory. These are retained
+complete raw7 reads, not terminal/after-final-decode/GPU/helper/totalmemory,
+96MiBfit/OOM/leak/performance proof. Do not reuse these as matched release metrics.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

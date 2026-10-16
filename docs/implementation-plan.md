@@ -48,8 +48,11 @@ host checks, matching ARM builds and local package/ABI inspection. Its first
 [native batch](artwork-catalogue-preparation-059-native.md) prepared 15 of 16
 images and returned to exact 0.57 with independently audited known cleanup.
 The original operator exit 1 remains explicit; the ordinary consumer was skipped.
-Complete preparation, ordinary consumer coverage and retained delivery remain open.
-This component does not complete the dashboard or qualify a new normal release.
+The later [0.60 trial](bounded-icon-decoding-060-native.md) completes all sixteen
+images in one selected batch and ordinary Home/Apps cache consumption, then
+restores exact 0.57 with independently audited cleanup. Multiple-batch/current
+per-key coverage and retained delivery remain open. This component does not
+complete the dashboard or qualify a new normal release.
 
 The [0.53 exclusive departure-test recipe](artwork-context-qualification-053.md)
 now has host, strict-package, independent source-review and matching ARM-build
@@ -70,9 +73,9 @@ Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
 
-The next cache delivery step is a bounded thumbnail fix for the observed oversized
-icon, followed by matching ARM artifacts and a fresh reviewed batch/ordinary
-Root-free consumer trial, with per-attempt disposition and known restoration.
+The bounded thumbnail fix now has matching ARM artifacts and a successful
+reviewed batch/ordinary Root-free consumer trial, with per-attempt disposition
+and known restoration.
 The SDK mount comparison preserves all measured aliases; each trial needs a
 fresh native baseline. Follow with multiple batches where needed, final current
 per-key body/decode coverage, invalidation/failure behavior and a backed-up normal

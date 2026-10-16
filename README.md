@@ -39,7 +39,11 @@ limits are additional safeguards, not a total-heap or OOM guarantee.
 The [0.60 icon policy](docs/bounded-icon-decoding-060.md) adds an opt-in bounded
 thumbnail API shared by all three worker decode paths, preserving transparency
 and the existing renderer output limits. Its source, host checks, matching ARM
-builds and local package/ABI audit pass; native qualification remains pending.
+builds and local package/ABI audit pass. The later
+[temporary G2 trial](docs/bounded-icon-decoding-060-native.md) completes a
+sixteen-image batch and ordinary Home/Apps cache consumption, followed by
+independently audited exact 0.57 restoration and cleanup. All-catalogue coverage,
+current-build performance and retained 0.60 delivery remain open.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
