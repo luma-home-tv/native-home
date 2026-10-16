@@ -1,8 +1,9 @@
 # Isolated artwork context-withdrawal qualification
 
 The 0.53 test recipe is implemented at `324d016a248d8c5d84b0b4fe89766d79bf3b54c5`.
-It has no native execution qualification. The retained G2 0.47 and C2 0.48 installations are unchanged;
-normal Root artwork loading remains off. The [0.52 host result](artwork-closed-negative-052.md)
+It has no native execution qualification. That source/build record preserved the
+then-current G2 0.47 and C2 0.48; the G2 is now separately verified on
+[normal 0.57](g2-retained-preview057.md). Normal Root artwork loading remains off. The [0.52 host result](artwork-closed-negative-052.md)
 qualifies its host cases, not either future TV experiment.
 
 The remaining question is whether the real installed provider can complete a

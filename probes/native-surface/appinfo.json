@@ -1,0 +1,15 @@
+{
+  "handlesRelaunch": false,
+  "icon": "icon.png",
+  "id": "com.ash.nativehome.proof",
+  "largeIcon": "icon.png",
+  "main": "surface-scene-proof",
+  "nativeLifeCycleInterfaceVersion": 2,
+  "requiredMemory": 96,
+  "requiredPermissions": [],
+  "title": "Luma Surface Scene Probe",
+  "transparent": false,
+  "type": "native",
+  "vendor": "Native Home development",
+  "version": "0.1.0"
+}

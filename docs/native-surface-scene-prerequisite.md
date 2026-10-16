@@ -8,9 +8,10 @@ record, with **no launch requests or native scene qualification**. The separate
 [prepared-package cleanup milestone](native-surface-prepared-cleanup-milestone.json)
 binds that limited result.
 
-The retained G2 0.47 and C2 0.48 applications remain the current verified normal
-installations, with normal Root artwork disabled. There is no new native,
-performance or physical-input qualification here. Cleanup of the known prepared
+That prepared-installation record preserved the then-current G2 0.47 and C2
+0.48. The current G2 baseline is separately verified [0.57](g2-retained-preview057.md);
+normal Root artwork remains off. Historical dates, locks, package pins and
+preference snapshots do not admit another run. Cleanup of the original prepared
 packages is qualified separately below.
 
 ## Why a separate probe
@@ -139,3 +140,27 @@ with separate local response, settlement, dispatch and actual scene intervals.
 The 0.53 diagnostic holds and this ordinary scene probe cannot serve as release
 performance measurements. Existing per-operation checks and Unknown barriers must
 remain intact while evaluating a faster design.
+
+## Public source for the next ordinary experiment
+
+The minimal [standalone probe](../probes/native-surface/README.md) is preserved
+in the repository. Its main, scoped runtime, identity and SDL event bridge retain
+the exact earlier source bytes. The new package adds the project's two font
+files and OFL licence, for six files total, since the unchanged runtime eagerly
+initializes text. The probe still draws black only. This package change and
+repository-relative build paths require new artifact hashes and a new audit;
+the earlier three-file package result does not transfer.
+
+Root ran the two render-gate tests, 28 inherited-build-override cases and strict
+Clippy. The five new host phase-boundary tests also pass. These checks do not
+establish either native actor or scene. A new two-phase carrier is being prepared
+against actual retained 0.57, with preparation completed before actor timing
+starts. All TV operations remain with the coordinator.
+
+Its proposed ordinary-launch precondition permits exact LG Home CARD with an
+optional exact natural LG screensaver, with a consistent fresh Active/Screen
+Saver power reply. It adds no wake, Home or settings request. Postlaunch sole
+Proof readiness and both-live sole Target CARD qualification stay strict.
+Blocked actor, namespace, installer or ownership evidence cannot be replaced by
+this prelaunch predicate. Root artwork, negative settlement and normal activation
+remain later steps.

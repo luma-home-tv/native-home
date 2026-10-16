@@ -69,6 +69,11 @@ readout with explicit failure/expiry withdrawal. Its separate
 [normal G2 delivery](docs/g2-retained-preview057.md) now verifies the captured row,
 fresh Home/Apps session and complete preservation/cleanup.
 
+The [ordinary held-window probe source](probes/native-surface/README.md) is now
+preserved as a separate workspace. Its next native test will establish whether
+webOS24 keeps that window alive beneath our own foreground test app; it adds no
+Root helper or normal artwork activation.
+
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
 It prepares two one-job artwork-withdrawal cases; normal Root artwork loading remains off.
