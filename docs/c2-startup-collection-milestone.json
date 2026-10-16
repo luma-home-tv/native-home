@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "publication_ready": true,
+  "milestone": "c2_native_startup_collection",
+  "date": "2026-10-16",
+  "qualified_scope": "New isolated Launch Target collection mechanics and observed argument shape, plus separately verified exact cleanup",
+  "device": {
+    "model": "OLED65C26LD",
+    "firmware": "23.25.55",
+    "webos": "24",
+    "sdk": "9.2.2"
+  },
+  "artifact": {
+    "package_version": "0.1.1",
+    "private_source_overlay": true,
+    "source_receipt_git_revision": "21db6993fd5aa5fafd0d42690591d6cad7cc5977",
+    "source_snapshot_sha256": "fac5064e4113ddde4daa0ea56ce124d6d6e17ebba1d766d491963b451841fe5c",
+    "selected_source_inputs": 102,
+    "pinned_framework_patch_files": 10,
+    "binary_sha256": "c9e0a23a3d71111274888be82406bab59a046edfb6a87329a240a188d39027a8",
+    "build_receipt_sha256": "12399fee9532f8e4b17615d177b939c0038e980c81331609df8cefe20915fda3",
+    "ipk_sha256": "b9962458542fbc85d5feb052010730714c419430031809e0824e8a995bfab7b8",
+    "package_receipt_sha256": "a65b3133f70bf20902234535ed903b0f093e23c52a1629244994852665509236"
+  },
+  "host_tool_sessions_not_TV_processes": [
+    {
+      "id": 7850,
+      "actual_exit": 1,
+      "scope": "Registration schema refusal before navigation or installation"
+    },
+    {
+      "id": 1440,
+      "actual_exit": 1,
+      "scope": "Bound native collection and supported removal; completion-stage mismatch blocked cleanup"
+    },
+    {
+      "id": 51768,
+      "actual_exit": 0,
+      "scope": "Separate exact saved completion recognition and owned output/upload cleanup only"
+    }
+  ],
+  "observation": {
+    "kernel_binding_reads": 7,
+    "early_report_bound": true,
+    "identical_completion_captures": 5,
+    "live_narrow_mapping_snapshots": 9,
+    "argument_count": 2,
+    "second_argument_bytes": 176,
+    "second_argument_shape": "JSON object",
+    "raw_argument_values_published": false,
+    "reported_hold_ms": 8000,
+    "native_exit_code_measured": false,
+    "Home_action_used": false,
+    "wake_used": false
+  },
+  "preservation": {
+    "retained_version": "0.20.0",
+    "bundle_entries": 42,
+    "bundle_files": 40,
+    "bundle_snapshots": 8,
+    "preferences_bytes": 216,
+    "original_preferences_modes": "0777 directory and file",
+    "Core_files": 5,
+    "native_preference_migration_qualified": false,
+    "typed_read_domains": 19,
+    "preservation_domains_including_Core_group": 20
+  },
+  "cleanup": {
+    "exact_report_files": 2,
+    "exact_staged_packages": 1,
+    "bounded_deletion_operations": 6,
+    "same_original_lease_released": true,
+    "private_host_agent_closed": true,
+    "install_launch_remove_navigation_repeated": false,
+    "supported_removal_subscription_terminal_claimed": false
+  },
+  "saved_audit": {
+    "named_checks": 9516,
+    "file_bindings": 5271,
+    "auditor_sha256": "f7a9d310ece0540e773690abeb2fd83af3cc230cbbcd921ad952a2c4b1cdca49",
+    "report_sha256": "54ce36232c72f61e1485eda2ca5ce25c94fffbcc1847a8c8135ef4233489e41a",
+    "Root_replay_host_tool_session": 27751,
+    "Root_replay_actual_exit": 0,
+    "Root_replay_method": "Unchanged audit function with main-equivalent fresh-output serialization wrapper",
+    "reports_byte_identical": true,
+    "Root_replay_receipt_sha256": "fb035c8662de89817cbdd0b0949bff81ef10478127b990b9021d06bf11f81240",
+    "counts_are_coverage_metrics": false
+  },
+  "not_qualified": [
+    "retained Preview credentials or privilege authority",
+    "Root artwork startup",
+    "preference migration",
+    "general temporary filesystem mapping or namespace survival",
+    "native process exit code",
+    "rendering or physical-panel behavior",
+    "performance",
+    "subsequent 0.48 native path",
+    "cause of earlier same-ID 0.47 missing host report"
+  ],
+  "limits": [
+    "Native self-reports require independent kernel binding.",
+    "Host agent and directory absence include saved source-bound closeout evidence.",
+    "Failed host operators remain exit 1.",
+    "Private source snapshot provenance does not assert a clean public Git checkout.",
+    "No retained upgrade or old dashboard runtime execution is established by this isolated observer."
+  ]
+}
