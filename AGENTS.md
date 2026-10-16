@@ -271,6 +271,10 @@ printing adds whitespace. All756library+10UI+84Python and strict Luma Clippy pas
 against136 inputs; synthetic host Controls captures/navigation also pass. Preserve
 the two initial old-position fixture failures. New matching ARM/package/native
 evidence still precedes promotion; retainedG2 remains057 and normalRoot off.
+Both actual061 ARM builds later pass at76117505dd837ead35e16a550ae194185ef3acfd/
+136inputs; helper bytes match060. A separately reviewed saved-ledger verifier
+passes10syntheticguards withnativecontext pinsunset. NoTV/package/native authority
+follows. Preserve actual local SDK/package audit and fresh native admission gates.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

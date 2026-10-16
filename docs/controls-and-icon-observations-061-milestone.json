@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.61.0 source and host validation",
-  "status": "host_checks_and_synthetic_layout_pass_native_pending",
+  "status": "host_and_ARM_builds_pass_native_pending",
   "base_revision": "47420b7a22acbba46c10265a070b7828f67845c1",
   "selected_source_inputs": 136,
   "source_inputs": {
@@ -658,11 +658,80 @@
     "static_header_and_rail_pixels_equal_between_reviewed_panels": true
   },
   "new_service_or_setter_or_Root_protocol": false,
-  "ARM_builds_qualified": false,
+  "ARM_builds_qualified": true,
   "native_execution_qualified": false,
   "normal061_retained": false,
   "retained_G2": "0.57.0 preserved",
   "TV_contacted": false,
   "C2_contacted": false,
-  "goal_complete": false
+  "goal_complete": false,
+  "functional_source_revision": "76117505dd837ead35e16a550ae194185ef3acfd",
+  "ARM_builds": {
+    "selected_source_inputs": 136,
+    "inputs_match_current_and_host_checks": true,
+    "artifacts": [
+      {
+        "name": "home-preview",
+        "bytes": 4517524,
+        "sha256": "1ab6ab8340fae8bee1d4d3da721cf131f4a9b3aa21a9aa4d3be30198dd82c71c",
+        "receipt_sha256": "c6fe7cb916fa750026d8955f03e9de1079aff0cbe435fc6dd48dfbf3ee852378",
+        "terminal_sha256": "b8bd9c5521bbd139f03cf50b539d3e47411a0a04a6adffaf5cce1c55942bb689",
+        "log_sha256": "c7328877baf715ebc7de96c8f9753d12a675823a7dba14b9921fa546d759d1a8"
+      },
+      {
+        "name": "artwork-broker",
+        "bytes": 908140,
+        "sha256": "1f75909fa26765739aca36a6ac89b668d1a1d6ece102bcb8c4a4fcf7e8b3e0d1",
+        "receipt_sha256": "f7f5057edd4fea8486e5a55cff30bbd386e231016c0202e7b7fd1966c30dadaa",
+        "terminal_sha256": "d898f115eebab61ff59ea6204299f605edcd74f84aa99f9fa7f43d52fdcf0a31",
+        "log_sha256": "bc4559d04dfd618a052f7f33b38097cfe6b2fe242e27339ea784887ed2563934"
+      }
+    ],
+    "coordinator_readback_sha256": "5ea8fdb1c595ac6cb588c0f1131d805c1414ca5f97ce37be4ed56d3d729bc25b",
+    "ELF_execution_or_native_permission_qualified": false
+  },
+  "host_build_git_revision_recorded": "47420b7a22acbba46c10265a070b7828f67845c1",
+  "host_build_inputs_equal_functional_commit": true,
+  "future_saved_ledger_verifier": {
+    "source_sha256": "74ce11965446ef012d5ab116cdf45f9235847514e9220b659208f287f51c2414",
+    "manifest_sha256": "b8346cd44139dd3251223ba7d54ab28b2ebdb83d8d7f19fd0e0645de15a2207b",
+    "guard_cases": 10,
+    "actual_guard_returncode": 0,
+    "independent_source_review": "clear",
+    "coordinator_guard_closeout_sha256": "f4aadd597233ac11d21ee18080c6a85dbca5057c3e37b0e567d0630d244a6b2e",
+    "native_pins_admitted": false,
+    "actual_native_ledger_verified": false
+  },
+  "actual_offline_packages": {
+    "items": [
+      {
+        "role": "normal",
+        "IPK_sha256": "06d03f9ff4da683f08a0e89f85169d30816c2ea6c2174d6ffe9cf0061f1f2d8b",
+        "IPK_bytes": 2619172,
+        "receipt_sha256": "56cac11a6e8601e74480f23c7ae53b7424d512b43e032742710e31d44fe11983",
+        "sidecar_sha256": "f76c2d59d6c15ad535beb794fe9600acc1ddd7a3b2d11ddb6a18c7ba8e5173c1",
+        "source_revision": "76117505dd837ead35e16a550ae194185ef3acfd"
+      },
+      {
+        "role": "preparation0",
+        "IPK_sha256": "c59569d914bd08105272575ff6c91262733aac3c8da36a3a50af271868ee4976",
+        "IPK_bytes": 2619392,
+        "receipt_sha256": "c389d793bc0d7551e8ad9b34ffb33e45e0771d0cc4b6bc31adf188a7415a551e",
+        "sidecar_sha256": "f76c2d59d6c15ad535beb794fe9600acc1ddd7a3b2d11ddb6a18c7ba8e5173c1",
+        "source_revision": "76117505dd837ead35e16a550ae194185ef3acfd"
+      },
+      {
+        "role": "preparation16",
+        "IPK_sha256": "6c6a00852c052ade3244ddcc77ffe644c8b24091b58623c7a0c6290bfe5e906e",
+        "IPK_bytes": 2619466,
+        "receipt_sha256": "be3dd776b786e58084886cc61e8bef402fc8c9e333f2e095ddfb945f83d53ef4",
+        "sidecar_sha256": "f76c2d59d6c15ad535beb794fe9600acc1ddd7a3b2d11ddb6a18c7ba8e5173c1",
+        "source_revision": "76117505dd837ead35e16a550ae194185ef3acfd"
+      }
+    ],
+    "coordinator_readback_sha256": "0a4dc25fae05a36b7e81facbc74a51f954b24f47ca709e325e107869fb113d98",
+    "fresh_private_nonce_sets_distinct": true,
+    "independent_SDK_artifact_audit_qualified": false,
+    "native_admission_qualified": false
+  }
 }

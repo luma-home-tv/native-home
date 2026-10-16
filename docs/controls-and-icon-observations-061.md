@@ -49,8 +49,14 @@ the updated Picture, General and Network layout. The actual scripted host
 six-category navigation and Back/focus checks pass without setting or app actions.
 These captures do not establish TV presentation or current TV values.
 
-The [milestone](controls-and-icon-observations-061-milestone.json) binds host
-checks. This source work does not qualify execution on the G2, a retained update,
+Both matching ARM release builds now pass against the same 136 inputs at
+`76117505dd837ead35e16a550ae194185ef3acfd`. The helper is byte-identical to 0.60;
+the dashboard contains the new UI and observations. A separately reviewed saved
+ledger verifier passes ten synthetic guard cases, with actual native context
+pins still unset. No TV was contacted by these builds or guards.
+
+The [milestone](controls-and-icon-observations-061-milestone.json) binds the
+checks and actual artifacts. This work does not qualify execution on the G2, a retained update,
 new controls, full icon coverage or responsiveness. The current retained G2
 remains 0.57. The next native workflow needs independently closed preparation
 batches, cache continuity, actual full-key consumer observations and verified
