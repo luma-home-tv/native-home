@@ -108,6 +108,12 @@ The earlier macOS temporary-ancestor guard fixture failure also remains preserve
 The final private audit report SHA-256 is
 `8b768a0db92bb6a5138fb9582ba506957acd39446169c749aa61a9b2d893b6d6`.
 
+A separate [read-only G2 prerequisite](ordinary-artwork-cache-058-prerequisite.md)
+now passes with independently replayed saved evidence and known coordination
+closeout. It confirms the current 0.57 baseline, unchanged preferences, prospective
+Home metadata eligibility and the fixed Core reader's precise stat format. It
+runs neither new executable and grants no ordinary cache or Root permission.
+
 Backed-up G2 diagnostic population, ordinary cache-hit frames with zero Root
 dispatch and exact 0.57 restoration are the next gates. Native testing must use fresh current state and new
 leases/dates; the older 0.46 operator is not reusable. Exact restoration means

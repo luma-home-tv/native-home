@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "status": "G2_readonly_prerequisite_and_known_coordination_closeout_verified",
+  "retained_G2": "0.57.0 unchanged",
+  "native058_executed": false,
+  "C2_contacted": false,
+  "operator": {
+    "sha256": "f264070f42433a0c0a559e0f44301319c04104d218db53244d1b273d2700ef95",
+    "candidate_sha256": "afefdaee5150517a95e524c8da3a97e119a4f6c1c920de9d3a83099bf8df5b96",
+    "actual_exit": 0,
+    "terminal": "9f6ad5",
+    "elapsed_seconds": 18.922887086868286,
+    "operation_budget_seconds": 300,
+    "new_only_lease_seconds": 600,
+    "lease_and_agent_closeout": true,
+    "app_install_launch_input_settings_or_Root_requests": false
+  },
+  "observed": {
+    "current057_bundle_entries": 32,
+    "current057_bundle_files": 30,
+    "current057_bundle_matches_verified_reference": true,
+    "private_preferences_bytes_and_measured_metadata_preserved": true,
+    "prospective_Home_three_source_metadata_prerequisite": true,
+    "fixed_reader_stat_format_supported": true,
+    "planned_context_reader_hash_remeasured_matches": true,
+    "fixed_Host_cache_path_absent": true,
+    "ordinary_UID_and_Preview_executables_absent": true,
+    "known_Root_scope_absent": true
+  },
+  "saved_audit": {
+    "first_reader_sha256": "0440cf136bb4364513e4a40b04b013af749246c92db3d9a8d3d74585d69cb3c4",
+    "first_actual_exit": 1,
+    "first_terminal": "1ab71b",
+    "first_failure": "Owner TTL uses seconds, not CLI minutes",
+    "corrected_reader_sha256": "c5e3852219331b80fc22c0af95d60e8006cde89812247dae888d7e0e54e884cf",
+    "actual_exit": 0,
+    "terminal": "999229",
+    "Root_replay_actual_exit": 0,
+    "Root_replay_terminal": "270683",
+    "Root_replay_byte_identical": true,
+    "report_sha256": "22cce970794698b9f7ff57b6281e899cab3d2944adb520b8f57dadcfec05a3c1",
+    "original_host_operations_accounted": 94,
+    "bound_evidence_files": 471
+  },
+  "unqualified": [
+    "0.58 native execution, producer permission or cache hits",
+    "ordinary cache-file IO and live namespace mapping",
+    "native source expiry/withdrawal and lifecycle",
+    "independent icon pixel identity or physical panel",
+    "full retained runtime/Core preservation",
+    "individual host request wallclock timestamps",
+    "future trial admission or Root/Ticket recovery",
+    "normal performance, broad apps, C2"
+  ]
+}

@@ -93,6 +93,15 @@ proof. No 0.58 code has run on a TV; preserve retained057 and require fresh nati
 population, ordinary hit evidence, known cleanup and exact restoration before
 promotion. Keep eviction and stale-slot recovery explicitly unfinished.
 
+`docs/ordinary-artwork-cache-058-prerequisite.md` records the later read-only G2
+check and independent saved audit/byte-identical Root replay. Current057 full
+bundle, fresh unchanged private preferences, metadata-only Home eligibility,
+fixed Core reader hash/stat format and exact lease/agent closeout pass. Preserve
+the first saved-reader TTL-units failure; correction required no TV rerun. No058
+code, ordinary cache IO/permissions/live namespace, pixels or full runtime/Core
+preservation is qualified. Future native trials need fresh state/new leases;
+this catalogue and dated prerequisite window cannot grant later freshness.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

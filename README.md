@@ -81,7 +81,9 @@ an explicit diagnostic producer kept separate from ordinary interaction. All
 711 Rust host tests, strict Clippy, 72 Python packaging checks and matching ARM
 dashboard/helper builds pass. Normal navigation creates no Root artwork runtime.
 Native population, cache-hit frames and restoration remain unqualified; neither
-retained TV installation changed.
+retained TV installation changed. A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequisite.md)
+now passes with independent saved replay; it grants no 0.58 execution or cache
+permission qualification.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.
