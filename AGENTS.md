@@ -38,6 +38,18 @@ pass. Runtime logs/session receipts remain; old runtime bytes were not rehashed.
 Normal Root artwork stays off. No new physical typing, Target/settings/favourite
 mutation, all-app artwork, C2 or normal performance qualification is implied.
 
+The separate `docs/g2-normal055-app-launch-return.md` now qualifies one owned
+native Target drawer launch and a later explicit fresh normal Preview return,
+with complete known Target/staging removal, current055/prefs/Core preservation
+and released original lease/host agent. Independent saved audit and Root replay
+agree byte-for-byte. Preserve the original exit1/full-workflow false: its single
+acknowledged remove had not completed at the immediate registry check; the
+separate exit0 continuation observed completion without retry. This is neither
+automatic nor same-process return, arbitrary-app coverage, OS Target exit status,
+physical input, performance, Root artwork or 056 deployment. The initial saved
+reader failure remains recorded; correcting its nested-record comparison required
+no TV rerun.
+
 The earlier retained G2 installation was 0.47.0, with dashboard ELF
 SHA-256 `72436fbe8717d7a65fa915ca1569ba1b0337cfec944ff348b1cf65e3742f1feb`
 from frozen functional source `be6c06a341d72be1d06e92819a1be6c71ed52048`.

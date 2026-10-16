@@ -51,6 +51,11 @@ Search/IME. Normal Root artwork remains off. The separate
 [0.49 isolated G2 scheduling result](docs/artwork-transition-049.md) does not
 activate that provider in either retained app.
 
+The [normal G2 app-launch/return observation](docs/g2-normal055-app-launch-return.md)
+adds a real drawer launch of an owned native application and a later fresh Luma
+session, with independently replayed removal and preservation checks. Its
+original operator remains failed; the later continuation is recorded separately.
+
 The [0.56 TV-information source](docs/device-information-056.md) adds native
 read-only model, software and SDK-version rows under General using existing
 readings. Host checks pass; it has not been deployed to either TV.

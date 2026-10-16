@@ -64,8 +64,10 @@ rerun was needed for that saved-evidence correction.
 
 ## Remaining scope
 
-This qualifies the bounded normal delivery and empty Search lifecycle. It does
-not qualify physical typing on this executable, app-launch/return, settings
+This qualifies the bounded normal delivery and empty Search lifecycle. The later
+[owned app-launch/fresh-return observation](g2-normal055-app-launch-return.md)
+has separate original-failure and continuation records, independently replayed.
+This delivery itself does not qualify physical typing on this executable, settings
 handoff, favourite mutations, performance, C2 behavior or Root artwork. The
 [0.54 human typing result](keyboard-observer-054.md) remains bound to its own
 executable. The [new empty-state copy](drawer-empty-states.md) was not exercised

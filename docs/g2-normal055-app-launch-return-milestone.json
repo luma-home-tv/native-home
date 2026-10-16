@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "status": "owned_application_launch_later_cleanup_and_fresh_return_independently_replayed",
+  "retained_version": "0.55.0",
+  "compiled_source_revision": "46f431cd3f601810a41d76c929b9d7392d223ae1",
+  "dashboard_sha256": "9acd524e84a3f5c2781fb472d4766016516fca4d287e3054c9185934da31617a",
+  "retained_install_or_uninstall_requested": false,
+  "original_operator": {
+    "actual_exit": 1,
+    "full_workflow_qualified": false,
+    "reason": "Immediate post-removal catalogue still contained Target after the one acknowledged SDK remove",
+    "sdk_remove_requests": 1,
+    "removal_acknowledgement_is_completion": false,
+    "original_failure_reclassified": false
+  },
+  "observations": {
+    "owned_application_drawer_launch": true,
+    "native_action_admitted_and_verified": true,
+    "Target_live_process_native_record_and_foreground_bound": true,
+    "Target_OS_exit_status_measured": false,
+    "original_Luma_exit_reason": "window_hidden",
+    "fresh_return_requires_explicit_SDK_launch": true,
+    "fresh_return_navigation": ["Home", "Apps", "Home", "Back exit"],
+    "return_same_Luma_process": false,
+    "packaged_texture_uploads_and_deletions": [13, 7],
+    "packaged_workers_joined": true,
+    "packaged_textures_remaining": 0,
+    "packaged_icon_backend_errors": 0,
+    "preference_write_attempts": 0
+  },
+  "separate_continuation": {
+    "actual_exit": 0,
+    "same_original_lease_and_absolute_limits": true,
+    "new_sdk_install_or_remove_requests": 0,
+    "new_Target_launches": 0,
+    "completed_original_removal_observed": true,
+    "only_positively_bound_runtime_and_staging_removed": true,
+    "fresh_return_completed": true,
+    "lease_release_verified": true,
+    "private_host_agent_exit_verified": true
+  },
+  "preservation": {
+    "full_retained_bundle_entries": 32,
+    "full_retained_bundle_exact": true,
+    "private_preferences_bytes_owners_modes_exact": true,
+    "Core_file_digests_matched": 5,
+    "reply_domains_matched": 19,
+    "normal_runtime_logs_and_receipts_retained": true,
+    "preexisting_runtime_bytes_rehashed": false,
+    "normal_Root_artwork_enabled": false,
+    "C2_contacted": false
+  },
+  "independent_saved_audit": {
+    "source_sha256": "14a61076bc776d2d9ad712cf09087295ba36ba661ce968842a7ac15c4525b7f6",
+    "report_sha256": "2b478b320bc8fbcf8681c4194c5c6e71606ef8d67ee46cefd94dd4b7cfbd2e1a",
+    "bound_evidence_files": 8845,
+    "actual_exit": 0,
+    "actual_terminal": "1944df",
+    "coordinator_replay_actual_exit": 0,
+    "coordinator_replay_terminal": "70e563",
+    "coordinator_replay_report_byte_identical": true,
+    "coordinator_adaptation": "Only AST report destination; original source identity retained",
+    "first_executed_reader_exit": 1,
+    "first_reader_correction": "Compare the exact nested path/directory record to the original live mapping",
+    "TV_rerun_for_reader_correction": false
+  },
+  "unqualified": [
+    "original full operator workflow",
+    "automatic return or LG Home replacement",
+    "arbitrary household application compatibility",
+    "OS exit status of Target",
+    "physical input",
+    "performance or general reliability",
+    "settings handoff or favourite mutation",
+    "all-app artwork or normal Root artwork",
+    "C2 behavior",
+    "0.56 native presentation"
+  ]
+}
