@@ -130,6 +130,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Presence composes only an already explicit diagnostic marker path. The
     // actual profile/self-ELF read is performed later on its artwork worker.
     let mut preview_cache_sidecar_present = false;
+    let preparation_present = match std::fs::symlink_metadata(
+        assets.join(native_home::artwork_cache_preparation_selection::NAME),
+    ) {
+        Ok(_) => true,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        Err(error) => return Err(error.into()),
+    };
+    if preparation_present && !assets.join("preview-artwork-admission.json").exists() {
+        return Err("Catalogue preparation requires explicit Preview admission".into());
+    }
+    let mut preview_preparation_selection = None;
     let preview_artwork_marker = if assets.join("preview-artwork-admission.json").exists() {
         if !device
             || interactive
@@ -152,6 +163,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "icons",
             "preview-artwork-admission.json",
             "artwork-cache-producer.json",
+            "artwork-cache-preparation.json",
         ];
         for entry in std::fs::read_dir(&assets)? {
             let name = entry?.file_name();
@@ -162,9 +174,20 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
         }
-        Some(native_home::broker_startup_proof::read_marker(
+        let marker = native_home::broker_startup_proof::read_marker(
             &assets.join("preview-artwork-admission.json"),
-        )?)
+        )?;
+        if preparation_present {
+            if !preview_cache_sidecar_present {
+                return Err("Catalogue preparation requires its fixed producer association".into());
+            }
+            preview_preparation_selection = Some(
+                native_home::artwork_cache_preparation_selection::Selection::read(
+                    &assets, &marker,
+                )?,
+            );
+        }
+        Some(marker)
     } else {
         None
     };
@@ -818,7 +841,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut preview_resource_worker_created = false;
     let mut diagnostic_cache_population_selected = false;
     if let (Some(marker), Some(preflight)) = (&preview_artwork_marker, &preview_artwork_preflight) {
-        if native_home::preview_artwork_admission::admitted(preflight) {
+        if preview_preparation_selection.is_none()
+            && native_home::preview_artwork_admission::admitted(preflight)
+        {
             let worker = if preview_cache_sidecar_present {
                 diagnostic_cache_population_selected = true;
                 native_home::artwork_installed_provider::InstalledProvider::start_preview_cache_population_worker(
@@ -1627,23 +1652,41 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
     let preview_artwork_admission = if let Some(preflight) = preview_artwork_preflight {
-        let observation = if preview_resource_worker_created {
-            Some(native_home::artwork_installed_proof::run(
+        if let Some(selection) = &preview_preparation_selection {
+            let preparation = native_home::artwork_cache_preparation_proof::run(
                 &mut shell,
                 &window,
                 &output,
-                &mut now,
+                preview_artwork_marker
+                    .as_ref()
+                    .ok_or("Missing preparation admission marker")?,
+                selection.cursor(),
+                preflight,
+                live_origin,
                 |shell| poll_live(&live_worker, shell, live_origin, &mut live_history),
-            )?)
+            )?;
+            preview_resource_worker_created = preparation["resource_worker_created"] == true;
+            diagnostic_cache_population_selected = preview_resource_worker_created;
+            Some(preparation)
         } else {
-            None
-        };
-        Some(native_home::preview_artwork_admission::complete(
-            &output,
-            preflight,
-            preview_resource_worker_created,
-            observation,
-        )?)
+            let observation = if preview_resource_worker_created {
+                Some(native_home::artwork_installed_proof::run(
+                    &mut shell,
+                    &window,
+                    &output,
+                    &mut now,
+                    |shell| poll_live(&live_worker, shell, live_origin, &mut live_history),
+                )?)
+            } else {
+                None
+            };
+            Some(native_home::preview_artwork_admission::complete(
+                &output,
+                preflight,
+                preview_resource_worker_created,
+                observation,
+            )?)
+        }
     } else {
         None
     };
@@ -2346,6 +2389,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     report["ordinary_current_cache_selected"] = serde_json::json!(ordinary_current_cache_selected);
     report["diagnostic_cache_population_selected"] =
         serde_json::json!(diagnostic_cache_population_selected);
+    report["diagnostic_catalogue_preparation_selected"] =
+        serde_json::json!(preview_preparation_selection.is_some());
     report["broker_negative_proof"] = serde_json::json!(broker_negative_receipt);
     report["installed_artwork_proof"] = serde_json::json!(installed_artwork_receipt);
     report["preview_artwork_admission"] = serde_json::json!(preview_artwork_admission);

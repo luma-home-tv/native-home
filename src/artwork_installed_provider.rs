@@ -29,6 +29,8 @@ pub struct InstalledProvider {
     // Explicit diagnostic opt-in only; every existing factory leaves this None.
     #[cfg(any(target_arch = "arm", test))]
     cache_publisher: Option<CachePublisher>,
+    #[cfg(any(target_arch = "arm", test))]
+    last_publication: Option<crate::artwork_preparation_events::Publication>,
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
@@ -54,6 +56,67 @@ impl Provider for Init {
             Ok(provider) => provider.fetch(source, deadline, cancellation),
             Err(error) => Err(*error),
         }
+    }
+}
+#[cfg(target_arch = "arm")]
+struct PreparationProvider {
+    inner: Init,
+    events: std::sync::mpsc::SyncSender<crate::artwork_preparation_events::Attempt>,
+    sequence: u8,
+}
+#[cfg(target_arch = "arm")]
+impl Provider for PreparationProvider {
+    fn initial_settlement(&self) -> SessionSettlement {
+        self.inner.initial_settlement()
+    }
+    fn transition_settlement(&self) -> SessionSettlement {
+        self.inner.transition_settlement()
+    }
+    fn fetch(
+        &mut self,
+        source: &Source,
+        deadline: Instant,
+        cancellation: &Cancellation,
+    ) -> Result<EncodedFile, ProviderError> {
+        // Do not reinterpret the existing observer cap or manufacture a 17th event.
+        if self.sequence == 16 {
+            if let Ok(provider) = self.inner.0.as_mut() {
+                provider.ticket_resolved = false;
+                provider.last_publication = None;
+            }
+            return Err(ProviderError::Denied);
+        }
+        self.sequence += 1;
+        let before = self
+            .inner
+            .0
+            .as_ref()
+            .ok()
+            .and_then(|p| p.observation.as_ref())
+            .map(|o| o.started);
+        let result = self.inner.fetch(source, deadline, cancellation);
+        let provider = self.inner.0.as_ref().ok();
+        let after = provider
+            .and_then(|p| p.observation.as_ref())
+            .map(|o| o.started);
+        let observation_index = match (before, after) {
+            (Some(before), Some(after)) if after == before + 1 => Some(after),
+            _ => None,
+        };
+        let event = crate::artwork_preparation_events::Attempt {
+            sequence: self.sequence,
+            source_key: source.key().clone(),
+            observation_index,
+            current_ticket_resolved: provider.is_some_and(|p| p.ticket_resolved),
+            settlement: self.transition_settlement().into(),
+            encoded_returned: result.is_ok(),
+            provider_error: result.as_ref().err().map(|e| format!("{e:?}")),
+            publication: provider.and_then(|p| p.last_publication.clone()),
+        };
+        // Never block the fetch on observation. Missing/full/disconnected events
+        // are a runner barrier, not grounds for changing the Root result.
+        let _ = self.events.try_send(event);
+        result
     }
 }
 /// Diagnostic only. This does not grant remote/process/guard authority.
@@ -245,6 +308,53 @@ impl InstalledProvider {
             ))
         }
     }
+    /// Explicit new finite preparation factory. Existing population/proof
+    /// factories retain their original return types and behavior. Events contain
+    /// worker observations only; external kernel/child/pending proof is separate.
+    pub fn start_preview_preparation_worker(
+        marker: Marker,
+        output: PathBuf,
+    ) -> std::io::Result<(
+        crate::artwork_worker::Worker,
+        std::sync::mpsc::Receiver<crate::artwork_preparation_events::Attempt>,
+    )> {
+        #[cfg(target_arch = "arm")]
+        {
+            let (tx, rx) = std::sync::mpsc::sync_channel(1);
+            let worker = crate::artwork_worker::Worker::start(move || {
+                let result =
+                    Self::new_for_profile(marker, Profile::Preview).and_then(|mut provider| {
+                        let expected = population_expected(
+                            &provider.marker,
+                            crate::cache_producer_profile::load_current,
+                        )?;
+                        let observation = ProofObservation::open(output, Profile::Preview)
+                            .map_err(|_| ProviderError::Denied)?;
+                        let cache = crate::durable_icon_cache::Cache::open_current(
+                            crate::durable_icon_cache::Config::default(),
+                        )
+                        .map_err(|_| ProviderError::Unavailable)?;
+                        provider.observation = Some(observation);
+                        provider.cache_publisher = Some(CachePublisher { cache, expected });
+                        Ok(provider)
+                    });
+                PreparationProvider {
+                    inner: Init(result),
+                    events: tx,
+                    sequence: 0,
+                }
+            })?;
+            Ok((worker, rx))
+        }
+        #[cfg(not(target_arch = "arm"))]
+        {
+            let _ = (marker, output);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "Preparation requires explicit native Preview diagnostics",
+            ))
+        }
+    }
     pub fn start_worker(marker: Marker) -> std::io::Result<crate::artwork_worker::Worker> {
         crate::artwork_worker::Worker::start(move || Init(Self::new(marker)))
     }
@@ -321,6 +431,7 @@ impl InstalledProvider {
                 guard: Some(guard),
                 last_attempt: None,
                 cache_publisher: None,
+                last_publication: None,
             })
         }
         #[cfg(not(target_arch = "arm"))]
@@ -377,6 +488,7 @@ impl Provider for InstalledProvider {
         #[cfg(any(target_arch = "arm", test))]
         {
             self.last_attempt = None;
+            self.last_publication = None;
         }
         if self.quarantined {
             return Err(ProviderError::Unavailable);
@@ -480,7 +592,7 @@ impl InstalledProvider {
         };
         if let Some(observer) = self.observation.as_ref() {
             let expected = publisher.expected.clone();
-            let _ = publish_positive_with(
+            let outcome = publish_positive_with(
                 self,
                 source,
                 result,
@@ -489,6 +601,16 @@ impl InstalledProvider {
                 |source, encoded, producer| publisher.cache.publish(source, encoded, producer),
                 |receipt| observer.cache_result(receipt),
             );
+            if let (Some((succeeded, receipt_written)), Ok(encoded)) = (outcome, result) {
+                self.last_publication = Some(crate::artwork_preparation_events::Publication {
+                    encoded_sha256: encoded.digest,
+                    encoded_bytes: encoded.bytes.len(),
+                    source_identity: encoded.identity.clone(),
+                    producer: expected.version(),
+                    succeeded,
+                    receipt_written,
+                });
+            }
         }
         self.cache_publisher = Some(publisher);
     }
@@ -2530,6 +2652,7 @@ mod settlement_tests {
             guard: Some(Guard::open_for_test(&directory.0, Profile::Proof).unwrap()),
             last_attempt: None,
             cache_publisher: None,
+            last_publication: None,
         }
     }
     fn identity(p: &InstalledProvider) -> PendingIdentity {

@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.58.0' if main == 'home-preview' else '0.1.0'
+version = '0.59.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -56,6 +56,62 @@ elif closed_negative_case:
     raise ValueError('Closed-negative artwork case requires explicit mode')
 artwork_guard_relaunch_proof = os.environ.get('NATIVE_HOME_ARTWORK_GUARD_RELAUNCH_PROOF') == '1'
 preview_artwork_admission = os.environ.get('NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION') == '1'
+# Explicit catalogue preparation is an additional selector within the existing
+# admitted Preview diagnostic. Producer metadata/normal sidecar alone is inert.
+cache_preparation = 'NATIVE_HOME_CACHE_PREPARATION' in os.environ
+cache_preparation_marker = None
+cache_preparation_pins_raw = None
+cache_preparation_pins_path = None
+if cache_preparation and os.environ['NATIVE_HOME_CACHE_PREPARATION'] != '1':
+    raise ValueError('Catalogue preparation mode must be explicitly 1')
+if 'NATIVE_HOME_CACHE_PREPARATION_PINS' in os.environ and not cache_preparation:
+    raise ValueError('Catalogue preparation pins require explicit mode')
+if cache_preparation:
+    preparation_environment = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK',
+        'NATIVE_HOME_ARM_BINARY', 'NATIVE_HOME_SNAPSHOT_ASSETS', 'NATIVE_HOME_PREVIEW_ICON',
+        'NATIVE_HOME_CARGO', 'NATIVE_HOME_RUST_TOOLCHAIN',
+        'NATIVE_HOME_CACHE_PREPARATION', 'NATIVE_HOME_CACHE_PREPARATION_PINS',
+        'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION', 'NATIVE_HOME_CACHE_PRODUCER_BROKER',
+        'NATIVE_HOME_BROKER_STARTUP_PINS', 'NATIVE_HOME_STARTUP_BROKER_BINARY'}
+    preparation_others = [key for key in os.environ
+        if key.startswith('NATIVE_HOME_') and key not in preparation_environment]
+    if (main != 'home-preview' or build_receipt['target'] != 'arm' or test_identity or
+        app_id != 'com.ash.nativehome.preview' or interactive or not preview_artwork_admission or
+        not os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER') or
+        not os.environ.get('NATIVE_HOME_CACHE_PREPARATION_PINS') or preparation_others):
+        raise ValueError('Catalogue preparation requires only actual non-interactive ARM Preview, existing admission/cache producer and closed parameters')
+    def preparation_pairs(pairs):
+        value = {}
+        for key,item in pairs:
+            if key in value: raise ValueError('Duplicate catalogue preparation field')
+            value[key] = item
+        return value
+    def preparation_constant(_):
+        raise ValueError('Nonfinite catalogue preparation JSON')
+    from build_provenance import _read as read_preparation_input
+    cache_preparation_pins_path = Path(os.environ['NATIVE_HOME_CACHE_PREPARATION_PINS']).absolute()
+    cache_preparation_pins_raw = read_preparation_input(cache_preparation_pins_path,
+                                                       private=True, limit=4096)
+    marker = json.loads(cache_preparation_pins_raw, object_pairs_hook=preparation_pairs,
+                        parse_constant=preparation_constant)
+    if (type(marker) is not dict or set(marker) != {'schema','ui_sha256','cursor'} or
+        type(marker['schema']) is not int or marker['schema'] != 1 or
+        type(marker['ui_sha256']) is not str or len(marker['ui_sha256']) != 64 or
+        any(c not in '0123456789abcdef' for c in marker['ui_sha256']) or
+        marker['ui_sha256'] != build_receipt['binary']['sha256']):
+        raise ValueError('Closed catalogue preparation pins must match the actual ARM UI')
+    cursor = marker['cursor']
+    if cursor is not None:
+        if (type(cursor) is not dict or set(cursor) != {'schema','keyset_sha256','next_ordinal'} or
+            type(cursor['schema']) is not int or cursor['schema'] != 1 or
+            type(cursor['keyset_sha256']) is not str or len(cursor['keyset_sha256']) != 64 or
+            any(c not in '0123456789abcdef' for c in cursor['keyset_sha256']) or
+            type(cursor['next_ordinal']) is not int or not 0 <= cursor['next_ordinal'] <= 512 or
+            len(json.dumps(cursor,separators=(',',':')).encode('utf-8')) > 2048):
+            raise ValueError('Closed bounded enumeration cursor required; no execution authority')
+        cursor = {'schema':1,'keyset_sha256':cursor['keyset_sha256'],
+                  'next_ordinal':cursor['next_ordinal']}
+    cache_preparation_marker = {'schema':1,'ui_sha256':marker['ui_sha256'],'cursor':cursor}
 preferences_migration_mode = os.environ.get('NATIVE_HOME_PREFERENCES_MIGRATION_PROOF', '')
 if preferences_migration_mode not in ('', '1'):
     raise ValueError('Preferences migration mode must be explicitly 1')
@@ -79,6 +135,8 @@ if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
     else:
         cache_environment.update({'NATIVE_HOME_INTERACTIVE_SESSION',
             'NATIVE_HOME_SESSION_CAPTURE_PROOF'})
+    if cache_preparation:
+        cache_environment.update({'NATIVE_HOME_CACHE_PREPARATION','NATIVE_HOME_CACHE_PREPARATION_PINS'})
     cache_others = [k for k,v in os.environ.items() if v and
         k.startswith('NATIVE_HOME_') and k not in cache_environment]
     if (not cache_producer_binary or main != 'home-preview' or test_identity or
@@ -193,6 +251,8 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof or c
         if cache_producer is not None:
             preview_environment.update({'NATIVE_HOME_CACHE_PRODUCER_BROKER',
                                         'NATIVE_HOME_RUST_TOOLCHAIN'})
+        if cache_preparation:
+            preview_environment.update({'NATIVE_HOME_CACHE_PREPARATION','NATIVE_HOME_CACHE_PREPARATION_PINS'})
         others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and k not in preview_environment]
         if main != 'home-preview' or build_receipt['target'] != 'arm' or app_id != 'com.ash.nativehome.preview' or test_identity or interactive or others or artwork_target_fixture:
             raise ValueError('Preview artwork admission requires only actual non-interactive Preview and no trial/action parameters')
@@ -346,6 +406,10 @@ if cache_producer is not None:
     cache_sidecar = (json.dumps(cache_producer, sort_keys=True, separators=(',', ':')) + '\n').encode()
     (stage / 'artwork-cache-producer.json').write_bytes(cache_sidecar)
     (stage / 'artwork-cache-producer.json').chmod(0o644)
+if cache_preparation:
+    cache_preparation_raw = (json.dumps(cache_preparation_marker,separators=(',',':')) + '\n').encode()
+    (stage / 'artwork-cache-preparation.json').write_bytes(cache_preparation_raw)
+    (stage / 'artwork-cache-preparation.json').chmod(0o644)
 if preferences_migration_proof:
     (stage / 'appinfo.json').chmod(0o644)
     marker_path = stage / 'preferences-migration-proof.json'
@@ -495,6 +559,11 @@ if cache_producer is not None:
         raise RuntimeError('Cache producer helper receipt bytes changed during packaging')
     if (stage / 'artwork-cache-producer.json').read_bytes() != cache_sidecar:
         raise RuntimeError('Staged cache producer association changed during packaging')
+if cache_preparation:
+    if read_preparation_input(cache_preparation_pins_path, private=True, limit=4096) != cache_preparation_pins_raw:
+        raise RuntimeError('Catalogue preparation input changed during packaging')
+    if (stage / 'artwork-cache-preparation.json').read_bytes() != cache_preparation_raw:
+        raise RuntimeError('Staged catalogue preparation marker changed during packaging')
 control = ('Package: ' + app_id + '\nVersion: ' + version + '\nSection: misc\nPriority: optional\n'
            'Architecture: arm\nMaintainer: Native Home development\n'
            'Description: Isolated native interface preview\n').encode()
@@ -547,6 +616,14 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'closed_negative_artwork_case': closed_negative_case or None,
            'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
            'preview_artwork_admission': preview_artwork_admission,
+           'cache_preparation_selected': cache_preparation,
+           'cache_preparation_marker_sha256': hashlib.sha256(cache_preparation_raw).hexdigest() if cache_preparation else None,
+           'cache_preparation_pins_sha256': hashlib.sha256(cache_preparation_pins_raw).hexdigest() if cache_preparation else None,
+           'cache_preparation_cursor': cache_preparation_marker['cursor'] if cache_preparation else None,
+           'cache_preparation_scope': 'catalogue_preferred_enumeration_only' if cache_preparation else None,
+           'cache_preparation_execution_verified': False,
+           'cache_preparation_prepared_coverage_verified': False,
+           'cache_preparation_Root_authority_granted': False,
            'cache_producer': cache_producer,
            'cache_producer_sidecar_sha256': hashlib.sha256(cache_sidecar).hexdigest() if cache_producer is not None else None,
            'cache_producer_helper_receipt_sha256': hashlib.sha256(cache_producer_helper_receipt_raw).hexdigest() if cache_producer is not None else None,

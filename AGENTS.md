@@ -165,6 +165,23 @@ guards draw/capture/normalization/swap after observed input/departure. Source
 review, the existing admission-refusal unit case and strict Clippy pass; a native
 interrupted-window test and observation during synchronous capture remain open.
 
+`docs/artwork-catalogue-preparation-059.md` records the integrated explicit
+preparation recipe/strict package selection. All 737 library/10 UI and 84 Python
+host checks plus strict Clippy pass; source/packaging reviews are clear. Main
+keeps Shell RootRuntime/actions/persistence/setter workers off; ordinary sidecars
+do not select preparation. Require exact Work/fullkey/sequence/actual index,
+both KnownClosed/currentTicket and actual publication+receipt+decoded fingerprint
+before local image coverage. Empty batches, cursors, generic decode or join never
+grant readiness/Root authority. Preserve the original180s budget and stop new
+work at120s for job30+drain30; never cancel/drop active Work as closure. Stop
+presentation on observed input/departure, drain/join before report I/O, and poll
+actual live again after join. Local reports leave external closure/cache body/
+all-catalogue/native pixels false. No059 ARM/native/retained promotion is qualified
+by these checks. Next work needs new matching artifacts/packages, fresh G2
+baseline/lease and independent native closure/restoration. C2 remains untouched;
+preserve normal Root-off and actual retained057. Product preparation flow,
+cross-process completion/capacity, same-key refresh/eviction/stale slots remain open.
+
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
 from frozen functional source `87945205e21393f5ef93d40a780b0c7e23d9acd8`.

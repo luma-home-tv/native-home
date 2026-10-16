@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "version": "0.59.0 source only",
+  "status": "integrated_source_host_checked_ARM_native_unqualified",
+  "sources": {
+    "package-preview.py": {
+      "bytes": 49111,
+      "sha256": "40e91d43c4fd62882b7f34abd032fde8b3fef0aa172070fb4dc021d821f6a8d2"
+    },
+    "src/artwork_installed_provider.rs": {
+      "bytes": 106850,
+      "sha256": "03838f8e1c172fe1a5f7d3c03a0886a0347bf5621f83cc1598e9c98acc32f33f"
+    },
+    "src/artwork_installed_provider_tests.rs": {
+      "bytes": 101068,
+      "sha256": "362b22fe335fa6a36eca544b3d27e3e7059dc65f318a38be1be0ef5fb4370f2a"
+    },
+    "src/artwork_preparation_events.rs": {
+      "bytes": 2171,
+      "sha256": "5f5dce44cf81e122bf59617bc8ca74d0246aa0d2b01df144b7c9a05a027dabb8"
+    },
+    "src/artwork_cache_preparation_runner.rs": {
+      "bytes": 16294,
+      "sha256": "891996d5fb563aa864eebf5156220382f5dac9ff2567862813a5c5ca94807d96"
+    },
+    "src/artwork_cache_preparation_runner_tests.rs": {
+      "bytes": 17162,
+      "sha256": "f587e54475b4bc8c77ba30fe54a957f770b7386d33e07fbaaae9ec3958974c21"
+    },
+    "src/artwork_cache_preparation_selection.rs": {
+      "bytes": 5868,
+      "sha256": "d71e0929a4228398ebf025f50fdb7b9ca2f330c1a4268107f92f18ea9b64da79"
+    },
+    "src/artwork_cache_preparation_selection_tests.rs": {
+      "bytes": 7747,
+      "sha256": "2f54789f7aac8c67eeeb02427de8d2273ba5840115c99784b96dea408099cc32"
+    },
+    "src/artwork_cache_preparation_proof.rs": {
+      "bytes": 9110,
+      "sha256": "83b1367da323a3e400b6e7934795fa40a252cf25aaed3c93daf9f4ae64f3fa66"
+    },
+    "src/bin/home-preview.rs": {
+      "bytes": 190144,
+      "sha256": "807b3f3f9aaf8b66801a0fbabfa5dce89e9628fbd2ce5fe3cbdd427dabe54060"
+    },
+    "src/lib.rs": {
+      "bytes": 1918,
+      "sha256": "7a6bbcc080ff6491c640312a3ff381aca1ab5f191285d9e04f2bf902660632ea"
+    },
+    "tests/test_cache_preparation_package.py": {
+      "bytes": 9085,
+      "sha256": "a9389ceb00ab40f77d7969acd196dd7c69c1c2147628facca6a899c1cfba5ee6"
+    },
+    "tests/test_cache_producer_package.py": {
+      "bytes": 8095,
+      "sha256": "f6189590424aba284b62c1ab26eac43a57334dfe08a644648c0c3eef2592fb4b"
+    },
+    "tests/test_preview_artwork_package.py": {
+      "bytes": 14862,
+      "sha256": "94c09d309066ec7a43710f6d7d39756c1a15ac6a7419a74990eb0de34ffdee13"
+    },
+    "tests/test_broker_negative_package.py": {
+      "bytes": 13565,
+      "sha256": "9764cc91b29cda398a1d44252a3ab264d6365732e8071d1fb115c128d0dad610"
+    },
+    "tests/test_closed_negative_artwork_package.py": {
+      "bytes": 8347,
+      "sha256": "4d418ba0e2d5a363d5698158d4d49a55edfee9ce8f0dcde800b1b6f32f7fe2d6"
+    },
+    "tests/test_installed_artwork_package.py": {
+      "bytes": 12349,
+      "sha256": "27d352e62f2035aa8e216de38dfdc0fb304390a75e956228ec807c773a89e555"
+    },
+    "tests/test_preferences_migration_package.py": {
+      "bytes": 13928,
+      "sha256": "433d0e04f8019a7b953e4ee530ed48ba0765895f4114831f32785f4b37135f37"
+    }
+  },
+  "selected_source_inputs": 132,
+  "checks": {
+    "runner-tests-first": {
+      "exit_code": 0,
+      "log_sha256": "ffc07d4e94fe162c81d45b026604eb34a6eefdcf39f9011d6d113943ad200364",
+      "receipt_sha256": "d209a21b99e115955eada4e24e9356898b1946fcf96c6b5ba3ede1de8e8663a4",
+      "inputs_unchanged": true
+    },
+    "integrated-library-first": {
+      "exit_code": 0,
+      "log_sha256": "fbb0c6504bde9d6f25bb6f1db6e13366bf5a7d2200f6eed2798b856a80dfc571",
+      "receipt_sha256": "ef352e879891c6efa842e1425bf4984b199f0c09e305236de7b2c32e56c7ab0a",
+      "inputs_unchanged": true
+    },
+    "integrated-ui-first": {
+      "exit_code": 0,
+      "log_sha256": "55f93ba59630d130d8271c8db2d1d11cb470453afa793a8f84f181e6644ac98b",
+      "receipt_sha256": "d253c1c12e13793ded4c969eaa4f23d0665df7c4cad61d23afec5b7d6a6dcf87",
+      "inputs_unchanged": true
+    },
+    "integrated-clippy-first": {
+      "exit_code": 0,
+      "log_sha256": "38de5f8dbb1049a618062d8b3843f51269bd1a4a1bb1f5253256e56ba70a9e42",
+      "receipt_sha256": "f3ef50a27441f065e8da1f7ad9e187e69a02589492d5d2d6437b22ef275494af",
+      "inputs_unchanged": true
+    },
+    "integrated-python-first": {
+      "exit_code": 0,
+      "log_sha256": "92a0e18c6f46792814d2a53b2dca3b8908c25d7f6629fe0461c7007f8f7a87f6",
+      "receipt_sha256": "c0b233d4aca52a0bb71be8ba848f3c2eb3a8e916e81e6d26f4e114a8fa5b8a5c",
+      "inputs_unchanged": true
+    },
+    "integrated-clippy-header": {
+      "exit_code": 0,
+      "log_sha256": "c0549fb9a1e6e7c878bb8b2d9a99bd1bbe58acffee28f5b3d5ad14e331803d03",
+      "receipt_sha256": "ba182194f4ab4362b4e0757c6223994234dd2e9fe5f59519e606190ec0db3da8",
+      "inputs_unchanged": true
+    }
+  },
+  "passing_cases": {
+    "library": 737,
+    "home_preview_UI": 10,
+    "Rust_total": 747,
+    "Runner_in_library": 14,
+    "selection_in_library": 8,
+    "Python_packaging_and_provenance": 84,
+    "new_Python_preparation_cases": 12,
+    "initial_Runner_cases_before_caller_failure_and_empty_cases": 12
+  },
+  "post_full_suite_changes": {
+    "files": [
+      "src/artwork_cache_preparation_proof.rs"
+    ],
+    "kind": "header comment only: prepared artwork versus existing packaged fallback uploads",
+    "runtime_logic_changed": false,
+    "verified_exact_header_replacement_only": true,
+    "tested_sha256": "26550c4a6ae1f7516b5af840c8160dec6c512f823aff2eec7bf5c87be29a6ef6",
+    "current_sha256": "83b1367da323a3e400b6e7934795fa40a252cf25aaed3c93daf9f4ae64f3fa66"
+  },
+  "reviews": {
+    "execution_core": "independent source clear",
+    "Main_recipe_selection_and_Root_deltas": "independent source clear",
+    "package_gate_and_ABI": "independent source clear"
+  },
+  "activation": {
+    "fixed_marker": "artwork-cache-preparation.json",
+    "exact_fields": [
+      "schema",
+      "ui_sha256",
+      "cursor"
+    ],
+    "explicit_actual_Preview_admission_and_producer_required": true,
+    "normal_sidecar_alone_selects_preparation": false,
+    "normal_Root_runtime_enabled": false,
+    "action_persistence_pointer_description_setter_workers_created": false
+  },
+  "batch": {
+    "max_attempts": 16,
+    "original_logical_seconds": 180,
+    "stop_new_work_at_seconds": 120,
+    "job_seconds": 30,
+    "drain_reserve_seconds": 30,
+    "hard_syscall_or_join_time_bound": false,
+    "automatic_retry_or_eviction": false,
+    "prepared_art_GL_upload": false,
+    "packaged_fallback_upload_possible": true
+  },
+  "accounting": {
+    "empty_channel_before_every_submit": true,
+    "exact_retained_Work_full_SourceKey_sequence_and_actual_index_required": true,
+    "both_worker_and_event_KnownClosed_and_current_Ticket_required": true,
+    "actual_publication_receipt_decoded_fingerprint_and_identity_required_for_local_coverage": true,
+    "missing_or_inconsistent_event_stops_Unknown": true,
+    "ordinary_publication_error_changes_Root_settlement": false,
+    "active_work_cancelled_or_dropped_for_finish": false,
+    "post_join_live_poll_and_current_keyset_recheck": true,
+    "new_service_reply_after_join_qualified": false,
+    "external_closure_verified": false,
+    "final_cache_body_coverage_verified": false,
+    "all_catalogue_prepared": false,
+    "Root_authority_granted": false
+  },
+  "worker_wire_HBC_context_Ticket_pending_policy_changed": false,
+  "framework_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
+  "framework_changed": false,
+  "new_ARM_build": false,
+  "new_native_packages": false,
+  "TV_contacted": false,
+  "retained_G2_last_verified": "0.57.0 unchanged by this source wave",
+  "C2_contacted": false,
+  "unqualified": [
+    "new ARM UI/helper and producer association",
+    "actual new package source/ELF/SDK artifact audit",
+    "native explicit preparation and every attempted helper disposition",
+    "interrupted-window lifecycle/native drain/join behavior",
+    "final current cache-body coverage and ordinary consumer behavior",
+    "cross-process multi-batch completeness and partial capacity product flow",
+    "backed-up G2 diagnostic update and full known restoration/removal",
+    "all-app performance, reliability and C2",
+    "same-key content refresh, eviction, stale writer slots"
+  ]
+}

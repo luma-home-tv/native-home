@@ -242,6 +242,7 @@ pub(super) fn fixture() -> (InstalledProvider, Source, session::Exchange, Value)
             guard: None,
             last_attempt: None,
             cache_publisher: None,
+            last_publication: None,
         },
         source,
         exchange,
@@ -2453,6 +2454,7 @@ fn existing_provider_fixture_has_no_publisher_and_does_not_even_run_optional_gat
         || panic!("Default None must bypass all publication work"),
     );
     assert!(p.cache_publisher.is_none());
+    assert!(p.last_publication.is_none());
     assert!(result.is_ok());
     assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
 }

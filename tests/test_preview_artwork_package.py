@@ -143,7 +143,7 @@ class PreviewArtworkPackageTests(unittest.TestCase):
         result, output = self.package(self.environment())
         self.assertEqual(result.returncode, 0, result.stderr)
         receipt, files, modes = self.archive(output)
-        self.assertEqual(Path(receipt['ipk']).name, APP + '_0.58.0_arm.ipk')
+        self.assertEqual(Path(receipt['ipk']).name, APP + '_0.59.0_arm.ipk')
         self.assertEqual(set(files), {'appinfo.json', 'home-preview', 'snapshot.json',
                                      'appfont.ttf', 'appfont-bold.ttf', 'OFL.txt',
                                      'icon.png', 'preview-artwork-admission.json'})
@@ -158,7 +158,7 @@ class PreviewArtworkPackageTests(unittest.TestCase):
         self.assertNotIn(self.helper.read_bytes(), files.values())
         info = json.loads(files['appinfo.json'])
         self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                         (APP, '0.58.0', 'home-preview', 'native'))
+                         (APP, '0.59.0', 'home-preview', 'native'))
         self.assertEqual(info['requiredPermissions'], [])
         self.assertIs(receipt['preview_artwork_admission'], True)
         self.assertIs(receipt['test_identity'], False)

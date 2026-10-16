@@ -15,8 +15,10 @@ Root artwork off.
 The [0.59 catalogue-planning foundation](artwork-catalogue-planning-059.md)
 now enumerates the entire independently fresh preferred-source map in bounded
 batches. Host checks pass. It performs no preparation or Root dispatch; the
-separate execution runner, completion accounting and native qualification remain
-the next integration work.
+separate [explicit execution integration](artwork-catalogue-preparation-059.md)
+now supplies one worker job at a time with paired publication/decode accounting
+and drain-before-join. Its host checks pass; matching ARM artifacts, native
+qualification and all-catalogue completion remain unfinished.
 
 The current installed broker admits one image per session. Historical non-first
 helper intervals were 2.562–2.875 seconds; they are not complete-fetch timings or
