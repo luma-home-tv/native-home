@@ -103,8 +103,9 @@ no worker or Root dispatch; the execution integration is recorded separately bel
 The [0.59 explicit preparation integration](docs/artwork-catalogue-preparation-059.md)
 now connects one bounded catalogue batch to the existing worker, with per-job
 publication/decode accounting and drain-before-join. All 747 Rust host tests,
-84 Python checks and strict Clippy pass. ARM builds, native execution,
-all-catalogue readiness and retained deployment remain unqualified.
+84 Python checks and strict Clippy pass. Matching ARM builds and independently
+reviewed local package/ABI inspection also pass; native execution, all-catalogue
+readiness and retained deployment remain unqualified.
 
 The [0.53 isolated departure-test recipe](docs/artwork-context-qualification-053.md)
 is host-tested and builds for ARM, but has no native execution qualification.

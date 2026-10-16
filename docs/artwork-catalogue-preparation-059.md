@@ -5,10 +5,10 @@ fresh preferred-icon catalogue. It no longer uses the number of visible Home or
 Apps cards as its stopping condition. Normal interaction remains separate: a
 cache miss does not launch Root work.
 
-This is source and host integration, not a retained TV update. The last verified
-G2 preview remains 0.57. New ARM artifacts, diagnostic packages, independent
-native observation and verified removal/restoration are required before any
-deployment or promotion claim.
+The source, host checks, matching ARM builds and local package/ABI inspection now
+pass. This is not a retained TV update: the last verified G2 preview remains
+0.57. Independent native observation and verified removal/restoration are still
+required before deployment or promotion.
 
 ## Exclusive selection and execution
 
@@ -90,8 +90,26 @@ publication observations; they exercise the actual worker and bounded decoder,
 not a Root helper or native cache publication. File-reader fixtures use the
 host's actual owner through a private test seam and do not establish TV ownership.
 
-Next steps are matching ARM builds and artifact/package inspection, followed by
-a fresh separately reviewed G2 trial against its actual retained bundle and
+Both actual ARM build receipts bind the same 132 committed source inputs at
+`dd2671da4e9288b1bef668ad9257a5bae1870d59`, with the attributed framework unchanged.
+The normal and explicit-preparation packages contain the same UI and producer
+association; their role-specific markers differ. An independently authored,
+source-reviewed local auditor checks every source Git blob, archive framing and
+ordinary payload using its own parser plus SDK `ar`, and inspects the ELF loader,
+direct libraries and required GLIBC versions with SDK `readelf`. Twelve synthetic
+auditor guard cases pass. The UI requirements fit the actual retained 0.57 UI;
+the helper requirements match the specifically bound native 0.46 helper. These
+comparisons do not qualify transitive loading or new executable permissions.
+
+The first audit correctly refused a newly generated package receipt with mode
+0644. Both new receipts had that mode; the coordinator changed only those own files to 0600,
+preserving their bytes and both package hashes. The failed audit record remains
+separate; a fresh audit then passes. Coordinator readback rehashes all 175 bound
+inputs and 501 saved inspector outputs. The exact 0.57 rollback archive matches
+its saved complete bundle. No TV, target ELF or helper was executed by this
+local inspection. Packages and household resources remain private.
+
+The next step is a fresh separately reviewed G2 trial against its actual retained bundle and
 preferences. Native acceptance must independently establish every attempted
 helper's disposition, current-Ticket/child/socket closure, ordinary cache
 publication and eventual consumer behavior, then verified restoration/removal.

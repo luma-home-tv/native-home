@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.59.0 source only",
-  "status": "integrated_source_host_checked_ARM_native_unqualified",
+  "status": "integrated_source_host_ARM_packages_local_audit_pass_native_unqualified",
   "sources": {
     "package-preview.py": {
       "bytes": 49111,
@@ -113,6 +113,21 @@
       "log_sha256": "c0549fb9a1e6e7c878bb8b2d9a99bd1bbe58acffee28f5b3d5ad14e331803d03",
       "receipt_sha256": "ba182194f4ab4362b4e0757c6223994234dd2e9fe5f59519e606190ec0db3da8",
       "inputs_unchanged": true
+    },
+    "artifact-guards-first": {
+      "exit_code": 0,
+      "log_sha256": "84b75473ca55ae671b083517431a36fdfc8ffe5e25b6ff74b9d1ddeff5e28b7d",
+      "receipt_sha256": "8eb052e4507f6e65604daf2cabf46436ca7a97bbc1a41eddf7c2f2dcf075db50"
+    },
+    "artifact-audit-first": {
+      "exit_code": 1,
+      "log_sha256": "05116db7a7d51679323bbd09b56d42469b5863340450c96760c7f4e9257944a3",
+      "receipt_sha256": "57e5b6050ba60554f9995904caea0606d9686407e1c3b2fb8895f7fe6775d4e9"
+    },
+    "artifact-audit-second": {
+      "exit_code": 0,
+      "log_sha256": "80bc1f54a9a602ef749419991986db1b80ec5dc8f2a5d9ab713dc7d22c0eae90",
+      "receipt_sha256": "6496a2bb3cd82e795745f3d59c9aa573b91e42b331b2b8e985968b07b0d6e3e7"
     }
   },
   "passing_cases": {
@@ -181,14 +196,12 @@
   "worker_wire_HBC_context_Ticket_pending_policy_changed": false,
   "framework_revision": "d507c4f9ed5b4ecd88ce9b2e998c50da506e6271",
   "framework_changed": false,
-  "new_ARM_build": false,
-  "new_native_packages": false,
+  "new_ARM_build": true,
+  "new_native_packages": true,
   "TV_contacted": false,
   "retained_G2_last_verified": "0.57.0 unchanged by this source wave",
   "C2_contacted": false,
   "unqualified": [
-    "new ARM UI/helper and producer association",
-    "actual new package source/ELF/SDK artifact audit",
     "native explicit preparation and every attempted helper disposition",
     "interrupted-window lifecycle/native drain/join behavior",
     "final current cache-body coverage and ordinary consumer behavior",
@@ -196,5 +209,63 @@
     "backed-up G2 diagnostic update and full known restoration/removal",
     "all-app performance, reliability and C2",
     "same-key content refresh, eviction, stale writer slots"
-  ]
+  ],
+  "functional_source_revision": "dd2671da4e9288b1bef668ad9257a5bae1870d59",
+  "new_packages_installed": false,
+  "artifacts": {
+    "home-preview": {
+      "binary_sha256": "f65226430dead5f33e185cee026649e1014ac890586cf494d562c2ef1c45779e",
+      "binary_bytes": 4457704,
+      "build_receipt_sha256": "a4145c53ef4e51be8c00f562a31439381425e9c3f37175901f27293689541925",
+      "log_sha256": "36288ecd36dbd76b3f451a47e1f388ad9a2c26e348c87347e7066377a487d092",
+      "inputs_unchanged": true
+    },
+    "artwork-broker": {
+      "binary_sha256": "f4daf44e35bde0bcde955535c2b6b08ffaa46e932c00e7a151234320a3495157",
+      "binary_bytes": 908140,
+      "build_receipt_sha256": "29d18dde82085f8503f87f27ca2cc228697f3221982f904a371bce20b77b72bb",
+      "log_sha256": "f155dad8c2b60bdc0eecae3e7ec130f3c63073ed03973baedfc7c9687152faa9",
+      "inputs_unchanged": true
+    },
+    "normal_package": {
+      "package_sha256": "968671b20ecbf691e1521abe324b2d64e575a80ffa72fa93b78a48fa8954213d",
+      "package_bytes": 2593658,
+      "receipt_sha256": "4ddbf887c31e646d645bfb87d4a9c4f1ff3ffb5addd5e257fb954eae48570ba6",
+      "producer_sidecar_sha256": "6dde50eaf66450b5d14b7fc3a1d57d7102eea845e9dd8682d14d1cc824bb45f0",
+      "cache_preparation_selected": false,
+      "inputs_unchanged": true
+    },
+    "preparation_package": {
+      "package_sha256": "43b404542683ce9af4ceff7a33819e8d5649dd08bbc67bf217176daf82b74005",
+      "package_bytes": 2593868,
+      "receipt_sha256": "e1fb368a98283a84d3c59d4d7f114fcf1c2bba17d03995760343e586c272fc9f",
+      "producer_sidecar_sha256": "6dde50eaf66450b5d14b7fc3a1d57d7102eea845e9dd8682d14d1cc824bb45f0",
+      "cache_preparation_selected": true,
+      "inputs_unchanged": true
+    }
+  },
+  "local_artifact_audit": {
+    "source_sha256": "a5940f1e9466917fb693a5eb6f051ce7e746d3f2940f16abfeb2b422da2bae54",
+    "candidate_sha256": "b77e133478a12349e5e290208cee16ff3011a2b4065002ab46ebce545c366c22",
+    "report_sha256": "f8b57bac35116ffa43fff416ca96bcc3e10e9d7132d515a36b02861b225ba8c8",
+    "independent_source_review": "clear",
+    "guard_cases": 12,
+    "coordinator_rehashed_input_bindings": 175,
+    "coordinator_rehashed_inspector_output_bindings": 501,
+    "coordinator_readback_sha256": "e8d61f9358fe48a6bb9bf2d5273699791200f8a222f9e4f8543be19b0b33a9ce",
+    "rollback057_matches_saved_full_bundle": true,
+    "UI_ABI_comparator": "actual retained057 UI direct loader/NEEDED/requiredGLIBC subset",
+    "helper_ABI_comparator": "specifically bound actual native046 helper exact direct sets",
+    "fresh_native_reader_hash_verified": false,
+    "Root_admission": false,
+    "target_ELF_or_helper_executed": false,
+    "TV_contacted": false
+  },
+  "preserved_artifact_failure": {
+    "first_audit_exit": 1,
+    "reason": "coordinator generated new local package receipts0644; auditor requires0400/0600",
+    "correction": "only those two positively mapped own receipts chmod0600; content and packages unchanged",
+    "correction_evidence_sha256": "067bf6d4ff06cd0a8d80e696d863498058e6a7ebd0f323c64a1f7670da41fb5d",
+    "fresh_second_audit_exit": 0
+  }
 }

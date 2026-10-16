@@ -181,6 +181,18 @@ by these checks. Next work needs new matching artifacts/packages, fresh G2
 baseline/lease and independent native closure/restoration. C2 remains untouched;
 preserve normal Root-off and actual retained057. Product preparation flow,
 cross-process completion/capacity, same-key refresh/eviction/stale slots remain open.
+The later059 local artifact milestone now passes both actual matching ARM builds,
+normal/preparation packages and an independently authored/source-reviewed SDK
+archive/ELF/current-Git audit with 12 guard cases. Preserve the first audit's
+receipt0644 refusal; only two own local receipts became0600 with unchanged bytes,
+then fresh audit/readback pass. UI ABI compares actual057; helper compares the
+specifically bound native046 helper, never the UI or a maximum GLIBC version.
+The132 functional inputs remain dd2671da4e9288b1bef668ad9257a5bae1870d59;
+later documentation HEADs grant no new compile or native evidence. Exact057
+rollback matches its saved complete bundle. These local results do not qualify
+new059 native permissions/lifecycle/transitive loading or Root admission. Fresh
+reader hash/stat, lease, scene and full retained baseline remain mandatory before
+any TV trial; the new carrier proposal remains undated/unadmitted.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`
