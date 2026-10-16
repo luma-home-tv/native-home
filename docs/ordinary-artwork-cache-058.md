@@ -8,8 +8,10 @@ and then the existing missing-art presentation. Normal navigation creates no
 privileged artwork runtime or helper.
 
 This is a candidate, not a retained TV delivery. The G2 still has verified 0.57;
-the C2 remains unchanged. Native population, cache-hit presentation, performance
-and promotion require matching artifact and device evidence.
+the C2 remains unchanged. The later [G2 native observation](ordinary-artwork-cache-058-native.md)
+records diagnostic population and ordinary Home/Apps cache associations, an
+original operator failure and separate known cleanup. Full workflow, all-app,
+physical-panel, performance and retained promotion remain open.
 
 ## Association and freshness
 

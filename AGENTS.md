@@ -89,8 +89,9 @@ fresh source withdrawal applies even without RootRuntime. Only the separately
 admitted Preview diagnostic may publish after positive/joined/current-Ticket
 closure. Producer metadata grants no Root authority. Session-only cache-frame
 receipts are bounded observations, not foreground/pixel/provenance/performance
-proof. No 0.58 code has run on a TV; preserve retained057 and require fresh native
-population, ordinary hit evidence, known cleanup and exact restoration before
+proof. That source milestone did not qualify native execution; preserve retained057
+and require matching native population, ordinary hit evidence, known cleanup and
+exact restoration before
 promotion. Keep eviction and stale-slot recovery explicitly unfinished.
 
 `docs/ordinary-artwork-cache-058-prerequisite.md` records the later read-only G2
@@ -116,6 +117,24 @@ hit, native image/performance or launched-producer restoration is qualified.
 Future carriers need fresh state/leases/dates and strict matching completion
 before accepting known installer PTY diagnostics; never infer success from ACK
 or connection close alone. Normal Root artwork remains off; C2 was not contacted.
+
+`docs/ordinary-artwork-cache-058-native.md` records the later second attempt:
+six positive transfers/96 Core children and ordinary Home/Apps cache associations,
+with four cache plus seven packaged uploads and matched GL cleanup. The original
+operator still exited1 at exact mount-row equality after verified057 rollback.
+An independently reviewed cleanup-only continuation exited0 within the same
+original lease/deadline, removed positively mapped runtime/cache/staging, preserved
+full057/preferences/state/sampledCore, all 92 immutable old runtime files and the
+original event-log prefix with 262 appended bytes. Lease and agent cleanup pass.
+Original234 mount rows remain an exact prefix of238: four duplicates of existing
+read-only SDK bind rows were observed, with no mount repair or unchanged-mount
+claim. Do not reuse those counts as a future baseline; capture fresh state and
+review the mount comparison before another trial. The composite saved audit,
+byte-identical coordinator replay and narrow raw cleanup assessment pass. No
+normal058 promotion,
+all-app/pixel/physical/performance qualification or C2 contact follows. Raw BMP,
+PNG and internal PPM byte comparisons withdrew an apparent missing-UI impression;
+verify raw pixels before proposing renderer fixes from preview appearance.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

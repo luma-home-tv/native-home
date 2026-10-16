@@ -1,25 +1,33 @@
 # Luma Home implementation plan
 
 The current delivery target is a responsive native Home dashboard for the
-OLED55G26LA G2 on webOS24. After the earlier overnight window, the user confirmed
-both TVs free for autonomous isolated tests on 16 October 2026 and offered G2
-physical input when needed. Check fresh foreground/availability for each new run,
-and refresh the C2 baseline before changes; results stay device-specific.
+OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.
+The C2 is available only from 00:00 to 06:00 Europe/London or when the user
+explicitly releases it. Each run still needs fresh scene, device and lease
+checks; refresh the C2 baseline before changes. Physical input requires current
+human availability, and results stay device-specific.
 It remains a separate application: LG Home, Home/power/volume handling, firmware,
 system libraries, boot configuration, media services and OLED protections stay
 under LG's control. Retained installations and each TV's saved favourites must
-survive updates; temporary proof packages use a separate identity.
+survive updates; temporary proofs use a separate identity or a backed-up,
+verified update and rollback procedure for the retained identity.
 
 The [concept renders](concepts/README.md) show the intended interface. They are
 synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 now retains [0.47.0](g2-retained-preview047.md) after
-two fresh Home/Apps/Back sessions, a natural idle-black/wake and full saved-state,
+current native interface. G2 now retains verified [0.57.0](g2-retained-preview057.md),
+including the caption-preference readout. The later
+[0.58 cache observation](ordinary-artwork-cache-058-native.md) reached ordinary
+Home/Apps cache associations and returned to exact 0.57 through separately
+verified cleanup; its original operator failure remains explicit. The earlier
+[0.47.0 milestone](g2-retained-preview047.md) recorded two fresh Home/Apps/Back
+sessions, a natural idle-black/wake and full saved-state,
 bundle and Core20 preservation. Its visual frames show the logo and unboxed
 available icons; broader artwork and physical-input/performance qualification
-remain separate. C2 now retains [0.48.0](c2-retained-preview-048.md), following
+remain separate. The latest verified C2 retained version is
+[0.48.0](c2-retained-preview-048.md), following
 its own ordinary-owner forward/reverse metadata roundtrip and exact old-version
 restoration, then a fresh forward migration and two normal sessions. Original
 preference bytes/owners, C2 resources, Core files and checked state are preserved.
@@ -38,19 +46,27 @@ performance evidence from 0.14.0.
 The [0.53 exclusive departure-test recipe](artwork-context-qualification-053.md)
 now has host, strict-package, independent source-review and matching ARM-build
 evidence. Its two real ReadAfter/Finish native cases and independently replayed
-removal still precede normal artwork activation. This host work does not extend
-the overnight device window or update either retained app.
+removal still precede normal artwork activation. This host work does not change
+current device availability or admit a native run, and does not update either
+retained app.
 
 ## Near-term release and parallel work
 
 The next coherent standalone release uses the existing packaged icons. Prioritise
 normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
-The latest retained G2 0.47/C2 0.48 normal sessions establish Home/Apps/Back and
-idle/wake; they did not exercise Search or dispatch app/settings/input actions.
+The recorded normal sessions establish Home/Apps/Back and idle/wake within their
+respective scopes; latest retained G2 is 0.57 and latest verified C2 is 0.48.
 Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
+
+The next cache delivery steps are to review the SDK mount-row comparison against
+fresh state, expand preparation beyond the bounded six-entry observation, and
+qualify invalidation/failure behavior and a backed-up normal delivery. Measure
+current-artifact cold preparation and ordinary warm navigation separately before
+claiming a performance gain. Eviction/stale-writer recovery and C2 qualification
+remain open; normal interaction must keep Root artwork off.
 
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:

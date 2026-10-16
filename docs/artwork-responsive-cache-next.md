@@ -5,8 +5,11 @@ and refresh should run through a separate, explicitly admitted operation, rather
 than starting a Root helper on each interactive miss. The
 [0.58 integration](ordinary-artwork-cache-058.md) connects the ordinary storage
 foundation to the existing worker/UI and an explicit diagnostic producer. Host
-checks and matching ARM builds pass; native population and presentation remain
-unqualified. Retained G2 0.57 continues to use packaged art with normal
+checks and matching ARM builds pass. A later [G2 native observation](ordinary-artwork-cache-058-native.md)
+records six positive publications, ordinary Home/Apps cache associations and
+separate known cleanup, while preserving the failed original operator. Full
+workflow, broad coverage and performance qualification remain open. Retained G2
+0.57 continues to use packaged art with normal
 Root artwork off.
 
 The current installed broker admits one image per session. Historical non-first

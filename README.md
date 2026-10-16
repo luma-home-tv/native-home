@@ -80,11 +80,15 @@ the storage foundation to the existing image worker and fresh catalogue, with
 an explicit diagnostic producer kept separate from ordinary interaction. All
 711 Rust host tests, strict Clippy, 72 Python packaging checks and matching ARM
 dashboard/helper builds pass. Normal navigation creates no Root artwork runtime.
-Native population and cache-hit frames remain unqualified. The
+The [second G2 native attempt](docs/ordinary-artwork-cache-058-native.md) now
+records diagnostic population and ordinary Home/Apps cache associations. Its
+operator failed a strict SDK mount-sequence comparison after rollback; a separate
+verified cleanup preserved 0.57 and removed the trial's files. Full workflow,
+all-app, physical-panel and performance qualification remain open. The earlier
 [first G2 installation attempt](docs/ordinary-artwork-cache-058-first-attempt.md)
 stopped before an explicit launch request on an installer diagnostic check; a
 separate verified restore returned the complete retained G2 installation to 0.57.
-C2 was untouched.
+C2 was untouched by both attempts.
 A separate [G2 read-only prerequisite](docs/ordinary-artwork-cache-058-prerequisite.md)
 now passes with independent saved replay; it grants no 0.58 execution or cache
 permission qualification.

@@ -1,0 +1,111 @@
+{
+  "schema": 1,
+  "version": "0.58.0",
+  "device_family": "G2",
+  "attempt": 2,
+  "status": "saved_native_observation_and_separate_known_cleanup_audited",
+  "independent_composite_audit": {
+    "status": "saved_only_passed",
+    "auditor_sha256": "dc7d82c9452b9544f7fa235ae9f4a0f8b5ca5e1e8f67313ec35dbcf88306f918",
+    "report_sha256": "ed564ab34cfd42a5591aa4945b4c28547083967bb8a8726b854a6b562f58745c",
+    "coordinator_replay_byte_identical": true,
+    "native_full_workflow_qualified": false,
+    "fresh_TV_observation": false
+  },
+  "independent_cleanup_audit": {
+    "status": "narrow_raw_assessment_passed",
+    "assessment_sha256": "91de0891b79b1971722e098364b62e3a88d00c070a11f03182862959541ff001",
+    "limits": "Saved-only narrow assessment, complementary to the completed composite audit."
+  },
+  "Root_final_review": {
+    "status": "source_read_and_byte_identical_saved_audit_replay_passed",
+    "report_sha256": "ed564ab34cfd42a5591aa4945b4c28547083967bb8a8726b854a6b562f58745c",
+    "original_trial_failure_preserved": true
+  },
+  "source": {
+    "revision": "aca11408628ea74e651ae0ed9427ca077918bb38",
+    "selected_input_count": 124,
+    "ui_sha256": "260c42ff908adacba4c60c64b7137dc56a510c55e86e26ee78aed4c7b5a62441",
+    "helper_sha256": "a738757aad017b5eaae6de61c427aa5e34e93407abbc06d6ff4aa1fbe73faf43",
+    "normal_ipk_sha256": "aa25bddcfeb2cdfe06df213318d4665a843db1f1b81e780553912477ac99f6aa",
+    "diagnostic_ipk_sha256": "25284e951ad97d0b9d8e9e6c8d11782a4aff6254b8f663d00c315ddc49279498",
+    "shared_producer_sidecar_sha256": "15432b0c518406302eab3f35f9b25382cd215386ebf2a62599a353e9c8a9e698"
+  },
+  "original_operator": {
+    "exit": 1,
+    "terminal_sha256": "4ada5e72a2b973d657a3464f9f238556f91f76962781cec36090a381e20e90b2",
+    "summary_sha256": "ed6d3c48c6664fd00f56c45b6d4348c9edf5b54b9a573b880d9caaad17b1f70a",
+    "stopped_after_verified_057_restore": true,
+    "failure": "strict original mount-sequence equality",
+    "original_failure_preserved": true
+  },
+  "saved_component_observations": {
+    "independent_composite_qualification": "saved_associations_and_closure_verified_with_declared_limits",
+    "positive_transfers": 6,
+    "ordered_Core_reader_children": 96,
+    "external_current_helper_children_groups_pending_socket_closure_recorded": true,
+    "protected_helper_configuration_removed_before_consumer": true,
+    "complete_cache_entries": 6,
+    "same_UI_executable_for_population_and_consumer": true,
+    "home_capture_cached_visible_cards": 1,
+    "apps_capture_cached_visible_cards": 4,
+    "cache_GL_uploads": 4,
+    "packaged_GL_uploads": 7,
+    "GL_deletions": 11,
+    "worker_joined": true,
+    "worker_panicked": false,
+    "remaining_textures": 0,
+    "recorded_GL_errors": 0,
+    "frame_association_record_sha256": "29618779d65be546fdfc0328e46eaf5f1826e05fdc536575f556dc71a152a852",
+    "external_live_raw_binding_applies_to_first_helper_only": true
+  },
+  "cleanup_continuation": {
+    "exit": 0,
+    "elapsed_seconds": 159.86524870799622,
+    "terminal_sha256": "bc41ae8c7b2f51cfa1710634a561af21d16a934b4bd57076f4af1f5b891223ab",
+    "summary_sha256": "7fdd088d2e97ceea0298168abd9123d0f645765f2bd6563fab6c25844dc1ab06",
+    "same_original_lease": true,
+    "within_original_deadline": true,
+    "install_launch_input_Root_execution_performed": false,
+    "scoped_trial_runtime_cache_staging_removed": true,
+    "lease_agent_closed": true,
+    "independently_audited": true
+  },
+  "preservation_observations": {
+    "retained_bundle_preferences_state_Core_exact_original": true,
+    "preexisting_runtime_entries": 140,
+    "immutable_runtime_files": 92,
+    "declared_event_log_original_prefix_preserved": true,
+    "declared_event_log_append_bytes": 262,
+    "all_preexisting_runtime_bytes_equal": false,
+    "exclusive_append_syscalls_proved": false,
+    "runtime_prefix_record_sha256": "927806dcfdd334c7735779925c17cb3107e0ba32bb38ee0a57e56627caea2b46",
+    "mount_rows_original": 234,
+    "mount_rows_after_trial_and_cleanup": 238,
+    "observed_duplicate_readonly_bind_rows_appended": 4,
+    "duplicate_rows_are_two_copies_of_existing_baseline_pair": true,
+    "mount_rows_unchanged_during_cleanup": true,
+    "mount_change_cause_established": false,
+    "mount_jail_modifications_performed": false,
+    "original_mount_sequence_restored": false
+  },
+  "withdrawn_visual_impression": {
+    "missing_static_text_impression_withdrawn": true,
+    "compared_PNG_BMP_full_RGB_equal": true,
+    "selected_static_regions_unchanged": true,
+    "branding_region_matches_internal_Home_Apps_PPM": true,
+    "comparison_record_sha256": "2d93d393ec6e0428d206b7ea7983c819479474845e397f1fedfab7c5a664677a",
+    "rendering_compositor_defect_established": false
+  },
+  "scope": {
+    "retained_normal_version": "0.57.0",
+    "normal058_promoted": false,
+    "normal_Root_activation_retained": false,
+    "C2_contacted": false,
+    "all_app_coverage_qualified": false,
+    "cache_icon_pixel_identity_qualified": false,
+    "physical_panel_qualified": false,
+    "performance_improvement_qualified": false,
+    "whole_original_operator_success": false
+  }
+}
