@@ -3,7 +3,8 @@
 Large app icons can now be decoded and scaled on the existing image worker,
 while the renderer still receives at most 512 pixels per axis and 1 MiB of RGBA.
 This fixes the source limitation found by the partial 0.59 G2 batch. Source and
-host validation pass; matching ARM builds and native qualification are pending.
+host validation, matching ARM builds and local package/ABI inspection pass.
+Native qualification remains pending.
 The last verified retained G2 remains 0.57. C2 was not contacted.
 
 ## Shared policy and attributed framework
@@ -39,6 +40,8 @@ existing graphics allocations. Codec allocation limits are best-effort, and
 allocation aborts remain outside panic recovery. The 96 MiB package declaration
 does not prove safe total memory use or bounded shutdown time. Actual ARM memory
 and latency measurement still precede delivery.
+The ARM release also uses `panic=abort`: `catch_unwind` in the source is not a
+guarantee that a decoder panic can be recovered on the TV.
 
 ## Validation and next step
 
@@ -70,8 +73,21 @@ lint attempt across the framework remains unsuccessful on upstream C-ABI/style
 diagnostics and two new test-only `chunks_exact` suggestions. No framework-wide
 lint-clean result is claimed, and unrelated upstream code was left intact.
 
-Next: freeze matching ARM dashboard/helper artifacts, inspect their packages and
-ABI, then run an isolated G2 batch and ordinary consumer with a fresh baseline,
+Both actual ARM binaries and the normal/preparation packages now bind the same
+134 committed inputs at `9f387c862d29c029a7a6b3fbe9070c623766c835`.
+The independently authored and reviewed local auditor passes its twelve guard
+cases and the actual artifacts. It checks full Git/current-file input equality,
+the complete attributed framework, archive framing and payloads using both its
+own parser and SDK `ar`, and ELF requirements with SDK `readelf`. UI direct
+loader/library/GLIBC sets match retained 0.57; helper sets match the specifically
+bound native 0.46 helper. The exact 0.57 rollback archive matches the saved
+complete bundle. Coordinator readback rehashes 178 bound inputs and 507 saved
+inspector outputs. This local inspection executes no target ELF or TV helper and
+does not establish fresh native reader identity, permissions or transitive loading.
+Private package receipts were created with mode 0600; household resources and
+temporary Root selection pins remain outside the public repository.
+
+Next: run an isolated G2 batch and ordinary consumer with a fresh baseline,
 lease and verified restoration. Host success does not establish native memory,
 pixels, all-catalogue coverage, normal performance or retained promotion. LG Home,
 core services and OLED protections remain untouched; normal interaction keeps

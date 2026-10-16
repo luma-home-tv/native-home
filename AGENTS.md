@@ -217,6 +217,15 @@ Original encoded provenance, generations, cancellation, worker/GL ownership and
 Root protocol remain unchanged. Bounds are not total-heap/OOM/time guarantees;
 native memory/latency and matching ARM/package/native evidence remain pending.
 No060 retained promotion or C2 contact follows from these source checks.
+The later060 local artifact milestone passes both actual ARM builds and both
+packages at functional9f387c862d29c029a7a6b3fbe9070c623766c835/134inputs.
+Independent source review/12guards/actual local audit and coordinator178input+
+507output rehash pass; UI direct ABI matches actual057, helper matches bound046,
+and exact057 rollback matches the saved complete bundle. Preserve mode0600 new
+receipts and unchanged other9 framework files. ARM release panic=abort means
+catch_unwind grants no native panic-recovery guarantee. No target ELF/TV/helper
+ran in that audit; fresh reader identity, scene, lease, complete retained baseline,
+native memory/latency and known cleanup remain required before promotion.
 
 The earlier verified retained G2 installation was 0.56.0, with dashboard ELF
 SHA-256 `e556658ae1603f51218d8d87d9e30cdb2becab260d50199f2985f4f02f7aeac9`

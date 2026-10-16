@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "version": "0.60.0 source integration",
-  "status": "host_validated_ARM_native_pending",
+  "status": "integrated_source_host_ARM_packages_local_audit_pass_native_unqualified",
   "selected_source_inputs": 134,
   "source_inputs": {
     "Cargo.lock": {
@@ -627,5 +627,55 @@
   "C2_contacted": false,
   "preserved_first_host_failure": "old valid513-axis fixture incorrectly expected refusal; moved to valid2049-axis with separate new positive coverage",
   "framework_wide_strict_lint": "fails on upstream C-ABI/style diagnostics and two new test-only chunks_exact style suggestions; Luma strict Clippy passes; no blanket framework lint-clean claim",
-  "whole_framework_lint_failures_fixed_or_hidden": false
+  "whole_framework_lint_failures_fixed_or_hidden": false,
+  "functional_source_revision": "9f387c862d29c029a7a6b3fbe9070c623766c835",
+  "new_ARM_builds": true,
+  "new_packages": true,
+  "new_packages_installed": false,
+  "artifacts": {
+    "home-preview": {
+      "bytes": 4462496,
+      "sha256": "0c0eea10ca720d9bbf179cf96249d63786e638fb5a6d03c1a89660cebe102a45",
+      "build_receipt_sha256": "f51cc0ba6dc086adcc2a68213962026a64c6231ca21da0a1fbd06961aba57eda",
+      "log_sha256": "3d13baaef7cd4aa1ccd63482cbc7e8e4f74201786bef4e44abc1fe0eae1e0746",
+      "inputs_unchanged": true
+    },
+    "artwork-broker": {
+      "bytes": 908140,
+      "sha256": "1f75909fa26765739aca36a6ac89b668d1a1d6ece102bcb8c4a4fcf7e8b3e0d1",
+      "build_receipt_sha256": "f4da86eb27dec8c9cd77bf604669177bc2e5b6ddb8342ccde14ffe0066644606",
+      "log_sha256": "23bfda6780e0c8d2d07458fe611d253de4d7641b532ba79cdcde34d6b4f99a72",
+      "inputs_unchanged": true
+    },
+    "normal_package": {
+      "bytes": 2595172,
+      "sha256": "efb9a5e50483fee93331864676f2ca6e94915f65bb671a5193aef26875626192",
+      "receipt_sha256": "7e5181eb709ba029eefc2a4f7c92e1f058594f516e6d7418a199e49570ba89cb",
+      "log_sha256": "c496ae8a3f4034fea4fa3ee8c63130c586e56c3d45c826f9b00cac6de1bc422d",
+      "inputs_unchanged": true
+    },
+    "preparation_package": {
+      "bytes": 2595406,
+      "sha256": "f5d50862f6b16ea21e4f399f76196cd256ea398ce41ae3f39c320ec6c4332eb3",
+      "receipt_sha256": "6139e4256e8839b8870336068037bd8c3c651ee89cff54ed571748a3ee0b8f13",
+      "log_sha256": "0ff460e1d367909c173556ddf406723c02ad7c2368d7708d7dfa91c89b185d35",
+      "inputs_unchanged": true
+    }
+  },
+  "local_artifact_audit": {
+    "source_sha256": "31741fc348923369570396f25420c9f8e07d55a0dea7732cd1d75c74abc8a1cf",
+    "candidate_sha256": "ae8b8bf95c6a820772fb28ac0c5035c8e97ccb823666dee848b1a94454e2f641",
+    "actual_exit": 0,
+    "report_sha256": "a2a3063fca2f7a5d86adec62f1982b8f53050fc262550ba8b26377c81f037fb6",
+    "coordinator_closeout_sha256": "2036caceba34318d9c75faa0a1ad4aad50d67dcc6aad69926aff7b74c29a1f70",
+    "independent_source_review": "clear",
+    "rehashed_input_bindings": 178,
+    "rehashed_inspector_outputs": 507,
+    "UI_direct_ABI_comparator": "actual retained057 exact loader/NEEDED/GLIBC sets",
+    "helper_direct_ABI_comparator": "specifically bound native046 exact loader/NEEDED/GLIBC sets",
+    "exact057_rollback_matches_saved_complete_bundle": true,
+    "fresh_native_reader_or_permission_or_transitive_loading_qualified": false,
+    "TV_contacted": false
+  },
+  "ARM_panic_strategy": "abort; catch_unwind is not a native decoder-panic recovery guarantee"
 }

@@ -38,8 +38,8 @@ sizes before decoding; existing decoder defaults remain unchanged. Codec memory
 limits are additional safeguards, not a total-heap or OOM guarantee.
 The [0.60 icon policy](docs/bounded-icon-decoding-060.md) adds an opt-in bounded
 thumbnail API shared by all three worker decode paths, preserving transparency
-and the existing renderer output limits. Its source and host checks pass;
-matching ARM and native qualification remain pending.
+and the existing renderer output limits. Its source, host checks, matching ARM
+builds and local package/ABI audit pass; native qualification remains pending.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
