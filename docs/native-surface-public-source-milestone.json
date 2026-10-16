@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "status": "public_native_surface_source_host_ARM_package_prepared_native_pending",
+  "functional_source_revision": "5cf35ead09bae6da2ad908dd66d8f7e94fe29843",
+  "source_manifest_sha256": "53dca6fd11670d860ebb09b5df4ed613321066200bb594937a620a524035ebd9",
+  "standalone_lock_sha256": "3489fe2be97ba4002265eb5c9005055fa6c0148fe0dd19dace36b63faa7d5f50",
+  "build_result_sha256": "f63b423ea76c9a25966b124455a54b2fc4cc48a176d58e304d5bceee01bf9a92",
+  "build_inputs": {
+    "local": 14,
+    "external": 89,
+    "total": 103,
+    "source_local_Git_blobs_matched": 14,
+    "registry_lock_packages": 30,
+    "total_lock_packages": 34
+  },
+  "byte_preserved_sources": {
+    "main": "eb7d407f32948e107205a0d74d0d69caa915900f744a5830d777617fb5062763",
+    "runtime": "04ca72f63b83eb2c233cf7b79ed46be682ca374db4631170e06798ec35ebe855",
+    "identity": "77993442e98479633419cd443ad62198a293f239e19f0622ee9211e036a8958b",
+    "SDL_events": "67fb9bbc76546d1efdc0e6b8f4b3f54b0f40de80dbdcaf0aedb464b4261989e2"
+  },
+  "checks": {
+    "render_gate_tests": 2,
+    "environment_override_cases": 28,
+    "phase_boundary_tests": 5,
+    "strict_clippy": true,
+    "all_passed": true,
+    "source_review": "clear",
+    "ARM_build_actual_exit": 0,
+    "ARM_build_terminal": "910b1d",
+    "package_actual_exit": 0,
+    "package_terminal": "8c20e2"
+  },
+  "ELF": {
+    "sha256": "2195b51d2a585e9ed153e7755b743c822d37e53dfa4e1b6fcc9770c5453f59b1",
+    "bytes": 758628,
+    "byte_identical_to_earlier_private_build": true,
+    "native_execution_qualified": false
+  },
+  "new_package": {
+    "sha256": "f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736",
+    "bytes": 717144,
+    "receipt_sha256": "d90c62a2074a72b48e28c911736b6a17492521ba850233cffd92192315302fbb",
+    "files": 6,
+    "added_existing_font_and_licence_files": 3,
+    "directories": 4,
+    "services_permissions_hooks": false,
+    "historical_three_file_qualification_transferred": false,
+    "independent_SDK_archive_audit": {
+      "actual_exit": 0,
+      "actual_terminal": "e18172",
+      "source_sha256": "dc5441224fe8ed73fd737b3a1f3d5f919e3305d6f5a00e07a1ab412ae2266b41",
+      "report_sha256": "44e03214e2ee6968396a62352600a3a966b17480a4dbb1f04b89e39145e2cf66",
+      "original_admission_sha256": "ac6bd49202a4a2e93fdab8a602b2384e309157b0bfdeb0bce0073532b3e7434d",
+      "SDK_ar_original_members_verified": true,
+      "ARM32LE_EABI5_softfloat_PIE": true,
+      "direct_ABI_subset_of_actual_retained057": true,
+      "full_framework_verification": true,
+      "runtime_or_scene_qualified": false
+    }
+  },
+  "fixed_lifetime_after_window_init_seconds": 60,
+  "lifetime_is_not_hard_SDK_or_OS_bound": true,
+  "native_scene_component": "pending",
+  "TV_contact_this_source_wave": false,
+  "retained_G2": "0.57.0 unchanged",
+  "C2_contacted": false,
+  "normal_Root_artwork_enabled": false,
+  "unqualified": [
+    "both native actors alive around exact sole Target CARD",
+    "actual native Ready/Complete and observed draw-stop",
+    "new package execution, lifecycle and complete known removal",
+    "Root artwork negative settlement or normal activation",
+    "physical input, performance and C2"
+  ]
+}

@@ -359,3 +359,15 @@ Private handoffs were frozen before copying; initial failures and reviewed fixes
 remain distinct. An independent saved-receipt validator can proceed alongside
 the next carrier preparation. The native cases stay serial on the G2; this
 parallel work creates no C2 Root authority or additional device window.
+
+## Current artwork delivery direction
+
+The [ordinary surface source/build](native-surface-public-source-milestone.json)
+is now preserved and locally audited, with a new two-phase native carrier being
+prepared independently against retained G2 0.57. Its native scene remains
+unqualified. Root owns all device contact, integration and actual checks.
+The next [responsive artwork boundary](artwork-responsive-cache-next.md) uses
+an ordinary durable cache during normal interaction and separately qualified
+privileged preparation. A source/architecture review identified the per-icon
+session cost and early Unknown cases before any normal activation; the existing
+broker and guard remain reusable, with no weakened closure or Ticket recovery.

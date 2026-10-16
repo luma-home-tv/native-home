@@ -164,3 +164,20 @@ Proof readiness and both-live sole Target CARD qualification stay strict.
 Blocked actor, namespace, installer or ownership evidence cannot be replaced by
 this prelaunch predicate. Root artwork, negative settlement and normal activation
 remain later steps.
+
+The new ARM build passed from source
+`5cf35ead09bae6da2ad908dd66d8f7e94fe29843`, with all 103 selected inputs
+matched and all 14 local input blobs checked at that revision. It reproduces
+ELF `2195b51d2a585e9ed153e7755b743c822d37e53dfa4e1b6fcc9770c5453f59b1`
+byte-for-byte. Its six-file IPK has SHA-256
+`f63060a2480923abbd7ca462c187ca137a90e5a21d7ab642a85dae30647bd736`.
+The [source/build record](native-surface-public-source-milestone.json) keeps this
+separate from future device qualification. The new package has not run on a TV.
+
+An independently authored artifact auditor, executed by the coordinator, now
+passes actual SDK `ar` extraction, exact six-file/four-directory inventory,
+source/font/lock checks, all 103 input bindings and full framework verification.
+SDK `readelf` confirms ARM32 little-endian EABI5 soft-float PIE, the same loader
+and a subset of actual retained 0.57's direct library/GLIBC requirements. This
+is local artifact evidence, not a transitive loader or native-window test. The
+new ordinary scene carrier and native saved-evidence audit remain unrun.
