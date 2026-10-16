@@ -458,8 +458,16 @@ impl Generation {
         self.seal.current.load(Ordering::Acquire)
     }
 }
+/// Ordinary immutable-record association only; never source/Root authority.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct Selection {
+    record_sha256: [u8; 32],
+    encoded_sha256: [u8; 32],
+    encoded_bytes: u32,
+}
 #[derive(Clone)]
 struct Entry {
+    selection: Selection,
     record: Record,
     identity: FileIdentity,
     offset: u64,
@@ -493,11 +501,20 @@ pub struct Demand {
     generation: Generation,
 }
 pub struct CachedIcon {
+    selection: Selection,
     image: DecodedIcon,
     record: Record,
     generation: Generation,
 }
+impl Demand {
+    pub(crate) fn selection(&self) -> Selection {
+        self.entry.selection
+    }
+}
 impl CachedIcon {
+    pub(crate) fn selection(&self) -> Selection {
+        self.selection
+    }
     /// Caller must supply the CURRENT adopted generation and freshly admitted
     /// Source, after its ordinary worker result arrives. No GL authority implied.
     pub fn admit(
@@ -535,6 +552,10 @@ impl Cache {
         let media = open_at(&root, c"media", true)?;
         let developer = open_at(&media, c"developer", true)?;
         Self::open_in(developer, leaf, config)
+    }
+    #[cfg(test)]
+    pub(crate) fn open_test_directory(parent: File, config: Config) -> io::Result<Self> {
+        Self::open_in(parent, PREVIEW_LEAF, config)
     }
     fn open_in(parent: File, name: &CStr, config: Config) -> io::Result<Self> {
         let config = config.valid()?;
@@ -630,6 +651,11 @@ impl Cache {
                 .checked_add(u64::from(record.encoded_bytes))
                 .ok_or_else(|| invalid("Cache byte overflow"))?;
             entries.push(Entry {
+                selection: Selection {
+                    record_sha256: digest(&record.header()?),
+                    encoded_sha256: record.encoded_sha256,
+                    encoded_bytes: record.encoded_bytes,
+                },
                 record,
                 identity,
                 offset,
@@ -942,6 +968,7 @@ impl Snapshot {
             return Err(invalid("Stale or oversized decoded icon"));
         }
         Ok(CachedIcon {
+            selection: demand.entry.selection,
             image: DecodedIcon {
                 width,
                 height,

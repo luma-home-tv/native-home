@@ -127,6 +127,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         native_home::preferences_migration_proof::run(&assets)?;
         return Ok(());
     }
+    // Presence composes only an already explicit diagnostic marker path. The
+    // actual profile/self-ELF read is performed later on its artwork worker.
+    let mut preview_cache_sidecar_present = false;
     let preview_artwork_marker = if assets.join("preview-artwork-admission.json").exists() {
         if !device
             || interactive
@@ -148,9 +151,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             "snapshot.json",
             "icons",
             "preview-artwork-admission.json",
+            "artwork-cache-producer.json",
         ];
         for entry in std::fs::read_dir(&assets)? {
             let name = entry?.file_name();
+            preview_cache_sidecar_present |= name == "artwork-cache-producer.json";
             if !ADMISSION_FILES.contains(&name.to_str().unwrap_or("")) {
                 return Err(
                     "Preview artwork admission cannot mix with another asset or trial".into(),
@@ -797,6 +802,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let preferences_at_boot = shell.preferences().clone();
     shell.enable_app_launches(app_launches_enabled);
     shell.enable_home_launches(home_launches_enabled);
+    let ordinary_current_cache_selected =
+        device && interactive && plx_base::paths::app_id() == native_home::identity::PREVIEW;
+    if ordinary_current_cache_selected {
+        shell.enable_current_icon_cache();
+    }
     shell.load_icons(&assets);
     let preview_artwork_preflight = if preview_artwork_marker.is_some() {
         Some(native_home::preview_artwork_admission::preflight(
@@ -806,11 +816,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         None
     };
     let mut preview_resource_worker_created = false;
+    let mut diagnostic_cache_population_selected = false;
     if let (Some(marker), Some(preflight)) = (&preview_artwork_marker, &preview_artwork_preflight) {
         if native_home::preview_artwork_admission::admitted(preflight) {
-            let worker = native_home::artwork_installed_provider::InstalledProvider::start_preview_observation_worker(
-                marker.clone(), output.clone(),
-            )?;
+            let worker = if preview_cache_sidecar_present {
+                diagnostic_cache_population_selected = true;
+                native_home::artwork_installed_provider::InstalledProvider::start_preview_cache_population_worker(
+                    marker.clone(), output.clone(),
+                )?
+            } else {
+                native_home::artwork_installed_provider::InstalledProvider::start_preview_observation_worker(
+                    marker.clone(), output.clone(),
+                )?
+            };
             let runtime = native_home::artwork_runtime::Runtime::with_fetch_budget(
                 worker,
                 native_home::artwork_cache::Config::default(),
@@ -921,7 +939,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 window.swap();
             }
             native_home::icon_presentation_proof::settle_packaged_for_capture(
-                &mut shell, &mut now, Instant::now() + Duration::from_secs(5),
+                &mut shell,
+                &mut now,
+                Instant::now() + Duration::from_secs(5),
             )?;
             let before = window.graphics_state();
             shell.draw();
@@ -1587,6 +1607,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut idle_blanked = false;
     let mut idle_presentations = 0_u32;
     let mut ready_written = false;
+    let mut session_cache_captures = SessionCacheCaptures::default();
     let mut last_settings_observation = Duration::ZERO;
     let mut settings_returns = 0_u32;
     let mut capture_settings_return = false;
@@ -2094,6 +2115,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     shell.draw();
                     loop_counters.draws += 1;
                     let draw_elapsed = draw_start.elapsed();
+                    // Observation only: do not wait/pump/refresh to create a hit.
+                    // This branch is unreachable for ordinary release sessions
+                    // without the explicit pre-existing session-proof marker.
+                    if let Some(site) = session_cache_captures.pending(
+                        ordinary_current_cache_selected && session_capture,
+                        shell.page(),
+                    ) {
+                        if let Some((_, mut metadata)) = shell.session_cache_frame() {
+                            metadata["draw_sequence"] = serde_json::json!(loop_counters.draws);
+                            metadata["elapsed_ms"] =
+                                serde_json::json!(start.elapsed().as_millis() as u64);
+                            metadata["capture_file"] = serde_json::json!(site.ppm());
+                            metadata["metadata_file"] = serde_json::json!(site.json());
+                            metadata["sampled_after_draw_before_swap"] = serde_json::json!(true);
+                            metadata["framebuffer_size"] = serde_json::json!([1920, 1080]);
+                            let bytes = bounded_cache_frame_json(&metadata)?;
+                            window.capture(&output.join(site.ppm()))?;
+                            let mut file = std::fs::OpenOptions::new()
+                                .write(true)
+                                .create_new(true)
+                                .mode(0o600)
+                                .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                                .open(output.join(site.json()))?;
+                            file.write_all(&bytes)?;
+                            file.sync_all()?;
+                            session_cache_captures.completed(site);
+                        }
+                    }
                     if capture_settings_return
                         && matches!(
                             proof_request,
@@ -2294,6 +2343,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         && preview_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
     report["packaged_icon_shutdown"] = serde_json::json!(packaged_icon_shutdown);
+    report["ordinary_current_cache_selected"] = serde_json::json!(ordinary_current_cache_selected);
+    report["diagnostic_cache_population_selected"] =
+        serde_json::json!(diagnostic_cache_population_selected);
     report["broker_negative_proof"] = serde_json::json!(broker_negative_receipt);
     report["installed_artwork_proof"] = serde_json::json!(installed_artwork_receipt);
     report["preview_artwork_admission"] = serde_json::json!(preview_artwork_admission);
@@ -4417,8 +4469,113 @@ mod artwork_transition_dispatch_tests {
 mod window_exit_tests {
     #[test]
     fn window_close_keeps_its_terminal_reason_when_shell_exit_is_latched() {
-        assert_eq!(super::session_exit_reason(true, "window_closed"), "window_closed");
-        assert_eq!(super::session_exit_reason(true, "lifetime_complete"), "back_from_home");
-        assert_eq!(super::session_exit_reason(false, "proof_limit"), "proof_limit");
+        assert_eq!(
+            super::session_exit_reason(true, "window_closed"),
+            "window_closed"
+        );
+        assert_eq!(
+            super::session_exit_reason(true, "lifetime_complete"),
+            "back_from_home"
+        );
+        assert_eq!(
+            super::session_exit_reason(false, "proof_limit"),
+            "proof_limit"
+        );
+    }
+}
+
+const SESSION_CACHE_METADATA_LIMIT: usize = 128 * 1024;
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SessionCacheSite {
+    Home,
+    Apps,
+}
+impl SessionCacheSite {
+    fn index(self) -> usize {
+        match self {
+            Self::Home => 0,
+            Self::Apps => 1,
+        }
+    }
+    fn ppm(self) -> &'static str {
+        match self {
+            Self::Home => "session-cache-home.ppm",
+            Self::Apps => "session-cache-apps.ppm",
+        }
+    }
+    fn json(self) -> &'static str {
+        match self {
+            Self::Home => "session-cache-home.json",
+            Self::Apps => "session-cache-apps.json",
+        }
+    }
+}
+#[derive(Default)]
+struct SessionCacheCaptures {
+    captured: [bool; 2],
+}
+impl SessionCacheCaptures {
+    fn pending(&self, enabled: bool, page: Page) -> Option<SessionCacheSite> {
+        if !enabled {
+            return None;
+        }
+        let site = match page {
+            Page::Home => SessionCacheSite::Home,
+            Page::Applications => SessionCacheSite::Apps,
+            _ => return None,
+        };
+        (!self.captured[site.index()]).then_some(site)
+    }
+    fn completed(&mut self, site: SessionCacheSite) {
+        self.captured[site.index()] = true;
+    }
+}
+fn bounded_cache_frame_json(value: &serde_json::Value) -> std::io::Result<Vec<u8>> {
+    let mut bytes = serde_json::to_vec(value).map_err(std::io::Error::other)?;
+    bytes.push(b'\n');
+    if bytes.len() > SESSION_CACHE_METADATA_LIMIT {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Session cache metadata exceeds fixed bound",
+        ));
+    }
+    Ok(bytes)
+}
+#[cfg(test)]
+mod session_cache_capture_tests {
+    use super::*;
+    #[test]
+    fn only_two_fixed_current_page_sites_and_no_disabled_mode_capture() {
+        let mut gate = SessionCacheCaptures::default();
+        assert_eq!(gate.pending(false, Page::Home), None);
+        assert_eq!(gate.pending(true, Page::General), None);
+        assert_eq!(gate.pending(true, Page::Home), Some(SessionCacheSite::Home));
+        // No mark until both actual capture and metadata write have succeeded.
+        assert_eq!(gate.pending(true, Page::Home), Some(SessionCacheSite::Home));
+        gate.completed(SessionCacheSite::Home);
+        assert_eq!(gate.pending(true, Page::Home), None);
+        assert_eq!(
+            gate.pending(true, Page::Applications),
+            Some(SessionCacheSite::Apps)
+        );
+        gate.completed(SessionCacheSite::Apps);
+        assert_eq!(gate.pending(true, Page::Applications), None);
+        assert_eq!(SessionCacheSite::Home.ppm(), "session-cache-home.ppm");
+        assert_eq!(SessionCacheSite::Apps.json(), "session-cache-apps.json");
+    }
+    #[test]
+    fn metadata_budget_includes_json_encoding_and_final_newline() {
+        let small = serde_json::json!({"schema":1,"physical_panel_qualified":false});
+        let raw = bounded_cache_frame_json(&small).unwrap();
+        assert_eq!(raw.last(), Some(&b'\n'));
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&raw).unwrap(),
+            small
+        );
+        let too_large = serde_json::json!({"body":"x".repeat(SESSION_CACHE_METADATA_LIMIT)});
+        assert_eq!(
+            bounded_cache_frame_json(&too_large).unwrap_err().kind(),
+            std::io::ErrorKind::InvalidData
+        );
     }
 }

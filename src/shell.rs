@@ -1064,6 +1064,10 @@ pub struct Shell {
     // Borrowed drawing references only; packaged_icons owns their GL handles.
     textures: BTreeMap<String, (u32, f32, f32)>,
     packaged_bindings: crate::packaged_icons::Bindings,
+    current_icon_cache: bool,
+    // Independent ordinary association/freshness; never Root Runtime readiness.
+    current_icon_sources: Option<crate::app_artwork::SourceMap>,
+    current_icon_sources_observed: Option<u32>,
     packaged_icons: Option<crate::packaged_icons::PackagedIcons<crate::artwork_gl::Backend>>,
     packaged_gl: crate::artwork_gl::Diagnostics,
     live_textures: crate::artwork_textures::ArtworkTextures<crate::artwork_gl::Backend>,
@@ -1174,6 +1178,9 @@ impl Shell {
             surface: Self::blank(Page::Home),
             textures: BTreeMap::new(),
             packaged_bindings,
+            current_icon_cache: false,
+            current_icon_sources: None,
+            current_icon_sources_observed: None,
             packaged_icons: None,
             packaged_gl,
             live_textures,
@@ -1399,7 +1406,9 @@ impl Shell {
                         }),
                         initials: cstr(&initials),
                         texture: tex,
-                        loading_icon: self.packaged_icons.as_ref()
+                        loading_icon: self
+                            .packaged_icons
+                            .as_ref()
                             .is_some_and(|icons| icons.will_load(&app.id)),
                         compact_labels: page == Page::Applications,
                         context_selected: self.menu.as_ref().is_some_and(|m| m.id == app.id),
@@ -1644,6 +1653,21 @@ impl Shell {
         }
     }
     pub fn apply_live(&mut self, update: &Update, now: u32) {
+        let current_sources = match &update.artwork {
+            live::Reading::Value(sources)
+                if !update.simulated
+                    && matches!(update.catalogue, live::Reading::Value(_))
+                    && Freshness::current(Some(update.observed_ms), now)
+                    && sources.len() <= crate::packaged_icons::MAX_SOURCES =>
+            {
+                Some(sources)
+            }
+            _ => None,
+        };
+        self.update_current_icon_sources(
+            current_sources,
+            current_sources.map(|_| update.observed_ms),
+        );
         if let Some(artwork) = &mut self.artwork {
             let filtered;
             let sources = match &update.artwork {
@@ -1702,6 +1726,11 @@ impl Shell {
     }
     pub fn age_live(&mut self, now: u32) {
         self.live_now = now;
+        if self.current_icon_sources.is_some()
+            && !Freshness::current(self.current_icon_sources_observed, now)
+        {
+            self.update_current_icon_sources(None, None);
+        }
         if self.artwork_catalogue_live && !self.artwork_catalogue_current() {
             self.artwork_catalogue_live = false;
             if let Some(artwork) = &mut self.artwork {
@@ -2103,16 +2132,98 @@ impl Shell {
         self.configure_packaged_icons(assets);
         self.rebuild(self.surface.page);
     }
+    /// Configuration only, before load_icons. No profile/cache/self-ELF I/O.
+    /// Main selects this only for actual interactive native Preview.
+    pub fn enable_current_icon_cache(&mut self) {
+        self.current_icon_cache = true;
+    }
+    fn update_current_icon_sources(
+        &mut self,
+        sources: Option<&crate::app_artwork::SourceMap>,
+        observed: Option<u32>,
+    ) -> bool {
+        self.current_icon_sources_observed = if sources.is_some() { observed } else { None };
+        if self.current_icon_sources.as_ref() == sources {
+            return false; // Renew only the source clock; no refresh/epoch churn.
+        }
+        self.current_icon_sources = sources.cloned();
+        if self.current_icon_cache {
+            let failed = self.packaged_icons.as_mut().is_some_and(|icons| {
+                icons
+                    .update_sources(self.current_icon_sources.as_ref())
+                    .is_err()
+            });
+            if failed {
+                self.current_icon_sources = None;
+                self.current_icon_sources_observed = None;
+                if let Some(icons) = &mut self.packaged_icons {
+                    let _ = icons.update_sources(None);
+                }
+            }
+            self.withdraw_stale_icon_references();
+        }
+        true
+    }
     fn configure_packaged_icons(&mut self, assets: &std::path::Path) {
         let _ = self.finish_packaged_icons();
         self.textures.clear();
-        if !self.packaged_bindings.is_empty() {
+        let backend = crate::artwork_gl::Backend::new(self.packaged_gl.clone());
+        if self.current_icon_cache {
+            // Starts even with no packaged bindings: later live catalogue entries
+            // can select ordinary cache images. Profile/cache work stays on worker.
+            self.packaged_icons = crate::packaged_icons::PackagedIcons::start_current_cache(
+                assets.to_owned(),
+                self.packaged_bindings.clone(),
+                backend,
+                crate::durable_icon_cache::Config::default(),
+            )
+            .ok();
+            if let Some(icons) = &mut self.packaged_icons {
+                let sources = self.current_icon_sources.as_ref().filter(|_| {
+                    Freshness::current(self.current_icon_sources_observed, self.live_now)
+                });
+                if icons.update_sources(sources).is_err() {
+                    let _ = icons.update_sources(None);
+                }
+            }
+        } else if !self.packaged_bindings.is_empty() {
             self.packaged_icons = crate::packaged_icons::PackagedIcons::start(
                 assets.to_owned(),
                 self.packaged_bindings.clone(),
-                crate::artwork_gl::Backend::new(self.packaged_gl.clone()),
+                backend,
             )
             .ok();
+        }
+    }
+    /// Pure reference withdrawal only: do not poll/dispatch/upload during live
+    /// reconciliation before the current frame's keyboard/external intent gate.
+    fn withdraw_stale_icon_references(&mut self) {
+        let Some(icons) = &self.packaged_icons else {
+            return;
+        };
+        let mut removed = BTreeSet::new();
+        self.textures.retain(|id, _| {
+            let keep = icons.texture(id).is_some();
+            if !keep {
+                removed.insert(id.clone());
+            }
+            keep
+        });
+        for card in &mut self.surface.cards.items {
+            let loading = icons.will_load(&card.id);
+            if card.loading_icon != loading {
+                removed.insert(card.id.clone());
+            }
+            card.loading_icon = loading;
+        }
+        self.refresh_artwork_cards();
+        if self.ordinary_icons_allowed()
+            && self
+                .packaged_visible()
+                .iter()
+                .any(|id| removed.contains(id))
+        {
+            plx_machine::idle::invalidate();
         }
     }
     fn packaged_visible(&self) -> Vec<String> {
@@ -2178,11 +2289,8 @@ impl Shell {
         }
         visible
     }
-    fn pump_packaged_icons(&mut self) {
-        if self.packaged_icons.is_none() {
-            return;
-        }
-        let allowed = !self.exit
+    fn ordinary_icons_allowed(&self) -> bool {
+        !self.exit
             && ![
                 PauseReason::ForegroundLost,
                 PauseReason::Idle,
@@ -2191,7 +2299,13 @@ impl Shell {
                 PauseReason::ExternalIntent,
             ]
             .into_iter()
-            .any(|reason| self.artwork_pause.contains(reason));
+            .any(|reason| self.artwork_pause.contains(reason))
+    }
+    fn pump_packaged_icons(&mut self) {
+        if self.packaged_icons.is_none() {
+            return;
+        }
+        let allowed = self.ordinary_icons_allowed();
         let visible = if allowed {
             self.packaged_visible()
         } else {
@@ -2254,6 +2368,10 @@ impl Shell {
             "submitted":before.submitted,"completed":before.completed,
             "discarded":before.discarded,"unavailable_sources":before.unavailable_sources,
             "texture_bytes_before_cleanup":before.texture_bytes_estimate,
+            "cache_readiness":format!("{:?}",before.cache_readiness),
+            "cache_readiness_is_index_not_images":true,
+            "cache_uploads":before.cache_uploads,"packaged_uploads":before.packaged_uploads,
+            "cache_adoptions":before.cache_adoptions,
             "gl":self.packaged_gl.receipt()}))
     }
     /// Diagnostic readiness only. Ordinary navigation never waits for artwork.
@@ -4218,6 +4336,109 @@ impl Shell {
             })
             .collect()
     }
+    /// Session-proof observation only. The Main caller gates this by actual
+    /// ordinary Preview + session capture, after draw and before swap.
+    #[doc(hidden)]
+    pub fn session_cache_frame(&self) -> Option<(Page, serde_json::Value)> {
+        let controller = self.packaged_icons.as_ref()?;
+        self.session_cache_frame_with(controller.stats(), |id| {
+            Some((
+                controller.texture(id)?,
+                controller.current_cached_source(id)?.clone(),
+            ))
+        })
+    }
+    fn session_cache_frame_with(
+        &self,
+        stats: crate::packaged_icons::Stats,
+        origin: impl Fn(
+            &str,
+        ) -> Option<(
+            crate::packaged_icons::TextureView<u32>,
+            crate::app_artwork::SourceKey,
+        )>,
+    ) -> Option<(Page, serde_json::Value)> {
+        if !self.current_icon_cache
+            || !matches!(self.surface.page, Page::Home | Page::Applications)
+            || !self.ordinary_icons_allowed()
+            || self.drawer.editing
+            || self.menu.is_some()
+            || !Freshness::current(self.current_icon_sources_observed, self.live_now)
+        {
+            return None;
+        }
+        let sources = self.current_icon_sources.as_ref()?;
+        let observed = self.current_icon_sources_observed?;
+        let visible = self.packaged_visible().into_iter().collect::<BTreeSet<_>>();
+        let mut cached = Vec::new();
+        for row in self.icon_presentation_cards() {
+            let id = row["id"].as_str()?;
+            if !visible.contains(id) {
+                continue;
+            }
+            let Some((view, key)) = origin(id) else {
+                continue;
+            };
+            if view.handle == 0
+                || sources.get(id).and_then(|s| s.preferred()).map(|s| s.key()) != Some(&key)
+                || row["texture_handle"].as_u64() != Some(u64::from(view.handle))
+                || row["width"].as_u64() != Some(u64::from(view.width))
+                || row["height"].as_u64() != Some(u64::from(view.height))
+            {
+                continue;
+            }
+            // Existing shared placement is unchanged; intersect actual drawn
+            // clip once more, never spring-target/offscreen eligibility.
+            let numbers = |value: &serde_json::Value| -> Option<[f64; 4]> {
+                let a = value.as_array()?;
+                if a.len() != 4 {
+                    return None;
+                }
+                let out = [
+                    a[0].as_f64()?,
+                    a[1].as_f64()?,
+                    a[2].as_f64()?,
+                    a[3].as_f64()?,
+                ];
+                out.iter().all(|v| v.is_finite()).then_some(out)
+            };
+            let r = numbers(&row["rect"])?;
+            let c = numbers(&row["clip"])?;
+            if r[2] <= 0.0
+                || r[3] <= 0.0
+                || c[2] <= 0.0
+                || c[3] <= 0.0
+                || r[0] >= c[0] + c[2]
+                || r[0] + r[2] <= c[0]
+                || r[1] >= c[1] + c[3]
+                || r[1] + r[3] <= c[1]
+            {
+                continue;
+            }
+            cached.push(serde_json::json!({"id":id,"source_key":key,"rect":row["rect"],"clip":row["clip"],
+                "focused":row["focused"],"texture_handle":view.handle,"width":view.width,"height":view.height}));
+            if cached.len() > crate::packaged_icons::MAX_TEXTURES {
+                return None;
+            }
+        }
+        if cached.is_empty() || cached.len() > stats.texture_entries {
+            return None;
+        }
+        let page = self.surface.page;
+        Some((
+            page,
+            serde_json::json!({"schema":1,"kind":"ordinary-cache-frame-v1",
+            "page":if page==Page::Home {"home"} else {"apps"},"source_observed_ms":observed,
+            "source_sample_now_ms":self.live_now,"source_age_ms":self.live_now.wrapping_sub(observed),
+            "cached_cards":cached,"cache_readiness":format!("{:?}",stats.cache_readiness),
+            "cache_readiness_is_index_not_images":true,"cache_uploads":stats.cache_uploads,
+            "packaged_uploads":stats.packaged_uploads,"cache_adoptions":stats.cache_adoptions,
+            "texture_entries":stats.texture_entries,"Root_authority_qualified":false,
+            "positive_Root_producer_qualified":false,"native_foreground_scene_qualified":false,
+            "physical_panel_qualified":false,"cleanup_qualified":false,"performance_qualified":false,
+            "continuous_source_file_freshness_qualified":false}),
+        ))
+    }
     pub fn icon_presentation_resources(&self) -> Vec<u32> {
         std::iter::once(self.brand_texture)
             .chain(self.navigation_textures)
@@ -4746,3 +4967,11 @@ mod packaged_tests;
 #[cfg(test)]
 #[path = "shell_empty_state_tests.rs"]
 mod empty_state_tests;
+
+#[cfg(test)]
+#[path = "shell_current_cache_tests.rs"]
+mod current_cache_tests;
+
+#[cfg(test)]
+#[path = "shell_cache_frame_tests.rs"]
+mod cache_frame_tests;

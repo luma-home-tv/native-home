@@ -26,6 +26,9 @@ pub struct InstalledProvider {
     // In-memory metadata only; never a settlement or stale-latch recovery grant.
     #[cfg(any(target_arch = "arm", test))]
     last_attempt: Option<AttemptTrace>,
+    // Explicit diagnostic opt-in only; every existing factory leaves this None.
+    #[cfg(any(target_arch = "arm", test))]
+    cache_publisher: Option<CachePublisher>,
 }
 struct Init(Result<InstalledProvider, ProviderError>);
 impl Provider for Init {
@@ -202,6 +205,46 @@ impl InstalledProvider {
             ))
         }
     }
+    /// Explicit diagnostic-only ordinary publication. No Main/Shell callsite is
+    /// installed; all pre-existing factories remain publisher=None.
+    pub fn start_preview_cache_population_worker(
+        marker: Marker,
+        output: PathBuf,
+    ) -> std::io::Result<crate::artwork_worker::Worker> {
+        #[cfg(target_arch = "arm")]
+        {
+            crate::artwork_worker::Worker::start(move || {
+                Init(
+                    Self::new_for_profile(marker, Profile::Preview).and_then(|mut provider| {
+                        // Fixed sidecar and self-ELF I/O stay on this existing
+                        // worker initializer, never on the native UI thread.
+                        let expected = population_expected(
+                            &provider.marker,
+                            crate::cache_producer_profile::load_current,
+                        )?;
+                        let observation = ProofObservation::open(output, Profile::Preview)
+                            .map_err(|_| ProviderError::Denied)?;
+                        // Ordinary fixed-cache setup happens before any fetch/dispatch.
+                        let cache = crate::durable_icon_cache::Cache::open_current(
+                            crate::durable_icon_cache::Config::default(),
+                        )
+                        .map_err(|_| ProviderError::Unavailable)?;
+                        provider.observation = Some(observation);
+                        provider.cache_publisher = Some(CachePublisher { cache, expected });
+                        Ok(provider)
+                    }),
+                )
+            })
+        }
+        #[cfg(not(target_arch = "arm"))]
+        {
+            let _ = (marker, output);
+            Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "Cache population requires explicit native Preview diagnostics",
+            ))
+        }
+    }
     pub fn start_worker(marker: Marker) -> std::io::Result<crate::artwork_worker::Worker> {
         crate::artwork_worker::Worker::start(move || Init(Self::new(marker)))
     }
@@ -277,6 +320,7 @@ impl InstalledProvider {
                 observation: None,
                 guard: Some(guard),
                 last_attempt: None,
+                cache_publisher: None,
             })
         }
         #[cfg(not(target_arch = "arm"))]
@@ -346,13 +390,107 @@ impl Provider for InstalledProvider {
         let deadline = deadline.min(Instant::now() + Duration::from_secs(30));
         #[cfg(target_arch = "arm")]
         {
-            native::fetch(self, source, deadline, cancellation)
+            let result = native::fetch(self, source, deadline, cancellation);
+            // native::fetch has already joined/graded/resolved this Ticket and
+            // completed any required diagnostic result write. Never before it.
+            self.publish_after_positive(source, &result, deadline, || cancellation.is_cancelled());
+            result
         }
         #[cfg(not(target_arch = "arm"))]
         {
             let _ = (&self.marker, self.profile, source, deadline);
             Err(ProviderError::Unavailable)
         }
+    }
+}
+
+#[cfg(any(target_arch = "arm", test))]
+fn population_expected(
+    marker: &Marker,
+    load: impl FnOnce() -> std::io::Result<Option<crate::cache_producer_profile::ExpectedProducer>>,
+) -> Result<crate::cache_producer_profile::ExpectedProducer, ProviderError> {
+    let expected = load()
+        .map_err(|_| ProviderError::Denied)?
+        .ok_or(ProviderError::Unavailable)?;
+    if !expected.matches_marker(marker) {
+        return Err(ProviderError::Denied);
+    }
+    Ok(expected)
+}
+#[cfg(any(target_arch = "arm", test))]
+struct CachePublisher {
+    cache: crate::durable_icon_cache::Cache,
+    expected: crate::cache_producer_profile::ExpectedProducer,
+}
+/// Optional ordinary side effects cannot mutate Root settlement or image result.
+/// The callback seam is private; production supplies only Cache::publish and the
+/// current fixed diagnostic observer. It is not an injectable provider factory.
+#[cfg(any(target_arch = "arm", test))]
+fn publish_positive_with(
+    provider: &InstalledProvider,
+    source: &Source,
+    result: &Result<EncodedFile, ProviderError>,
+    timing: (Instant, impl FnOnce() -> bool),
+    expected: &crate::cache_producer_profile::ExpectedProducer,
+    publish: impl FnOnce(
+        &Source,
+        &EncodedFile,
+        crate::durable_icon_cache::ProducerVersion,
+    ) -> std::io::Result<()>,
+    observe: impl FnOnce(&serde_json::Value) -> std::io::Result<()>,
+) -> Option<(bool, bool)> {
+    let (deadline, cancelled) = timing;
+    let encoded = result.as_ref().ok()?;
+    if provider.profile != Profile::Preview
+        || !expected.matches_marker(&provider.marker)
+        || provider.transition_settlement() != SessionSettlement::KnownClosed
+        || cancelled()
+        || Instant::now() >= deadline
+    {
+        return None;
+    }
+    let published = publish(source, encoded, expected.version());
+    let error = published
+        .as_ref()
+        .err()
+        .map(|error| error.to_string().chars().take(256).collect::<String>());
+    let digest = encoded
+        .digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let receipt = serde_json::json!({"schema":1,"source_key":source.key(),"producer":expected.version(),
+        "encoded_sha256":digest,"encoded_bytes":encoded.bytes.len(),"publication_succeeded":published.is_ok(),
+        "ordinary_publication_error":error,"Root_settlement_changed":false,"encoded_image_bytes_logged":false,
+        "decode_or_native_pixels_qualified":false});
+    let written = observe(&receipt).is_ok();
+    Some((published.is_ok(), written))
+}
+#[cfg(any(target_arch = "arm", test))]
+impl InstalledProvider {
+    fn publish_after_positive(
+        &mut self,
+        source: &Source,
+        result: &Result<EncodedFile, ProviderError>,
+        deadline: Instant,
+        cancelled: impl FnOnce() -> bool,
+    ) {
+        let Some(mut publisher) = self.cache_publisher.take() else {
+            return;
+        };
+        if let Some(observer) = self.observation.as_ref() {
+            let expected = publisher.expected.clone();
+            let _ = publish_positive_with(
+                self,
+                source,
+                result,
+                (deadline, cancelled),
+                &expected,
+                |source, encoded, producer| publisher.cache.publish(source, encoded, producer),
+                |receipt| observer.cache_result(receipt),
+            );
+        }
+        self.cache_publisher = Some(publisher);
     }
 }
 
@@ -488,6 +626,24 @@ impl ProofObservation {
         ))
     }
     fn write(&self, name: &str, value: &serde_json::Value) -> std::io::Result<()> {
+        self.write_fixed(name, value, false)
+    }
+    fn cache_result(&self, value: &serde_json::Value) -> std::io::Result<()> {
+        if self.closed_case.is_some() || !(1..=16).contains(&self.started) {
+            return Err(std::io::Error::other("No current diagnostic cache index"));
+        }
+        self.write_fixed(
+            &format!("installed-artwork-{}-cache.json", self.started),
+            value,
+            true,
+        )
+    }
+    fn write_fixed(
+        &self,
+        name: &str,
+        value: &serde_json::Value,
+        optional_cache: bool,
+    ) -> std::io::Result<()> {
         use std::{
             io::Write,
             os::{
@@ -495,8 +651,13 @@ impl ProofObservation {
                 unix::fs::MetadataExt,
             },
         };
-        if !(self.closed_case.is_some()
-            && crate::artwork_closed_negative_proof::ProgressFile::allows(name))
+        let cache_name = optional_cache
+            && self.closed_case.is_none()
+            && (1..=16).contains(&self.started)
+            && name == format!("installed-artwork-{}-cache.json", self.started);
+        if !cache_name
+            && !(self.closed_case.is_some()
+                && crate::artwork_closed_negative_proof::ProgressFile::allows(name))
             && name != "installed-artwork-cap.json"
             && !(1..=16).any(|index| {
                 Self::filename(index, true).is_ok_and(|v| v == name)
@@ -2368,6 +2529,7 @@ mod settlement_tests {
             observation: None,
             guard: Some(Guard::open_for_test(&directory.0, Profile::Proof).unwrap()),
             last_attempt: None,
+            cache_publisher: None,
         }
     }
     fn identity(p: &InstalledProvider) -> PendingIdentity {

@@ -241,6 +241,7 @@ pub(super) fn fixture() -> (InstalledProvider, Source, session::Exchange, Value)
             observation: None,
             guard: None,
             last_attempt: None,
+            cache_publisher: None,
         },
         source,
         exchange,
@@ -2169,5 +2170,408 @@ fn closed_recipe_reports_only_its_selected_negative_stage_without_weakening_gene
             provider.transition_settlement(),
             SessionSettlement::KnownClosed
         );
+    }
+}
+
+// Optional ordinary publication component tests. Real current Guard/Ticket
+// files; positive exchange/HBC are controlled fixtures, never native proof.
+fn cache_expected(
+    directory: &ObservationDirectory,
+    provider: &InstalledProvider,
+) -> crate::cache_producer_profile::ExpectedProducer {
+    use std::os::unix::fs::PermissionsExt;
+    let path = directory.0.join("artwork-cache-producer.json");
+    std::fs::write(
+        &path,
+        serde_json::to_vec(&json!({"schema":1,"app_id":crate::identity::PREVIEW,
+        "producer_kind":"joined-single-positive-v1","source_revision":"a".repeat(40),
+        "ui_sha256":provider.marker.ui_sha256,"broker_sha256":provider.marker.broker_sha256}))
+        .unwrap(),
+    )
+    .unwrap();
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o644)).unwrap();
+    crate::cache_producer_profile::ExpectedProducer::load_for_test(
+        &std::fs::File::open(&directory.0).unwrap(),
+        &provider.marker.ui_sha256,
+    )
+    .unwrap()
+    .unwrap()
+}
+fn closed_preview(
+    directory: &ObservationDirectory,
+) -> (
+    InstalledProvider,
+    Source,
+    Result<EncodedFile, ProviderError>,
+) {
+    let (mut provider, source, exchange, hbc) = preview_fixture();
+    let own = guarded(&mut provider, directory);
+    let ticket = begin_pending(&mut provider, &own).unwrap();
+    let result = session::settle(
+        &mut provider,
+        source.key(),
+        Ok(exchange),
+        Ok(hbc),
+        false,
+        false,
+    );
+    let result = guard_result(&mut provider, ticket, result);
+    assert!(result.is_ok());
+    (provider, source, result)
+}
+#[test]
+fn cache_publication_waits_for_real_current_ticket_resolution_and_borrows_original_bytes() {
+    use std::cell::Cell;
+    let directory = ObservationDirectory::new();
+    let (mut p, source, exchange, hbc) = preview_fixture();
+    let expected = cache_expected(&directory, &p);
+    let own = guarded(&mut p, &directory);
+    let ticket = begin_pending(&mut p, &own).unwrap();
+    let result = session::settle(&mut p, source.key(), Ok(exchange), Ok(hbc), false, false);
+    assert!(result.is_ok());
+    let count = Cell::new(0);
+    let deadline = Instant::now() + Duration::from_secs(5);
+    assert!(publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (deadline, || false),
+        &expected,
+        |_, _, _| {
+            count.set(count.get() + 1);
+            Ok(())
+        },
+        |_| Ok(())
+    )
+    .is_none());
+    assert!(p.guard.as_ref().unwrap().pending().unwrap());
+    let result = guard_result(&mut p, ticket, result);
+    let file = result.as_ref().unwrap();
+    let pointer = file.bytes.as_ptr();
+    let bytes = file.bytes.clone();
+    let identity = file.identity.clone();
+    let content = file.digest;
+    let outcome = publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (deadline, || false),
+        &expected,
+        |actual, encoded, producer| {
+            assert_eq!(actual.key(), source.key());
+            assert_eq!(encoded.bytes.as_ptr(), pointer);
+            assert_eq!(encoded.bytes, bytes);
+            assert_eq!(encoded.identity, identity);
+            assert_eq!(encoded.digest, content);
+            assert_eq!(producer, expected.version());
+            assert!(!p.guard.as_ref().unwrap().pending().unwrap());
+            count.set(count.get() + 1);
+            Ok(())
+        },
+        |record| {
+            assert_eq!(record["publication_succeeded"], true);
+            assert_eq!(record["encoded_image_bytes_logged"], false);
+            Ok(())
+        },
+    );
+    assert_eq!(outcome, Some((true, true)));
+    assert_eq!(count.get(), 1);
+    assert!(result.is_ok());
+    assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
+}
+#[test]
+fn lifecycle_known_without_an_ok_image_never_publishes() {
+    for error in [
+        ProviderError::Denied,
+        ProviderError::Unavailable,
+        ProviderError::Cancelled,
+        ProviderError::Expired,
+        ProviderError::Invalid,
+    ] {
+        let directory = ObservationDirectory::new();
+        let (mut p, source, image_result) = closed_preview(&directory);
+        let expected = cache_expected(&directory, &p);
+        let result: Result<EncodedFile, ProviderError> = Err(error);
+        assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
+        assert!(publish_positive_with(
+            &p,
+            &source,
+            &result,
+            (Instant::now() + Duration::from_secs(5), || false),
+            &expected,
+            |_, _, _| panic!("No image must publish"),
+            |_| panic!("No publication receipt")
+        )
+        .is_none());
+        assert!(!p.quarantined);
+        assert!(p.ticket_resolved);
+        // Simulate an older unresolved record appearing after known completion:
+        // it blocks publication even when an independently owned Ok buffer exists.
+        let own = guarded(&mut p, &directory);
+        let retained = begin_pending(&mut p, &own).unwrap();
+        drop(retained);
+        assert_eq!(p.transition_settlement(), SessionSettlement::Unknown);
+        assert!(publish_positive_with(
+            &p,
+            &source,
+            &image_result,
+            (Instant::now() + Duration::from_secs(5), || false),
+            &expected,
+            |_, _, _| panic!("Old resolved image cannot publish against new pending record"),
+            |_| panic!("No receipt")
+        )
+        .is_none());
+    }
+}
+#[test]
+fn changed_current_pending_file_prevents_publication_and_preserves_quarantine() {
+    let directory = ObservationDirectory::new();
+    let (mut p, source, exchange, hbc) = preview_fixture();
+    let expected = cache_expected(&directory, &p);
+    let own = guarded(&mut p, &directory);
+    let ticket = begin_pending(&mut p, &own).unwrap();
+    let result = session::settle(&mut p, source.key(), Ok(exchange), Ok(hbc), false, false);
+    assert!(result.is_ok());
+    std::fs::write(
+        directory.0.join("artwork-session-pending.json"),
+        b"changed pending evidence",
+    )
+    .unwrap();
+    let result = guard_result(&mut p, ticket, result);
+    assert!(result.is_err());
+    assert!(p.quarantined);
+    assert!(!p.ticket_resolved);
+    assert!(publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (Instant::now() + Duration::from_secs(5), || false),
+        &expected,
+        |_, _, _| panic!("No failed-ticket publication"),
+        |_| panic!("No receipt")
+    )
+    .is_none());
+    assert!(p.quarantined);
+    assert!(!p.ticket_resolved);
+}
+#[test]
+fn ordinary_cache_and_optional_receipt_errors_never_rewrite_image_or_root_state() {
+    for (publish_ok, receipt_ok) in [(false, true), (true, false), (false, false)] {
+        let directory = ObservationDirectory::new();
+        let (p, source, result) = closed_preview(&directory);
+        let expected = cache_expected(&directory, &p);
+        let file = result.as_ref().unwrap();
+        let pointer = file.bytes.as_ptr();
+        let count = std::cell::Cell::new(0);
+        let got = publish_positive_with(
+            &p,
+            &source,
+            &result,
+            (Instant::now() + Duration::from_secs(5), || false),
+            &expected,
+            |_, _, _| {
+                count.set(count.get() + 1);
+                if publish_ok {
+                    Ok(())
+                } else {
+                    Err(std::io::Error::other("Controlled ordinary cache error"))
+                }
+            },
+            |receipt| {
+                assert_eq!(receipt["publication_succeeded"], publish_ok);
+                if receipt_ok {
+                    Ok(())
+                } else {
+                    Err(std::io::Error::other("Controlled optional receipt error"))
+                }
+            },
+        );
+        assert_eq!(got, Some((publish_ok, receipt_ok)));
+        assert_eq!(count.get(), 1);
+        assert_eq!(result.as_ref().unwrap().bytes.as_ptr(), pointer);
+        assert!(!p.quarantined);
+        assert!(p.ticket_resolved);
+        assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
+    }
+}
+#[test]
+fn final_cancel_expiry_marker_and_profile_gates_skip_all_ordinary_writes() {
+    let directory = ObservationDirectory::new();
+    let (mut p, source, result) = closed_preview(&directory);
+    let expected = cache_expected(&directory, &p);
+    for (cancelled, deadline) in [
+        (true, Instant::now() + Duration::from_secs(5)),
+        (false, Instant::now()),
+    ] {
+        assert!(publish_positive_with(
+            &p,
+            &source,
+            &result,
+            (deadline, || cancelled),
+            &expected,
+            |_, _, _| panic!("No interrupted publication"),
+            |_| panic!("No receipt")
+        )
+        .is_none());
+    }
+    p.marker.broker_sha256 = "d".repeat(64);
+    assert!(publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (Instant::now() + Duration::from_secs(5), || false),
+        &expected,
+        |_, _, _| panic!("Mismatched expected helper"),
+        |_| panic!("No receipt")
+    )
+    .is_none());
+    p.marker.broker_sha256 = "c".repeat(64);
+    p.profile = Profile::Proof;
+    assert!(publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (Instant::now() + Duration::from_secs(5), || false),
+        &expected,
+        |_, _, _| panic!("No Proof publisher"),
+        |_| panic!("No receipt")
+    )
+    .is_none());
+    assert!(result.is_ok());
+    assert!(!p.quarantined);
+    assert!(p.ticket_resolved);
+}
+#[test]
+fn existing_provider_fixture_has_no_publisher_and_does_not_even_run_optional_gate() {
+    let directory = ObservationDirectory::new();
+    let (mut p, source, result) = closed_preview(&directory);
+    assert!(p.cache_publisher.is_none());
+    p.publish_after_positive(
+        &source,
+        &result,
+        Instant::now() + Duration::from_secs(5),
+        || panic!("Default None must bypass all publication work"),
+    );
+    assert!(p.cache_publisher.is_none());
+    assert!(result.is_ok());
+    assert_eq!(p.transition_settlement(), SessionSettlement::KnownClosed);
+}
+#[test]
+fn required_diagnostic_result_write_error_remains_nonpublishing() {
+    let directory = ObservationDirectory::new();
+    let (mut p, source, result) = closed_preview(&directory);
+    let expected = cache_expected(&directory, &p);
+    p.observation = Some(directory.observer());
+    let ticket = proof_ticket(&mut p).unwrap().unwrap();
+    write_observed_result(&mut p, ticket, &json!({"outcome":"first fixture"})).unwrap();
+    let result =
+        write_observed_result(&mut p, ticket, &json!({"outcome":"must not overwrite"})).and(result);
+    assert!(result.is_err());
+    assert!(p.quarantined);
+    assert!(publish_positive_with(
+        &p,
+        &source,
+        &result,
+        (Instant::now() + Duration::from_secs(5), || false),
+        &expected,
+        |_, _, _| panic!("Required observation failed"),
+        |_| panic!("No optional receipt")
+    )
+    .is_none());
+    assert!(p.quarantined);
+    assert!(p.ticket_resolved);
+    assert!(!p.guard.as_ref().unwrap().pending().unwrap());
+}
+#[test]
+fn optional_cache_receipt_uses_only_current_fixed_index_and_cannot_overwrite() {
+    let directory = ObservationDirectory::new();
+    let (mut p, _, _, _) = preview_fixture();
+    p.observation = Some(directory.observer());
+    assert!(p
+        .observation
+        .as_ref()
+        .unwrap()
+        .cache_result(&json!({"schema":1}))
+        .is_err());
+    let ticket = proof_ticket(&mut p).unwrap().unwrap();
+    assert_eq!(ticket.index, 1);
+    let receipt =
+        json!({"schema":1,"publication_succeeded":false,"encoded_image_bytes_logged":false});
+    p.observation
+        .as_ref()
+        .unwrap()
+        .cache_result(&receipt)
+        .unwrap();
+    assert!(p
+        .observation
+        .as_ref()
+        .unwrap()
+        .cache_result(&json!({"must_not":"replace"}))
+        .is_err());
+    let bytes = std::fs::read(directory.0.join("installed-artwork-1-cache.json")).unwrap();
+    assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(), receipt);
+    // Required diagnostic writes retain their original allowlist and failure policy.
+    assert!(p
+        .observation
+        .as_ref()
+        .unwrap()
+        .write("installed-artwork-1-cache.json", &receipt)
+        .is_err());
+    assert!(!p.quarantined);
+    assert!(!p.ticket_resolved);
+}
+
+#[test]
+fn population_initializer_requires_its_own_fixed_sidecar_load_before_any_fetch() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = ObservationDirectory::new();
+    let (provider, _, _, _) = preview_fixture();
+    let load = || {
+        crate::cache_producer_profile::ExpectedProducer::load_for_test(
+            &std::fs::File::open(&directory.0).unwrap(),
+            &provider.marker.ui_sha256,
+        )
+    };
+    assert!(matches!(
+        population_expected(&provider.marker, load),
+        Err(ProviderError::Unavailable)
+    ));
+    let path = directory.0.join("artwork-cache-producer.json");
+    std::fs::write(&path, b"{}").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+    assert!(matches!(
+        population_expected(&provider.marker, load),
+        Err(ProviderError::Denied)
+    ));
+    let expected = cache_expected(&directory, &provider);
+    assert_eq!(
+        population_expected(&provider.marker, load)
+            .unwrap()
+            .version(),
+        expected.version()
+    );
+    let mut other = provider.marker.clone();
+    other.broker_sha256 = "d".repeat(64);
+    assert!(matches!(
+        population_expected(&other, load),
+        Err(ProviderError::Denied)
+    ));
+    assert!(provider.cache_publisher.is_none());
+    assert!(!provider.ticket_resolved);
+    assert!(!provider.quarantined);
+}
+#[test]
+fn population_factory_host_api_has_no_caller_supplied_expected_producer() {
+    #[cfg(not(target_arch = "arm"))]
+    {
+        let result = InstalledProvider::start_preview_cache_population_worker(
+            marker(),
+            std::path::PathBuf::from("/nonexistent-no-worker-created"),
+        );
+        let error = match result {
+            Ok(_) => panic!("Host cannot create native population worker"),
+            Err(error) => error,
+        };
+        assert_eq!(error.kind(), std::io::ErrorKind::Unsupported);
     }
 }

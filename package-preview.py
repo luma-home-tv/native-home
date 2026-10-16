@@ -26,7 +26,7 @@ if test_identity:
     app_id = 'com.ash.nativehome.proof'
 stage = output / 'preview-package/usr/palm/applications' / app_id
 stage.mkdir(parents=True, exist_ok=False)
-version = '0.57.0' if main == 'home-preview' else '0.1.0'
+version = '0.58.0' if main == 'home-preview' else '0.1.0'
 artwork_target_fixture = os.environ.get('NATIVE_HOME_ARTWORK_TARGET_FIXTURE', '')
 if artwork_target_fixture:
     if main != 'launch-target' or test_identity or artwork_target_fixture not in ('a','c'):
@@ -62,6 +62,60 @@ if preferences_migration_mode not in ('', '1'):
 preferences_migration_proof = preferences_migration_mode == '1'
 preferences_migration_marker = None
 preferences_migration_pins_sha256 = None
+cache_producer_binary = os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER')
+cache_producer = None
+cache_producer_helper_build = None
+cache_producer_helper_receipt = None
+cache_producer_helper_receipt_raw = None
+cache_producer_blob_count = 0
+if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
+    cache_environment = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK',
+        'NATIVE_HOME_ARM_BINARY', 'NATIVE_HOME_CACHE_PRODUCER_BROKER',
+        'NATIVE_HOME_SNAPSHOT_ASSETS', 'NATIVE_HOME_PREVIEW_ICON', 'NATIVE_HOME_CARGO',
+        'NATIVE_HOME_RUST_TOOLCHAIN'}
+    if preview_artwork_admission:
+        cache_environment.update({'NATIVE_HOME_PREVIEW_ARTWORK_ADMISSION',
+            'NATIVE_HOME_BROKER_STARTUP_PINS', 'NATIVE_HOME_STARTUP_BROKER_BINARY'})
+    else:
+        cache_environment.update({'NATIVE_HOME_INTERACTIVE_SESSION',
+            'NATIVE_HOME_SESSION_CAPTURE_PROOF'})
+    cache_others = [k for k,v in os.environ.items() if v and
+        k.startswith('NATIVE_HOME_') and k not in cache_environment]
+    if (not cache_producer_binary or main != 'home-preview' or test_identity or
+        app_id != 'com.ash.nativehome.preview' or cache_others or
+        (not preview_artwork_admission and not interactive) or
+        os.environ.get('NATIVE_HOME_SESSION_CAPTURE_PROOF', '') not in ('', '1')):
+        raise ValueError('Cache producer association requires only actual interactive Preview or explicit Preview artwork admission')
+    cache_producer_binary = Path(cache_producer_binary).absolute()
+    if cache_producer_binary.name != 'artwork-broker':
+        raise ValueError('Cache producer requires the fixed artwork-broker binary')
+    cache_producer_helper_receipt = cache_producer_binary.with_name('artwork-broker.build.json')
+    cache_producer_helper_build = validate_build_receipt(here, cache_producer_binary,
+                                                       cache_producer_helper_receipt)
+    from build_provenance import _read as read_cache_input, RECEIPT_LIMIT
+    cache_producer_helper_receipt_raw = read_cache_input(
+        cache_producer_helper_receipt, private=True, limit=RECEIPT_LIMIT)
+    if json.loads(cache_producer_helper_receipt_raw) != cache_producer_helper_build:
+        raise ValueError('Cache producer helper receipt changed during admission')
+    revision = build_receipt.get('git_revision')
+    if (type(revision) is not str or len(revision) != 40 or
+        any(c not in '0123456789abcdef' for c in revision) or
+        cache_producer_helper_build['git_revision'] != revision or
+        cache_producer_helper_build['snapshot'] != build_receipt['snapshot']):
+        raise ValueError('Cache producer UI and helper require matching committed source inputs')
+    # A receipt's HEAD label alone does not bind its input bytes to that revision.
+    # Check the actual immutable Git blobs, allowing a later documentation HEAD.
+    for name, observed in build_receipt['snapshot']['source_inputs'].items():
+        blob = subprocess.run(['git', '--no-optional-locks', '-C', str(here),
+            'show', revision + ':' + name], capture_output=True, timeout=10)
+        if (blob.returncode or len(blob.stdout) != observed['bytes'] or
+            hashlib.sha256(blob.stdout).hexdigest() != observed['sha256']):
+            raise ValueError('Cache producer source revision does not match actual input blobs')
+        cache_producer_blob_count += 1
+    cache_producer = {'schema':1, 'app_id':'com.ash.nativehome.preview',
+        'producer_kind':'joined-single-positive-v1', 'source_revision':revision,
+        'ui_sha256':build_receipt['binary']['sha256'],
+        'broker_sha256':cache_producer_helper_build['binary']['sha256']}
 if preferences_migration_proof:
     allowed = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
                'NATIVE_HOME_RUST_TOOLCHAIN', 'NATIVE_HOME_CARGO', 'NATIVE_HOME_PREVIEW_ICON',
@@ -136,6 +190,9 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof or c
             'NATIVE_HOME_BROKER_STARTUP_PINS', 'NATIVE_HOME_STARTUP_BROKER_BINARY',
             'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
             'NATIVE_HOME_SNAPSHOT_ASSETS', 'NATIVE_HOME_PREVIEW_ICON', 'NATIVE_HOME_CARGO'}
+        if cache_producer is not None:
+            preview_environment.update({'NATIVE_HOME_CACHE_PRODUCER_BROKER',
+                                        'NATIVE_HOME_RUST_TOOLCHAIN'})
         others = [k for k,v in os.environ.items() if v and k.startswith('NATIVE_HOME_') and k not in preview_environment]
         if main != 'home-preview' or build_receipt['target'] != 'arm' or app_id != 'com.ash.nativehome.preview' or test_identity or interactive or others or artwork_target_fixture:
             raise ValueError('Preview artwork admission requires only actual non-interactive Preview and no trial/action parameters')
@@ -182,6 +239,11 @@ if broker_startup_proof or broker_negative_proof or installed_artwork_proof or c
         broker_startup_marker=None
     broker_startup_helper={'binary_sha256':pins['broker_sha256'],'build_receipt_sha256':hashlib.sha256(helper_receipt.read_bytes()).hexdigest(),'build_source_revision':helper_build['git_revision']}
     broker_startup_pins_sha256=hashlib.sha256(pins_raw).hexdigest()
+    if cache_producer is not None and (not preview_artwork_admission or
+        cache_producer['ui_sha256'] != pins['ui_sha256'] or
+        cache_producer['broker_sha256'] != pins['broker_sha256'] or
+        cache_producer_helper_build != helper_build):
+        raise ValueError('Cache association must match the independently admitted Preview helper pins')
 elif any(os.environ.get(k) for k in ('NATIVE_HOME_BROKER_STARTUP_PINS','NATIVE_HOME_STARTUP_BROKER_BINARY')):
     raise ValueError('Broker startup pins/helper require explicit isolated mode')
 if startup_capability_proof:
@@ -280,6 +342,10 @@ info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
 if artwork_target_fixture:
     info['title']='AAA Luma Artwork Fixture'
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
+if cache_producer is not None:
+    cache_sidecar = (json.dumps(cache_producer, sort_keys=True, separators=(',', ':')) + '\n').encode()
+    (stage / 'artwork-cache-producer.json').write_bytes(cache_sidecar)
+    (stage / 'artwork-cache-producer.json').chmod(0o644)
 if preferences_migration_proof:
     (stage / 'appinfo.json').chmod(0o644)
     marker_path = stage / 'preferences-migration-proof.json'
@@ -420,6 +486,15 @@ if preferences_migration_proof and any(not p.is_file() or p.is_symlink() for p i
     raise RuntimeError('Preferences migration payload must not contain directories or links')
 if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
     raise RuntimeError('Build receipt changed during packaging')
+if cache_producer is not None:
+    if validate_build_receipt(here, cache_producer_binary,
+                              cache_producer_helper_receipt) != cache_producer_helper_build:
+        raise RuntimeError('Cache producer helper changed during packaging')
+    if read_cache_input(cache_producer_helper_receipt, private=True,
+                        limit=RECEIPT_LIMIT) != cache_producer_helper_receipt_raw:
+        raise RuntimeError('Cache producer helper receipt bytes changed during packaging')
+    if (stage / 'artwork-cache-producer.json').read_bytes() != cache_sidecar:
+        raise RuntimeError('Staged cache producer association changed during packaging')
 control = ('Package: ' + app_id + '\nVersion: ' + version + '\nSection: misc\nPriority: optional\n'
            'Architecture: arm\nMaintainer: Native Home development\n'
            'Description: Isolated native interface preview\n').encode()
@@ -472,6 +547,10 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'closed_negative_artwork_case': closed_negative_case or None,
            'artwork_guard_relaunch_proof': artwork_guard_relaunch_proof,
            'preview_artwork_admission': preview_artwork_admission,
+           'cache_producer': cache_producer,
+           'cache_producer_sidecar_sha256': hashlib.sha256(cache_sidecar).hexdigest() if cache_producer is not None else None,
+           'cache_producer_helper_receipt_sha256': hashlib.sha256(cache_producer_helper_receipt_raw).hexdigest() if cache_producer is not None else None,
+           'cache_producer_matching_Git_blobs': cache_producer_blob_count,
            'preferences_migration_proof': preferences_migration_proof,
            'preferences_migration_pins_sha256': preferences_migration_pins_sha256,
            'preferences_migration_direction': preferences_migration_marker['direction'] if preferences_migration_proof else None,

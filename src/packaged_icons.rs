@@ -1,10 +1,14 @@
-//! Ordinary packaged fallback only. One worker owns anchored reads/decode; this
-//! render-thread controller alone owns GL handles. No live-source, Root session,
-//! Ticket, action, keyboard or filesystem-write API exists here. Bounds describe
+//! Ordinary packaged fallback and opt-in durable-cache reads. One worker owns anchored reads/decode; this
+//! render-thread controller alone owns GL handles. Fresh Source metadata is
+//! supplied independently; cache bytes grant no source or Root authority. No Root session,
+//! Ticket, action, keyboard or cache-publication API exists here. The optional
+//! cache opener can create only its fixed own private directory. Bounds describe
 //! owned payloads/texture estimates, not total heap/GPU use or a hard shutdown
 //! time: a blocked filesystem/codec call cannot be interrupted by these flags.
 use crate::{
+    app_artwork::{Source, SourceMap},
     artwork_textures::TextureBackend,
+    durable_icon_cache::{self as disk, CachedIcon, ProducerVersion, Selection, Snapshot},
     packaged_icon_reader::{
         DecodedIcon, PackagedIconReader, RelativeIconPath, MAX_AXIS, MAX_RGBA_BYTES,
     },
@@ -32,14 +36,24 @@ pub type Bindings = BTreeMap<String, RelativeIconPath>;
 struct Key {
     epoch: u64,
     id: String,
-    relative: RelativeIconPath,
+    relative: Option<RelativeIconPath>,
+    dynamic: Option<Box<DynamicKey>>,
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct DynamicKey {
+    source: Source,
+    producer: ProducerVersion,
+    selection: Selection,
 }
 struct Job {
     key: Key,
     abandoned: Arc<AtomicBool>,
+    cached: Option<(Arc<Snapshot>, Box<disk::Demand>)>,
 }
 enum Pixels {
     Loaded(DecodedIcon),
+    Cached(Box<CachedIcon>),
+    Fallback(DecodedIcon),
     Failed,
     Abandoned,
 }
@@ -53,15 +67,61 @@ struct Pending {
 }
 trait Loader {
     fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon>;
+    fn adopt(&mut self) -> io::Result<Adoption> {
+        Ok(Adoption {
+            producer: None,
+            snapshot: None,
+        })
+    }
+    fn decode_cached(
+        &mut self,
+        snapshot: &Snapshot,
+        demand: disk::Demand,
+    ) -> io::Result<CachedIcon> {
+        snapshot.decode(demand)
+    }
+}
+struct Adoption {
+    // Independently supplied/profile-loaded on worker, NEVER cache metadata.
+    producer: Option<ProducerVersion>,
+    snapshot: Option<Arc<Snapshot>>,
+}
+struct CacheLoader {
+    packaged: PackagedIconReader,
+    cache: Option<disk::Cache>,
+    producer: Option<ProducerVersion>,
+}
+impl Loader for CacheLoader {
+    fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon> {
+        self.packaged.decode(path)
+    }
+    fn adopt(&mut self) -> io::Result<Adoption> {
+        Ok(Adoption {
+            producer: self.producer.clone(),
+            snapshot: self
+                .cache
+                .as_ref()
+                .map(|cache| cache.snapshot().map(Arc::new))
+                .transpose()?,
+        })
+    }
 }
 impl Loader for PackagedIconReader {
     fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon> {
         PackagedIconReader::decode(self, path)
     }
 }
+enum Command {
+    Decode(Job),
+    Adopt(u64),
+}
+enum Event {
+    Image(Reply),
+    Adopted { request: u64, adoption: Adoption },
+}
 struct Worker {
-    jobs: Option<SyncSender<Job>>,
-    replies: Option<Receiver<Reply>>,
+    jobs: Option<SyncSender<Command>>,
+    replies: Option<Receiver<Event>>,
     stop: Arc<AtomicBool>,
     join: Option<JoinHandle<()>>,
 }
@@ -69,7 +129,7 @@ impl Worker {
     fn start<L: Loader + 'static>(
         factory: impl FnOnce() -> io::Result<L> + Send + 'static,
     ) -> io::Result<Self> {
-        let (jobs, incoming) = mpsc::sync_channel::<Job>(1);
+        let (jobs, incoming) = mpsc::sync_channel::<Command>(1);
         let (complete, replies) = mpsc::sync_channel(1);
         let stop = Arc::new(AtomicBool::new(false));
         let stopped = stop.clone();
@@ -77,20 +137,62 @@ impl Worker {
             .name("packaged-icons".into())
             .spawn(move || {
                 let mut loader = factory().ok();
-                while let Ok(job) = incoming.recv() {
+                while let Ok(command) = incoming.recv() {
                     if stopped.load(Ordering::Acquire) {
                         break;
                     }
+                    let job = match command {
+                        Command::Adopt(request) => {
+                            // Ordered after the prior Decode and its sole result
+                            // drain. No new thread or UI filesystem work exists.
+                            let adoption =
+                                loader
+                                    .as_mut()
+                                    .and_then(|l| l.adopt().ok())
+                                    .unwrap_or(Adoption {
+                                        producer: None,
+                                        snapshot: None,
+                                    });
+                            if stopped.load(Ordering::Acquire) {
+                                break;
+                            }
+                            if complete
+                                .try_send(Event::Adopted { request, adoption })
+                                .is_err()
+                            {
+                                break;
+                            }
+                            continue;
+                        }
+                        Command::Decode(job) => job,
+                    };
                     let mut pixels = if job.abandoned.load(Ordering::Acquire) {
                         Pixels::Abandoned
-                    } else {
-                        match loader
-                            .as_mut()
-                            .and_then(|reader| reader.decode(&job.key.relative).ok())
-                        {
-                            Some(image) if valid_image(&image) => Pixels::Loaded(image),
-                            _ => Pixels::Failed,
+                    } else if let Some(reader) = loader.as_mut() {
+                        if let Some((snapshot, demand)) = job.cached {
+                            match reader.decode_cached(&snapshot, *demand) {
+                                Ok(icon) => Pixels::Cached(Box::new(icon)),
+                                Err(_) if !job.abandoned.load(Ordering::Acquire) => job
+                                    .key
+                                    .relative
+                                    .as_ref()
+                                    .and_then(|p| reader.decode(p).ok())
+                                    .filter(valid_image)
+                                    .map(Pixels::Fallback)
+                                    .unwrap_or(Pixels::Failed),
+                                Err(_) => Pixels::Abandoned,
+                            }
+                        } else {
+                            job.key
+                                .relative
+                                .as_ref()
+                                .and_then(|p| reader.decode(p).ok())
+                                .filter(valid_image)
+                                .map(Pixels::Loaded)
+                                .unwrap_or(Pixels::Failed)
                         }
+                    } else {
+                        Pixels::Failed
                     };
                     if stopped.load(Ordering::Acquire) {
                         break;
@@ -98,13 +200,11 @@ impl Worker {
                     if job.abandoned.load(Ordering::Acquire) {
                         pixels = Pixels::Abandoned;
                     }
-                    // Never block worker exit on a main-thread result drain. There is
-                    // only one outstanding job, so a full result slot is unexpected.
                     if complete
-                        .try_send(Reply {
+                        .try_send(Event::Image(Reply {
                             key: job.key,
                             pixels,
-                        })
+                        }))
                         .is_err()
                     {
                         break;
@@ -158,6 +258,16 @@ pub enum ConfigureError {
     EpochExhausted,
     Closed,
 }
+/// Metadata/index readiness only, never image, lifecycle or speed qualification.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CacheReadiness {
+    #[default]
+    Disabled,
+    AwaitingSources,
+    Pending,
+    Ready,
+    Unavailable,
+}
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Stats {
     pub texture_entries: usize,
@@ -169,6 +279,10 @@ pub struct Stats {
     pub upload_failures: u64,
     pub aliased_handles: u64,
     pub worker_closed: bool,
+    pub cache_readiness: CacheReadiness,
+    pub cache_adoptions: u64,
+    pub cache_uploads: u64,
+    pub packaged_uploads: u64,
 }
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct FrameUpdate {
@@ -200,10 +314,26 @@ pub struct Finish {
 /// borrowed drawing references, not deletion ownership. After each frame the
 /// caller MUST refresh all card references before the next draw (including
 /// evicted IDs); no focus/layout rebuild is needed for pixel changes.
+enum ExpectedPolicy {
+    Supplied(ProducerVersion),
+    WorkerProfile,
+}
+struct CacheMode {
+    expected: ExpectedPolicy,
+    producer: Option<ProducerVersion>,
+    sources: BTreeMap<String, Source>,
+    snapshot: Option<Arc<Snapshot>>,
+    selected: BTreeMap<String, Selection>,
+    failed: BTreeSet<String>,
+    request: u64,
+    adopting: Option<u64>,
+    refresh: bool,
+}
 pub struct PackagedIcons<B: TextureBackend> {
     backend: B,
     worker: Option<Worker>,
     bindings: Bindings,
+    cache: Option<CacheMode>,
     epoch: u64,
     pending: Option<Pending>,
     ready: Option<Reply>,
@@ -235,6 +365,157 @@ impl<B: TextureBackend> PackagedIcons<B> {
             },
         )
     }
+    /// Opt-in only. Expected producer must be independently artifact-admitted;
+    /// no cache record supplies it. Root replacement needs finish+new controller.
+    /// Both anchors, scan and decode are opened/run on this same ordinary worker.
+    pub fn start_with_cache(
+        root: PathBuf,
+        bindings: Bindings,
+        backend: B,
+        config: disk::Config,
+        producer: ProducerVersion,
+    ) -> io::Result<Self> {
+        let supplied = producer.clone();
+        Self::start_cache_using(
+            root,
+            bindings,
+            backend,
+            config,
+            ExpectedPolicy::Supplied(producer),
+            move || Ok(Some(supplied)),
+            disk::Cache::open_current,
+        )
+    }
+    /// Native opt-in only: fixed packaged profile and actual self-ELF measurement
+    /// run on THIS image worker. Unavailable profile/cache leaves package usable.
+    /// Profile/root replacement is not hot reloaded: finish+new controller.
+    pub fn start_current_cache(
+        root: PathBuf,
+        bindings: Bindings,
+        backend: B,
+        config: disk::Config,
+    ) -> io::Result<Self> {
+        Self::start_cache_using(
+            root,
+            bindings,
+            backend,
+            config,
+            ExpectedPolicy::WorkerProfile,
+            || {
+                crate::cache_producer_profile::load_current()
+                    .map(|profile| profile.map(|value| value.version()))
+            },
+            disk::Cache::open_current,
+        )
+    }
+    fn start_cache_using(
+        root: PathBuf,
+        bindings: Bindings,
+        backend: B,
+        config: disk::Config,
+        expected: ExpectedPolicy,
+        load_expected: impl FnOnce() -> io::Result<Option<ProducerVersion>> + Send + 'static,
+        open_cache: impl FnOnce(disk::Config) -> io::Result<disk::Cache> + Send + 'static,
+    ) -> io::Result<Self> {
+        let mut controller = Self::start_using(
+            bindings,
+            backend,
+            (MAX_TEXTURES, MAX_TEXTURE_BYTES),
+            move || {
+                let directory = OpenOptions::new()
+                    .read(true)
+                    .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                    .open(root)?;
+                let packaged = PackagedIconReader::from_directory(directory)?;
+                // Independent expectation ONCE, before scan; no record can fill it.
+                let producer = load_expected().ok().flatten();
+                let cache = producer.as_ref().and_then(|_| open_cache(config).ok());
+                Ok(CacheLoader {
+                    packaged,
+                    cache,
+                    producer,
+                })
+            },
+        )?;
+        controller.cache = Some(CacheMode {
+            expected,
+            producer: None,
+            sources: BTreeMap::new(),
+            snapshot: None,
+            selected: BTreeMap::new(),
+            failed: BTreeSet::new(),
+            request: 0,
+            adopting: None,
+            refresh: false,
+        });
+        Ok(controller)
+    }
+    /// Pure current-catalogue selection. None MUST be called on failure/expiry,
+    /// independently of privileged Runtime presence. Unchanged polls do nothing.
+    pub fn update_sources(&mut self, sources: Option<&SourceMap>) -> Result<(), ConfigureError> {
+        if self.closed {
+            return Err(ConfigureError::Closed);
+        }
+        let mut selected = BTreeMap::new();
+        if let Some(sources) = sources {
+            if sources.len() > MAX_SOURCES {
+                self.update_sources(None)?;
+                return Err(ConfigureError::InvalidBindings);
+            }
+            for (id, entry) in sources {
+                if let Some(source) = entry.preferred() {
+                    if !crate::model::valid_app_id(id) || source.app_id() != id.as_str() {
+                        self.update_sources(None)?;
+                        return Err(ConfigureError::InvalidBindings);
+                    }
+                    selected.insert(id.clone(), source.clone());
+                }
+            }
+        }
+        let Some(cache) = &mut self.cache else {
+            return Ok(());
+        };
+        if cache.sources == selected {
+            return Ok(());
+        }
+        cache.sources = selected;
+        self.refresh_cache()
+    }
+    /// Explicit refresh only, never routine unchanged polling. Withdraw first;
+    /// the old single job/result must drain before an Adopt can enter its slot.
+    /// No UI I/O, join or new root opening takes place here.
+    pub fn refresh_cache(&mut self) -> Result<(), ConfigureError> {
+        if self.closed {
+            return Err(ConfigureError::Closed);
+        }
+        let epoch = self
+            .epoch
+            .checked_add(1)
+            .ok_or(ConfigureError::EpochExhausted)?;
+        let Some(cache) = &mut self.cache else {
+            return Ok(());
+        };
+        let request = cache
+            .request
+            .checked_add(1)
+            .ok_or(ConfigureError::EpochExhausted)?;
+        if let Some(old) = cache.snapshot.take() {
+            old.generation().withdraw();
+        }
+        cache.selected.clear();
+        cache.producer = None;
+        cache.failed.clear();
+        cache.request = request;
+        cache.refresh = !cache.sources.is_empty();
+        self.epoch = epoch;
+        if let Some(pending) = &self.pending {
+            pending.abandoned.store(true, Ordering::Release);
+        }
+        self.ready = None;
+        self.failed.clear();
+        self.reset_pending = true;
+        Ok(())
+    }
     fn start_using<L: Loader + 'static>(
         bindings: Bindings,
         backend: B,
@@ -256,6 +537,7 @@ impl<B: TextureBackend> PackagedIcons<B> {
             backend,
             worker: Some(Worker::start(factory)?),
             bindings,
+            cache: None,
             epoch: 1,
             pending: None,
             ready: None,
@@ -296,7 +578,21 @@ impl<B: TextureBackend> PackagedIcons<B> {
         Ok(())
     }
     fn current(&self, key: &Key) -> bool {
-        key.epoch == self.epoch && self.bindings.get(&key.id) == Some(&key.relative)
+        key.epoch == self.epoch
+            && self.bindings.get(&key.id) == key.relative.as_ref()
+            && match &key.dynamic {
+                None => true,
+                Some(dynamic) => self.cache.as_ref().is_some_and(|cache| {
+                    cache.producer.as_ref() == Some(&dynamic.producer)
+                        && cache.sources.get(&key.id) == Some(&dynamic.source)
+                        && cache.selected.get(&key.id) == Some(&dynamic.selection)
+                        && !cache.failed.contains(&key.id)
+                        && cache
+                            .snapshot
+                            .as_ref()
+                            .is_some_and(|s| s.generation().current())
+                }),
+            }
     }
     pub fn texture(&self, id: &str) -> Option<TextureView<B::Handle>> {
         let owned = self.textures.get(id)?;
@@ -306,13 +602,28 @@ impl<B: TextureBackend> PackagedIcons<B> {
             height: owned.height,
         })
     }
-    /// A known packaged source is still eligible for demand loading. Callers
-    /// can keep its image area blank while warming instead of showing a
-    /// missing-art monogram. This is no live-source or version claim.
+    /// Diagnostic origin only, for an actually owned current cached texture.
+    /// Package/fallback pixels never report a cached source. No I/O or authority.
+    pub fn current_cached_source(&self, id: &str) -> Option<&crate::app_artwork::SourceKey> {
+        let owned = self.textures.get(id)?;
+        if !self.current(&owned.key) {
+            return None;
+        }
+        Some(owned.key.dynamic.as_ref()?.source.key())
+    }
+    /// A current ordinary binding is eligible for demand loading. Keep its
+    /// image area blank while warming instead of a missing-art monogram. Caller
+    /// supplied Source metadata is not a continuous source-file freshness claim.
     pub fn will_load(&self, id: &str) -> bool {
         !self.closed
             && !self.stats.worker_closed
-            && self.bindings.contains_key(id)
+            && (self.bindings.contains_key(id)
+                || self.cache.as_ref().is_some_and(|cache| {
+                    cache.sources.contains_key(id)
+                        && (cache.refresh
+                            || cache.adopting.is_some()
+                            || cache.selected.contains_key(id) && !cache.failed.contains(id))
+                }))
             && !self.failed.contains(id)
     }
     fn evict(&mut self, id: &str, update: &mut FrameUpdate, visible: &BTreeSet<&str>) {
@@ -353,7 +664,14 @@ impl<B: TextureBackend> PackagedIcons<B> {
         let shown = visible
             .iter()
             .copied()
-            .filter(|id| self.bindings.contains_key(*id) || self.textures.contains_key(*id))
+            .filter(|id| {
+                self.bindings.contains_key(*id)
+                    || self.textures.contains_key(*id)
+                    || self
+                        .cache
+                        .as_ref()
+                        .is_some_and(|c| c.sources.contains_key(*id))
+            })
             .collect::<BTreeSet<_>>();
         if let Some(pending) = &self.pending {
             if !allowed || !shown.contains(pending.key.id.as_str()) || !self.current(&pending.key) {
@@ -372,13 +690,72 @@ impl<B: TextureBackend> PackagedIcons<B> {
             .and_then(|worker| worker.replies.as_ref())
             .map(Receiver::try_recv);
         match polled {
-            Some(Ok(reply)) => {
+            Some(Ok(Event::Adopted { request, adoption })) => {
+                if let Some(cache) = &mut self.cache {
+                    let current =
+                        cache.adopting.take() == Some(request) && cache.request == request;
+                    let allowed_producer =
+                        adoption
+                            .producer
+                            .as_ref()
+                            .is_some_and(|producer| match &cache.expected {
+                                ExpectedPolicy::Supplied(expected) => expected == producer,
+                                ExpectedPolicy::WorkerProfile => true,
+                            });
+                    if current {
+                        cache.refresh = false;
+                    }
+                    if current && allowed_producer {
+                        if let (Some(snapshot), Some(producer)) =
+                            (adoption.snapshot, adoption.producer)
+                        {
+                            for (id, source) in &cache.sources {
+                                if let disk::Lookup::Ready(demand) =
+                                    snapshot.lookup(source, &producer)
+                                {
+                                    cache.selected.insert(id.clone(), demand.selection());
+                                }
+                            }
+                            cache.producer = Some(producer);
+                            cache.snapshot = Some(snapshot);
+                            self.stats.cache_adoptions =
+                                self.stats.cache_adoptions.saturating_add(1);
+                        }
+                    } else if let Some(snapshot) = adoption.snapshot {
+                        snapshot.generation().withdraw();
+                    }
+                }
+            }
+            Some(Ok(Event::Image(reply))) => {
                 self.stats.completed = self.stats.completed.saturating_add(1);
                 let matching = self.pending.take().is_some_and(|pending| {
                     pending.key == reply.key && !pending.abandoned.load(Ordering::Acquire)
                 });
                 if matching && self.current(&reply.key) {
                     match reply.pixels {
+                        Pixels::Fallback(image) => {
+                            if let Some(cache) = &mut self.cache {
+                                cache.failed.insert(reply.key.id.clone());
+                            }
+                            let mut key = reply.key;
+                            key.dynamic = None;
+                            if allowed && shown.contains(key.id.as_str()) {
+                                self.ready = Some(Reply {
+                                    key,
+                                    pixels: Pixels::Loaded(image),
+                                });
+                            } else {
+                                self.stats.discarded = self.stats.discarded.saturating_add(1);
+                            }
+                        }
+                        Pixels::Cached(icon)
+                            if allowed && shown.contains(reply.key.id.as_str()) =>
+                        {
+                            self.ready = Some(Reply {
+                                key: reply.key,
+                                pixels: Pixels::Cached(icon),
+                            });
+                        }
                         Pixels::Failed => {
                             self.failed.insert(reply.key.id);
                         }
@@ -418,7 +795,40 @@ impl<B: TextureBackend> PackagedIcons<B> {
                 entry.touched = self.clock;
             }
         }
-        if let Some(reply) = self.ready.take() {
+        if let Some(mut reply) = self.ready.take() {
+            reply.pixels = match reply.pixels {
+                Pixels::Cached(icon) => {
+                    let admitted = if self.current(&reply.key) {
+                        match (self.cache.as_ref(), reply.key.dynamic.as_ref()) {
+                            (Some(cache), Some(dynamic))
+                                if icon.selection() == dynamic.selection =>
+                            {
+                                cache.snapshot.as_ref().and_then(|snapshot| {
+                                    icon.admit(
+                                        &snapshot.generation(),
+                                        &dynamic.source,
+                                        &dynamic.producer,
+                                    )
+                                })
+                            }
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    };
+                    match admitted {
+                        Some(image) => Pixels::Loaded(image),
+                        None => {
+                            if let Some(cache) = &mut self.cache {
+                                cache.failed.insert(reply.key.id.clone());
+                            }
+                            self.stats.discarded = self.stats.discarded.saturating_add(1);
+                            Pixels::Abandoned
+                        }
+                    }
+                }
+                other => other,
+            };
             if let Pixels::Loaded(image) = reply.pixels {
                 if !self.current(&reply.key)
                     || !shown.contains(reply.key.id.as_str())
@@ -446,6 +856,13 @@ impl<B: TextureBackend> PackagedIcons<B> {
                             self.failed.insert(reply.key.id);
                         }
                         Ok(handle) => {
+                            if reply.key.dynamic.is_some() {
+                                self.stats.cache_uploads =
+                                    self.stats.cache_uploads.saturating_add(1);
+                            } else {
+                                self.stats.packaged_uploads =
+                                    self.stats.packaged_uploads.saturating_add(1);
+                            }
                             self.bytes += image.rgba.len();
                             self.textures.insert(
                                 reply.key.id.clone(),
@@ -465,26 +882,67 @@ impl<B: TextureBackend> PackagedIcons<B> {
             }
         }
         if self.pending.is_none() && self.ready.is_none() && !self.stats.worker_closed {
+            if let Some(cache) = &mut self.cache {
+                if cache.adopting.is_some() {
+                    return update;
+                }
+                if cache.refresh {
+                    let request = cache.request;
+                    if self
+                        .worker
+                        .as_ref()
+                        .and_then(|w| w.jobs.as_ref())
+                        .is_some_and(|sender| sender.try_send(Command::Adopt(request)).is_ok())
+                    {
+                        cache.adopting = Some(request);
+                    } else {
+                        self.stats.worker_closed = true;
+                    }
+                    return update;
+                }
+            }
             if let Some(id) = visible.iter().copied().find(|id| {
-                self.bindings.contains_key(*id)
-                    && !self.failed.contains(*id)
-                    && self.texture(id).is_none()
+                self.will_load(id) && !self.failed.contains(*id) && self.texture(id).is_none()
             }) {
                 let key = Key {
                     epoch: self.epoch,
                     id: id.into(),
-                    relative: self.bindings[id].clone(),
+                    relative: self.bindings.get(id).cloned(),
+                    dynamic: None,
                 };
+                let mut key = key;
+                let cached = self.cache.as_ref().and_then(|cache| {
+                    if cache.failed.contains(id) {
+                        return None;
+                    }
+                    let snapshot = cache.snapshot.as_ref()?;
+                    let source = cache.sources.get(id)?;
+                    let producer = cache.producer.as_ref()?;
+                    match snapshot.lookup(source, producer) {
+                        disk::Lookup::Ready(demand)
+                            if cache.selected.get(id) == Some(&demand.selection()) =>
+                        {
+                            key.dynamic = Some(Box::new(DynamicKey {
+                                source: source.clone(),
+                                producer: producer.clone(),
+                                selection: demand.selection(),
+                            }));
+                            Some((snapshot.clone(), demand))
+                        }
+                        _ => None,
+                    }
+                });
                 let abandoned = Arc::new(AtomicBool::new(false));
                 let job = Job {
                     key: key.clone(),
                     abandoned: abandoned.clone(),
+                    cached,
                 };
                 if self
                     .worker
                     .as_ref()
                     .and_then(|worker| worker.jobs.as_ref())
-                    .is_some_and(|sender| sender.try_send(job).is_ok())
+                    .is_some_and(|sender| sender.try_send(Command::Decode(job)).is_ok())
                 {
                     self.pending = Some(Pending { key, abandoned });
                     self.stats.submitted = self.stats.submitted.saturating_add(1);
@@ -500,12 +958,29 @@ impl<B: TextureBackend> PackagedIcons<B> {
             texture_entries: self.textures.len(),
             texture_bytes_estimate: self.bytes,
             unavailable_sources: self.failed.len(),
+            cache_readiness: match &self.cache {
+                _ if self.closed => CacheReadiness::Disabled,
+                None => CacheReadiness::Disabled,
+                Some(cache) if cache.sources.is_empty() => CacheReadiness::AwaitingSources,
+                Some(cache) if cache.refresh || cache.adopting.is_some() => CacheReadiness::Pending,
+                Some(cache) if cache.producer.is_some() && cache.snapshot.is_some() => {
+                    CacheReadiness::Ready
+                }
+                Some(_) => CacheReadiness::Unavailable,
+            },
             ..self.stats
         }
     }
     pub fn finish(&mut self) -> Finish {
         if let Some(finished) = self.finished {
             return finished;
+        }
+        if let Some(cache) = &mut self.cache {
+            if let Some(snapshot) = cache.snapshot.take() {
+                snapshot.generation().withdraw();
+            }
+            cache.selected.clear();
+            cache.sources.clear();
         }
         let joined = self.worker.take().is_none_or(|mut worker| worker.finish());
         self.pending = None;
@@ -532,3 +1007,7 @@ impl<B: TextureBackend> Drop for PackagedIcons<B> {
 #[cfg(test)]
 #[path = "packaged_icons_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "packaged_icons_cache_tests.rs"]
+mod cache_tests;
