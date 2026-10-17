@@ -334,11 +334,18 @@ and temporary cleanup. Earlier failed scopes and saved-reader corrections remain
 recorded. Future rollback uses the current f5 bundle/IPK and private state/cache48;
 the former executable is historical. Physical input, performance and the wider
 dashboard goal remain open.
-The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
+The [compatible ordinary artwork reader](docs/cache-consumer-compatibility.md)
+has passed source checks, matching ARM builds and independent local package/ABI
+review. Native selector and preservation acceptance remain pending; this source
+has not replaced the retained G2 build.
+The OLED65C26LD C2's last qualified retained delivery is
+[0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
 roundtrip and separate restoration were qualified first. The latest trial
-exercised no Search/IME or Root artwork. The earlier
+exercised no Search/IME or Root artwork. These historical delivery observations
+do not replace fresh ownership, permissions and state checks before another run.
+The earlier
 [isolated startup observation](docs/c2-startup-collection.md) remains a separate
 collection result. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
