@@ -67,6 +67,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let preview_observer = native_home::preview_performance::load(
+        &assets,
+        device && unsafe { libc::geteuid() } >= 1000,
+        interactive,
+        plx_base::paths::app_id(),
+        args.iter().skip(1).any(|arg| arg.starts_with("--")),
+    )?;
     // Exclusive recipe branches before any ordinary main worker, persistence,
     // scripted capture or dispatcher is constructed.
     if let Some(marker) = native_home::artwork_closed_negative_proof::read_marker(&assets)? {
@@ -561,7 +568,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if recipe_requested && !observer_requested {
         return Err("Keyboard recipe requires the explicit interactive observer".into());
     }
-    let mut performance = performance_proof.then(native_home::performance::Monitor::default);
+    let mut performance = (performance_proof || preview_observer.is_some())
+        .then(native_home::performance::Monitor::default);
     if interactive
         && [
             "text-input-proof.json",
@@ -831,6 +839,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         shell.enable_current_icon_cache();
     }
     shell.load_icons(&assets);
+    let passive_profile = if preview_observer.is_some() {
+        Some(
+            native_home::preview_performance::NormalProfile {
+                live_worker: live_worker.is_some(),
+                action_worker: action_worker.is_some(),
+                pointer_worker: pointer_worker.is_some(),
+                description_worker: description_worker.is_some(),
+                app_launches: app_launches_enabled,
+                home_launches: home_launches_enabled,
+                ordinary_cache: ordinary_current_cache_selected,
+            }
+            .validate()?,
+        )
+    } else {
+        None
+    };
+    let mut passive_writer = if preview_observer.is_some() {
+        Some(native_home::preview_performance::Writer::start(&output)?)
+    } else {
+        None
+    };
+
     let preview_artwork_preflight = if preview_artwork_marker.is_some() {
         Some(native_home::preview_artwork_admission::preflight(
             &mut shell, &window, &output,
@@ -1779,6 +1809,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 reason = "settings_handoff_unusable";
                 break;
             }
+            if preview_observer.is_some()
+                && start.elapsed()
+                    >= Duration::from_secs(native_home::preview_performance::LIMIT_SECONDS)
+            {
+                reason = "preview_passive_performance_limit";
+                break;
+            }
             if performance_proof && start.elapsed() >= Duration::from_secs(240) {
                 reason = "performance_proof_limit";
                 break;
@@ -2308,17 +2345,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 start.elapsed().saturating_sub(last_performance_snapshot) >= Duration::from_secs(1)
             }) {
                 last_performance_snapshot = start.elapsed();
-                let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
-                let path = output.join("performance-current.json");
-                let temporary = output.join("performance-current-next.json");
-                let file = std::fs::OpenOptions::new()
-                    .create_new(true)
-                    .write(true)
-                    .mode(0o600)
-                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-                    .open(&temporary)?;
-                serde_json::to_writer(file, &sample)?;
-                std::fs::rename(temporary, path)?;
+                if let Some(writer) = &mut passive_writer {
+                    let focus = shell.focused_item();
+                    writer.submit(native_home::preview_performance::snapshot(
+                        start.elapsed().as_secs_f64(),
+                        &format!("{:?}", shell.page()),
+                        focus.as_deref(),
+                        &format!("{:?}", shell.control_category()),
+                        hidden_at.is_some(),
+                        idle_blanked,
+                        monitor.report(),
+                    ));
+                } else {
+                    let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
+                    let path = output.join("performance-current.json");
+                    let temporary = output.join("performance-current-next.json");
+                    let file = std::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .mode(0o600)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                        .open(&temporary)?;
+                    serde_json::to_writer(file, &sample)?;
+                    std::fs::rename(temporary, path)?;
+                }
             }
             record_keyboard_observer(
                 &mut keyboard_observer,
@@ -2441,6 +2491,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             exit,
         )?;
     }
+    let passive_writer_report =
+        passive_writer.map(native_home::preview_performance::Writer::finish);
     let packaged_icon_shutdown = shell.finish_packaged_icons();
     if let Some(ledger) = &mut session_cache_observations {
         // Join can outlast catalogue freshness. Recheck its original live-clock
@@ -2529,6 +2581,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         || pointer_actions.iter().any(|r| r.attempted))
     .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
+    if let Some(writer) = passive_writer_report {
+        report["preview_passive_performance"] = serde_json::json!({
+            "schema":1,"profile":"preview-passive-observer","marker":preview_observer,
+            "actual_normal_profile":passive_profile,"writer":writer,
+            "capture_marker_selected":false,"normal_Root_artwork":false,
+            "source_or_pixels_or_GPU_completion_qualified":false,
+        });
+    }
     report["performance"] = performance
         .as_ref()
         .map(|m| m.report())

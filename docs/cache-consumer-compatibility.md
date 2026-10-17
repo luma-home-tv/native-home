@@ -38,13 +38,40 @@ SDK `readelf` commands reproduced the original outputs byte-for-byte; direct
 imports and dependencies are subsets of the exact qualified f5 comparators.
 The coordinator separately rehashed all 1,915 selected review bindings.
 
-These are local source, build, package and static ABI results. They do not
+Those local source, build, package and static ABI results alone do not
 establish native selector startup, namespace access, permissions, cache hits,
 pixels, performance or a retained update. Private assets and binaries remain
 outside the public repository. The G2 continues to retain the separately tested
 [Settings-lifecycle build](g2-retained-settings-lifecycle-061.md).
 
-## Next device acceptance
+The [first temporary G2 trial](cache-consumer-g2-first-attempt.md) reached a
+captured Home screen but did not complete navigation. Its original exit 1 and
+negative component result remain separate from the successful f5 restoration
+and cleanup. Native selector/worker and Home/Apps acceptance still require a
+fresh trial; the retained installation remains f5.
+
+The [second temporary G2 trial](cache-consumer-g2-second-attempt.md) completed
+restoration and cleanup in the original process with operator exit 0. Its frame
+review also timed out before navigation, so the component result remains false.
+Direct raw-pixel comparison withdrew an apparent missing-texture impression from
+the image viewer; no renderer correction follows from those captures.
+
+[Later G2 navigation trials](cache-consumer-g2-navigation-progress.md) now bind
+the native worker's loaded association and cache/GL counters. Four guarded keys
+and captured states also establish a bounded Home/Apps/Home route. Both trials
+restored f5 and closed their scoped cleanup, but neither observed natural Home
+Back. Complete component acceptance and retained promotion remain pending.
+
+The [subsequent bounded native acceptance](cache-consumer-g2-native.md) completed
+Home/Apps/Home and a distinct natural Home Back with five guarded SDK keys.
+The actual loaded association, positive ordinary cache counters, joined worker
+and balanced GL cleanup pass the component contract. Independent saved review
+and byte-identical coordinator replay cover 17,425 bindings. Exact retained f5,
+private state, cache48, sampled Core and runtime preservation and scoped cleanup
+pass. This qualifies that executable's bounded component, with no retained
+promotion, native wake, per-key pixel, physical-input or performance claim.
+
+## Next current-build acceptance
 
 Use a fresh complete baseline of that actual retained executable and package,
 private preferences/state and both cache generations. A new bounded trial must
@@ -52,7 +79,11 @@ verify the candidate's full bundle, its current executable and read-only selecto
 and the unchanged original producer association. Existing closed scopes and
 their actors, nonces, Tickets and leases cannot supply admission.
 
-Observe ordinary startup and Home/Apps navigation with privileged preparation
+The [current observer-source ordinary package](current-ordinary-g2-native.md)
+has now passed its separate matching native Home/Apps/natural Back component
+and exact f5 restoration, with independent saved review and coordinator replay
+across 17,721 bindings. The observer marker was absent; instrumentation and
+performance remain unqualified. Future sessions must observe startup and Home/Apps navigation with privileged preparation
 off. Require the actual worker association and current-key cache results,
 natural shutdown and joined texture cleanup. Preserve all original cache bodies,
 preferences and measured Core state; restore the exact retained package and

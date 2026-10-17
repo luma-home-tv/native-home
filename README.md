@@ -338,12 +338,22 @@ The [compatible ordinary artwork reader](docs/cache-consumer-compatibility.md)
 has passed source checks, matching ARM builds and independent local package/ABI
 review. Native selector and preservation acceptance remain pending; this source
 has not replaced the retained G2 build.
+An opt-in [ordinary-dashboard performance observer](docs/passive-performance-observer.md)
+now passes integrated host checks, both actual ARM builds, compiler-contract and
+direct SDK ABI checks. Both private packages pass their complete archive/payload
+comparison, with the diagnostic marker as their only payload difference. Native
+measurement remains pending; earlier isolated-profile numbers do not establish
+its performance.
 The OLED65C26LD C2's last qualified retained delivery is
 [0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
-roundtrip and separate restoration were qualified first. The latest trial
-exercised no Search/IME or Root artwork. These historical delivery observations
+roundtrip and separate restoration were qualified first. That retained-delivery trial
+exercised no Search/IME or Root artwork. A later separate
+[physical input check](docs/c2-physical-input-048.md) qualifies pointer clicking,
+wheel movement and LG-keyboard typing with Done and Back on the isolated 0.48 build,
+with separate verified cleanup after a host receipt-save failure. It did not
+update the retained installation. These historical delivery observations
 do not replace fresh ownership, permissions and state checks before another run.
 The earlier
 [isolated startup observation](docs/c2-startup-collection.md) remains a separate
@@ -365,7 +375,7 @@ qualifies first-OK suppression and a distinct second-OK action on both models.
 The [G2 human check](docs/manual-keyboard-milestone.json) confirms `lu` + Done,
 reopen, then `ma` + Back retains `luma` with no second keypad. Its native trace
 also records one safely drained same-batch closing-key release. Broader dismissal
-races, C2 physical typing, performance and broader delivery remain separate
+races, current-build physical input, performance and broader delivery remain separate
 acceptance gates. The G2 normal update is recorded separately from the earlier
 human check. One G2 attempt exited on early focus loss before readiness;
 cold-entry reliability remains under investigation. The
@@ -390,6 +400,10 @@ two-column source grid and graphite detail pane, matched to the concept. Both TV
 render the Luma mark/name and independently read source status. A separate G2
 trial confirmed HDMI selection and restoration; C2 tuner restoration and live
 video-format/playback remain unverified.
+The [native preview plan](docs/native-source-preview-plan.md) records the intended
+focused-source viewport, relevant attributed framework research and the remaining
+native routing/lifetime questions. Live embedding and simultaneous previews are
+not qualified by the existing switching result.
 
 The [LG Home return milestone](docs/lg-home-return-milestone.json) adds the
 concept's separate rail shortcut. It uses a fixed normal LG app launch, verifies

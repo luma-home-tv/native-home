@@ -1,9 +1,14 @@
 # Control-centre coverage and next work
 
 Coverage-audit application source: `fe0a4a6c47e660817fd7ba7c0c78f278a6ef7848` (2026-10-15).
-Latest retained deliveries are [G2 0.57](g2-retained-preview057.md) and
-[C2 0.48](c2-retained-preview-048.md), with their own scoped normal-session checks.
-Those deliveries do not qualify new control edits. This coverage matrix reads
+Both TVs now retain the d221 normal0.61 build; the
+[latest deployment checkpoint](retained-preview-pause-checkpoint.md) records
+installation and preservation separately from functional qualification. The
+[active delivery plan](implementation-plan.md) prioritizes current daily-use
+checks. The matrix below retains its historical source/evidence scope and does
+not claim a new inventory or qualification of every control in the retained build.
+Earlier G2 0.57 and C2 0.48 records remain their own historical checks.
+This coverage matrix reads
 source and saved evidence, not a fresh inventory of every webOS24 setting.
 The separate 0.56 source/delivery adds three protected TV-information rows under
 General with captured native presentation; it adds no setter. The matrix below

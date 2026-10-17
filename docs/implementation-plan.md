@@ -1,7 +1,69 @@
 # Luma Home implementation plan
 
-The current delivery target is a responsive native Home dashboard for the
-OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.
+The goal has resumed from the [retained deployment checkpoint](retained-preview-pause-checkpoint.md).
+Both TVs retain normal0.61.0 from functional source
+`d2215d5d8761fe385ae7ae3dd76ab173793c5bb8`, dashboard SHA-256
+`3cefc9152fa0b0e051920763496274f211f24914085c83eed01d36b27812ecb3`.
+That installed identity supersedes older f5/G2 and0.48/C2 baselines. The updates
+verified complete installed payloads and preference preservation; they did not
+launch or functionally test the new retained installations.
+
+The subsequent [current retained G2 smoke](retained-current-g2-smoke.md) now
+completes one no-install Home/Apps/Home/natural-Back session with original
+operator 0 and verified preservation/closeout. Independent saved-data audit is
+now clear with a byte-identical coordinator replay. This completes the bounded
+gate-1 scope; it adds no current physical-input or C2 rendering result.
+
+The matching earlier [ordinary component](current-ordinary-g2-native.md),
+[navigation observation](passive-performance-observer-g2-native.md) and separate
+[idle/wake observation](passive-performance-observer-g2-idle-wake.md) pass their
+finite G2 scopes and independent saved replays. They supply useful evidence,
+not current physical input, combined full-product or C2 runtime qualification.
+
+## Current delivery sequence
+
+| Gate | Concrete result required | Work owner and boundary |
+| --- | --- | --- |
+| 1. Current retained G2 smoke | Fresh actual3ce full bundle/state/cache/runtime baseline; normal entry, Home/Apps/Home and natural exit; preserved saved favourites and known closeout | Coordinator only, new lease and bounded reviewed scope. No old f5 rollback carrier. |
+| 2. Favourites across restart | Disposable interactive Proof seeds its own store, one eligible unseeded app is pinned, natural exit, fresh second process loads exactly that committed state, then complete own removal | Carrier author plus independent package reviewer; coordinator alone runs it. Household Preview preferences stay unchanged. Real eligibility must come from fresh apps/launchpoint replies. |
+| 3. Physical input and one keyboard | Current-build pointer click, wheel and hold/menu; separate typing/Done/reopen/Back with one LG keyboard and no unintended post-dismissal activation | Human window only when the test is ready. The favourites matcher requires zero keyboard cycles, so typing has a separate grade/session. SDK keys do not stand in for physical input. |
+| 4. Normal daily handoffs | Current ordinary Preview opens an owned test app and returns, and completes one LG Settings return without changing a setting | Separate normal-capability scope; Proof launch suppression cannot prove this. No viewing-account writes. |
+| 5. Usable beta and remaining coverage | Repeated ordinary entry/exit and honest Controls/Inputs coverage; identify artwork refresh/fallback behavior for changed apps | Coordinator integrates only qualified changes. Unverified controls stay read-only or LG-managed. Full native control parity and broad reliability remain unfinished. |
+
+Gate1 is complete in its bounded G2 scope. The critical path now starts with
+the fresh C2 preservation baseline, then gates2–4 on the current executable.
+The existing Proof artifact has passed independent archive, profile and build-provenance review,
+including five adverse checks and a coordinator input replay. This is local
+artifact evidence; native execution and the two-session workflow remain open. It uses a synthetic Preview-only seed and a separate owning identity.
+A fresh eligible unseeded catalogue ID can avoid an extra Target install for the
+Pin-only operation; an owned Target requires its own artifact and cleanup proof.
+No app/account action is needed for a local favourite write.
+
+Parallel source work fixes and reviews optional bounded draw diagnostics. It
+stays off the TVs and cannot delay the daily-use gates. The earlier partial
+observer attempts and their coordination/timing limits remain preserved. Cache
+maintenance [planning](https://github.com/luma-home-tv/native-home/pull/6) and
+[same-cache worker ownership](https://github.com/luma-home-tv/native-home/pull/7)
+are source foundations, with no mutation caller or native maintenance proof.
+Automatic retirement/eviction and new diagnostic schema integration are later
+work, not prerequisites for the first fixed-catalogue beta.
+
+The initial resumed campaign used G2. The user has since explicitly redirected
+manual testing to C2. Its [fresh permission observation](c2-current-permission-observation.md)
+blocks reuse of the current G2 favourites carrier. A separately reviewed C2
+preservation model may allow the disposable Proof's independent private store
+to be tested without repairing the retained installation.
+The metadata was observed through Root SSH; native effective permissions remain
+unobserved. Qualify that distinction before selecting a metadata repair.
+The earlier G2 code and baseline cannot be copied across. Human availability is
+tracked privately. Every device scope needs a new actual
+baseline, lease, finite cleanup reserve and known outcome. No old nonce, actor,
+Ticket, snapshot freshness or closed-session authority transfers. C2 work needs
+separate availability and authorization; G2 results never establish it.
+
+The current delivery target is a responsive native Home dashboard for both
+authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.
+The G2 is always available for coordinator-owned tests.
 The C2 is available only from 00:00 to 06:00 Europe/London or when the user
 explicitly releases it. Each run still needs fresh scene, device and lease
 checks; refresh the C2 baseline before changes. Physical input requires current
@@ -17,8 +79,10 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 retains verified [0.61.0](g2-retained-preview061.md)
-and now has a [48-entry cache across two producer generations](ordinary-settings-validation-progress.md), following the earlier
+native interface. The earlier [G2 0.61.0 campaign](g2-retained-preview061.md)
+and [48-entry cache across two producer generations](ordinary-settings-validation-progress.md)
+are historical component records; the current installed executable is identified
+in the deployment checkpoint above. They followed the earlier
 [0.57 caption-preference delivery](g2-retained-preview057.md). The historical
 [0.58 cache observation](ordinary-artwork-cache-058-native.md) reached ordinary
 Home/Apps cache associations and returned to exact 0.57 through separately
@@ -27,8 +91,8 @@ verified cleanup; its original operator failure remains explicit. The earlier
 sessions, a natural idle-black/wake and full saved-state,
 bundle and Core20 preservation. Its visual frames show the logo and unboxed
 available icons; broader artwork and physical-input/performance qualification
-remain separate. The latest verified C2 retained version is
-[0.48.0](c2-retained-preview-048.md), following
+remain separate. The historical C2 retained0.48 record is
+[here](c2-retained-preview-048.md), following
 its own ordinary-owner forward/reverse metadata roundtrip and exact old-version
 restoration, then a fresh forward migration and two normal sessions. Original
 preference bytes/owners, C2 resources, Core files and checked state are preserved.
@@ -62,7 +126,11 @@ removal still precede normal artwork activation. This host work does not change
 current device availability or admit a native run, and does not update either
 retained app.
 
-## Near-term release and parallel work
+## Supporting evidence and earlier milestones
+
+The current sequence and installed identities above govern new work. The records
+below retain their original artifact and device boundaries; an older milestone
+does not supply a current baseline or authorize replay of its closed test scope.
 
 Preserve the retained normal app and ordinary cache while qualifying restart
 and action flows against their actual current baseline.
@@ -70,8 +138,9 @@ Choose one coherent normal-release artifact and prioritise
 normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
 The recorded normal sessions establish Home/Apps/Back and idle/wake within their
-respective scopes; latest retained G2 is [0.61](g2-retained-preview061.md) and
-latest verified C2 is 0.48. Current G2 has 48 retained icon entries across two
+respective scopes. Both current retained installations are 0.61.0 with the
+exact executable identified in the deployment checkpoint above; the C2 0.48
+record below is historical. G2 has 48 retained icon entries across two
 producer generations for the same supplied 24-key catalogue; older
 cache-absent/057 carriers cannot be reused.
 Earlier isolated results remain useful component evidence. Qualify the relevant
