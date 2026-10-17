@@ -1,5 +1,9 @@
 //! Opt-in passive Preview observations, never a capability or Root grant.
 //! Default Preview and the pre-existing Proof selector do not select this worker.
+//! Monitor quantiles/report and snapshot Value construction still run on the caller
+//! render thread; only byte encoding and file IO run on the snapshot worker.
+//! Metadata checks reject observed changes; they are not atomic against another
+//! owner changing permissions, and do not grant cleanup or wall-clock IO bounds.
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
@@ -52,6 +56,19 @@ pub fn load(
     app: &str,
     cli_switch: bool,
 ) -> io::Result<Option<Marker>> {
+    // Installation is Root-owned, not the ordinary application's writable state.
+    // Host fixtures inject their expected owner only through this private helper;
+    // device=true never turns a user-owned marker into an installed marker.
+    load_with_owner(assets, device, interactive, app, cli_switch, (0, 0))
+}
+fn load_with_owner(
+    assets: &Path,
+    device: bool,
+    interactive: bool,
+    app: &str,
+    cli_switch: bool,
+    owner: (u32, u32),
+) -> io::Result<Option<Marker>> {
     let path = assets.join(NAME);
     let m = match std::fs::symlink_metadata(&path) {
         Ok(m) => m,
@@ -64,11 +81,12 @@ pub fn load(
         ));
     }
     if !m.is_file()
+        || (m.uid(), m.gid()) != owner
         || m.nlink() != 1
         || m.len() > 256
         || !matches!(m.mode() & 0o7777, 0o444 | 0o644)
     {
-        return Err(invalid("Private installed ordinary marker"));
+        return Err(invalid("Root-owned installed ordinary marker"));
     }
     const ALLOWED: &[&str] = &[
         "appinfo.json",
@@ -202,9 +220,65 @@ fn existing(dir: &File, n: &str) -> io::Result<Option<File>> {
         Err(e) => Err(e),
     }
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct DirectoryIdentity {
+    dev: u64,
+    ino: u64,
+    uid: u32,
+    gid: u32,
+    mode: u32,
+}
+impl DirectoryIdentity {
+    fn of(m: &std::fs::Metadata) -> Self {
+        Self {
+            dev: m.dev(),
+            ino: m.ino(),
+            uid: m.uid(),
+            gid: m.gid(),
+            mode: m.mode(),
+        }
+    }
+    fn check(self, dir: &File, path: &Path) -> io::Result<()> {
+        let held = dir.metadata()?;
+        let named = std::fs::symlink_metadata(path)?;
+        // Own writes legitimately change directory mtime/ctime. Identity, owner,
+        // exact mode and named/held association must nevertheless remain fixed.
+        if !held.is_dir()
+            || !named.is_dir()
+            || Self::of(&held) != self
+            || Self::of(&named) != self
+            || self.mode & 0o7777 != 0o700
+        {
+            return Err(invalid("Observer output directory changed"));
+        }
+        Ok(())
+    }
+    fn private_file(self, m: &std::fs::Metadata) -> bool {
+        m.is_file()
+            && (m.uid(), m.gid()) == (self.uid, self.gid)
+            && m.mode() & 0o7777 == 0o600
+            && m.nlink() == 1
+    }
+}
+#[cfg(test)]
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PublishStage {
+    AfterWrite,
+    BeforeRename,
+    AfterRename,
+}
+#[cfg(test)]
+type PublishHook = Box<dyn Fn(PublishStage, &File) + Send>;
 impl Writer {
-    /// Startup only; the source-created shell-PID directory must still be own0700.
+    /// Startup and every publication require the same held/named own0700 directory.
     pub fn start(output: &Path) -> io::Result<Self> {
+        Self::start_inner(
+            output,
+            #[cfg(test)]
+            None,
+        )
+    }
+    fn start_inner(output: &Path, #[cfg(test)] hook: Option<PublishHook>) -> io::Result<Self> {
         let dir = OpenOptions::new()
             .read(true)
             .custom_flags(libc::O_DIRECTORY | libc::O_NOFOLLOW | libc::O_CLOEXEC)
@@ -217,6 +291,9 @@ impl Writer {
         {
             return Err(invalid("Own private observer output directory"));
         }
+        let identity = DirectoryIdentity::of(&m);
+        let output = output.to_path_buf();
+        identity.check(&dir, &output)?;
         for n in ["performance-current.json", "performance-current-next.json"] {
             if existing(&dir, n)?.is_some() {
                 return Err(invalid("Observer refuses existing output"));
@@ -238,29 +315,34 @@ impl Writer {
                         if raw.len() > CAP {
                             return Err(invalid("Observer snapshot bound"));
                         }
+                        identity.check(&dir, &output)?;
                         let mut f = open_at(
                             &dir,
                             "performance-current-next.json",
                             libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL,
                         )?;
                         let a = f.metadata()?;
-                        if !a.is_file()
-                            || a.uid() != unsafe { libc::geteuid() }
-                            || a.gid() != unsafe { libc::getegid() }
-                            || a.nlink() != 1
-                            || a.mode() & 0o7777 != 0o600
-                        {
+                        if !identity.private_file(&a) {
                             return Err(invalid("Observer file identity"));
                         }
                         f.write_all(&raw)?;
                         f.flush()?;
+                        #[cfg(test)]
+                        if let Some(hook) = &hook {
+                            hook(PublishStage::AfterWrite, &f);
+                        }
                         let written = f.metadata()?;
-                        if written.dev() != a.dev()
+                        if !identity.private_file(&written)
+                            || written.dev() != a.dev()
                             || written.ino() != a.ino()
-                            || written.nlink() != 1
                             || written.len() != raw.len() as u64
                         {
                             return Err(invalid("Observer file changed"));
+                        }
+                        let named = existing(&dir, "performance-current-next.json")?
+                            .ok_or_else(|| invalid("Observer temporary path absent"))?;
+                        if stamp(&named.metadata()?) != stamp(&written) {
+                            return Err(invalid("Observer temporary name changed"));
                         }
                         let current = existing(&dir, "performance-current.json")?;
                         if current
@@ -270,6 +352,33 @@ impl Writer {
                             != prior
                         {
                             return Err(invalid("Observer current epoch changed"));
+                        }
+                        #[cfg(test)]
+                        if let Some(hook) = &hook {
+                            hook(PublishStage::BeforeRename, &f);
+                        }
+                        // Recheck the held and named temporary immediately before
+                        // rename; failures preserve evidence, not generic unlink authority.
+                        identity.check(&dir, &output)?;
+                        let held_now = f.metadata()?;
+                        let named_now = named.metadata()?;
+                        let path_now = existing(&dir, "performance-current-next.json")?
+                            .ok_or_else(|| invalid("Observer temporary path absent"))?;
+                        if !identity.private_file(&held_now)
+                            || stamp(&held_now) != stamp(&written)
+                            || stamp(&named_now) != stamp(&written)
+                            || stamp(&path_now.metadata()?) != stamp(&written)
+                        {
+                            return Err(invalid("Observer pre-rename identity changed"));
+                        }
+                        let current_now = existing(&dir, "performance-current.json")?;
+                        if current_now
+                            .as_ref()
+                            .map(|f| f.metadata().map(|m| stamp(&m)))
+                            .transpose()?
+                            != prior
+                        {
+                            return Err(invalid("Observer pre-rename current epoch changed"));
                         }
                         if unsafe {
                             libc::renameat(
@@ -282,13 +391,21 @@ impl Writer {
                         {
                             return Err(io::Error::last_os_error());
                         }
+                        #[cfg(test)]
+                        if let Some(hook) = &hook {
+                            hook(PublishStage::AfterRename, &f);
+                        }
+                        identity.check(&dir, &output)?;
                         let current = existing(&dir, "performance-current.json")?
                             .ok_or_else(|| invalid("Published observer path absent"))?;
+                        let held = f.metadata()?;
                         let cm = current.metadata()?;
-                        if cm.dev() != written.dev()
+                        if !identity.private_file(&held)
+                            || !identity.private_file(&cm)
+                            || cm.dev() != written.dev()
                             || cm.ino() != written.ino()
                             || cm.len() != written.len()
-                            || cm.nlink() != 1
+                            || stamp(&cm) != stamp(&held)
                         {
                             return Err(invalid("Observer rename identity"));
                         }
