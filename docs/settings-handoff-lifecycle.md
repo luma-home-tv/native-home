@@ -29,7 +29,7 @@ Host validation passed 772 library tests, 15 UI tests and strict Clippy. Focused
 cases include delayed cover renewal followed by a same-batch own scene, late
 success/refusal replies, actual dispatcher refusal after expiry, and the main
 hidden-state helper without SDL hide. Two independent finite source reviews
-passed; matching native qualification remains open. No new service calls, settings
+passed; isolated native evidence is recorded below, while normal delivery remains open. No new service calls, settings
 setters, permissions, dependency changes or timeout increases are introduced.
 
 ## Isolated native qualification
@@ -54,3 +54,36 @@ state, runtime, staging and lease cleanup. Native rendering, physical input,
 performance, reliability and clean removal are not established by host checks.
 LG Home and all core components stay untouched. Earlier rejected candidate
 artifacts must not be substituted for this source.
+
+## Isolated G2 return and separate cleanup
+
+The V3 Settings Proof observed a usable return under the separate ordinary Proof
+identity. Its typed native trace records early SDL focus hints before the verified
+launch reply, then an accepted Settings cover and an accepted sole-own scene with
+one scene return. A single guarded Back was sent against the exact Settings
+overlay. The coordinator inspected a compositor capture of LG Picture Settings over
+Luma and a native return frame showing Luma Controls with its return notice.
+Independent window observations also recorded the same actor as the sole own
+card after Back. These are bounded rendering and scene observations; they do not
+establish physical input latency or normal-preview behavior.
+
+The original carrier still exited 1. Later successful scene replies contained an
+empty foreground identity and no windows; the strict observer refused to infer
+ownership or closure. On later collection, the saved native terminal recorded a natural
+exit at the existing 30-second limit, rather than a handoff failure. Neither the
+terminal nor the earlier live witness was used alone to authorize cleanup.
+
+A separately admitted, no-input cleanup scope verified current closure and the
+original owned objects, retired the exact old coordination owner through a private
+copy, and acquired a fresh lease before resource cleanup. It exited 0 after one
+supported Proof removal completed, scoped state/runtime/staging cleanup, and
+lease/agent closure. Retained 0.61, its preferences and 24-entry cache, sampled
+Core state and prior runtime were preserved. All original bound evidence remains
+unchanged. This cleanup does not turn the failed original carrier into a passing
+workflow.
+
+This qualifies the isolated V3 return observation and its separate known cleanup.
+The retained normal 0.61 installation has not received the fix. Coherent normal
+artifact/cache transition, ordinary return and reentry, physical input,
+performance, broader reliability and the full dashboard goal remain open. The PR
+remains a draft pending that normal delivery boundary. C2 was not modified.
