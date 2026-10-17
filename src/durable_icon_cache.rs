@@ -568,6 +568,10 @@ impl Cache {
     pub(crate) fn open_test_directory(parent: File, config: Config) -> io::Result<Self> {
         Self::open_in(parent, PREVIEW_LEAF, config)
     }
+    #[cfg(test)]
+    pub(crate) fn shares_snapshot_root_for_test(&self, snapshot: &Snapshot) -> bool {
+        Arc::ptr_eq(&self.root, &snapshot.root)
+    }
     fn open_in(parent: File, name: &CStr, config: Config) -> io::Result<Self> {
         let config = config.valid()?;
         if unsafe { libc::geteuid() } == 0 {
