@@ -274,6 +274,35 @@ impl Record {
             .map_err(|_| invalid("Cache leaf"))
     }
 }
+// Shared pure framing/schema logic for both the anchored FD reader and the
+// supplied-byte maintenance inspector. Neither helper opens or mutates data.
+fn record_header_size(prefix: &[u8; 12], file_bytes: u64) -> io::Result<usize> {
+    if &prefix[..8] != MAGIC {
+        return Err(invalid("Cache magic"));
+    }
+    let size = u32::from_be_bytes(
+        prefix[8..]
+            .try_into()
+            .map_err(|_| invalid("Header prefix"))?,
+    ) as usize;
+    if size == 0 || size > HEADER_CAP || file_bytes < 12 + size as u64 {
+        return Err(invalid("Cache header bound"));
+    }
+    Ok(size)
+}
+fn decode_record_header(raw: &[u8], name: &CStr, file_bytes: u64) -> io::Result<(Record, u64)> {
+    if raw.is_empty() || raw.len() > HEADER_CAP {
+        return Err(invalid("Cache header bound"));
+    }
+    let record: Record = serde_json::from_slice(raw)
+        .map_err(|_| invalid("Malformed/duplicate/unknown cache metadata"))?;
+    record.validate()?;
+    let offset = 12 + raw.len() as u64;
+    if offset + u64::from(record.encoded_bytes) != file_bytes || record.name()?.as_c_str() != name {
+        return Err(invalid("Cache length/content-address association"));
+    }
+    Ok((record, offset))
+}
 fn stamp(m: &Metadata) -> FileIdentity {
     FileIdentity {
         device: m.dev(),
@@ -413,28 +442,10 @@ impl Root {
         }
         let mut prefix = [0; 12];
         file.read_exact(&mut prefix)?;
-        if &prefix[..8] != MAGIC {
-            return Err(invalid("Cache magic"));
-        }
-        let size = u32::from_be_bytes(
-            prefix[8..]
-                .try_into()
-                .map_err(|_| invalid("Header prefix"))?,
-        ) as usize;
-        if size == 0 || size > HEADER_CAP || before.bytes < 12 + size as u64 {
-            return Err(invalid("Cache header bound"));
-        }
+        let size = record_header_size(&prefix, before.bytes)?;
         let mut raw = vec![0; size];
         file.read_exact(&mut raw)?;
-        let record: Record = serde_json::from_slice(&raw)
-            .map_err(|_| invalid("Malformed/duplicate/unknown cache metadata"))?;
-        record.validate()?;
-        let offset = 12 + size as u64;
-        if offset + u64::from(record.encoded_bytes) != before.bytes
-            || record.name()?.as_c_str() != name
-        {
-            return Err(invalid("Cache length/content-address association"));
-        }
+        let (record, offset) = decode_record_header(&raw, name, before.bytes)?;
         self.unchanged(&file, name, &before)?;
         Ok((record, before, offset))
     }
@@ -978,6 +989,10 @@ impl Snapshot {
         })
     }
 }
+/// Pure non-authorizing inspection only; no cache I/O or retirement callsite.
+#[cfg(any(target_arch = "arm", test))]
+#[path = "durable_icon_cache_maintenance.rs"]
+pub mod maintenance;
 #[cfg(test)]
 #[path = "durable_icon_cache_tests.rs"]
 mod tests;

@@ -114,6 +114,7 @@ fn every_consumer_contract_field_and_current_identity_is_exact() {
         "cargo_semantics_sha256",
         "native_build_selection_sha256",
         "record_parser_sha256",
+        "maintenance_planner_sha256",
         "file_reader_sha256",
         "decoder_policy_sha256",
         "cargo_lock_sha256",
