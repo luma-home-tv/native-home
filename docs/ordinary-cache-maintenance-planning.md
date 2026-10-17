@@ -3,7 +3,7 @@
 The Rust maintenance planner proposes unsupported ordinary records without
 opening, writing or deleting files. It is separate from cache mutation,
 publication, source adoption, Root sessions and Tickets. No production worker,
-renderer or CLI invokes it. The module is compiled for ARM and host tests only;
+renderer or CLI invokes it. The module is enabled for ARM builds and host tests only;
 host checks do not establish native behavior.
 
 `durable_icon_cache::maintenance` reuses the existing private `Record`,
@@ -66,6 +66,11 @@ library tests, 15 UI tests, strict Luma Clippy, 87 packaging tests and focused
 contract tests pass. Explicit private fixtures separately preserve d221's
 historical positive and verify new-source refusal. No TV or ARM/package result
 is claimed by these checks.
+
+Independent source review and seven additional adverse cases also pass. The
+coordinator verified the reviewed source and selected evidence bindings. The
+frozen implementation and its original checks remain separate from this
+documentation clarification.
 
 An eventual mutator must run off the render thread after actual relevant
 generation withdrawal and worker join, with the same originating anchored cache,
