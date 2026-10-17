@@ -97,6 +97,16 @@ fn parse(raw: &[u8], actual_ui: &str) -> io::Result<ExpectedProducer> {
         broker_sha256: record.broker_sha256,
     })
 }
+
+/// Pure inspection for ordinary retention planning only. The private parsed
+/// ExpectedProducer never escapes; returned data grants no publishing/Root right.
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn inspect_for_maintenance(raw: &[u8], actual_ui: &str) -> io::Result<ProducerVersion> {
+    if raw.is_empty() || raw.len() as u64 > LIMIT {
+        return Err(invalid("Bounded maintenance producer bytes"));
+    }
+    parse(raw, actual_ui).map(|expected| expected.version())
+}
 #[cfg(any(target_arch = "arm", test))]
 #[derive(PartialEq, Eq)]
 struct WriterStamp {

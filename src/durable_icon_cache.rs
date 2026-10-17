@@ -978,6 +978,10 @@ impl Snapshot {
         })
     }
 }
+/// Pure non-authorizing inspection only; no cache I/O or retirement callsite.
+#[cfg(any(target_arch = "arm", test))]
+#[path = "durable_icon_cache_maintenance.rs"]
+pub mod maintenance;
 #[cfg(test)]
 #[path = "durable_icon_cache_tests.rs"]
 mod tests;

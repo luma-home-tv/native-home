@@ -10,7 +10,7 @@ LEGACY_NATIVE_HELPER_SHA='981918ae4b73b1551253df86ee22bcd22e21aaee7416ab6c6adf78
 
 APP='com.ash.nativehome.preview'
 FIELDS={'schema','app_id','producer_kind','source_revision','ui_sha256','broker_sha256'}
-CONTRACT_FILES={'source_grammar_sha256':'src/app_artwork.rs','app_id_grammar_sha256':'src/model.rs','record_parser_sha256':'src/durable_icon_cache.rs','file_reader_sha256':'src/packaged_icon_reader.rs','decoder_policy_sha256':'src/icon_decode.rs','cargo_lock_sha256':'Cargo.lock','dependency_lock_sha256':'dependency-lock.json','framework_patch_sha256':'patches/plxnative-framework-integration.patch'}
+CONTRACT_FILES={'source_grammar_sha256':'src/app_artwork.rs','app_id_grammar_sha256':'src/model.rs','record_parser_sha256':'src/durable_icon_cache.rs','maintenance_planner_sha256':'src/durable_icon_cache_maintenance.rs','file_reader_sha256':'src/packaged_icon_reader.rs','decoder_policy_sha256':'src/icon_decode.rs','cargo_lock_sha256':'Cargo.lock','dependency_lock_sha256':'dependency-lock.json','framework_patch_sha256':'patches/plxnative-framework-integration.patch'}
 def need(ok,message):
  if not ok:raise ValueError(message)
 def sha(raw):return hashlib.sha256(raw).hexdigest()

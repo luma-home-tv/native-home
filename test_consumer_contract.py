@@ -1,5 +1,5 @@
 """Focused real contract/selector/receipt functions; fixtures are not native artifacts."""
-import copy,hashlib,json,os,socket,subprocess,tempfile,unittest
+import copy,hashlib,json,os,socket,subprocess,tempfile,types,unittest
 from pathlib import Path
 from unittest.mock import patch
 import cache_consumer_contract as c
@@ -8,6 +8,16 @@ import build_provenance as provenance
 from test_cache_consumer_packaging import fixture
 ROOT=Path(__file__).resolve().parent
 REAL_RUN=subprocess.run;REAL_POPEN=subprocess.Popen
+
+def historical_d221_packaging():
+ # Preserve the historical positive's actual policy, rather than silently
+ # treating a new parser/planner contract as already compatible with f5.
+ revision='d2215d5d8761fe385ae7ae3dd76ab173793c5bb8';name='cache_consumer_packaging.py'
+ env={k:v for k,v in os.environ.items()if not k.startswith('GIT_')};env.update(GIT_NO_LAZY_FETCH='1',GIT_TERMINAL_PROMPT='0',GIT_OPTIONAL_LOCKS='0')
+ with patch.object(subprocess,'Popen',REAL_POPEN):
+  result=REAL_RUN(['git','--no-optional-locks','--no-replace-objects','-C',str(ROOT),'show',revision+':'+name],capture_output=True,timeout=10,env=env)
+ if result.returncode!=0 or hashlib.sha256(result.stdout).hexdigest()!='d1dda60de411f30f4a2ad017157542e750f88265fb101fb51e71498f0add63a7':raise ValueError('Exact historical d221 packaging policy required')
+ module=types.ModuleType('historical_d221_packaging');module.__file__=str(ROOT/name);exec(compile(result.stdout,revision+':'+name,'exec'),module.__dict__);return module
 
 def put_manifest(row,data):
  row['snapshot']['source_inputs']['Cargo.toml']={'bytes':len(data),'sha256':c.sha(data)};row['consumer_build_contract']=c.native_descriptor(data,c.native_selection(data))
@@ -27,6 +37,15 @@ class ContractTests(unittest.TestCase):
  def test_actual_defining_app_id_grammar_change_refuses_selector(self):
   current,old,helper,producer,_=rows();p.selector(current,old,helper,producer);name='src/model.rs';data=(ROOT/name).read_bytes();self.assertIn(b'id.len() <= 180',data);changed=data.replace(b'id.len() <= 180',b'id.len() <= 181');current['snapshot']['source_inputs'][name]={'bytes':len(changed),'sha256':c.sha(changed)}
   with self.assertRaisesRegex(ValueError,'reader/parser/source grammar'):p.selector(current,old,helper,producer)
+ def test_child_only_maintenance_change_and_missing_input_refuse_selector(self):
+  for change in ('change','missing'):
+   current,old,helper,producer,_=rows();p.selector(current,old,helper,producer);name='src/durable_icon_cache_maintenance.rs'
+   if change=='change':current['snapshot']['source_inputs'][name]['sha256']='0'*64
+   else:del current['snapshot']['source_inputs'][name]
+   with self.assertRaises(ValueError):p.selector(current,old,helper,producer)
+ def test_full_build_snapshot_includes_new_child_bytes(self):
+  with patch.object(provenance,'_framework',return_value={'synthetic':True}):snapshot=provenance.snapshot(ROOT)
+  name='src/durable_icon_cache_maintenance.rs';raw=(ROOT/name).read_bytes();self.assertEqual(snapshot['source_inputs'][name],{'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
  def test_dependency_default_features_feature_graph_target_and_profile_changes_refuse(self):
   variants=[lambda b:b.replace(b'serde_json = "1"',b'serde_json = { version="1", default-features=false }'),lambda b:b.replace(b'features = ["derive"]',b'features = ["derive", "rc"]'),lambda b:b.replace(b'[features]',b'[features]\ndefault=["hostsim"]'),lambda b:b+b'\n[target.\'cfg(target_arch="arm")\'.dependencies]\nnew_dep="1"\n',lambda b:b+b'\n[patch.crates-io]\nserde={path="different"}\n',lambda b:b.replace(b'panic = "abort"',b'panic = "unwind"')]
   for change in variants:
@@ -60,8 +79,17 @@ class ContractTests(unittest.TestCase):
   def git(argv,**kw):
    self.assertEqual(argv[:6],['git','--no-optional-locks','--no-replace-objects','-C',str(repo),'show']);self.assertEqual(kw['env']['GIT_NO_LAZY_FETCH'],'1');self.assertTrue(argv[6].startswith(old['git_revision']+':'));calls.append(argv[6]);
    with patch.object(subprocess,'Popen',REAL_POPEN):return REAL_RUN(argv,**kw)
-  with patch.object(p.subprocess,'run',side_effect=git):selected,inputs=p.read_inputs(repo,current,ui,helper,profile)
-  self.assertEqual(len(calls),len(old['snapshot']['source_inputs']));self.assertEqual(selected['producer']['ui_sha256'],old['binary']['sha256']);self.assertEqual(selected['consumer_ui_sha256'],'11'*32);p.recheck(inputs)
-  with patch.object(p.subprocess,'run',side_effect=git),patch.object(p,'LEGACY_NATIVE_RECIPE_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):p.read_inputs(repo,current,ui,helper,profile)
-  with patch.object(p.subprocess,'run',side_effect=git),patch.object(p,'LEGACY_NATIVE_UI_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):p.read_inputs(repo,current,ui,helper,profile)
+  historical=historical_d221_packaging()
+  with patch.object(historical.subprocess,'run',side_effect=git):selected,inputs=historical.read_inputs(repo,current,ui,helper,profile)
+  self.assertEqual(len(calls),len(old['snapshot']['source_inputs']));self.assertEqual(selected['producer']['ui_sha256'],old['binary']['sha256']);self.assertEqual(selected['consumer_ui_sha256'],'11'*32);historical.recheck(inputs)
+  with patch.object(historical.subprocess,'run',side_effect=git),patch.object(historical,'LEGACY_NATIVE_RECIPE_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):historical.read_inputs(repo,current,ui,helper,profile)
+  with patch.object(historical.subprocess,'run',side_effect=git),patch.object(historical,'LEGACY_NATIVE_UI_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):historical.read_inputs(repo,current,ui,helper,profile)
+ @unittest.skipUnless(os.environ.get('LUMA_TEST_PRIVATE_ARTIFACT_ROOT'), 'Explicit private ARM artifact fixture not configured')
+ def test_new_maintenance_contract_refuses_actual_historical_f5_missing_child(self):
+  B=Path(os.environ['LUMA_TEST_PRIVATE_ARTIFACT_ROOT']).resolve(strict=True)
+  ui=B/'settings-handoff-lifecycle-arm-v3/cargo/arm-unknown-linux-gnueabi/release/home-preview';helper=B/'normal-v3-artifacts-v1/helper/cargo/arm-unknown-linux-gnueabi/release/artwork-broker';profile=B/'normal-v3-artifacts-v1/package-normal/preview-package/usr/palm/applications/com.ash.nativehome.preview/artwork-cache-producer.json';repo=B/'settings-handoff-lifecycle-build-source-f5';old=json.loads(ui.with_name(ui.name+'.build.json').read_bytes());self.assertNotIn('src/durable_icon_cache_maintenance.rs',old['snapshot']['source_inputs']);current=copy.deepcopy(old);current['binary']['sha256']='11'*32;current['git_revision']='b'*40;put_manifest(current,(ROOT/'Cargo.toml').read_bytes())
+  def git(argv,**kw):
+   self.assertEqual(argv[:6],['git','--no-optional-locks','--no-replace-objects','-C',str(repo),'show']);self.assertTrue(argv[6].startswith(old['git_revision']+':'))
+   with patch.object(subprocess,'Popen',REAL_POPEN):return REAL_RUN(argv,**kw)
+  with patch.object(p.subprocess,'run',side_effect=git),self.assertRaisesRegex(ValueError,'Exact critical reader/parser/source/policy input'):p.read_inputs(repo,current,ui,helper,profile)
 if __name__=='__main__':unittest.main(verbosity=2)
