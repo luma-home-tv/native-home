@@ -147,6 +147,23 @@ native authority and changes no native timers/gates. A future namespace-only
 carrier requires new admission/fresh actual state/new lease; current compiled
 d221 inputs and separate PR7 source remain unchanged.
 
+The later N5 navigation scope in `docs/passive-performance-observer-g2-native.md`
+is closed0 with componenttrue: five SDK keys/HomeAppsHome/distinct naturalBack
+at88.527s, six drafts/eleven captures; changed wholeSHA draft7 refused before a
+fresh8 review. Three live plus one externally closed finaljoined epoch/current
+and actual terminal-state reread pass; two collections1pre1post. Independent
+saved review/four adverse groups and byte-identical Root replay across16,543
+bindings/3,700rawops pass;27fixed map packets match. Six saved helper reviews/
+36PNG RGB associations pass, but no waiter process/status/timing receipts or
+matched orchestration speedup is inferred. Exact retained f5/stateFD/rawprefs/
+cache48/sampled Core/runtime and known scoped cleanup/originallease-agent pass.
+GL12 is joined/balanced with no recorded errors. Partial266draw/fivekey metrics
+include119.598ms draw max without cause;90fullraw7 status samples are not peak/
+total/GPU/leak/performance-budget proof. NoI/physical/FPS/improvement/promotion
+follows. All N5 authority is closed: never rerun86480 or reuse dates/nonce/lease.
+Normal Root remains off; new work needs fresh actual f5 state and a new scope.
+Keep separate draw-phase source worktree and I recipe/artifacts out of d221.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
