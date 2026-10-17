@@ -79,11 +79,17 @@ before full route acceptance. Independent saved review and coordinator replay
 verify exact retained f5/state/cache/Core/runtime preservation and scoped cleanup.
 The retained installation remains f5; the C2 has not received this observer.
 
-Next reduce redundant read-only probe overhead, preserving all context, lease,
-whole-frame, dispatch-freshness and unknown-state barriers before another fresh
-scope. Full native workload acceptance, matched resource/performance checks and
-idle/wake qualification remain pending. The separate cache-consumer trial and
-its original artifact identities remain unchanged.
+The later [bounded navigation observation](passive-performance-observer-g2-native.md)
+and separate [idle/wake observation](passive-performance-observer-g2-idle-wake.md)
+now pass their own matching native routes, final output/state associations and
+independently replayed restoration/cleanup. The intervening
+[second partial attempt](passive-performance-observer-g2-second-attempt.md)
+preserves coordinator review delay and grants no batching-speed comparison.
+Both successful scopes are closed and retained f5 remains unchanged. They are
+separate sessions, not combined full-product, physical-remote, GPU/panel, matched
+observer-overhead or performance-improvement qualification. Ordinary retained
+delivery, current physical input, daily actions/restart and broader reliability
+remain separate work. The earlier cache-consumer identity/result stays distinct.
 
 For the optional real-artifact integration test, explicitly set
 `LUMA_TEST_PRIVATE_ARTIFACT_ROOT` to the private evidence directory. A configured
