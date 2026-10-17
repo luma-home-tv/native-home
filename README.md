@@ -61,6 +61,10 @@ The [next campaign](docs/g2-retained-preview061-second-attempt.md) stopped at a
 declined inert preflight after an unavailable native LS2 foreground read. It
 submitted no second-batch resource work and restored exact 0.57. The lost timeout/
 setup distinction is being addressed before further native preparation.
+The [native context diagnostic source](docs/native-context-diagnostics.md) now
+preserves bounded typed results and timing for those existing calls. Host checks,
+independent source review and matching ARM dashboard/helper builds pass. Package
+and native qualification remain required.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout

@@ -146,7 +146,43 @@ trait Backend {
     fn identity(&mut self) -> Result<crate::broker_probe::OwnIdentity, String>;
     fn register(&mut self) -> Result<(), Failure>;
     fn context(&mut self, deadline: Instant) -> Value;
+    fn take_context_trace(&mut self) -> Option<crate::broker_probe::ContextTrace> {
+        None
+    }
     fn check_root(&mut self, budget: Duration) -> Result<String, Failure>;
+}
+// Bounded observation history only; none of these fields are admission inputs.
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Default, serde::Serialize)]
+struct ContextDiagnostics {
+    initial: Vec<InitialContextTrace>,
+    after: Option<crate::broker_probe::ContextTrace>,
+    trace_truncated: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(serde::Serialize)]
+struct InitialContextTrace {
+    attempt: u32,
+    trace: crate::broker_probe::ContextTrace,
+}
+#[cfg(any(target_arch = "arm", test))]
+impl ContextDiagnostics {
+    fn initial(&mut self, attempt: u32, trace: Option<crate::broker_probe::ContextTrace>) {
+        let Some(trace) = trace else {
+            self.trace_truncated = true;
+            return;
+        };
+        self.trace_truncated |= trace.trace_truncated;
+        if self.initial.len() == 8 {
+            self.initial.remove(1); // Preserve the first and seven most recent sets.
+            self.trace_truncated = true;
+        }
+        self.initial.push(InitialContextTrace { attempt, trace });
+    }
+    fn after(&mut self, trace: Option<crate::broker_probe::ContextTrace>) {
+        self.trace_truncated |= trace.as_ref().is_none_or(|trace| trace.trace_truncated);
+        self.after = trace;
+    }
 }
 #[cfg(any(target_arch = "arm", test))]
 fn report(app_id: &str, uid: u32) -> Value {
@@ -183,6 +219,7 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
     let began = backend.now();
     let mut output = report(backend.app_id(), backend.uid());
     let mut operations_deadline = None;
+    let mut context_diagnostics = ContextDiagnostics::default();
     let observed = (|| -> Result<(), (&'static str, Value)> {
         if !ordinary_for_profile(backend.app_id(), backend.uid(), profile) {
             return Err((
@@ -213,6 +250,7 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
         loop {
             attempts += 1;
             let context = backend.context(gate);
+            context_diagnostics.initial(attempts, backend.take_context_trace());
             let valid = context_valid_for_profile(&context, profile);
             if attempts == 1 {
                 // Diagnostic evidence only. Admission still uses the current
@@ -280,6 +318,7 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
         };
         output["response"] = received;
         let after_context = backend.context(deadline);
+        context_diagnostics.after(backend.take_context_trace());
         let after_valid = context_valid_for_profile(&after_context, profile);
         output["context_after"] = after_context;
         output["context_valid_after"] = json!(after_valid);
@@ -322,6 +361,8 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
         json!(operations_deadline.is_some_and(|end| backend.now() >= end));
     output["reported_elapsed_ms"] =
         json!(backend.now().saturating_duration_since(began).as_millis());
+    output["context_diagnostics"] = json!({"schema":1,"initial":context_diagnostics.initial,
+        "after":context_diagnostics.after,"trace_truncated":context_diagnostics.trace_truncated});
     output
 }
 
@@ -329,6 +370,7 @@ fn run_for_profile(backend: &mut impl Backend, profile: Profile) -> Value {
 struct Native {
     profile: Profile,
     bus: Option<plx_platform::webos::ls2::Registration>,
+    last_context_trace: Option<crate::broker_probe::ContextTrace>,
 }
 #[cfg(target_arch = "arm")]
 impl Backend for Native {
@@ -365,10 +407,18 @@ impl Backend for Native {
         }
     }
     fn context(&mut self, deadline: Instant) -> Value {
+        self.last_context_trace = None;
         match &self.bus {
-            Some(bus) => crate::broker_probe::read_context(bus, deadline),
+            Some(bus) => {
+                let (context, trace) = crate::broker_probe::read_context_observed(bus, deadline);
+                self.last_context_trace = Some(trace);
+                context
+            }
             None => json!({"unavailable":true}),
         }
+    }
+    fn take_context_trace(&mut self) -> Option<crate::broker_probe::ContextTrace> {
+        self.last_context_trace.take()
     }
     fn check_root(&mut self, budget: Duration) -> Result<String, Failure> {
         let Some(bus) = &self.bus else {
@@ -401,12 +451,20 @@ pub fn collect() -> Value {
     run(&mut Native {
         profile: Profile::Proof,
         bus: None,
+        last_context_trace: None,
     })
 }
 /// Closed source-selected role; this observes HBC status without executing a command.
 #[cfg(target_arch = "arm")]
 pub fn collect_for_profile(profile: Profile) -> Value {
-    run_for_profile(&mut Native { profile, bus: None }, profile)
+    run_for_profile(
+        &mut Native {
+            profile,
+            bus: None,
+            last_context_trace: None,
+        },
+        profile,
+    )
 }
 #[cfg(not(target_arch = "arm"))]
 pub fn collect() -> Value {
@@ -831,6 +889,95 @@ mod tests {
             assert_eq!(r["outcome"], "unsupported_host");
             assert_eq!(r["check_root_calls"], 0);
             assert_eq!(r["verified"], false);
+        }
+    }
+    #[test]
+    fn context_trace_history_keeps_first_and_recent_sets_with_after_independent() {
+        let trace = || crate::broker_probe::ContextTrace {
+            operations: Vec::new(),
+            trace_truncated: false,
+        };
+        let mut diagnostics = ContextDiagnostics::default();
+        for attempt in 1..=100 {
+            diagnostics.initial(attempt, Some(trace()));
+        }
+        diagnostics.after(Some(trace()));
+        assert_eq!(diagnostics.initial.len(), 8);
+        assert_eq!(diagnostics.initial[0].attempt, 1);
+        assert_eq!(diagnostics.initial[1].attempt, 94);
+        assert_eq!(diagnostics.initial[7].attempt, 100);
+        assert!(diagnostics.after.is_some());
+        assert!(diagnostics.trace_truncated);
+        let mut missing = ContextDiagnostics::default();
+        missing.initial(1, None);
+        missing.after(None);
+        assert!(missing.trace_truncated);
+        assert!(missing.initial.is_empty());
+    }
+    #[test]
+    fn diagnostic_metadata_does_not_supply_context_or_change_capability_policy() {
+        struct ObservedFake(Fake);
+        impl Backend for ObservedFake {
+            fn app_id(&self) -> &str {
+                self.0.app_id()
+            }
+            fn uid(&self) -> u32 {
+                self.0.uid()
+            }
+            fn now(&self) -> Instant {
+                self.0.now()
+            }
+            fn pause(&mut self, duration: Duration) {
+                self.0.pause(duration);
+            }
+            fn identity(&mut self) -> Result<OwnIdentity, String> {
+                self.0.identity()
+            }
+            fn register(&mut self) -> Result<(), Failure> {
+                self.0.register()
+            }
+            fn context(&mut self, deadline: Instant) -> Value {
+                self.0.context(deadline)
+            }
+            fn take_context_trace(&mut self) -> Option<crate::broker_probe::ContextTrace> {
+                Some(crate::broker_probe::ContextTrace {
+                    operations: Vec::new(),
+                    trace_truncated: true,
+                })
+            }
+            fn check_root(&mut self, budget: Duration) -> Result<String, Failure> {
+                self.0.check_root(budget)
+            }
+        }
+        for invalid_after in [false, true] {
+            let mut ordinary = Fake::default();
+            let mut observed = ObservedFake(Fake::default());
+            if invalid_after {
+                ordinary.contexts = vec![context(), json!({"unavailable":true})].into();
+                observed.0.contexts = ordinary.contexts.clone();
+            }
+            let mut expected = run(&mut ordinary);
+            let mut actual = run(&mut observed);
+            assert_eq!(ordinary.calls, 1);
+            assert_eq!(observed.0.calls, 1);
+            assert_eq!(
+                actual["outcome"],
+                if invalid_after {
+                    "context_changed"
+                } else {
+                    "root_true"
+                }
+            );
+            assert_eq!(actual["verified"], !invalid_after);
+            expected
+                .as_object_mut()
+                .unwrap()
+                .remove("context_diagnostics");
+            actual
+                .as_object_mut()
+                .unwrap()
+                .remove("context_diagnostics");
+            assert_eq!(actual, expected);
         }
     }
 }
