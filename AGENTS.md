@@ -31,6 +31,16 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+The user has now resumed this goal. `docs/implementation-plan.md` gives the
+current delivery order: retained-current G2 smoke; isolated favourites/restart;
+current physical pointer/wheel/hold and separate IME; normal app/Settings return;
+then repeated everyday use/coverage. Three background source/artifact lanes are
+active; only Root coordinates TV work. This resumed campaign uses G2, with no
+new C2 release inferred from the prior two-device deployment. Current retained
+baseline is d221/UI3ce/ffec below; never reuse old f5 delivery/restore carriers.
+Optional schema2 diagnostics and cache maintenance cannot block daily-use gates
+or inherit old artifact/cache/native authority. New leases/scopes remain required.
+
 The current retained pause checkpoint is recorded in
 `docs/retained-preview-pause-checkpoint.md`: BOTH TVs now retain normal0.61.0
 from functional d2215d5d8761fe385ae7ae3dd76ab173793c5bb8, UI SHA-256

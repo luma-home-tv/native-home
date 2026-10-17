@@ -1,22 +1,49 @@
 # Luma Home implementation plan
 
-The [compatible-cache native component](cache-consumer-g2-native.md) now passes
-bounded Home/Apps/Home/natural Back, accepted-producer cache use and joined
-texture cleanup on its tested executable. Exact retained f5 restoration and
-scoped cleanup pass independent saved review and coordinator replay. The
-[current observer-source ordinary package](current-ordinary-g2-native.md) now
-passes its own matching native component, restoration and saved replay too.
-Next measure separate navigation and idle/wake scopes. Neither ordinary result
-is a retained promotion or performance result.
+The goal has resumed from the [retained deployment checkpoint](retained-preview-pause-checkpoint.md).
+Both TVs retain normal0.61.0 from functional source
+`d2215d5d8761fe385ae7ae3dd76ab173793c5bb8`, dashboard SHA-256
+`3cefc9152fa0b0e051920763496274f211f24914085c83eed01d36b27812ecb3`.
+That installed identity supersedes older f5/G2 and0.48/C2 baselines. The updates
+verified complete installed payloads and preference preservation; they did not
+launch or functionally test the new retained installations.
 
-The [first instrumented G2 attempt](passive-performance-observer-g2-first-attempt.md)
-now supplies verified partial app-local timing data and complete restoration,
-but its original marker limit ended the app before full route acceptance. Reduce
-redundant read-only probe overhead while retaining all admission/input/HOLD
-checks before a new measurement scope. The separate
-[worker ownership prerequisite](https://github.com/luma-home-tv/native-home/pull/7)
-is host-tested source only; maintenance transactions and native integration
-remain pending.
+The matching earlier [ordinary component](current-ordinary-g2-native.md),
+[navigation observation](passive-performance-observer-g2-native.md) and separate
+[idle/wake observation](passive-performance-observer-g2-idle-wake.md) pass their
+finite G2 scopes and independent saved replays. They supply useful evidence,
+not current physical input, combined full-product or C2 runtime qualification.
+
+## Current delivery sequence
+
+| Gate | Concrete result required | Work owner and boundary |
+| --- | --- | --- |
+| 1. Current retained G2 smoke | Fresh actual3ce full bundle/state/cache/runtime baseline; normal entry, Home/Apps/Home and natural exit; preserved saved favourites and known closeout | Coordinator only, new lease and bounded reviewed scope. No old f5 rollback carrier. |
+| 2. Favourites across restart | Disposable interactive Proof seeds its own store, one eligible unseeded app is pinned, natural exit, fresh second process loads exactly that committed state, then complete own removal | Carrier author plus independent package reviewer; coordinator alone runs it. Household Preview preferences stay unchanged. Real eligibility must come from fresh apps/launchpoint replies. |
+| 3. Physical input and one keyboard | Current-build pointer click, wheel and hold/menu; separate typing/Done/reopen/Back with one LG keyboard and no unintended post-dismissal activation | Human window only when the test is ready. The favourites matcher requires zero keyboard cycles, so typing has a separate grade/session. SDK keys do not stand in for physical input. |
+| 4. Normal daily handoffs | Current ordinary Preview opens an owned test app and returns, and completes one LG Settings return without changing a setting | Separate normal-capability scope; Proof launch suppression cannot prove this. No viewing-account writes. |
+| 5. Usable beta and remaining coverage | Repeated ordinary entry/exit and honest Controls/Inputs coverage; identify artwork refresh/fallback behavior for changed apps | Coordinator integrates only qualified changes. Unverified controls stay read-only or LG-managed. Full native control parity and broad reliability remain unfinished. |
+
+The critical path is gates1–4 on the current executable. The existing Proof
+artifact is being independently inspected; its local package is not native
+admission. It uses a synthetic Preview-only seed and a separate owning identity.
+A fresh eligible unseeded catalogue ID can avoid an extra Target install for the
+Pin-only operation; an owned Target requires its own artifact and cleanup proof.
+No app/account action is needed for a local favourite write.
+
+Parallel source work fixes and reviews optional bounded draw diagnostics. It
+stays off the TVs and cannot delay the daily-use gates. The earlier partial
+observer attempts and their coordination/timing limits remain preserved. Cache
+maintenance [planning](https://github.com/luma-home-tv/native-home/pull/6) and
+[same-cache worker ownership](https://github.com/luma-home-tv/native-home/pull/7)
+are source foundations, with no mutation caller or native maintenance proof.
+Automatic retirement/eviction and new diagnostic schema integration are later
+work, not prerequisites for the first fixed-catalogue beta.
+
+This resumed campaign uses the G2 only. Every device scope needs a new actual
+baseline, lease, finite cleanup reserve and known outcome. No old nonce, actor,
+Ticket, snapshot freshness or closed-session authority transfers. C2 work needs
+separate availability and authorization; G2 results never establish it.
 
 The current delivery target is a responsive native Home dashboard for the
 OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.
@@ -45,8 +72,8 @@ verified cleanup; its original operator failure remains explicit. The earlier
 sessions, a natural idle-black/wake and full saved-state,
 bundle and Core20 preservation. Its visual frames show the logo and unboxed
 available icons; broader artwork and physical-input/performance qualification
-remain separate. The latest verified C2 retained version is
-[0.48.0](c2-retained-preview-048.md), following
+remain separate. The historical C2 retained0.48 record is
+[here](c2-retained-preview-048.md), following
 its own ordinary-owner forward/reverse metadata roundtrip and exact old-version
 restoration, then a fresh forward migration and two normal sessions. Original
 preference bytes/owners, C2 resources, Core files and checked state are preserved.
