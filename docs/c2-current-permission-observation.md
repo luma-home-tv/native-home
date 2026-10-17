@@ -7,7 +7,8 @@ They do not qualify C2 rendering, physical input or favourite writes.
 The retained build remains normal0.61.0, dashboard SHA-256
 `3cefc9152fa0b0e051920763496274f211f24914085c83eed01d36b27812ecb3`.
 The first check found the complete expected 32-file/34-entry tree and matching
-payload hashes, but all34 entries had mode0777. This differs from the earlier
+payload hashes, but all34 entries had mode0777 in the Root SSH view. This differs
+from the earlier
 [deployment checkpoint](retained-preview-pause-checkpoint.md), which admitted
 only the existing bundle root at0777.
 
@@ -17,6 +18,10 @@ readbacks passed. The private-state prerequisite then stopped the run: the
 preference directory and216-byte file both had mode0777, with matching observed
 owners, rather than the previously verified0700/0600 pair. No cause or reset
 mechanism is established. The checks made no permission or preference changes.
+Neither run reached a native application process: the ordinary application's
+effective filesystem view and private-store admission are still unobserved.
+Do not equate the SSH metadata with the application's namespace without checking
+the path and object identities in both views.
 
 ## Disposition
 
@@ -36,11 +41,22 @@ Raw records, ownership details and household data remain private.
 
 ## Next work
 
-Keep the physical favourites campaign unadmitted until its private-state
-prerequisite is resolved. The current source includes the explicit
+Keep the current G2 favourites carrier unadmitted on C2: its private-state and
+cache/runtime assumptions do not match a complete fresh C2 baseline. Evaluate a
+separate C2 preservation model for the disposable Proof, whose own identity and
+private store must remain independent. Accepting the retained objects' exact
+observed metadata for read-only preservation would grant no retained write or
+ordinary-store admission. That route needs its own source review and fresh
+cache/runtime/whole-UID/scene checks; it is not yet qualified.
+
+For the retained application, first distinguish actual application-visible metadata
+from a possible namespace or mount-view difference using a separately reviewed
+read-only observation. The current source includes the explicit
 ordinary-owner migration code in `preferences_migration.rs` and its separately
 selected recipe. Investigate that current path with fresh content/owner/identity
-inputs and a backed-up, verified retained-app procedure. Historical0.48 package
+inputs and a backed-up, verified retained-app procedure only if repair is shown
+to be necessary. Its marker must retain the existing Root-owned0644 prerequisite;
+the all0777 SSH observation grants no exception. Historical0.48 package
 markers and their old hashes cannot authorize a new repair. Do not use Root
 chmod/chown or change boot hooks, jail policy or firmware.
 

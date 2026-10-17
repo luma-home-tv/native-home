@@ -34,14 +34,19 @@ still apply, and no G2 evidence establishes C2 behavior.
 The user's latest direction makes C2 the current manual-test target, superseding
 the earlier resumed campaign's C2 exclusion. Current human availability belongs
 in private coordination records. Do not blindly retarget a G2 carrier or transfer
-its evidence. Fresh C2 read-only checks now observe all 34 current bundle entries
+its evidence. Fresh C2 read-only checks through Root SSH now observe all 34
+current bundle entries
 at mode0777, with the same payload hashes, and the retained preference directory
 and file at777/777 with a216B file. This differs from the historical checkpoint's
 root-only777/private700/600 model. Both readonly operators intentionally exited1;
 their original HOLD results remain. Exact lease-only continuations closed both
 original leases and agents; one wrong-local-filename cleanup failure also remains
 preserved. No app/setting/permission/cache/runtime write was selected. The current
-C2 permission issue blocks the physical favourites campaign. Preserve actual
+C2 metadata mismatch blocks reuse of the G2 favourites carrier. A separately
+reviewed C2 exact-preservation model may permit disposable Proof testing with
+its independent private store, without retained repair or write authority. Native
+effective metadata and object/namespace association remain unobserved; qualify
+that view before selecting repair. Preserve actual
 bytes/owners/modes; investigate the existing ordinary-owner migration in the
 current3ce executable with fresh inputs, never Root chmod/chown, boot/jail edits,
 an old048 marker or an unreviewed relaxation of the private-state gate.

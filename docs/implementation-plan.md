@@ -30,8 +30,9 @@ not current physical input, combined full-product or C2 runtime qualification.
 | 4. Normal daily handoffs | Current ordinary Preview opens an owned test app and returns, and completes one LG Settings return without changing a setting | Separate normal-capability scope; Proof launch suppression cannot prove this. No viewing-account writes. |
 | 5. Usable beta and remaining coverage | Repeated ordinary entry/exit and honest Controls/Inputs coverage; identify artwork refresh/fallback behavior for changed apps | Coordinator integrates only qualified changes. Unverified controls stay read-only or LG-managed. Full native control parity and broad reliability remain unfinished. |
 
-The critical path is gates1–4 on the current executable. The existing Proof
-artifact has passed independent archive, profile and build-provenance review,
+Gate1 is complete in its bounded G2 scope. The critical path now starts with
+the fresh C2 preservation baseline, then gates2–4 on the current executable.
+The existing Proof artifact has passed independent archive, profile and build-provenance review,
 including five adverse checks and a coordinator input replay. This is local
 artifact evidence; native execution and the two-session workflow remain open. It uses a synthetic Preview-only seed and a separate owning identity.
 A fresh eligible unseeded catalogue ID can avoid an extra Target install for the
@@ -49,15 +50,20 @@ work, not prerequisites for the first fixed-catalogue beta.
 
 The initial resumed campaign used G2. The user has since explicitly redirected
 manual testing to C2. Its [fresh permission observation](c2-current-permission-observation.md)
-blocks the favourites test until the ordinary-owner storage path is qualified;
-the earlier G2 code and baseline cannot be copied across. Human availability is
+blocks reuse of the current G2 favourites carrier. A separately reviewed C2
+preservation model may allow the disposable Proof's independent private store
+to be tested without repairing the retained installation.
+The metadata was observed through Root SSH; native effective permissions remain
+unobserved. Qualify that distinction before selecting a metadata repair.
+The earlier G2 code and baseline cannot be copied across. Human availability is
 tracked privately. Every device scope needs a new actual
 baseline, lease, finite cleanup reserve and known outcome. No old nonce, actor,
 Ticket, snapshot freshness or closed-session authority transfers. C2 work needs
 separate availability and authorization; G2 results never establish it.
 
-The current delivery target is a responsive native Home dashboard for the
-OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.
+The current delivery target is a responsive native Home dashboard for both
+authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.
+The G2 is always available for coordinator-owned tests.
 The C2 is available only from 00:00 to 06:00 Europe/London or when the user
 explicitly releases it. Each run still needs fresh scene, device and lease
 checks; refresh the C2 baseline before changes. Physical input requires current
