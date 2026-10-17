@@ -69,6 +69,21 @@ batch or normal session ran. The future harness's bounded fresh cat probes do
 not relax the literal-absence parser, unknown-state barriers or Root cleanup
 requirements; its host checks do not admit a new native run.
 
+`docs/controls-and-icon-observations-061-native.md` records the later successful
+temporary G2 run: original operator exit 0, separately closed 16+8 preparation,
+unchanged first-batch bodies/identities, exact supplied 24-key ordinary cached
+drawing ledger and natural Home/Back exit. Worker join and 28 image uploads/
+deletions are balanced with zero reported GL errors. Exact057/preferences,
+sampled Core5+19 and old runtime/prefix are preserved; all three temporary
+runtime leaves/cache/staging/captures and lease/agent are removed. Independent
+saved audit/replay and coordinator rehash of 28,533 bindings pass. Preserve the
+synthetic `/var` path fixture failure and its test-only canonical-path fix.
+These are historical reference observations, not all-pixel, physical-panel,
+simultaneous-residency, performance or retained-release proof. G2 remains057,
+C2 untouched, normal Root off. Prioritise a fresh backed-up marker-free061
+delivery/practical campaign; never reuse this expired scope or claim its proof
+marker exists in the intended retained package.
+
 `probes/native-surface` now preserves the ordinary held-window prerequisite,
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing

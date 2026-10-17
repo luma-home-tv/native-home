@@ -86,17 +86,13 @@ remain open; normal interaction must keep Root artwork off.
 
 The [0.61 source](controls-and-icon-observations-061.md) moves each existing LG
 category shortcut before long native readings and adds a bounded, session-only
-per-key cached drawing ledger. Host validation passes. Its
-[first temporary G2 attempt](controls-and-icon-observations-061-first-attempt.md)
-now has independently reproduced two-batch preparation and exact supplied
-24-key body coverage. The ordinary browsing test timed out; separate restoration
-and cleanup pass independent saved audit and replay. Ordinary full-key drawing,
-current-build performance, daily flows and retained delivery remain open.
-The [second attempt](controls-and-icon-observations-061-second-attempt.md)
-completed only its first producer before a process-observation guard stopped
-the coordinator. Its separate restoration is independently audited. A bounded
-fresh-observation correction now passes host checks; it still needs native
-qualification before the ordinary full-key run can complete.
+per-key cached drawing ledger. Its [completed temporary G2 run](controls-and-icon-observations-061-native.md)
+now qualifies both preparation batches, first-batch continuity and ordinary
+drawing references for the exact supplied 24-key set, with natural Back exit,
+independently audited restoration and cleanup. Preserve the two earlier failed
+attempts. Next prioritise the marker-free retained artifact's practical daily
+loop and backed-up delivery, then physical input/favourites and matching
+performance. Do not repeat population solely to increase component counts.
 
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:

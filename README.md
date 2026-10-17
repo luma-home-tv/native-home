@@ -45,15 +45,14 @@ sixteen-image batch and ordinary Home/Apps cache consumption, followed by
 independently audited exact 0.57 restoration and cleanup. All-catalogue coverage,
 current-build performance and retained 0.60 delivery remain open.
 
-The [0.61 candidate](docs/controls-and-icon-observations-061.md) puts existing LG
+The [0.61 source](docs/controls-and-icon-observations-061.md) puts existing LG
 Settings shortcuts first in Controls and adds bounded per-icon observations for
-test sessions. Host checks and matching ARM builds pass. Its
-[first temporary G2 attempt](docs/controls-and-icon-observations-061-first-attempt.md)
-prepared two batches covering the supplied 24 preferred sources, but the ordinary
-browsing check was interrupted. Separately audited restoration and cleanup
-returned the G2 to 0.57. A [second attempt](docs/controls-and-icon-observations-061-second-attempt.md)
-stopped on an inconclusive producer-exit observation; its separately audited
-restore also returned to exact 0.57. No 0.61 retained delivery follows.
+test sessions. Its [temporary G2 run](docs/controls-and-icon-observations-061-native.md)
+now completes two preparation batches and ordinary cached drawing of the exact
+supplied 24-key set, followed by independently audited 0.57 restoration and
+cleanup. The earlier [first](docs/controls-and-icon-observations-061-first-attempt.md)
+and [second](docs/controls-and-icon-observations-061-second-attempt.md) failures
+remain recorded. Retained 0.61 delivery and practical release acceptance remain open.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
