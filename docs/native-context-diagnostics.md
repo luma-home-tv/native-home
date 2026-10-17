@@ -58,9 +58,24 @@ ARM32 EABI5 soft-float PIE and the same loader; direct library/GLIBC requirement
 match their qualified dashboard/helper references. No RPATH/RUNPATH appeared.
 The known unstable-NEON compiler warning is preserved.
 
-These are static source/build/ABI results. No package, TV execution, permission,
-transitive-loading, historical-cause or retained-delivery qualification follows.
-Future artifacts must bind these new binaries, account for the diagnostic field
-in receipt readers, and keep the original context/authority validation. This
-change does not repair native LS2 behavior. Machine-readable evidence:
+Fresh marker-free normal and two preparation packages now pass the existing
+SDK archive/profile/source/ABI audit, with new independent preparation nonces
+and the matching new helper producer association. Eighteen host guard cases,
+both actual SDK audit phases and their composition pass. Coordinator readback
+checks all 186 bound inputs, 1,026 SDK output files, four inspector frontends,
+136 current source inputs and all three package archives. The normal package
+contains 31 files in 33 entries and no session-proof marker. The retained 0.57
+rollback still matches its saved complete bundle.
+
+The adapted host readers pass 41 cases and independent review. They grade
+diagnostic quality separately from context, permission and lifecycle closure.
+The additive diagnostic data required a capability-only raw bound of 128 KiB;
+the original body and separate diagnostic projection each remain bounded to
+64 KiB. No TV-side budget or authority check changes. The first test-only raw
+digest expectation failure is preserved alongside its corrected fixture.
+
+These remain local results. TV execution, permission, transitive loading,
+historical cause and retained delivery are unqualified. A fresh native admission
+is still required. This change does not repair native LS2 behavior.
+Machine-readable evidence:
 [milestone](native-context-diagnostics-milestone.json).
