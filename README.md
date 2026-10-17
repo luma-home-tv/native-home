@@ -339,8 +339,11 @@ has passed source checks, matching ARM builds and independent local package/ABI
 review. Native selector and preservation acceptance remain pending; this source
 has not replaced the retained G2 build.
 An opt-in [ordinary-dashboard performance observer](docs/passive-performance-observer.md)
-now passes integrated host checks. Matching ARM/package and native measurement
-remain pending; earlier isolated-profile numbers do not establish its performance.
+now passes integrated host checks, both actual ARM builds, compiler-contract and
+direct SDK ABI checks. Both private packages pass their complete archive/payload
+comparison, with the diagnostic marker as their only payload difference. Native
+measurement remains pending; earlier isolated-profile numbers do not establish
+its performance.
 The OLED65C26LD C2's last qualified retained delivery is
 [0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
@@ -397,6 +400,10 @@ two-column source grid and graphite detail pane, matched to the concept. Both TV
 render the Luma mark/name and independently read source status. A separate G2
 trial confirmed HDMI selection and restoration; C2 tuner restoration and live
 video-format/playback remain unverified.
+The [native preview plan](docs/native-source-preview-plan.md) records the intended
+focused-source viewport, relevant attributed framework research and the remaining
+native routing/lifetime questions. Live embedding and simultaneous previews are
+not qualified by the existing switching result.
 
 The [LG Home return milestone](docs/lg-home-return-milestone.json) adds the
 concept's separate rail shortcut. It uses a fixed normal LG app launch, verifies

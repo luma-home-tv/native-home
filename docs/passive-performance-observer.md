@@ -50,12 +50,28 @@ preserves all production guards and removes an unrelated parent-directory write.
 
 Independent review covers the original design and subsequent marker/publication
 metadata fixes. All 143 functional inputs match the reviewed source, and the
-complete attributed PlxNative framework remains unchanged. Host checks do not
+complete attributed PlxNative framework remains unchanged. Host checks alone do not
 establish ARM linking, installed metadata, actual normal worker participation,
 cache hits, native timing or performance improvements.
 
-Next, build matching ARM dashboard/helper artifacts, verify the observer and
-ordinary packages, and run a fresh backed-up G2 diagnostic scope. Require actual
+Both actual ARM release builds now pass from immutable functional revision
+`d2215d5d8761fe385ae7ae3dd76ab173793c5bb8`, with matching build receipts and
+unchanged 143-input/framework snapshots. Independent checks match both actual
+Cargo compiler descriptors to those receipts, and both direct SDK ABI sets are
+subsets of their matching retained-build references. Nineteen artifact-gate
+guard cases pass. This is local linking/contract evidence, not full transitive
+loader, installed-permission, native-execution or performance evidence.
+
+Both private packages are now assembled from those same actual binaries. An
+independent complete archive/control/payload audit and 36 guard cases pass. The
+ordinary package has 32 files across 34 application attributes; the observer has
+33 across 35. Their existing payloads and 29 approved private resources are
+identical; the fixed observer marker is the sole payload difference. Archive
+ownership is distinct from installed metadata and grants no TV permission. The
+build runner's original stop before packaging is preserved separately from the
+later package step. Private resources and binaries are not published.
+
+Next, run a fresh backed-up G2 diagnostic scope. Require actual
 normal selections and cache participation, independently sampled process
 resources, known closure and exact restoration of the retained f5 package,
 preferences, cache and measured Core state. The separate cache-consumer trial
