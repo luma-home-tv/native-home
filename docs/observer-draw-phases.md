@@ -23,7 +23,11 @@ fields remain unavailable.
 
 The fixed collector retains at most eight draws of at least 16667 microseconds,
 ordered by descending draw duration and then earliest frame sequence. It reports
-seen, retained, omitted, context-unavailable and saturation counts. Context is
+seen, retained, omitted, context-unavailable and saturation counts. Strict
+readers require exactly min(slow_seen, 8) retained records. Retained frame
+sequences are unique except repeated u64::MAX when frames_seen is also u64::MAX
+and the explicit saturation flag is set: the real counter can emit that terminal
+sequence again after overflow. Other saturation does not permit aliases. Context is
 limited to safe page/key enums and first-draw/page-change booleans. No dynamic
 app/focus/category/text, query, path, pixel hash or texture identifier is copied
 into the new diagnostics or snapshot envelope.

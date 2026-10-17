@@ -188,7 +188,7 @@ impl Summary {
         if self.schema != 1
             || n > TOP
             || self.slow_seen > self.frames_seen
-            || u64::from(self.retained) > self.slow_seen
+            || u64::from(self.retained) != self.slow_seen.min(TOP as u64)
             || self.context_unavailable > self.frames_seen
             || self.slow_not_retained != self.slow_seen.saturating_sub(n as u64)
             || self.top[..n].iter().any(Option::is_none)
@@ -197,7 +197,20 @@ impl Summary {
             return false;
         }
         let mut prior = None;
-        for row in self.top[..n].iter().flatten() {
+        for (index, entry) in self.top[..n].iter().enumerate() {
+            let row = entry.as_ref().expect("Retained entries checked above");
+            // Only the frame counter's terminal value can repeat after actual
+            // counter overflow. Saturation elsewhere never waives identity.
+            let repeated_saturated_frame =
+                self.saturated && self.frames_seen == u64::MAX && row.frame_sequence == u64::MAX;
+            if !repeated_saturated_frame
+                && self.top[..index]
+                    .iter()
+                    .flatten()
+                    .any(|old| old.frame_sequence == row.frame_sequence)
+            {
+                return false;
+            }
             let sum = row
                 .phases_us
                 .iter()

@@ -141,3 +141,39 @@ fn actual_histogram_rounding_boundaries_and_unavailable_values_are_strict() {
     b["metrics"]["swap_call"]["mean_ms"] = json!(0);
     assert!(encode(b, d).is_err());
 }
+
+#[test]
+fn full_envelopes_refuse_missing_retention_and_duplicate_frame_aliases() {
+    let (b, d) = fixture(2);
+    let raw = encode(b, d).unwrap();
+    let genuine: Value = serde_json::from_slice(&raw).unwrap();
+    let mut missing = genuine.clone();
+    missing["draw_diagnostics"]["retained"] = json!(0);
+    missing["draw_diagnostics"]["slow_not_retained"] = json!(2);
+    missing["draw_diagnostics"]["top"] = json!([null, null, null, null, null, null, null, null]);
+    assert!(parse(&serde_json::to_vec(&missing).unwrap()).is_err());
+    let mut partial = genuine.clone();
+    partial["draw_diagnostics"]["retained"] = json!(1);
+    partial["draw_diagnostics"]["slow_not_retained"] = json!(1);
+    partial["draw_diagnostics"]["top"][1] = Value::Null;
+    assert!(parse(&serde_json::to_vec(&partial).unwrap()).is_err());
+    let mut duplicate = genuine.clone();
+    duplicate["draw_diagnostics"]["top"][1]["frame_sequence"] =
+        duplicate["draw_diagnostics"]["top"][0]["frame_sequence"].clone();
+    assert!(parse(&serde_json::to_vec(&duplicate).unwrap()).is_err());
+    duplicate["draw_diagnostics"]["saturated"] = json!(true);
+    assert!(parse(&serde_json::to_vec(&duplicate).unwrap()).is_err());
+    let mut saturated = genuine;
+    saturated["draw_diagnostics"]["frames_seen"] = json!(u64::MAX);
+    saturated["metrics"]["frames"] = json!(u64::MAX);
+    for field in ["draw_submission", "swap_call"] {
+        saturated["metrics"][field]["samples"] = json!(u64::MAX);
+    }
+    saturated["draw_diagnostics"]["saturated"] = json!(true);
+    for i in 0..2 {
+        saturated["draw_diagnostics"]["top"][i]["frame_sequence"] = json!(u64::MAX);
+    }
+    assert!(parse(&serde_json::to_vec(&saturated).unwrap()).is_ok());
+    saturated["draw_diagnostics"]["saturated"] = json!(false);
+    assert!(parse(&serde_json::to_vec(&saturated).unwrap()).is_err());
+}

@@ -147,6 +147,16 @@ fn counter_saturation_and_safe_context_have_no_dynamic_identifiers() {
     assert!(c.context(Page::Home).first_draw);
     c.input(7);
     assert_eq!(c.context(Page::Home).last_key_class, KeyClass::Editing);
+    // A saturated slow counter can only follow a full retained top8.
+    for _ in 0..TOP {
+        c.record(
+            None,
+            complete(),
+            Duration::from_micros(20000),
+            Duration::ZERO,
+            Duration::ZERO,
+        );
+    }
     c.summary.frames_seen = u64::MAX;
     c.summary.slow_seen = u64::MAX;
     c.summary.context_unavailable = u64::MAX;
@@ -171,4 +181,65 @@ fn counter_saturation_and_safe_context_have_no_dynamic_identifiers() {
     json["app_id"] = "private.app".into();
     assert!(serde_json::from_value::<Context>(json).is_err());
     assert_eq!(std::mem::size_of::<Noop>(), 0);
+}
+
+#[test]
+fn retention_and_sequence_identity_match_actual_collector_even_at_saturation() {
+    let mut c = Collector::default();
+    for _ in 0..10 {
+        c.record(
+            None,
+            complete(),
+            Duration::from_micros(20000),
+            Duration::ZERO,
+            Duration::ZERO,
+        );
+    }
+    let genuine = c.summary();
+    assert!(genuine.valid());
+    assert_eq!(genuine.retained, 8);
+    let mut missing = genuine;
+    missing.retained = 7;
+    missing.top[7] = None;
+    missing.slow_not_retained = 3;
+    assert!(!missing.valid());
+    let mut duplicate = genuine;
+    duplicate.top[1] = duplicate.top[0];
+    assert!(!duplicate.valid());
+    duplicate.saturated = true;
+    assert!(!duplicate.valid());
+    duplicate.frames_seen = u64::MAX;
+    assert!(!duplicate.valid());
+    // All previous draws may have been fast. The next two slow draws reach
+    // MAX, then overflow the real counter: both legitimately have sequence MAX.
+    let mut c = Collector::default();
+    c.summary.frames_seen = u64::MAX - 1;
+    c.record(
+        None,
+        complete(),
+        Duration::from_micros(20000),
+        Duration::ZERO,
+        Duration::ZERO,
+    );
+    assert!(!c.summary().saturated);
+    assert!(c.summary().valid());
+    c.record(
+        None,
+        complete(),
+        Duration::from_micros(30000),
+        Duration::ZERO,
+        Duration::ZERO,
+    );
+    let saturated = c.summary();
+    assert!(saturated.saturated && saturated.valid());
+    assert_eq!(saturated.retained, 2);
+    assert_eq!(saturated.top[0].unwrap().frame_sequence, u64::MAX);
+    assert_eq!(saturated.top[1].unwrap().frame_sequence, u64::MAX);
+    let mut unflagged = saturated;
+    unflagged.saturated = false;
+    assert!(!unflagged.valid());
+    let mut lower = saturated;
+    lower.top[0].as_mut().unwrap().frame_sequence = u64::MAX - 1;
+    lower.top[1].as_mut().unwrap().frame_sequence = u64::MAX - 1;
+    assert!(!lower.valid());
 }
