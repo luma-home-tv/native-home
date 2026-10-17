@@ -102,6 +102,46 @@ fn settings_covering_own_card(value: &Value, own_id: &str) -> Result<bool, Strin
                 && r["windowType"].as_str() == Some("_WEBOS_WINDOW_TYPE_CARD")
         }))
 }
+/// Read-only lifecycle classification; never action or service-call authority.
+#[cfg_attr(not(target_arch = "arm"), allow(dead_code))]
+fn settings_window_state(
+    value: &Value,
+    own_id: &str,
+) -> Result<crate::session::SettingsWindowState, String> {
+    use crate::session::SettingsWindowState as State;
+    let rows = windows(value)?;
+    if rows.iter().any(|row| {
+        !row["appId"].as_str().is_some_and(valid_app_id) || row["windowType"].as_str().is_none()
+    }) {
+        return Err("Invalid window identity/type".into());
+    }
+    let is = |row: &Value, id: &str, kind: &str| {
+        row["appId"].as_str() == Some(id) && row["windowType"].as_str() == Some(kind)
+    };
+    let own = rows
+        .iter()
+        .filter(|row| is(row, own_id, "_WEBOS_WINDOW_TYPE_CARD"))
+        .count();
+    Ok(if rows.len() == 1 && own == 1 {
+        State::OwnSoleCard
+    } else if rows.len() == 2
+        && own == 1
+        && rows
+            .iter()
+            .any(|row| is(row, "com.palm.app.settings", "_WEBOS_WINDOW_TYPE_OVERLAY"))
+    {
+        State::SettingsCover
+    } else if rows.len() == 2
+        && own == 1
+        && rows
+            .iter()
+            .any(|row| is(row, "com.webos.app.spinner", "_WEBOS_WINDOW_TYPE_SPINNER"))
+    {
+        State::OpeningSpinner
+    } else {
+        State::Foreign
+    })
+}
 fn target(
     request: &Request,
     own_id: &str,
@@ -395,7 +435,8 @@ enum Work {
 }
 pub struct WindowObservation {
     pub generation: u64,
-    pub covering_own_card: Result<bool, String>,
+    pub state: Result<crate::session::SettingsWindowState, String>,
+    pub observed_at: std::time::Instant,
 }
 pub struct Worker {
     requests: mpsc::SyncSender<Work>,
@@ -427,15 +468,17 @@ impl Worker {
                     let request = match work {
                         Work::Launch(request) => request,
                         Work::SettingsWindow(generation) => {
+                            let observed_at = std::time::Instant::now();
                             let value = match &mut platform {
                                 Some(p) => get(p, Op::Windows)
-                                    .and_then(|v| settings_covering_own_card(&v, &own_id)),
+                                    .and_then(|v| settings_window_state(&v, &own_id)),
                                 None => Err("Window registration unavailable".into()),
                             };
                             if window_send
                                 .send(WindowObservation {
                                     generation,
-                                    covering_own_card: value,
+                                    state: value,
+                                    observed_at,
                                 })
                                 .is_err()
                             {
@@ -500,6 +543,35 @@ impl Worker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn lifecycle_window_states_require_exact_own_pair_and_never_conflate_unknown_with_return() {
+        use crate::session::SettingsWindowState as State;
+        let own = json!({"appId":"com.example.home","windowType":"_WEBOS_WINDOW_TYPE_CARD"});
+        let settings =
+            json!({"appId":"com.palm.app.settings","windowType":"_WEBOS_WINDOW_TYPE_OVERLAY"});
+        let spinner =
+            json!({"appId":"com.webos.app.spinner","windowType":"_WEBOS_WINDOW_TYPE_SPINNER"});
+        for (rows, expected) in [
+            (vec![own.clone()], State::OwnSoleCard),
+            (vec![settings.clone(), own.clone()], State::SettingsCover),
+            (vec![own.clone(), spinner.clone()], State::OpeningSpinner),
+            (vec![own.clone(), own.clone()], State::Foreign),
+            (vec![own.clone(), settings, spinner], State::Foreign),
+            (vec![], State::Foreign),
+            (
+                vec![json!({"appId":"foreign","windowType":"_WEBOS_WINDOW_TYPE_CARD"})],
+                State::Foreign,
+            ),
+        ] {
+            assert_eq!(
+                settings_window_state(&json!({"windows":rows}), "com.example.home").unwrap(),
+                expected
+            );
+        }
+        for bad in [json!({}), json!({"windows":true})] {
+            assert!(settings_window_state(&bad, "com.example.home").is_err());
+        }
+    }
     struct Fake {
         foreground: String,
         after: String,
