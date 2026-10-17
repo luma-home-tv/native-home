@@ -128,6 +128,25 @@ prerequisite. Its37 host tests/strict Clippy are not ARM/package/runtime/native
 qualification; no maintenance/deletion/eviction/Root action or product caller is
 enabled. Keep that branch and compiled d221 performance inputs separate.
 
+The second instrumented N4 scope in
+`docs/passive-performance-observer-g2-second-attempt.md` is closed: original
+operator0, exact f5/stateFD/rawprefs/cache48/sampled Core/runtime preservation
+and known scoped cleanup/original lease-agent closeout pass. Independent saved
+review/four adverse groups and byte-identical Root replay cover17,971 bindings
+and4,085 raw operations. Componentfalse: one Left, five drafts/seven captures,
+last frame black; marker240.009s/idle1/wake0, no key after black or final Back.
+Root review delay consumed the live window; preserve that coordination failure
+and claim no N3/N4 batching speed comparison. Twenty actual fixed map packets
+match; one accepted live epoch and no final-joined or terminal-state reread.
+Partial261draw/onekey metrics include202.263ms draw maximum with no established
+cause. Normal Root remains off; retained f5 and all closed-scope barriers remain.
+Never rerun90322 or reuse its dates/nonce/lease. Host-only await-helperV1 has a
+preserved BMP postprepare identity gap and is inadmissible; reviewed V2 adds
+exact full-body/identity pre/post binding. It chooses/sends no input, grants no
+native authority and changes no native timers/gates. A future namespace-only
+carrier requires new admission/fresh actual state/new lease; current compiled
+d221 inputs and separate PR7 source remain unchanged.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
