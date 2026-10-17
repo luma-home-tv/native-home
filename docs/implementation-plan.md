@@ -25,8 +25,9 @@ not current physical input, combined full-product or C2 runtime qualification.
 | 5. Usable beta and remaining coverage | Repeated ordinary entry/exit and honest Controls/Inputs coverage; identify artwork refresh/fallback behavior for changed apps | Coordinator integrates only qualified changes. Unverified controls stay read-only or LG-managed. Full native control parity and broad reliability remain unfinished. |
 
 The critical path is gates1–4 on the current executable. The existing Proof
-artifact is being independently inspected; its local package is not native
-admission. It uses a synthetic Preview-only seed and a separate owning identity.
+artifact has passed independent archive, profile and build-provenance review,
+including five adverse checks and a coordinator input replay. This is local
+artifact evidence; native execution and the two-session workflow remain open. It uses a synthetic Preview-only seed and a separate owning identity.
 A fresh eligible unseeded catalogue ID can avoid an extra Target install for the
 Pin-only operation; an owned Target requires its own artifact and cleanup proof.
 No app/account action is needed for a local favourite write.
@@ -62,8 +63,10 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 retains verified [0.61.0](g2-retained-preview061.md)
-and now has a [48-entry cache across two producer generations](ordinary-settings-validation-progress.md), following the earlier
+native interface. The earlier [G2 0.61.0 campaign](g2-retained-preview061.md)
+and [48-entry cache across two producer generations](ordinary-settings-validation-progress.md)
+are historical component records; the current installed executable is identified
+in the deployment checkpoint above. They followed the earlier
 [0.57 caption-preference delivery](g2-retained-preview057.md). The historical
 [0.58 cache observation](ordinary-artwork-cache-058-native.md) reached ordinary
 Home/Apps cache associations and returned to exact 0.57 through separately
@@ -107,7 +110,11 @@ removal still precede normal artwork activation. This host work does not change
 current device availability or admit a native run, and does not update either
 retained app.
 
-## Near-term release and parallel work
+## Supporting evidence and earlier milestones
+
+The current sequence and installed identities above govern new work. The records
+below retain their original artifact and device boundaries; an older milestone
+does not supply a current baseline or authorize replay of its closed test scope.
 
 Preserve the retained normal app and ordinary cache while qualifying restart
 and action flows against their actual current baseline.
@@ -115,8 +122,9 @@ Choose one coherent normal-release artifact and prioritise
 normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
 The recorded normal sessions establish Home/Apps/Back and idle/wake within their
-respective scopes; latest retained G2 is [0.61](g2-retained-preview061.md) and
-latest verified C2 is 0.48. Current G2 has 48 retained icon entries across two
+respective scopes. Both current retained installations are 0.61.0 with the
+exact executable identified in the deployment checkpoint above; the C2 0.48
+record below is historical. G2 has 48 retained icon entries across two
 producer generations for the same supplied 24-key catalogue; older
 cache-absent/057 carriers cannot be reused.
 Earlier isolated results remain useful component evidence. Qualify the relevant
