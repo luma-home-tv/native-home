@@ -56,11 +56,24 @@ sampledCore and oldruntime prefix. Lease/agent closed. Coordinator direct saved
 comparisons, finite independent cleanup review and byte-identical Root replay
 of its658 selected bindings pass. This is not every-operation replay. No SDKclose
 was sent because the original actor was already freshly confirmed absent.
-The source-only operator ordering/bundle-batching fixes do not qualify native
-timing or candidate retention. Next focus on one normal Settings return with
-usable postreturn Controls/Home/Apps/Back and ALWAYS old061 restoration, then a
-separate fresh matched-artifact reentry/delivery. Preserve all earlier failures;
-do not reuse expired scopes or transfer resource authority through checkpoints.
+The first subsequent Settings-first scope remains exit1/HOLD at the review/cleanup
+reserve guard within its original900s scope after a partial route. Fresh cleanup0
+restored old061/cache48/state/Core/runtime and closed its lease/agent; independent
+saved review and Root replay cover1473 selected bindings. Keep this distinct from
+the older five-second input-guard failure above.
+The measured second Settings-first scope now exited0: one sameactor LG Picture
+overlay/Back/own return, usable Controls/Home/Apps/Home/Back, strict ordinary
+terminal and joined GL12 cleanup. It ALWAYS restored exact old061, preserved
+cache48/prefs216/Core5+19/oldruntime140/92immutable/eventprefix+131B and removed
+mapped temporary runtime/stage before lease/agent closure. Independent finite
+saved review and byte-identical Root replay cover5509 rehashed bindings. Preserve
+both saved-reader layout failures; source-derived fixes changed no native record.
+Its new2400s/45m scope kept the original Settings and5s dispatch bounds; no old
+scope was extended. SDK suffix observations grant no global restoration/cause
+claim. Fresh reentry/delivery has NOT run; retained ELF remains06cc above, normal
+Root off. No physical/performance/allpixel/fullproduct qualification follows.
+Next use a fresh matched-artifact baseline, lease and process map for reentry;
+never transfer actor/resource/Ticket/lease authority through the positive data.
 
 Future tests need a fresh actual061 full bundle/state/cache48 baseline and new
 lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
