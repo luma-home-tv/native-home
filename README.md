@@ -338,6 +338,9 @@ The [compatible ordinary artwork reader](docs/cache-consumer-compatibility.md)
 has passed source checks, matching ARM builds and independent local package/ABI
 review. Native selector and preservation acceptance remain pending; this source
 has not replaced the retained G2 build.
+An opt-in [ordinary-dashboard performance observer](docs/passive-performance-observer.md)
+now passes integrated host checks. Matching ARM/package and native measurement
+remain pending; earlier isolated-profile numbers do not establish its performance.
 The OLED65C26LD C2's last qualified retained delivery is
 [0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
