@@ -92,6 +92,11 @@ now has independently reproduced two-batch preparation and exact supplied
 24-key body coverage. The ordinary browsing test timed out; separate restoration
 and cleanup pass independent saved audit and replay. Ordinary full-key drawing,
 current-build performance, daily flows and retained delivery remain open.
+The [second attempt](controls-and-icon-observations-061-second-attempt.md)
+completed only its first producer before a process-observation guard stopped
+the coordinator. Its separate restoration is independently audited. A bounded
+fresh-observation correction now passes host checks; it still needs native
+qualification before the ordinary full-key run can complete.
 
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:

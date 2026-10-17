@@ -51,7 +51,9 @@ test sessions. Host checks and matching ARM builds pass. Its
 [first temporary G2 attempt](docs/controls-and-icon-observations-061-first-attempt.md)
 prepared two batches covering the supplied 24 preferred sources, but the ordinary
 browsing check was interrupted. Separately audited restoration and cleanup
-returned the G2 to 0.57. No 0.61 retained delivery follows.
+returned the G2 to 0.57. A [second attempt](docs/controls-and-icon-observations-061-second-attempt.md)
+stopped on an inconclusive producer-exit observation; its separately audited
+restore also returned to exact 0.57. No 0.61 retained delivery follows.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout

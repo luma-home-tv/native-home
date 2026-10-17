@@ -59,6 +59,16 @@ Future carriers must include source-declared `session-idle.ppm` and
 identity/hash guards; never wildcard the session output names. Fresh sessions,
 nonces and device baseline are required. Normal Root artwork remains off.
 
+The second 0.61 attempt in
+`docs/controls-and-icon-observations-061-second-attempt.md` stopped on an empty
+own-process readlink result. Preserve original exit 1; do not infer absence from
+that packet. A separate fresh literal-ENOENT/UID/namespace observation, complete
+sixteen-job lifecycle and external helper/child closure preceded exact057
+restoration and scoped cleanup. Independent saved audit/replay pass. No second
+batch or normal session ran. The future harness's bounded fresh cat probes do
+not relax the literal-absence parser, unknown-state barriers or Root cleanup
+requirements; its host checks do not admit a new native run.
+
 `probes/native-surface` now preserves the ordinary held-window prerequisite,
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing
