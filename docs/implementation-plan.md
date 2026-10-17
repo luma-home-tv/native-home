@@ -11,7 +11,8 @@ launch or functionally test the new retained installations.
 The subsequent [current retained G2 smoke](retained-current-g2-smoke.md) now
 completes one no-install Home/Apps/Home/natural-Back session with original
 operator 0 and verified preservation/closeout. Independent saved-data audit is
-pending. This advances gate 1; it adds no current physical-input or C2 result.
+now clear with a byte-identical coordinator replay. This completes the bounded
+gate-1 scope; it adds no current physical-input or C2 rendering result.
 
 The matching earlier [ordinary component](current-ordinary-g2-native.md),
 [navigation observation](passive-performance-observer-g2-native.md) and separate
@@ -46,7 +47,11 @@ are source foundations, with no mutation caller or native maintenance proof.
 Automatic retirement/eviction and new diagnostic schema integration are later
 work, not prerequisites for the first fixed-catalogue beta.
 
-This resumed campaign uses the G2 only. Every device scope needs a new actual
+The initial resumed campaign used G2. The user has since explicitly redirected
+manual testing to C2. Its [fresh permission observation](c2-current-permission-observation.md)
+blocks the favourites test until the ordinary-owner storage path is qualified;
+the earlier G2 code and baseline cannot be copied across. Human availability is
+tracked privately. Every device scope needs a new actual
 baseline, lease, finite cleanup reserve and known outcome. No old nonce, actor,
 Ticket, snapshot freshness or closed-session authority transfers. C2 work needs
 separate availability and authorization; G2 results never establish it.

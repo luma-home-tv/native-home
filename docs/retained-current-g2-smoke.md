@@ -2,9 +2,9 @@
 
 On 17 October 2026, the installed normal 0.61.0 build completed a fresh
 Home → Apps → Home → Back session without installation, update or rollback.
-The original operator and its host supervisor exited 0. Independent saved-data
-audit is pending; this record currently reports the operator result and
-coordinator frame review.
+The original operator and its host supervisor exited 0. The independent saved-data
+audit and coordinator replay also pass, with byte-identical results. This remains
+one finite G2 session and coordinator frame review.
 
 ## Artifact and execution boundary
 
@@ -52,6 +52,31 @@ Selected read-only SDK mount rows increased from 312 to 314, with the original
 sequence retained as an exact prefix and one duplicate pair admitted by the
 bounded comparison. These are selected rows, not a full mount-table count.
 No mount operation, cause attribution or mount-restoration claim follows.
+
+## Independent saved verification
+
+The approved closed reader rederived the route, source outputs, current package,
+state/cache/core/runtime preservation, stage ownership and exact cleanup from
+the saved raw operations. All three complete package-body readbacks are bound
+to their own source phases. All16 observed staging-directory identity stamps
+match the original; all13 capture deletions and the final directory removal
+have their expected preceding identity checks. One source-output collection
+occurred; the repeated-collection path is not claimed.
+
+The independent ledger rehashed12,736 complete input references twice and
+verified unchanged original output bodies/recorded stable metadata, excluding
+atime. The coordinator's separate replay rehashed12,091 source-result bindings.
+Both produce the same5,053,152-byte result, SHA-256
+`e8bb16160b2f49aac76821e17f722f4da261d412b3f503f7250a2c64269dc247`.
+The rejected first reader and its cross-phase body/staging-identity
+counterexamples remain preserved; correcting the reader required no TV rerun.
+
+A separate coordinator pixel-conversion audit verifies that all48 preview PNGs
+are exact RGB crops of the eight reviewed raw captures, with a byte-identical
+replay. The three withdrawn whole-frame comparisons differ only within the
+displayed clock region. This retrospective observation never masked a dispatch
+capture or granted input authority. It verifies the preview conversion, not
+native icon-source freshness, every rendered pixel or the physical panel.
 
 Normal Root artwork stayed off. No setting edit, external app launch, source
 switch, favourites mutation or C2 work was selected. Physical input, typing,

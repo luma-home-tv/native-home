@@ -31,12 +31,28 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+The user's latest direction makes C2 the current manual-test target, superseding
+the earlier resumed campaign's C2 exclusion. Current human availability belongs
+in private coordination records. Do not blindly retarget a G2 carrier or transfer
+its evidence. Fresh C2 read-only checks now observe all 34 current bundle entries
+at mode0777, with the same payload hashes, and the retained preference directory
+and file at777/777 with a216B file. This differs from the historical checkpoint's
+root-only777/private700/600 model. Both readonly operators intentionally exited1;
+their original HOLD results remain. Exact lease-only continuations closed both
+original leases and agents; one wrong-local-filename cleanup failure also remains
+preserved. No app/setting/permission/cache/runtime write was selected. The current
+C2 permission issue blocks the physical favourites campaign. Preserve actual
+bytes/owners/modes; investigate the existing ordinary-owner migration in the
+current3ce executable with fresh inputs, never Root chmod/chown, boot/jail edits,
+an old048 marker or an unreviewed relaxation of the private-state gate.
+`docs/c2-current-permission-observation.md` records this boundary.
+
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
 current physical pointer/wheel/hold and separate IME; normal app/Settings return;
 then repeated everyday use/coverage. Three background source/artifact lanes are
-active; only Root coordinates TV work. This resumed campaign uses G2, with no
-new C2 release inferred from the prior two-device deployment. Current retained
+active; only Root coordinates TV work. The initial resumed campaign used G2;
+the later explicit C2 release above governs new manual work. Current retained
 baseline is d221/UI3ce/ffec below; never reuse old f5 delivery/restore carriers.
 Optional schema2 diagnostics and cache maintenance cannot block daily-use gates
 or inherit old artifact/cache/native authority. New leases/scopes remain required.
@@ -46,7 +62,11 @@ The current no-install retained G2 smoke is recorded in
 Home/Apps/Home/naturalBack, five actual SDK keys/eight drafts/thirteen captures.
 Current3ce32/34, prefs, cache48, sampledCore5+19 and oldruntime140/92immutable/
 eventprefix+131B pass operator preservation; mapped session/stage and original
-lease/agent are closed. Independent saved-data audit remains pending. Selected
+lease/agent are closed. Independent saved-data audit and byte-identical Root
+replay pass (e8bb result;12,736 complete ledger refs/12,091 Root source-result
+bindings). The two generic-reader gaps are corrected in ecb; prior failures stay
+preserved. All48 preview PNG regions match eight BMPs in separate Root analysis;
+this grants no native all-pixel/physical/performance authority. Selected
 SDK rows312→314 are distinct from full mount counts; no cause/repair/restoration
 claim. Never rerun the closed source, queue, scope or handle51514. No new build,
 Root artwork, favourites write, physical input, Settings return or C2 test follows.
