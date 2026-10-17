@@ -31,7 +31,29 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
-The latest verified retained G2 installation is 0.57.0, with dashboard ELF
+The latest verified retained G2 installation is 0.61.0, with dashboard ELF
+SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
+from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
+`codex/native-context-diagnostics` (PR #2). `docs/g2-retained-preview061.md`
+records actual operator0, independently reviewed 16+8 source/body associations,
+24-card visual review, six Controls views, two empty LG keyboard cycles,
+125-second black idle/Up wake/distinct Back and joined GL28 cleanup. The intended
+marker-free 33-entry/31-file package and 24-entry ordinary cache intentionally
+remain. Preferences/state, sampled Core5+19 and old runtime/prefix are preserved;
+all three temporary runtime leaves/staging/captures/Root scopes and lease/agent
+are closed. Normal Root artwork stays off. Independent saved reviews plus Root
+642/556 binding readbacks pass; these are overlapping finite scopes, not every
+operation or all-pixel/physical/performance proof. Preserve the observed270→276
+read-only SDK suffix without a mount restoration/cause claim.
+Future tests need a fresh actual061 full bundle/state/cache baseline and new
+lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
+nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build
+physical input/performance/reliability and cache version transition/refresh/
+eviction/stale-writer recovery remain open. Keep the separate062 source/artifacts
+separate until deliberately integrated. Older paragraphs below describe historical
+milestones and their then-current baselines, not the present installed state.
+
+The previous verified retained G2 installation was 0.57.0, with dashboard ELF
 SHA-256 `a85b302d6bb371f2e82a93b071c0ab7fd8c2789f93f85053b96690e5e1475590`
 from functional source `da2d9683b8c7df8a0bf4064f83c2ee4b1915f9d0`.
 `docs/g2-retained-preview057.md` records the backed-up actual056→057 update,

@@ -59,8 +59,9 @@ keyboard/idle to preserve cleanup time. Its original exit 1 and exact 0.57
 restoration are recorded; no retained promotion occurred.
 The [next campaign](docs/g2-retained-preview061-second-attempt.md) stopped at a
 declined inert preflight after an unavailable native LS2 foreground read. It
-submitted no second-batch resource work and restored exact 0.57. The lost timeout/
-setup distinction is being addressed before further native preparation.
+submitted no second-batch resource work and restored exact 0.57. The later [retained 0.61 campaign](docs/g2-retained-preview061.md) uses separate
+typed diagnostics and completes its normal icon/keyboard/idle tour. The earlier
+failure cause remains unknown.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
@@ -69,7 +70,7 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
-Current retained normal deliveries are [G2 0.57](docs/g2-retained-preview057.md)
+Current retained normal deliveries are [G2 0.61](docs/g2-retained-preview061.md)
 and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
 saved preferences and native-session device evidence. The C2 trial omitted
 Search/IME. Normal Root artwork remains off. The separate
@@ -312,9 +313,11 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. The OLED55G26LA G2 retains verified 0.57.0,
-with a captured caption-preference row, fresh normal sessions, original preferences
-and preserved Core checks in the [G2 delivery record](docs/g2-retained-preview057.md).
+package modes and removal. The OLED55G26LA G2 retains verified 0.61.0 and its
+24-entry ordinary icon cache. Its source167 diagnostic-branch executable passed
+the 24-card/six-category tour, two empty LG keyboard cycles, black idle/wake and
+natural exit, with original preferences and sampled Core preserved in the
+[G2 delivery record](docs/g2-retained-preview061.md).
 The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
