@@ -54,6 +54,7 @@ pub mod app_artwork;
 
 pub mod durable_icon_cache;
 pub mod cache_producer_profile;
+pub mod cache_consumer_profile;
 pub mod artwork_cache_preparation;
 pub mod artwork_preparation_events;
 pub mod artwork_cache_preparation_runner;

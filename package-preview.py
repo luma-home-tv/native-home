@@ -118,6 +118,20 @@ if preferences_migration_mode not in ('', '1'):
 preferences_migration_proof = preferences_migration_mode == '1'
 preferences_migration_marker = None
 preferences_migration_pins_sha256 = None
+cache_consumer_mode = os.environ.get('NATIVE_HOME_CACHE_CONSUMER_COMPATIBILITY', '')
+if cache_consumer_mode not in ('', '1'):
+    raise ValueError('Consumer compatibility mode must be explicitly 1')
+cache_consumer_paths = ('NATIVE_HOME_CACHE_CONSUMER_OLD_UI', 'NATIVE_HOME_CACHE_CONSUMER_OLD_BROKER',
+                        'NATIVE_HOME_CACHE_CONSUMER_OLD_PROFILE')
+cache_consumer_selected = cache_consumer_mode == '1'
+if (any(k in os.environ for k in cache_consumer_paths) and not cache_consumer_selected or
+    cache_consumer_selected and (not all(os.environ.get(k) for k in cache_consumer_paths) or
+      main != 'home-preview' or test_identity or not interactive or preview_artwork_admission or
+      not os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER'))):
+    raise ValueError('Read-only consumer selector requires ordinary interactive Preview and existing current producer provenance')
+cache_consumer = None
+cache_consumer_inputs = None
+cache_consumer_raw = None
 cache_producer_binary = os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER')
 cache_producer = None
 cache_producer_helper_build = None
@@ -137,6 +151,8 @@ if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
             'NATIVE_HOME_SESSION_CAPTURE_PROOF'})
     if cache_preparation:
         cache_environment.update({'NATIVE_HOME_CACHE_PREPARATION','NATIVE_HOME_CACHE_PREPARATION_PINS'})
+    if cache_consumer_selected:
+        cache_environment.update({'NATIVE_HOME_CACHE_CONSUMER_COMPATIBILITY', *cache_consumer_paths})
     cache_others = [k for k,v in os.environ.items() if v and
         k.startswith('NATIVE_HOME_') and k not in cache_environment]
     if (not cache_producer_binary or main != 'home-preview' or test_identity or
@@ -174,6 +190,13 @@ if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
         'producer_kind':'joined-single-positive-v1', 'source_revision':revision,
         'ui_sha256':build_receipt['binary']['sha256'],
         'broker_sha256':cache_producer_helper_build['binary']['sha256']}
+if cache_consumer_selected:
+    from cache_consumer_packaging import read_inputs as read_consumer_inputs
+    cache_consumer, cache_consumer_inputs = read_consumer_inputs(repo, build_receipt,
+        *(Path(os.environ[k]) for k in cache_consumer_paths))
+    cache_consumer_raw = (json.dumps(cache_consumer, sort_keys=True, separators=(',', ':')) + '\n').encode()
+    if len(cache_consumer_raw) > 4096:
+        raise ValueError('Consumer selector exceeds its native fixed bound')
 if preferences_migration_proof:
     allowed = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
                'NATIVE_HOME_RUST_TOOLCHAIN', 'NATIVE_HOME_CARGO', 'NATIVE_HOME_PREVIEW_ICON',
@@ -402,6 +425,9 @@ info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
 if artwork_target_fixture:
     info['title']='AAA Luma Artwork Fixture'
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
+if cache_consumer_selected:
+    (stage / 'artwork-cache-consumer.json').write_bytes(cache_consumer_raw)
+    (stage / 'artwork-cache-consumer.json').chmod(0o644)
 if cache_producer is not None:
     cache_sidecar = (json.dumps(cache_producer, sort_keys=True, separators=(',', ':')) + '\n').encode()
     (stage / 'artwork-cache-producer.json').write_bytes(cache_sidecar)
@@ -550,6 +576,11 @@ if preferences_migration_proof and any(not p.is_file() or p.is_symlink() for p i
     raise RuntimeError('Preferences migration payload must not contain directories or links')
 if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
     raise RuntimeError('Build receipt changed during packaging')
+if cache_consumer_selected:
+    from cache_consumer_packaging import recheck as recheck_consumer_inputs
+    recheck_consumer_inputs(cache_consumer_inputs)
+    if (stage / 'artwork-cache-consumer.json').read_bytes() != cache_consumer_raw:
+        raise ValueError('Read-only consumer selector changed during packaging')
 if cache_producer is not None:
     if validate_build_receipt(here, cache_producer_binary,
                               cache_producer_helper_receipt) != cache_producer_helper_build:
@@ -624,6 +655,9 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'cache_preparation_execution_verified': False,
            'cache_preparation_prepared_coverage_verified': False,
            'cache_preparation_Root_authority_granted': False,
+           'cache_consumer': cache_consumer,
+           'cache_consumer_selector_sha256': hashlib.sha256(cache_consumer_raw).hexdigest() if cache_consumer_raw is not None else None,
+           'cache_consumer_historical_input_sha256': {p:r['sha256'] for p,r in cache_consumer_inputs.items()} if cache_consumer_inputs is not None else None,
            'cache_producer': cache_producer,
            'cache_producer_sidecar_sha256': hashlib.sha256(cache_sidecar).hexdigest() if cache_producer is not None else None,
            'cache_producer_helper_receipt_sha256': hashlib.sha256(cache_producer_helper_receipt_raw).hexdigest() if cache_producer is not None else None,

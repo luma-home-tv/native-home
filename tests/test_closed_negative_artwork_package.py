@@ -1,4 +1,5 @@
 """Exercise the actual packager's closed one-job recipe and archive boundary."""
+from cache_consumer_contract import native_selection
 import importlib.util
 import io
 import json
@@ -124,7 +125,7 @@ class ClosedNegativeArtworkPackageTests(unittest.TestCase):
         control.write_bytes(self.f.binary.read_bytes())
         snapshot = _BASE.PROVENANCE.snapshot(self.f.root)
         _BASE.PROVENANCE.record_build_receipt(self.f.root, control, 'arm', snapshot,
-                                             _BASE.PROVENANCE.snapshot(self.f.root))
+                                             _BASE.PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.fixture.refused(self.environment() | {'NATIVE_HOME_ARM_BINARY': str(control)})
 
     def test_pins_and_helper_must_bind_actual_same_source_arm_pair(self):

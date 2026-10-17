@@ -4,6 +4,7 @@ The framework checker and tool executables are explicit fixture substitutes.
 Only refusal paths run; staged-copy substitution is injected in the child
 process, without modifying the actual package entrypoint under test.
 """
+from cache_consumer_contract import native_selection
 import importlib.util
 import json
 import os
@@ -88,7 +89,7 @@ class EntrypointTests(unittest.TestCase):
     def record(self):
         before = PROVENANCE.snapshot(self.root)
         PROVENANCE.record_build_receipt(self.root, self.binary, 'arm', before,
-                                        PROVENANCE.snapshot(self.root))
+                                        PROVENANCE.snapshot(self.root), build_selection=native_selection((self.root / 'Cargo.toml').read_bytes()))
 
     def run_entrypoint(self, script, *args, env=None):
         return subprocess.run([sys.executable, str(self.root / script), *args],
