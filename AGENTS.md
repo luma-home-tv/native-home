@@ -74,10 +74,19 @@ bindings respectively. V7 has four actual keys and captured Home/Apps/Home;
 both source terminals are known-negative `window_hidden`, with no managed close
 or natural Home Back. Worker association/join/GL/cache counters are bounded
 partial observations; both full component grades stay false. All scopes are
-closed. The separately reviewed v8/helper2/fast-template3 sources are unadmitted:
-at most two typed Up attempts on verified own black captures, ordinary input
-refused on black, unchanged whole-hash/context/cache/lease/original5s gates.
-No native wake, physical/performance, promotion or future scope authority follows.
+closed. The later v8 trial in `docs/cache-consumer-g2-native.md` exited0 with
+five guarded SDK keys, Home/Apps/Home/distinct natural Back, exact accepted
+producer use and joined/balanced GL12. Independent saved review/six adverse
+groups and byte-identical Root replay across17,425 bindings pass. Exact retained
+f5/state/cache48/sampled Core/runtime and scoped cleanup/original lease/agent
+closure pass. Preserve the first local saved-reader adapter refusal. This
+positive route collected outputs once after rollback; no repeat-path claim or
+independent final dispatch timestamp follows. No black frame or wake was needed;
+native wake remains unqualified. No retained promotion, current3ce/observer,
+per-key pixel, physical/performance or future scope authority follows. New work
+requires a fresh actual f5 complete baseline/new lease. All earlier scopes are
+closed. Ordinary input still refuses black; any typed Up requires separately
+reviewed own-black authority and unchanged context/hash/cache/lease/5s gates.
 
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`

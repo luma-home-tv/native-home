@@ -62,7 +62,16 @@ and captured states also establish a bounded Home/Apps/Home route. Both trials
 restored f5 and closed their scoped cleanup, but neither observed natural Home
 Back. Complete component acceptance and retained promotion remain pending.
 
-## Next device acceptance
+The [subsequent bounded native acceptance](cache-consumer-g2-native.md) completed
+Home/Apps/Home and a distinct natural Home Back with five guarded SDK keys.
+The actual loaded association, positive ordinary cache counters, joined worker
+and balanced GL cleanup pass the component contract. Independent saved review
+and byte-identical coordinator replay cover 17,425 bindings. Exact retained f5,
+private state, cache48, sampled Core and runtime preservation and scoped cleanup
+pass. This qualifies that executable's bounded component, with no retained
+promotion, native wake, per-key pixel, physical-input or performance claim.
+
+## Next current-build acceptance
 
 Use a fresh complete baseline of that actual retained executable and package,
 private preferences/state and both cache generations. A new bounded trial must
@@ -70,7 +79,8 @@ verify the candidate's full bundle, its current executable and read-only selecto
 and the unchanged original producer association. Existing closed scopes and
 their actors, nonces, Tickets and leases cannot supply admission.
 
-Observe ordinary startup and Home/Apps navigation with privileged preparation
+Repeat the matching qualification for the separate current observer-source
+ordinary package before instrumented measurement. Observe startup and Home/Apps navigation with privileged preparation
 off. Require the actual worker association and current-key cache results,
 natural shutdown and joined texture cleanup. Preserve all original cache bodies,
 preferences and measured Core state; restore the exact retained package and
