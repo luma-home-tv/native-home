@@ -8,7 +8,8 @@ host checks do not establish native behavior.
 
 `durable_icon_cache::maintenance` reuses the existing private `Record`,
 `ProducerVersion`, `SourceRecord`, validation, canonical header/name serializer
-and `FileIdentity`. There is no second cache format grammar. Source declarations
+and `FileIdentity`. The anchored FD reader and pure inspector call the same
+pure framing/header decoder. There is no second cache format grammar. Source declarations
 are returned as untrusted SourceKey data, never as an adoptable Source or Demand.
 Existing fixed-profile parsers have narrow pure inspection wrappers returning
 only ProducerVersion data; ExpectedProducer and ReadExpectation do not escape

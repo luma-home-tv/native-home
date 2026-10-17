@@ -6,10 +6,11 @@
 //! mapping, withdrawal, worker join and exclusive writer ownership remain future
 //! caller obligations. This module has no I/O or production callsite.
 use super::{
-    digest, invalid, Config, FileIdentity, ProducerVersion, Record, HEADER_CAP, MAGIC, MAX_FILE,
+    decode_record_header, digest, invalid, record_header_size, Config, FileIdentity,
+    ProducerVersion, MAX_FILE,
 };
 use crate::app_artwork::SourceKey;
-use std::{collections::BTreeSet, io};
+use std::{collections::BTreeSet, ffi::CString, io};
 
 /// Independently supplied ordinary process identity, not a measured credential.
 #[derive(Clone, Copy, Debug)]
@@ -46,14 +47,7 @@ impl RetainedProducers {
             .iter()
             .copied()
             .collect::<BTreeSet<_>>();
-        let actual = selectors
-            .iter()
-            .map(|raw| digest(raw))
-            .collect::<BTreeSet<_>>();
-        if expected.len() != required_selector_sha256.len()
-            || actual.len() != selectors.len()
-            || expected != actual
-        {
+        if expected.len() != required_selector_sha256.len() {
             return Err(invalid("Selector registry omitted, replaced or duplicated"));
         }
         let current = crate::cache_producer_profile::inspect_for_maintenance(
@@ -61,11 +55,20 @@ impl RetainedProducers {
             independently_bound_consumer_ui,
         )?;
         let mut versions = vec![current];
+        let mut actual = BTreeSet::new();
         for raw in selectors {
+            // The existing parser enforces its raw-byte cap BEFORE we hash an
+            // independently supplied selector into the exact registry.
             versions.push(crate::cache_consumer_profile::inspect_for_maintenance(
                 raw,
                 independently_bound_consumer_ui,
             )?);
+            if !actual.insert(digest(raw)) {
+                return Err(invalid("Selector registry omitted, replaced or duplicated"));
+            }
+        }
+        if expected != actual {
+            return Err(invalid("Selector registry omitted, replaced or duplicated"));
         }
         versions.sort_by(|a, b| {
             (&a.source_revision, a.ui_sha256, a.broker_sha256).cmp(&(
@@ -179,31 +182,24 @@ fn inspect(leaf: &SuppliedLeaf<'_>, owner: SuppliedOwner) -> io::Result<Inspecte
         || leaf.before.bytes != leaf.bytes.len() as u64
         || leaf.bytes.len() <= 12
         || leaf.bytes.len() as u64 > MAX_FILE
-        || &leaf.bytes[..8] != MAGIC
+        || leaf.name.len() != 69
     {
         return Err(invalid(
             "Changed, foreign, linked or malformed ordinary file",
         ));
     }
-    let size = u32::from_be_bytes(
-        leaf.bytes[8..12]
-            .try_into()
-            .map_err(|_| invalid("Record prefix"))?,
-    ) as usize;
-    if size == 0 || size > HEADER_CAP || 12 + size >= leaf.bytes.len() {
-        return Err(invalid("Bounded complete ordinary record header"));
-    }
-    // Exact existing serde structs/deny_unknown_fields, validation and filename
-    // serializer; no parallel format grammar or cache-derived expected Source.
-    let record: Record = serde_json::from_slice(&leaf.bytes[12..12 + size])
-        .map_err(|_| invalid("Malformed, duplicate or unknown record metadata"))?;
-    record.validate()?;
-    let body = &leaf.bytes[12 + size..];
-    if body.len() as u64 != u64::from(record.encoded_bytes)
-        || digest(body) != record.encoded_sha256
-        || record.name()?.as_bytes() != leaf.name.as_bytes()
-    {
-        return Err(invalid("Ordinary record name/body length/digest differs"));
+    let prefix: &[u8; 12] = leaf.bytes[..12]
+        .try_into()
+        .map_err(|_| invalid("Record prefix"))?;
+    let size = record_header_size(prefix, leaf.bytes.len() as u64)?;
+    let name = CString::new(leaf.name).map_err(|_| invalid("Ordinary leaf name"))?;
+    // Same framing, serde structs, validation and canonical filename logic as
+    // Root::record. No cache declaration becomes an expected Source/producer.
+    let (record, offset) =
+        decode_record_header(&leaf.bytes[12..12 + size], &name, leaf.bytes.len() as u64)?;
+    let body = &leaf.bytes[offset as usize..];
+    if digest(body) != record.encoded_sha256 {
+        return Err(invalid("Ordinary encoded digest differs"));
     }
     Ok(InspectedRecord {
         filename: leaf.name.into(),

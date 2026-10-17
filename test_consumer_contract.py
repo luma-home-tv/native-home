@@ -88,6 +88,11 @@ class ContractTests(unittest.TestCase):
  def test_new_maintenance_contract_refuses_actual_historical_f5_missing_child(self):
   B=Path(os.environ['LUMA_TEST_PRIVATE_ARTIFACT_ROOT']).resolve(strict=True)
   ui=B/'settings-handoff-lifecycle-arm-v3/cargo/arm-unknown-linux-gnueabi/release/home-preview';helper=B/'normal-v3-artifacts-v1/helper/cargo/arm-unknown-linux-gnueabi/release/artwork-broker';profile=B/'normal-v3-artifacts-v1/package-normal/preview-package/usr/palm/applications/com.ash.nativehome.preview/artwork-cache-producer.json';repo=B/'settings-handoff-lifecycle-build-source-f5';old=json.loads(ui.with_name(ui.name+'.build.json').read_bytes());self.assertNotIn('src/durable_icon_cache_maintenance.rs',old['snapshot']['source_inputs']);current=copy.deepcopy(old);current['binary']['sha256']='11'*32;current['git_revision']='b'*40;put_manifest(current,(ROOT/'Cargo.toml').read_bytes())
+  # This is a synthetic current-artifact role with the actual NEW critical
+  # source bytes, versus immutable actual historical producer receipts.
+  for name in p.CONTRACT_FILES.values():
+   raw=(ROOT/name).read_bytes();current['snapshot']['source_inputs'][name]={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()}
+  self.assertIn('maintenance_planner_sha256',p.contract(current['snapshot'],current['consumer_build_contract']))
   def git(argv,**kw):
    self.assertEqual(argv[:6],['git','--no-optional-locks','--no-replace-objects','-C',str(repo),'show']);self.assertTrue(argv[6].startswith(old['git_revision']+':'))
    with patch.object(subprocess,'Popen',REAL_POPEN):return REAL_RUN(argv,**kw)

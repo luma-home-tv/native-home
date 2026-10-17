@@ -1,4 +1,4 @@
-use super::super::{hex, ObservedSource, SourceRecord};
+use super::super::{hex, ObservedSource, Record, SourceRecord, MAGIC};
 use super::*;
 use serde_json::json;
 
