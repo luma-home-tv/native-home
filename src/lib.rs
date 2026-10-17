@@ -52,14 +52,14 @@ pub mod device_info_reads;
 
 pub mod app_artwork;
 
-pub mod durable_icon_cache;
-pub mod cache_producer_profile;
-pub mod cache_consumer_profile;
 pub mod artwork_cache_preparation;
-pub mod artwork_preparation_events;
+pub mod artwork_cache_preparation_proof;
 pub mod artwork_cache_preparation_runner;
 pub mod artwork_cache_preparation_selection;
-pub mod artwork_cache_preparation_proof;
+pub mod artwork_preparation_events;
+pub mod cache_consumer_profile;
+pub mod cache_producer_profile;
+pub mod durable_icon_cache;
 pub mod packaged_icon_reader;
 pub mod packaged_icons;
 
@@ -103,3 +103,5 @@ pub mod icon_decode;
 pub(crate) mod icon_decode_test_support;
 
 pub mod session_cache_observation;
+
+pub mod preview_performance;
