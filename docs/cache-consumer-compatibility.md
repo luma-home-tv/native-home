@@ -38,7 +38,7 @@ SDK `readelf` commands reproduced the original outputs byte-for-byte; direct
 imports and dependencies are subsets of the exact qualified f5 comparators.
 The coordinator separately rehashed all 1,915 selected review bindings.
 
-These are local source, build, package and static ABI results. They do not
+Those local source, build, package and static ABI results alone do not
 establish native selector startup, namespace access, permissions, cache hits,
 pixels, performance or a retained update. Private assets and binaries remain
 outside the public repository. The G2 continues to retain the separately tested
@@ -79,8 +79,11 @@ verify the candidate's full bundle, its current executable and read-only selecto
 and the unchanged original producer association. Existing closed scopes and
 their actors, nonces, Tickets and leases cannot supply admission.
 
-Repeat the matching qualification for the separate current observer-source
-ordinary package before instrumented measurement. Observe startup and Home/Apps navigation with privileged preparation
+The [current observer-source ordinary package](current-ordinary-g2-native.md)
+has now passed its separate matching native Home/Apps/natural Back component
+and exact f5 restoration, with independent saved review and coordinator replay
+across 17,721 bindings. The observer marker was absent; instrumentation and
+performance remain unqualified. Future sessions must observe startup and Home/Apps navigation with privileged preparation
 off. Require the actual worker association and current-key cache results,
 natural shutdown and joined texture cleanup. Preserve all original cache bodies,
 preferences and measured Core state; restore the exact retained package and

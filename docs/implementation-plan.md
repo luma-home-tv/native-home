@@ -3,9 +3,11 @@
 The [compatible-cache native component](cache-consumer-g2-native.md) now passes
 bounded Home/Apps/Home/natural Back, accepted-producer cache use and joined
 texture cleanup on its tested executable. Exact retained f5 restoration and
-scoped cleanup pass independent saved review and coordinator replay. Next qualify
-the current observer-source ordinary package, then measure separate navigation
-and idle/wake scopes. This is not a retained promotion or performance result.
+scoped cleanup pass independent saved review and coordinator replay. The
+[current observer-source ordinary package](current-ordinary-g2-native.md) now
+passes its own matching native component, restoration and saved replay too.
+Next measure separate navigation and idle/wake scopes. Neither ordinary result
+is a retained promotion or performance result.
 
 The current delivery target is a responsive native Home dashboard for the
 OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.

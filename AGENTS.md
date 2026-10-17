@@ -88,6 +88,22 @@ requires a fresh actual f5 complete baseline/new lease. All earlier scopes are
 closed. Ordinary input still refuses black; any typed Up requires separately
 reviewed own-black authority and unchanged context/hash/cache/lease/5s gates.
 
+The later closed current3ce ordinary trial in `docs/current-ordinary-g2-native.md`
+qualifies the actual d221 source/3ce ELF and marker-free ffec package separately.
+Original operator0, five SDK keys/HomeAppsHome/distinct natural Back, current72
+contract with actual early ready/shell epochs and fresh terminal raw preferences,
+accepted f5 cache association/live updates and joined GL12 pass. Independent
+saved review/six adverse groups and byte-identical Root replay across17,721
+bindings pass. Preserve the disabled reader scaffold and exact grouped-read
+adapter failure; no native retry followed either. Complete f5/stateFD/cache48/
+sampled Core/runtime and known cleanup/original lease/agent preservation pass.
+One normal output collection occurred after rollback; no repeat-path/final
+dispatch timestamp/global mount restoration claim follows. Twelve captures
+were associated and removed. Retained G2 remains actual f5/1c4, Root artwork off;
+no observer marker, wake, physical/performance/per-key pixels or promotion was
+qualified. This scope is closed; new work requires fresh actual f5 state/new
+lease and separately reviewed instrumented admission.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
