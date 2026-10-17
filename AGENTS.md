@@ -67,6 +67,18 @@ in 385 clock pixels. No renderer fix, physical-panel or performance claim follow
 All trial scopes are closed; future work needs a fresh actual f5 baseline and
 lease. Timely readable frame crops may aid review but never relax input gates.
 
+`docs/cache-consumer-g2-navigation-progress.md` records the later closed v6/v7
+operators0 and exact f5/state/cache48/Core/runtime preservation and cleanup.
+Independent saved review and byte-identical Root replay cover16,840/20,203
+bindings respectively. V7 has four actual keys and captured Home/Apps/Home;
+both source terminals are known-negative `window_hidden`, with no managed close
+or natural Home Back. Worker association/join/GL/cache counters are bounded
+partial observations; both full component grades stay false. All scopes are
+closed. The separately reviewed v8/helper2/fast-template3 sources are unadmitted:
+at most two typed Up attempts on verified own black captures, ordinary input
+refused on black, unchanged whole-hash/context/cache/lease/original5s gates.
+No native wake, physical/performance, promotion or future scope authority follows.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on

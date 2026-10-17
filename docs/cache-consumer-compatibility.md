@@ -56,6 +56,12 @@ review also timed out before navigation, so the component result remains false.
 Direct raw-pixel comparison withdrew an apparent missing-texture impression from
 the image viewer; no renderer correction follows from those captures.
 
+[Later G2 navigation trials](cache-consumer-g2-navigation-progress.md) now bind
+the native worker's loaded association and cache/GL counters. Four guarded keys
+and captured states also establish a bounded Home/Apps/Home route. Both trials
+restored f5 and closed their scoped cleanup, but neither observed natural Home
+Back. Complete component acceptance and retained promotion remain pending.
+
 ## Next device acceptance
 
 Use a fresh complete baseline of that actual retained executable and package,
