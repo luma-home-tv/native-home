@@ -31,7 +31,26 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
-The latest verified retained G2 installation is 0.61.0, with dashboard ELF
+The current retained pause checkpoint is recorded in
+`docs/retained-preview-pause-checkpoint.md`: BOTH TVs now retain normal0.61.0
+from functional d2215d5d8761fe385ae7ae3dd76ab173793c5bb8, UI SHA-256
+`3cefc9152fa0b0e051920763496274f211f24914085c83eed01d36b27812ecb3`, IPK
+`ffec94f0b1633ce182a344999d9c69bfb42213cbfee48a9cf17b6543b36acb98`.
+Complete payload/attribute checks pass with G2 root0755 and existing C2 bundle
+root0777 only. Both216B preference contents/favourites/owners are preserved;
+C2's fresh actual legacy777 state was changed only by the already known
+ordinary-owner048 metadata operation to private700/600. No Root chmod/chown or
+content reset. Cache/runtime and sampledCore5 remain; known stages/migration
+runtime and original leases/agents are closed. No normal build launch/input or
+new functional/physical/performance/all-system/mount-restoration claim. Keep
+failed local/decline/install-comparison operators and the separate C2 same-lease
+successful continuation distinct. Normal Root artwork stays off; no observer,
+Proof or schema2 diagnostics retained. Future backup/rollback MUST use these
+actual current bundles and new state/leases; older f5/06cc/G2 and048/C2 records
+below are historical. The user requested pause after this deployment; preserve
+all source/artifact findings and await their resume before further goal work.
+
+The historical retained G2 installation is 0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
 `codex/native-context-diagnostics` (PR #2). `docs/g2-retained-preview061.md`
