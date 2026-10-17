@@ -47,8 +47,20 @@ readback pass. The isolated framework clone's initial mode-verification failure
 and declared-mode correction are preserved; the framework revision/patch did not
 change.
 
-No matching ARM build, package or TV execution is qualified by these host checks.
-Future artifacts must bind their actual source and binaries, account for the new
-diagnostic field in receipt readers, and keep the original context/authority
-validation. This change does not identify the cause of the historical refusal,
-repair native LS2 behavior or complete retained delivery.
+Matching ARM dashboard and helper builds now pass from functional commit
+`167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c`, with the same 136 selected inputs
+before and after compilation. The dashboard is 4,528,128 bytes, SHA-256
+`06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`;
+the helper is 908,124 bytes, SHA-256
+`981918ae4b73b1551253df86ee22bcd22e21aaee7416ab6c6adf78b7030795c7`.
+Thirty actual SDK readelf commands and coordinator readback pass. Both retain
+ARM32 EABI5 soft-float PIE and the same loader; direct library/GLIBC requirements
+match their qualified dashboard/helper references. No RPATH/RUNPATH appeared.
+The known unstable-NEON compiler warning is preserved.
+
+These are static source/build/ABI results. No package, TV execution, permission,
+transitive-loading, historical-cause or retained-delivery qualification follows.
+Future artifacts must bind these new binaries, account for the diagnostic field
+in receipt readers, and keep the original context/authority validation. This
+change does not repair native LS2 behavior. Machine-readable evidence:
+[milestone](native-context-diagnostics-milestone.json).

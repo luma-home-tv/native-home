@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "status": "source_host_ARM_pair_direct_ABI_pass_not_native",
+  "functional_source": "167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c",
+  "source_input_count": 136,
+  "host": {
+    "library_tests_passed": 763,
+    "UI_tests_passed": 10,
+    "new_synthetic_cases": 7,
+    "strict_client_Clippy_passed": true,
+    "independent_source_review": "CLEAR"
+  },
+  "trace": {
+    "separate_from_context_and_authority": true,
+    "unchanged_GET_count_order_payloads": true,
+    "per_context_call_cap_ms": 500,
+    "foreground_gate_seconds": 5,
+    "operation_budget_seconds": 8,
+    "HBC_check_count": 1,
+    "extra_requests_retries_fallback_or_guard_relaxation": false,
+    "maximum_snapshot_sets": 9,
+    "maximum_operation_records": 27,
+    "setup_stage_max_bytes": 64,
+    "setup_detail_max_bytes": 256,
+    "UTF8_safe_truncation": true,
+    "reply_text_or_wire_hash_recorded": false
+  },
+  "ARM": {
+    "dashboard_actual_build_exit": 0,
+    "helper_actual_build_exit": 0,
+    "dashboard_bytes": 4528128,
+    "dashboard_sha256": "06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8",
+    "dashboard_receipt_sha256": "e3c63d0f086a903d1f3918660d1c8e97840af3d1e4a1b3f64fee011d34bbdfd7",
+    "helper_bytes": 908124,
+    "helper_sha256": "981918ae4b73b1551253df86ee22bcd22e21aaee7416ab6c6adf78b7030795c7",
+    "helper_receipt_sha256": "8797a97aefe8f54dc8ab56002d35e318d2b0f35d78d171ee16ceeb727148ed34",
+    "actual_SDK_readelf_commands": 30,
+    "direct_ABI_matches_qualified_UI_and_helper_references": true,
+    "ELF32_ARM_EABI5_softfloat_PIE": true,
+    "loader": "/lib/ld-linux.so.3",
+    "RPATH_RUNPATH": false,
+    "known_unstable_neon_warning_preserved": true
+  },
+  "independent_Root_readback": {
+    "bound_files": 108,
+    "current_source_inputs": 136,
+    "both_build_receipts_match_snapshot": true,
+    "ELF_headers_interpreters_and_direct_ABI_outputs_checked": true
+  },
+  "isolated_framework_clone_mode_verifier_failure_and_correction_preserved": true,
+  "framework_source_and_patch_changed": false,
+  "package_built": false,
+  "TV_contacted": false,
+  "historical_failure_cause_recovered": false,
+  "native_or_permission_or_transitive_loading_or_performance_qualified": false,
+  "old_binary_or_cache_association_transferred": false,
+  "private_host_review_manifest_sha256": "67e339f6e306a00c207042249d1c58f8aa45ccba9e06a64b6cd328a88dad3064",
+  "private_ARM_handoff_sha256": "f8448fa3b2f16f91355cec33919a6a04606c84d4a22f8b1ee4a95c056295c663"
+}
