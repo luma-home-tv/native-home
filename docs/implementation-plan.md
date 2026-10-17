@@ -17,8 +17,9 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 now retains verified [0.57.0](g2-retained-preview057.md),
-including the caption-preference readout. The later
+current native interface. G2 now retains verified [0.61.0](g2-retained-preview061.md)
+and its 24-entry ordinary icon cache, following the earlier
+[0.57 caption-preference delivery](g2-retained-preview057.md). The historical
 [0.58 cache observation](ordinary-artwork-cache-058-native.md) reached ordinary
 Home/Apps cache associations and returned to exact 0.57 through separately
 verified cleanup; its original operator failure remains explicit. The earlier
@@ -63,12 +64,15 @@ retained app.
 
 ## Near-term release and parallel work
 
-Keep packaged icons usable while qualifying the separate ordinary cache path.
+Preserve the retained normal app and ordinary cache while qualifying restart
+and action flows against their actual current baseline.
 Choose one coherent normal-release artifact and prioritise
 normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
 The recorded normal sessions establish Home/Apps/Back and idle/wake within their
-respective scopes; latest retained G2 is 0.57 and latest verified C2 is 0.48.
+respective scopes; latest retained G2 is [0.61](g2-retained-preview061.md) and
+latest verified C2 is 0.48. Current G2 has 24 retained icon entries; older
+cache-absent/057 carriers cannot be reused.
 Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
@@ -77,9 +81,10 @@ The bounded thumbnail fix now has matching ARM artifacts and a successful
 reviewed batch/ordinary Root-free consumer trial, with per-attempt disposition
 and known restoration.
 The SDK mount comparison preserves all measured aliases; each trial needs a
-fresh native baseline. Follow with multiple batches where needed, final current
-per-key body/decode coverage, invalidation/failure behavior and a backed-up normal
-delivery. A cursor, index Ready or aggregate GL count is not all-app coverage. Measure
+fresh native baseline. The retained061 campaign now checks the supplied16+8
+body set and its ordinary session. Prioritise restart/app/settings return,
+invalidation/failure behavior and explicit cache producer/version transitions.
+A cursor, index Ready or aggregate GL count is not all-app coverage. Measure
 current-artifact cold preparation and ordinary warm navigation separately before
 claiming a performance gain. Eviction/stale-writer recovery and C2 qualification
 remain open; normal interaction must keep Root artwork off.
@@ -100,15 +105,18 @@ exit and exact 0.57 restoration. It remains a partial campaign: keyboard/idle we
 skipped to preserve the fixed cleanup budget. Run Search first on the next tour,
 then return to the first app for one downward pass. Budget a fresh scope from
 measured phase/cleanup durations; preserve every Root, scene, identity, input and
-unknown-outcome guard. Retained promotion and the remaining practical checks are
-still required.
+unknown-outcome guard. The later retained061 campaign completes this tour;
+the remaining practical and physical checks still require their own evidence.
 
 The [second marker-free attempt](g2-retained-preview061-second-attempt.md) now
 records a safe second-batch preflight refusal and complete 0.57 restoration. A
 native LS2 foreground read became unavailable after the inert check; the receipt
-does not retain its typed failure. Diagnose the existing calls before another
-preparation campaign, preserving their budgets and all dispatch/context guards.
-The planned full tour and retained promotion remain open.
+does not retain its typed failure. The later [retained061 campaign](g2-retained-preview061.md)
+uses bounded typed diagnostics with unchanged budgets and dispatch/context guards,
+then completes the normal tour and retention. Historical cause remains unknown.
+Next use a fresh061/cache24 baseline for owned app launch/removal and LG Settings
+return. Physical input/favourites, matched performance and cache maintenance remain
+open; no old source/artifact or native-ledger association transfers to this build.
 
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:

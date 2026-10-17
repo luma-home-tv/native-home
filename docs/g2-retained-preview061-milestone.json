@@ -1,0 +1,135 @@
+{
+  "schema": 1,
+  "status": "native_scopeA_retained061_saved_reviews_and_Root_readbacks_pass",
+  "functional_source": "167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c",
+  "source_input_count": 136,
+  "source_branch": "codex/native-context-diagnostics",
+  "dashboard_sha256": "06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8",
+  "helper_sha256": "981918ae4b73b1551253df86ee22bcd22e21aaee7416ab6c6adf78b7030795c7",
+  "normal_package_sha256": "4f52cc4dc5b1439b9e0b00fe9a9de940b852272d091cf450b3b59626dcc95d9e",
+  "actual_operator_exit": 0,
+  "actual_elapsed_seconds": 1806.4795048236847,
+  "original_budget_seconds": 2400,
+  "new_retained_version": "0.61.0",
+  "previous_retained_version": "0.57.0",
+  "normal_marker_free": true,
+  "normal_Root_artwork": false,
+  "preparation_counts": [
+    16,
+    8
+  ],
+  "exact_supplied_preferred_keys": 24,
+  "first16_bodies_and_identities_unchanged": true,
+  "ordinary_native_per_key_drawing_ledger": false,
+  "coordinator_visual_review": {
+    "registered_cards": 24,
+    "views": [
+      "home",
+      "apps",
+      "inputs",
+      "controls"
+    ],
+    "categories": [
+      "accessibility",
+      "general",
+      "network",
+      "panel-care",
+      "picture",
+      "sound"
+    ],
+    "all_pixel_identity": false
+  },
+  "keyboard": {
+    "empty_cycles": 2,
+    "opens": 2,
+    "stops": 2,
+    "dismissals": 2,
+    "failures": 0,
+    "optional_local_keypad_selected": false,
+    "physical_typing": false
+  },
+  "idle": {
+    "actual_hold_seconds": 125.55605399998603,
+    "inputs_during_hold": 0,
+    "black_capture": true,
+    "wake_only_Up": true,
+    "distinct_Back_exit": true
+  },
+  "native_renderer": {
+    "cache_uploads": 24,
+    "packaged_uploads": 4,
+    "uploads": 28,
+    "deletes": 28,
+    "remaining_textures": 0,
+    "reported_GL_errors": 0,
+    "worker_joined": true,
+    "memory_or_performance_qualified": false
+  },
+  "preservation_operator_pass": {
+    "final_bundle_entries": 33,
+    "final_bundle_files": 31,
+    "preferences_and_state": true,
+    "sampled_Core_files": 5,
+    "sampled_Core_reads": 19,
+    "old_runtime_and_declared_log_prefix": true,
+    "temporary_runtime_leaves_removed": 3,
+    "staged_packages_removed": 4,
+    "owned_captures_removed": true,
+    "privileged_scopes_absent": true,
+    "lease_and_agent_closed": true,
+    "ordinary_cache_intentionally_retained": 24
+  },
+  "mount_observation": {
+    "schema": 1,
+    "mounts_restored": false,
+    "mount_delta": {
+      "original_rows": 270,
+      "final_rows": 276,
+      "appended_rows": 6,
+      "duplicate_pair_increments": 3,
+      "bounded_by_observed_own_launches": 3
+    },
+    "fixed_measured_mount_roots": [
+      "/var/palm/jail/com.ash.nativehome.preview",
+      "/mnt/lg/cmn_data/var/palm/jail/com.ash.nativehome.preview",
+      "/mnt/lg/flash/data/var/palm/jail/com.ash.nativehome.preview",
+      "/mnt/lg/user/var/palm/jail/com.ash.nativehome.preview"
+    ],
+    "original_sequence_exact_prefix": true,
+    "final_observations_stable": true,
+    "relevant_cache_mount_shapes_unchanged": true,
+    "mount_operations_performed": false,
+    "SDK_change_cause_qualified": false,
+    "universal_or_per_launch_SDK_behavior_qualified": false
+  },
+  "diagnostics": {
+    "saved_startup_preflights": 2,
+    "typed_operation_records": 15,
+    "complete_nontruncated": true,
+    "all_returned_JSON": true,
+    "second_initial_extra_screensaver_then_sole_CARD": true,
+    "native_timeout_setup_cases_exercised": false,
+    "historical_failure_cause_recovered": false,
+    "LS2_repair_claimed": false
+  },
+  "independent_saved_reviews": {
+    "association": {
+      "report_sha256": "43045c0283fd4c21e2669707f566b22392c61905b93014c0646ce733d5f3c1a4",
+      "selected_binding_readbacks": 642,
+      "Root_readback_sha256": "b81735c1cedc8872120319e4805eea212f9b2e401b71162bb8858292caed4f0f"
+    },
+    "preservation_and_cleanup": {
+      "report_sha256": "a79de57db475e787b9ac1d1fc20b45ca60f70b23aea7f493ea840c7070323bea",
+      "selected_binding_readbacks": 556,
+      "Root_readback_sha256": "d041d45e6aa3ae44d327b142b51e9519b261b0cbab450dd23dd480bd9f5a8e0b"
+    },
+    "scopes_overlap_and_are_not_unique_total": true,
+    "every_operation_or_all_pixels_replayed": false,
+    "initial_reviewer_packet_count_and_Root_manifest_shape_assumption_failures_preserved": true
+  },
+  "private_operator_summary_sha256": "a1661a3729472f6365813675cbb0710a5bb4579586ca00b84b1f148eb3d9ecc0",
+  "private_actual_terminal_sha256": "f7dff7c9877c205c6a2dc335a14894df45d19c8acce32c439e98fc80181cb1c8",
+  "private_Root_closed_checkpoint_sha256": "c25e9b8eccd712da1839b825201b82db5416e943dc470384d830280a493e3c48",
+  "C2_contacted": false,
+  "ScopeB_physical_performance_reliability_or_full_goal_complete": false
+}

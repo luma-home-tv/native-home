@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "status": "source_host_ARM_packages_SDK_audit_pass_not_native",
+  "status": "source_host_ARM_packages_and_recorded_G2_native_retention_pass",
   "functional_source": "167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c",
   "source_input_count": 136,
   "host": {
@@ -50,9 +50,8 @@
   "isolated_framework_clone_mode_verifier_failure_and_correction_preserved": true,
   "framework_source_and_patch_changed": false,
   "package_built": true,
-  "TV_contacted": false,
+  "TV_contacted": true,
   "historical_failure_cause_recovered": false,
-  "native_or_permission_or_transitive_loading_or_performance_qualified": false,
   "old_binary_or_cache_association_transferred": false,
   "private_host_review_manifest_sha256": "67e339f6e306a00c207042249d1c58f8aa45ccba9e06a64b6cd328a88dad3064",
   "private_ARM_handoff_sha256": "f8448fa3b2f16f91355cec33919a6a04606c84d4a22f8b1ee4a95c056295c663",
@@ -90,5 +89,21 @@
     "initial_test_only_raw_digest_expectation_failure_preserved": true,
     "private_manifest_sha256": "385117dbfa553db13c53e31adcf8c9402c1b993f1b56593cdab212b2b667531b",
     "private_Root_review_sha256": "d889e0185f34c9300300bd67f0bb9e01d80c27f3232de8951ebda31d5c12ce4f"
-  }
+  },
+  "native": {
+    "record": "g2-retained-preview061-milestone.json",
+    "actual_operator_exit": 0,
+    "retained_version": "0.61.0",
+    "startup_preflights": 2,
+    "typed_operation_records": 15,
+    "complete_nontruncated": true,
+    "all_returned_JSON": true,
+    "second_initial_extra_screensaver_then_sole_CARD": true,
+    "native_timeout_or_setup_diagnostic_cases_exercised": false,
+    "historical_cause_recovered": false,
+    "LS2_repair_claimed": false,
+    "generic_permission_transitive_loading_physical_performance_or_reliability_qualified": false
+  },
+  "recorded_native_campaign_qualified": true,
+  "generic_permission_transitive_loading_physical_or_performance_qualified": false
 }

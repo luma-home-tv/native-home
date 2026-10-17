@@ -31,10 +31,13 @@ bound. Reply text and reply hashes are not retained by this addition.
 
 Setup stage and detail are limited to 64 and 256 bytes with UTF-8-safe truncation.
 History retains the first and seven most recent initial snapshots, plus the
-post-request snapshot: at most 27 operation records. Missing, omitted or clipped
-observations set `trace_truncated`. Neither complete nor truncated diagnostics
-can supply missing context or grant resource permission. `context_first` and
-`context_before` still refer to one copied initial snapshot.
+post-request snapshot: at most 27 operation records. Lost observations or clipped
+stored traces set `trace_truncated`; an after-read that was never reached on an
+early return can legitimately remain absent. Neither complete nor truncated
+diagnostics can supply missing context or grant resource permission.
+`context_first` retains the first initial snapshot; `context_before` retains the
+last. They can differ when the existing gate takes multiple checks. The latter
+is not an additional independent pre-request read.
 
 ## Validation and remaining work
 
@@ -74,8 +77,16 @@ the original body and separate diagnostic projection each remain bounded to
 64 KiB. No TV-side budget or authority check changes. The first test-only raw
 digest expectation failure is preserved alongside its corrected fixture.
 
-These remain local results. TV execution, permission, transitive loading,
-historical cause and retained delivery are unqualified. A fresh native admission
-is still required. This change does not repair native LS2 behavior.
+The later [retained G2 campaign](g2-retained-preview061.md) now passes with the
+matching binaries and packages. Its two saved startup preflights contain 15
+complete, nontruncated JSON-return operation records. The second launch needed
+two initial checks: own foreground was already present, but an extra LG
+screensaver window disappeared before the existing sole-CARD gate admitted it.
+The before/after snapshots and trace history are distinct observations.
+
+These native observations qualify the recorded paths and retained campaign.
+Native timeout/setup diagnostic cases, general permission/transitive-loading,
+historical cause, physical input, performance and reliability remain separate.
+This change does not establish a repair to native LS2 behavior.
 Machine-readable evidence:
 [milestone](native-context-diagnostics-milestone.json).
