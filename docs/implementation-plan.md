@@ -8,6 +8,11 @@ That installed identity supersedes older f5/G2 and0.48/C2 baselines. The updates
 verified complete installed payloads and preference preservation; they did not
 launch or functionally test the new retained installations.
 
+The subsequent [current retained G2 smoke](retained-current-g2-smoke.md) now
+completes one no-install Home/Apps/Home/natural-Back session with original
+operator 0 and verified preservation/closeout. Independent saved-data audit is
+pending. This advances gate 1; it adds no current physical-input or C2 result.
+
 The matching earlier [ordinary component](current-ordinary-g2-native.md),
 [navigation observation](passive-performance-observer-g2-native.md) and separate
 [idle/wake observation](passive-performance-observer-g2-idle-wake.md) pass their

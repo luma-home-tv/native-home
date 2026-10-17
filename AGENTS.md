@@ -41,6 +41,16 @@ baseline is d221/UI3ce/ffec below; never reuse old f5 delivery/restore carriers.
 Optional schema2 diagnostics and cache maintenance cannot block daily-use gates
 or inherit old artifact/cache/native authority. New leases/scopes remain required.
 
+The current no-install retained G2 smoke is recorded in
+`docs/retained-current-g2-smoke.md`: original operator/supervisor0, ordinary
+Home/Apps/Home/naturalBack, five actual SDK keys/eight drafts/thirteen captures.
+Current3ce32/34, prefs, cache48, sampledCore5+19 and oldruntime140/92immutable/
+eventprefix+131B pass operator preservation; mapped session/stage and original
+lease/agent are closed. Independent saved-data audit remains pending. Selected
+SDK rows312→314 are distinct from full mount counts; no cause/repair/restoration
+claim. Never rerun the closed source, queue, scope or handle51514. No new build,
+Root artwork, favourites write, physical input, Settings return or C2 test follows.
+
 The current retained pause checkpoint is recorded in
 `docs/retained-preview-pause-checkpoint.md`: BOTH TVs now retain normal0.61.0
 from functional d2215d5d8761fe385ae7ae3dd76ab173793c5bb8, UI SHA-256
