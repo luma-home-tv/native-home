@@ -57,6 +57,10 @@ The later [marker-free delivery attempt](docs/g2-retained-preview061-first-attem
 observed all 24 icons and six Controls categories, then deliberately ended before
 keyboard/idle to preserve cleanup time. Its original exit 1 and exact 0.57
 restoration are recorded; no retained promotion occurred.
+The [next campaign](docs/g2-retained-preview061-second-attempt.md) stopped at a
+declined inert preflight after an unavailable native LS2 foreground read. It
+submitted no second-batch resource work and restored exact 0.57. The lost timeout/
+setup distinction is being addressed before further native preparation.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout

@@ -92,6 +92,14 @@ closeout pass. Keyboard/idle and retained061 remain unqualified. Future runs nee
 fresh nonces/baselines and a measured finite budget, with Search before the single
 drawer pass; never extend or restart this closed scope.
 
+The second marker-free attempt in
+`docs/g2-retained-preview061-second-attempt.md` closed with a known second-batch
+inert preflight refusal and exact057/state/Core/runtime/owned-cleanup/lease/agent
+preservation. Original exit1 remains; no ordinary session or promotion occurred.
+Native LS2 foreground unavailable does not prove app departure or a timeout;
+the current reader discards the timeout/setup distinction. Preserve strict
+refusal and diagnose the existing calls without adding retries or larger budgets.
+
 `probes/native-surface` now preserves the ordinary held-window prerequisite,
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing

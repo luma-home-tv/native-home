@@ -1,0 +1,103 @@
+{
+  "schema": 1,
+  "status": "known_inert_preflight_refusal_restored057",
+  "date": "2026-10-17",
+  "functional_source": "76117505dd837ead35e16a550ae194185ef3acfd",
+  "source_input_count": 136,
+  "normal_package_sha256": "b1983d33897c2ca6d075072501a1e52cd78530312dcc79601e72665ac3a2136f",
+  "operator_actual_returncode": 1,
+  "operator_elapsed_seconds": 668.7803039550781,
+  "original_operation_seconds": 2400,
+  "fresh_lease_minutes": 45,
+  "old_scope_extended": false,
+  "original_workflow_error": null,
+  "unknown_HOLD": false,
+  "full_campaign_qualified": false,
+  "retained061_promoted": false,
+  "retained_G2_version": "0.57.0",
+  "C2_contacted": false,
+  "batch_dispositions": {
+    "diagnostic0": {
+      "qualified": true,
+      "prepared_count": 16,
+      "result_count": 16
+    },
+    "diagnostic16": {
+      "qualified": false,
+      "prepared_count": 0,
+      "result_count": 0
+    }
+  },
+  "ordinary_preview_started": false,
+  "second_preflight": {
+    "outcome": "preflight_declined",
+    "resource_worker_created": false,
+    "artwork_Root_execution_attempts": 0,
+    "submitted_resource_jobs": 0,
+    "inert_checkRoot_calls": 1,
+    "checkRoot_response_outcome": "root_true",
+    "joined": true,
+    "verified": false,
+    "capability_outcome": "context_changed",
+    "after_foreground": {
+      "unavailable": true
+    },
+    "after_own_CARD_still_observed": true,
+    "self_identity_stable": true,
+    "overall_operation_deadline_expired": false,
+    "reported_operation_elapsed_ms": 1148,
+    "HBC_call_budget_ms": 1000,
+    "native_each_context_call_cap_ms": 500,
+    "timeout_or_setup_or_returned_sentinel_distinguished": false,
+    "actual_foreground_departure_proved": false,
+    "context_first_and_before_are_one_snapshot": true,
+    "external_no_worker_closure_supported": true
+  },
+  "known_cleanup": {
+    "retained057restored": true,
+    "original_preferences_preserved": true,
+    "Core19plus5_preserved": true,
+    "old_runtime_immutable_bytes_and_declared_log_prefix_preserved": true,
+    "new_mapped_runtime_and_cache_and_staging_absent": true,
+    "Root_scope_absent": true,
+    "no_retained_Preview_uninstall": true,
+    "OS_exit_status_measured": false
+  },
+  "host_closeout": {
+    "lease_release_verified": true,
+    "agent_cleanup_verified": true,
+    "errors": {}
+  },
+  "SDK_mount_observation": {
+    "original_rows": 266,
+    "final_rows": 270,
+    "new_readonly_duplicate_rows": 4,
+    "controlled_own_launches": 2,
+    "original_prefix_preserved": true,
+    "cache_mount_shapes_unchanged": true,
+    "mount_operations_performed": false,
+    "mounts_restored_claim": false
+  },
+  "independent_saved_review": {
+    "status": "finite_selected_receipt_comparison_passed",
+    "review_sha256": "f429a5d6e57b9db6c9c4c400cc543c26cc8183bd6df40abff881843372ee3423",
+    "selected_bindings": 150,
+    "coordinator_independent_readback_passed": true,
+    "whole_remote_operation_replay_claim": false
+  },
+  "private_receipt_sha256": {
+    "operator_terminal": "b9c3904cca8eb782a5923ebbc069a3fd904dc81a23f23d651fd9e6b3994c5a92",
+    "operator_summary": "d7127db85e343a00baad57323b1214d9451763e5975f2cb307b7a3f7505270ab",
+    "second_native_report": "bb6c64211f7774f71101280ca3220a48605f7772975844879a46acc52ec411cb",
+    "final057_bundle": "cd3f3a720800a7225dab56d46f021273f0a893574b4693bc0549b90959123a10",
+    "known_cleanup": "68fb69abbbb8ffb6d461278aa38ba3903c96235fd283580cfcc06d6f2f59bf8c",
+    "host_closeout": "946d44356da787bf4f2dfc5212c231ac0e0f289e8a711ad63c08591bedc05744"
+  },
+  "required_next": [
+    "bounded typed diagnostic observations for existing native context calls",
+    "same calls and budgets; unchanged context/dispatch/refusal policy",
+    "matching host/ARM/package qualification before native work",
+    "fresh complete practical campaign and backed-up retained delivery",
+    "remaining physical input/favourites/app and Settings return/performance"
+  ]
+}

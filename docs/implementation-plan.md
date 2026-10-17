@@ -103,6 +103,13 @@ measured phase/cleanup durations; preserve every Root, scene, identity, input an
 unknown-outcome guard. Retained promotion and the remaining practical checks are
 still required.
 
+The [second marker-free attempt](g2-retained-preview061-second-attempt.md) now
+records a safe second-batch preflight refusal and complete 0.57 restoration. A
+native LS2 foreground read became unavailable after the inert check; the receipt
+does not retain its typed failure. Diagnose the existing calls before another
+preparation campaign, preserving their budgets and all dispatch/context guards.
+The planned full tour and retained promotion remain open.
+
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:
 
