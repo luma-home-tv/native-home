@@ -27,9 +27,11 @@ checks are not atomic against another owner changing a path or its permissions.
 ## What the numbers mean
 
 The monitor reports application-thread draw submission, the swap call, painted
-foreground intervals and the latest dequeued input's next swap submission.
+foreground intervals and the latest dequeued key-down's next swap submission.
 Idle, hidden and skipped intervals suspend history. A black idle presentation
 has its own count. Context identifies foreground, hidden and idle-black states.
+The input measurement does not cover pointer or wheel events, and multiple
+key-downs before a presentation do not each receive a separate latency sample.
 
 These are whole-session summaries. Subtracting percentile summaries does not
 produce a phase percentile. The observations do not measure GPU completion,
