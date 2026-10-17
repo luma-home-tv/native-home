@@ -164,6 +164,24 @@ follows. All N5 authority is closed: never rerun86480 or reuse dates/nonce/lease
 Normal Root remains off; new work needs fresh actual f5 state and a new scope.
 Keep separate draw-phase source worktree and I recipe/artifacts out of d221.
 
+The separate I1 scope in `docs/passive-performance-observer-g2-idle-wake.md`
+is closed0/componenttrue: initial own nonblack/sourceHome, original host125s
+wait matched459 real complete owner reads, reviewed black2/freshblack3 Up103,
+sourceawake/reviewed visibleHome4/fresh5 distinctBack412, naturalBack160.257s,
+idle1/wake1. Two drafts/five captures,3live+1externally closed finaljoined epochs,
+actual terminal-state/FD/rawprefs/current+ready/shell and two1pre1post collections
+pass. Independent saved audit/four adverse groups and byte-identical Root replay
+cover17,645bindings/4,006rawops; two saved reviews/12PNG RGB associations pass.
+No waiter process/status/timing, betweenpoll continuity, clocktransfer, idlecause,
+physical/realremote/GPU/panel/FPS/improvement or combinedN+I claim follows.
+Exact retained f5/state/cache48/sampled Core/runtime and known scoped cleanup/
+originallease-agent pass; joined balancedGL8 has no recorded errors. Normal Root
+off; no promotion or observer retention. Never rerun88202 or reuse its original
+scope/dates/nonce/lease/frames. Next tests need fresh actual f5 baseline/new lease.
+Current physical input, isolated favourites+restart, normal actions/return and
+retained delivery/reliability stay open. Optional schema2 draw-phase source is
+separate and has no existing artifact/cache/native authority.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
