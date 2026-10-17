@@ -170,5 +170,58 @@
       "coordinator_binding_readbacks_passed": true,
       "overlapping_finite_scopes_not_all_operations": true
     }
+  },
+  "settings_return_first_attempt": {
+    "record": "docs/g2-retained-preview061-settings-return-first-attempt.md",
+    "original_operator_exit": 1,
+    "original_operator_seconds": 367.92941784858704,
+    "failure": "Known own CARD plus LG spinner not in reviewed transition whitelist",
+    "LG_Back_or_further_input_sent": false,
+    "native_LgSettings_launch_admitted_and_verified": true,
+    "native_exit_reason": "window_hidden",
+    "native_SDL_settings_returns_observed": 1,
+    "usable_return_qualified": false,
+    "exact_native_event_order_known": false,
+    "joined_image_worker": true,
+    "GL_uploads_and_deletes": [
+      12,
+      12
+    ],
+    "GL_reported_errors": 0,
+    "remaining_textures": 0,
+    "cache_and_packaged_uploads": [
+      8,
+      4
+    ],
+    "readonly_observer_exit": 0,
+    "readonly_observer_scene": "Home foreground / sole Home CARD / original PID and Preview UID absent",
+    "NOINPUT_cleanup_exit": 0,
+    "original_deadline_preserved": true,
+    "original_failure_and_HOLD_preserved": true,
+    "actual_terminal_bytes_unchanged": true,
+    "cleanup_exit_predicate_projection_only": true,
+    "retained_package_state_preferences_cache24_and_sampled_Core_preserved": true,
+    "lease_and_agent_closed": true,
+    "full_mount_rows": [
+      1518,
+      1520
+    ],
+    "selected_Preview_SDK_rows": [
+      278,
+      280
+    ],
+    "global_mount_restoration_claimed": false,
+    "independent_selected_saved_reviews": {
+      "resource_report_sha256": "c5fb6ecf663f4dfdfb89bc681b008c4438702a432639b0a3b2d92db3920f5627",
+      "resource_bindings": 522,
+      "failure_closure_report_sha256": "e142e4642b93b67208f9e8ab04fec1641fedf2c167b1d4c1b379372e3e37cba0",
+      "failure_closure_bindings": 143,
+      "separate_negative_route_intents": 602,
+      "coordinator_readbacks_passed": true,
+      "overlapping_finite_scopes_not_all_operation_outcomes": true
+    },
+    "source_investigation_isolated_not_deployed": true,
+    "physical_input_performance_reliability_or_full_goal_qualified": false,
+    "C2_contacted": false
   }
 }

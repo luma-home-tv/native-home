@@ -54,6 +54,21 @@ prefix. Full mount rows1516→1518 and selected SDK rows276→278 remain distinc
 no manual mount/permission repair or global restoration occurred. No LG Settings
 or second ordinary session ran. Future work needs a new actual baseline and
 should isolate Settings return rather than repeat Target launch/removal.
+The Settings-only trial in
+`docs/g2-retained-preview061-settings-return-first-attempt.md` exited1 on the
+intermediate own-CARD/known-spinner pair before any LG Back. Native terminal
+records verified LG launch, SDL counter1 and `window_hidden`, not usable return.
+Read-only observation found Home/PID+UID absence. Separate NOINPUT cleanup
+exited0 within the original900s cutoff, closed the original lease/agent and
+preserved061/cache24/prefs216/Core5+19/runtime prefix. Full mount rows1518→1520
+and selected SDK278→280 remain distinct. Independent saved reviews/Root522+143
+binding readbacks and602intent negative-route scan pass in finite scopes.
+Keep the original failed workflow/HOLD; do not revive its expired Back intent or
+run closed session84267/observer97252/cleanup30098 again. A spinner may support
+only bounded read-only waiting, never input or return authority. Investigate
+native Settings lifetime in the isolated source worktree before a new proof;
+the installed061 package stays unchanged. Do not combine062 or change cache
+producer association as part of that source investigation.
 Future tests need a fresh actual061 full bundle/state/cache baseline and new
 lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
 nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build

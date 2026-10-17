@@ -71,14 +71,20 @@ observed an ordinary app handoff but stopped on a local harness error before LG
 Settings. Separate cleanup exited 0 and preserved the retained package/cache;
 the original failed workflow and both initial cleanup refusals remain recorded.
 
+The subsequent [Settings-only trial](g2-retained-preview061-settings-return-first-attempt.md)
+confirmed an LG Settings launch but stopped on an intermediate spinner scene.
+Luma later recorded `window_hidden`; usable return remains unqualified. Separate
+no-input cleanup exited 0 within the original deadline and preserved the retained
+package, cache and sampled state. The current build remains 0.61.
+
 The 24-card coverage is coordinator review of captured frames against the fresh
 catalogue. The ordinary package deliberately has no native per-key drawing
 ledger; the corresponding summary field remains false. No all-pixel identity,
 physical-panel/input, general all-catalogue, performance or reliability claim is
 made. Native timeout/setup diagnostic cases remain unexercised in this run.
 
-Next qualify a fresh ordinary restart, owned app launch/removal and LG Settings
-return against the retained 0.61 bundle and existing cache. Favourites editing,
+Next investigate and isolate the native Settings lifetime before changing the
+retained package/cache association. Favourites editing,
 current-build physical input, matched performance, cache refresh/retirement and
 stale-writer recovery remain open. A future update needs an explicit cache
 producer/version transition; old 0.57/cache-absent carriers must not run against

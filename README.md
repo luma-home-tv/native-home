@@ -318,6 +318,9 @@ package modes and removal. The OLED55G26LA G2 retains verified 0.61.0 and its
 the 24-card/six-category tour, two empty LG keyboard cycles, black idle/wake and
 natural exit, with original preferences and sampled Core preserved in the
 [G2 delivery record](docs/g2-retained-preview061.md).
+The latest [G2 Settings trial](docs/g2-retained-preview061-settings-return-first-attempt.md)
+confirmed launch but ended with Luma's `window_hidden` exit. Usable return is
+unqualified on retained 0.61; separate no-input cleanup and preservation passed.
 The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
@@ -403,7 +406,7 @@ The preview remains isolated from LG Home, firmware, jail policy, media services
 network configuration and OLED protections. HDMI switching is enabled on the verified G2 and gated on the C2;
 pointer speed has a verified native choice control, and the G2 has a guarded
 audio-description level range; other adjustments remain
-read-only or LG-managed. The [Settings handoff milestone](docs/settings-handoff-milestone.json)
+read-only or LG-managed. The historical [Settings handoff milestone](docs/settings-handoff-milestone.json)
 adds a firmware-verified route to LG's Picture settings and native return after
 closing its overlay. Version 0.13.0 validates both TVs and all six section entry points. Private TV details and native household captures
 stay outside tracked source. The [responsiveness milestone](docs/responsiveness-milestone.json)
