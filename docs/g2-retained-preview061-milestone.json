@@ -80,6 +80,7 @@
     "ordinary_cache_intentionally_retained": 24
   },
   "mount_observation": {
+    "observation_scope": "Selected Preview SDK mount rows; separate from the complete mount table",
     "schema": 1,
     "mounts_restored": false,
     "mount_delta": {
@@ -131,5 +132,43 @@
   "private_actual_terminal_sha256": "f7dff7c9877c205c6a2dc335a14894df45d19c8acce32c439e98fc80181cb1c8",
   "private_Root_closed_checkpoint_sha256": "c25e9b8eccd712da1839b825201b82db5416e943dc470384d830280a493e3c48",
   "C2_contacted": false,
-  "ScopeB_physical_performance_reliability_or_full_goal_complete": false
+  "ScopeB_physical_performance_reliability_or_full_goal_complete": false,
+  "later_owned_app_trial": {
+    "record": "docs/g2-retained-preview061-owned-app-partial.md",
+    "ordinary_owned_app_handoff_observed": true,
+    "live_Target_witness_seconds": 3.701,
+    "original_operator_exit": 1,
+    "first_two_cleanup_exits": [
+      1,
+      1
+    ],
+    "separate_fresh_cleanup_exit": 0,
+    "original_failures_preserved": true,
+    "Target_and_owned_temporary_outputs_removed": true,
+    "retained_package_and_cache24_preserved": true,
+    "fresh_lease_and_agent_closed": true,
+    "full_mount_rows": [
+      1516,
+      1518
+    ],
+    "selected_Preview_SDK_rows": [
+      276,
+      278
+    ],
+    "global_mount_restoration_claimed": false,
+    "LG_Settings_return_exercised": false,
+    "full_ScopeB_workflow_qualified": false,
+    "physical_input_or_performance_qualified": false,
+    "C2_contacted": false,
+    "witness_origin": "Coordinator launch-key request; native loop start not independently measured",
+    "Target_OS_exit_status_measured": false,
+    "independent_selected_saved_reviews": {
+      "resource_report_sha256": "1df6593b7ce1340a8fb3e110265c98836a4265d3c48cee16d2093c9e7a467faa",
+      "resource_selected_bindings": 570,
+      "closure_report_sha256": "1ca28b9cfa14357456d4d07bb6da6c53990425d7365a41b93cb024faf39b7202",
+      "closure_selected_bindings": 431,
+      "coordinator_binding_readbacks_passed": true,
+      "overlapping_finite_scopes_not_all_operations": true
+    }
+  }
 }

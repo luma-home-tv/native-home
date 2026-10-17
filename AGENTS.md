@@ -44,7 +44,16 @@ all three temporary runtime leaves/staging/captures/Root scopes and lease/agent
 are closed. Normal Root artwork stays off. Independent saved reviews plus Root
 642/556 binding readbacks pass; these are overlapping finite scopes, not every
 operation or all-pixel/physical/performance proof. Preserve the observed270→276
-read-only SDK suffix without a mount restoration/cause claim.
+selected read-only SDK rows without a full mount-table restoration/cause claim.
+The later `docs/g2-retained-preview061-owned-app-partial.md` records a verified
+owned-app handoff followed by a local duplicate-receipt failure, then two
+pre-removal cleanup refusals. All three exit-1 results remain. Separate fresh
+cleanup exited0 after exact old-owner retirement/new lease and removed the
+Target and known temporary outputs, preserving061/cache24/state/Core/runtime
+prefix. Full mount rows1516→1518 and selected SDK rows276→278 remain distinct;
+no manual mount/permission repair or global restoration occurred. No LG Settings
+or second ordinary session ran. Future work needs a new actual baseline and
+should isolate Settings return rather than repeat Target launch/removal.
 Future tests need a fresh actual061 full bundle/state/cache baseline and new
 lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
 nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build

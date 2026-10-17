@@ -52,7 +52,8 @@ actual Back dispatches: one changed-image packet was withheld. Host preview setu
 and coordinator manifest-shape corrections are preserved in the private evidence;
 they required no native retry or budget extension.
 
-The original 270 mount rows remain an exact prefix of 276 final rows. Six
+The original 270 selected SDK mount rows remain an exact prefix of 276 final
+selected rows. The complete mount table is a separate observation. Six
 duplicate existing read-only SDK rows were observed across the three controlled
 launches. Relevant cache mount shapes remained unchanged. No mount operation was
 performed; this is not an unchanged-mount or SDK-cause claim.
@@ -64,6 +65,11 @@ admission. This does not recover the historical unavailable-foreground cause or
 establish a repair to LS2. See [the diagnostic schema](https://github.com/luma-home-tv/native-home/blob/codex/native-context-diagnostics/docs/native-context-diagnostics.md).
 
 ## Limits and next work
+
+A later [owned app trial and separate cleanup](g2-retained-preview061-owned-app-partial.md)
+observed an ordinary app handoff but stopped on a local harness error before LG
+Settings. Separate cleanup exited 0 and preserved the retained package/cache;
+the original failed workflow and both initial cleanup refusals remain recorded.
 
 The 24-card coverage is coordinator review of captured frames against the fresh
 catalogue. The ordinary package deliberately has no native per-key drawing
