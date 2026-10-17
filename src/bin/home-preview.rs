@@ -2636,7 +2636,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         report["preview_passive_performance"] = serde_json::json!({
             "schema":2,"profile":"preview-passive-observer-draw-v2","marker":preview_observer,
             "draw_diagnostic_frames_seen":draw_diagnostics.as_ref().map(|d|d.summary().frames_seen),
-            "draw_diagnostics_complete":writer.error.is_none() && writer.worker_joined && !writer.worker_panicked && writer.draw_diagnostic_snapshots>0 && draw_diagnostics.as_ref().is_some_and(|d|d.summary().frames_seen==writer.draw_diagnostic_frames_published),
+            "draw_diagnostics_complete":draw_diagnostics.as_ref().is_some_and(|d|writer.draw_diagnostics_complete(&d.summary())),
             "draw_diagnostics_in_worker_snapshots_only":true,
             "actual_normal_profile":passive_profile,"writer":writer,
             "capture_marker_selected":false,"normal_Root_artwork":false,

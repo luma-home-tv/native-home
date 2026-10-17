@@ -587,3 +587,140 @@ fn typed_queue_is_nonblocking_and_disconnection_and_bad_envelope_stay_explicit()
     assert_eq!(report.published, 0);
     assert_eq!(std::fs::read_dir(&t.0).unwrap().count(), 0);
 }
+
+fn observed_fixture(count: u64) -> (Value, crate::draw_diagnostics::Summary) {
+    use crate::draw_diagnostics::{Clock, Collector, Page, Phase, Probe, Timed};
+    struct ClockStep(u64);
+    impl Clock for ClockStep {
+        fn micros(&mut self) -> u64 {
+            self.0 += 1;
+            self.0
+        }
+    }
+    let mut collector = Collector::default();
+    let mut monitor = crate::performance::Monitor::default();
+    for i in 0..count {
+        let mut probe = Timed::new(ClockStep(0));
+        for phase in [Phase::Clear, Phase::Chrome, Phase::Content, Phase::Finalize] {
+            probe.cut(phase);
+        }
+        let draw = Duration::from_micros(20000 + i * 10000);
+        let at = Duration::from_millis(30 * i);
+        collector.record(
+            Some(collector.context(Page::Home)),
+            probe.finish(),
+            draw,
+            Duration::ZERO,
+            at,
+        );
+        monitor.presented(at, draw, Duration::ZERO);
+    }
+    (
+        crate::draw_snapshot::base(1., Page::Home, false, false, monitor.report()),
+        collector.summary(),
+    )
+}
+#[test]
+fn final_dropped_summary_never_qualifies_saturated_or_unpublished_tail() {
+    use std::sync::{Arc, Mutex};
+    for saturated in [false, true] {
+        let (mut old_base, mut old) = observed_fixture(1);
+        let (mut new_base, mut final_summary) = observed_fixture(2);
+        if saturated {
+            // Review-only numeric boundary, not a 240-second reachability
+            // claim. Actual Collector overflow controls are in its own tests.
+            for (base, summary) in [
+                (&mut old_base, &mut old),
+                (&mut new_base, &mut final_summary),
+            ] {
+                summary.frames_seen = u64::MAX;
+                for row in summary.top.iter_mut().flatten() {
+                    row.frame_sequence = u64::MAX;
+                    row.context.as_mut().unwrap().first_draw = false;
+                }
+                base["metrics"]["frames"] = json!(u64::MAX);
+                for key in ["draw_submission", "swap_call"] {
+                    base["metrics"][key]["samples"] = json!(u64::MAX);
+                    base["metrics"][key]["mean_ms"] = json!(
+                        if key == "draw_submission" {
+                            if summary.slow_seen == 1 {
+                                20.
+                            } else {
+                                50.
+                            }
+                        } else {
+                            0.
+                        } / u64::MAX as f64
+                    );
+                    for q in ["p50_upper_ms", "p95_upper_ms", "p99_upper_ms"] {
+                        base["metrics"][key][q] = json!(1);
+                    }
+                }
+            }
+            final_summary.saturated = true;
+        }
+        assert!(old.valid() && final_summary.valid());
+        assert_ne!(old, final_summary);
+        let t = Temp::new();
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let release = Arc::new(Mutex::new(Some(release_rx)));
+        let mut writer = Writer::start_inner(
+            &t.0,
+            Some(Box::new(move |stage, _| {
+                if stage == PublishStage::AfterWrite {
+                    if let Some(rx) = release.lock().unwrap().take() {
+                        entered_tx.send(()).unwrap();
+                        rx.recv_timeout(Duration::from_secs(3)).unwrap();
+                    }
+                }
+            })),
+        )
+        .unwrap();
+        writer.submit_observed(old_base.clone(), old);
+        entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        writer.submit_observed(old_base, old);
+        writer.submit_observed(new_base, final_summary);
+        assert_eq!(writer.dropped, 1);
+        release_tx.send(()).unwrap();
+        let report = writer.finish();
+        assert!(report.worker_joined && !report.worker_panicked && report.error.is_none());
+        assert_eq!(report.draw_diagnostic_snapshots, 2);
+        let raw = std::fs::read(t.0.join("performance-current.json")).unwrap();
+        let saved = crate::draw_snapshot::parse(&raw).unwrap();
+        assert_eq!(saved.diagnostics(), &old);
+        assert_eq!(
+            report.draw_diagnostic_frames_published == final_summary.frames_seen,
+            saturated
+        );
+        assert!(!report.draw_diagnostics_complete(&final_summary));
+        assert!(report.draw_diagnostics_complete(&old));
+    }
+}
+#[test]
+fn genuine_final_publication_qualifies_only_unsaturated_healthy_collector() {
+    let (base, summary) = observed_fixture(2);
+    let t = Temp::new();
+    let mut writer = Writer::start(&t.0).unwrap();
+    writer.submit_observed(base, summary);
+    let mut report = writer.finish();
+    assert!(report.draw_diagnostics_complete(&summary));
+    let saved =
+        crate::draw_snapshot::parse(&std::fs::read(t.0.join("performance-current.json")).unwrap())
+            .unwrap();
+    assert_eq!(saved.diagnostics(), &summary);
+    let mut saturated = summary;
+    saturated.saturated = true;
+    assert!(!report.draw_diagnostics_complete(&saturated));
+    report.worker_joined = false;
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.worker_joined = true;
+    report.worker_panicked = true;
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.worker_panicked = false;
+    report.error = Some("Observed publication failure".into());
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.error = None;
+    report.draw_diagnostic_snapshots = 0;
+    assert!(!report.draw_diagnostics_complete(&summary));
+}

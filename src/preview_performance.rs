@@ -192,6 +192,22 @@ pub struct WriterReport {
     pub draw_diagnostic_frames_published: u64,
     pub draw_diagnostic_snapshots: u64,
 }
+impl WriterReport {
+    /// Frame-count equality covers the final collector only while that count
+    /// remains unique. Any saturation withdraws completeness, even after join:
+    /// a dropped changed tail can have the same terminal MAX frame number.
+    pub fn draw_diagnostics_complete(
+        &self,
+        final_summary: &crate::draw_diagnostics::Summary,
+    ) -> bool {
+        !final_summary.saturated
+            && self.error.is_none()
+            && self.worker_joined
+            && !self.worker_panicked
+            && self.draw_diagnostic_snapshots > 0
+            && final_summary.frames_seen == self.draw_diagnostic_frames_published
+    }
+}
 // A typed fixed diagnostic payload, not a newly formatted Value on render.
 struct Message {
     snapshot: Value,

@@ -48,7 +48,10 @@ Monitor histogram/report construction still runs on the app thread after draw
 and swap. One final nonblocking submission uses the same slot; a full or closed
 slot drops it without retry. The terminal report states the last successfully
 published frame count and claims diagnostic completeness only when it matches
-the final collector count and the writer joined without error. This reports
+the final collector count, the collector is unsaturated and the writer joined
+without error. Any collector saturation withdraws completeness: two changed
+summaries can share the terminal MAX frame count, so equality after a final drop
+cannot establish tail coverage. This reports
 coverage of retained top records, not a complete per-frame trace. Existing file
 identity, publication, error, join and cleanup boundaries remain in force.
 
