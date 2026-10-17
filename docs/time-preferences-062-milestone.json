@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "status": "isolated_source_host_ARM_direct_ABI_pass_not_native",
+  "functional_source": "60e8148d8b6a3ed3dd7c5aff216f01644a598ce6",
+  "selected_source_inputs": 136,
+  "host": {
+    "library_passed": 763,
+    "UI_passed": 10,
+    "strict_client_Clippy_passed": true,
+    "Python_packaging_passed": 84,
+    "opaque_display_regression_failure_preserved": true
+  },
+  "ARM": {
+    "actual_build_exit": 0,
+    "ELF_bytes": 4517764,
+    "ELF_sha256": "bc26a86a9643e581b6c348df12553e98a94ca87bd733a1cd895b84f519798169",
+    "receipt_sha256": "346d6328121267a7b46c5f7e30ea1e970ebfa4d667580d1dd7530406d7b76153",
+    "actual_SDK_readelf_commands": 15,
+    "direct_ABI_matches057and061": true,
+    "ELF32_ARM_LE_EABI5_softfloat_PIE": true,
+    "loader": "/lib/ld-linux.so.3",
+    "direct_NEEDED_count": 11,
+    "required_GLIBC": [
+      "GLIBC_2.4",
+      "GLIBC_2.7",
+      "GLIBC_2.12"
+    ],
+    "RPATH_or_RUNPATH": false,
+    "known_unstable_neon_warning_preserved": true
+  },
+  "independent_Root_readback": {
+    "bound_files": 58,
+    "current_source_inputs": 136,
+    "receipt_snapshot_equal": true,
+    "ELF_header_interpreter_and_direct_ABI_checked": true
+  },
+  "source_behavior": {
+    "existing_localeInfo_GET_only": true,
+    "new_requests_workers_Root_routes_or_setters": false,
+    "header_clock_or_timezone_conversion_changed": false,
+    "opaque_preference_display_preserved": true
+  },
+  "preserved_prebuild_comparison_failure": true,
+  "helper_built": false,
+  "package_built": false,
+  "target_executed": false,
+  "TV_contacted": false,
+  "native_or_permission_or_transitive_loading_or_regional_or_performance_qualification": false,
+  "old061_cache_association_transferred": false,
+  "private_manifest_sha256": "17a5c514353ab63a9280b2b543ab93689132eb1da37dd24d38389c7e13cfb5b5",
+  "private_inspection_sha256": "af54e3b395803f432dca2c93e0aa10de40c044287a5ff4f9677736e8dde868f4"
+}

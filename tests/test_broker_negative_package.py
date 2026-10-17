@@ -129,7 +129,7 @@ class BrokerNegativePackageTests(unittest.TestCase):
                 receipt = json.loads((output / 'preview-package-receipt.json').read_text())
                 ipk = Path(receipt['ipk'])
                 self.assertEqual(ipk.parent, output)
-                self.assertEqual(ipk.name, APP + '_0.61.0_arm.ipk')
+                self.assertEqual(ipk.name, APP + '_0.62.0_arm.ipk')
                 self.assertEqual(sha(ipk.read_bytes()), receipt['sha256'])
                 archives = ar_members(ipk.read_bytes())
                 self.assertEqual(set(archives), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -162,7 +162,7 @@ class BrokerNegativePackageTests(unittest.TestCase):
                 self.assertEqual(modes['broker-negative-proof.json'], 0o644)
                 info = json.loads(files['appinfo.json'])
                 self.assertEqual((info['id'], info['version'], info['main'], info['type']),
-                                 (APP, '0.61.0', 'home-preview', 'native'))
+                                 (APP, '0.62.0', 'home-preview', 'native'))
                 self.assertEqual(info['requiredPermissions'], [])
                 self.assertEqual(modes['home-preview'], 0o755)
                 self.assertEqual(files['home-preview'], self.f.binary.read_bytes())

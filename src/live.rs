@@ -768,8 +768,8 @@ pub(crate) mod tests {
         let mut data = global_raw();
         data["replies"][crate::locale_reads::LOCALE_VALUES_REPLY] = json!({
             "returnValue":true,"settings":{"localeInfo":{"locales":{
-                "UI":"fr-CA","AUD":"en-CA","AUD2":"de_DE"
-            }}}
+                "UI":"fr-CA","AUD":"en-CA","AUD2":"de_DE","FMT":"fr-CA"
+            },"clock":"24","timezone":"America/Toronto"}}
         });
         data["replies"][crate::locale_reads::REGION_VALUES_REPLY] = json!({
             "returnValue":true,"category":"option",
@@ -793,13 +793,13 @@ pub(crate) mod tests {
     }
     fn assert_general_locale_identity(snapshot: &Snapshot) {
         let rows = &snapshot.settings["general"];
-        assert_eq!(rows.len(), 13);
+        assert_eq!(rows.len(), 16);
         let legacy = control_reads::GENERAL_OPTION.iter()
             .chain(control_reads::GENERAL_HOME.iter());
         for (row, spec) in rows[..5].iter().zip(legacy) {
             assert_eq!((&row.id, row.focus_key), (&spec.id.to_string(), spec.key));
         }
-        for (row, key) in rows[5..10].iter().zip(crate::locale_reads::Key::ALL) {
+        for (row, key) in rows[5..13].iter().zip(crate::locale_reads::Key::ALL) {
             assert_eq!(row.id, key.id());
             assert_eq!(row.focus_key, key.focus_key());
             assert!(row.constraint.is_none());
@@ -807,12 +807,12 @@ pub(crate) mod tests {
         assert!(rows.iter().all(|row| row.protected && row.context == snapshot.context));
     }
     #[test]
-    fn locale_failure_with_current_legacy_general_withdraws_all_five_locale_values() {
+    fn locale_failure_with_current_legacy_general_withdraws_all_eight_locale_values() {
         let mut snapshot = locale_snapshot();
         let mut fresh = Freshness::default();
         merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
         assert_general_locale_identity(&snapshot);
-        assert!(snapshot.settings["general"][..10].iter().all(|row| row.available));
+        assert!(snapshot.settings["general"][..13].iter().all(|row| row.available));
         let mut failed = locale_data();
         for name in [crate::locale_reads::LOCALE_VALUES_REPLY, crate::locale_reads::REGION_VALUES_REPLY] {
             failed["replies"][name] = json!({"returnValue":false});
@@ -834,9 +834,9 @@ pub(crate) mod tests {
         merge(&mut snapshot, &parse(&data, "self", 300, false), &mut fresh);
         assert_general_locale_identity(&snapshot);
         assert!(snapshot.settings["general"][..5].iter().all(|row| !row.available));
-        assert!(snapshot.settings["general"][5..10].iter().all(|row| row.available));
-        assert_eq!(snapshot.settings["general"][5..10].iter().map(|row| row.value.as_str()).collect::<Vec<_>>(),
-            ["fr-CA", "en-CA", "de_DE", "CAN", "CA"]);
+        assert!(snapshot.settings["general"][5..13].iter().all(|row| row.available));
+        assert_eq!(snapshot.settings["general"][5..13].iter().map(|row| row.value.as_str()).collect::<Vec<_>>(),
+            ["fr-CA", "en-CA", "de_DE", "CAN", "CA", "24", "America/Toronto", "fr-CA"]);
         assert_eq!(fresh.controls.get(&ControlSection::General), Some(&300));
     }
     #[test]
@@ -855,6 +855,7 @@ pub(crate) mod tests {
             assert!(rows[..5].iter().all(|row| row.available));
             assert!(rows[5..8].iter().all(|row| row.available != locale_failed));
             assert!(rows[8..10].iter().all(|row| row.available == locale_failed));
+            assert!(rows[10..13].iter().all(|row| row.available != locale_failed));
         }
     }
     #[test]
@@ -893,6 +894,29 @@ pub(crate) mod tests {
         assert!(!needs_expiry(&snapshot, &fresh, 15_400));
     }
     #[test]
+    fn time_preference_failures_replace_old_values_despite_other_general_success() {
+        let mut snapshot = locale_snapshot();
+        let mut fresh = Freshness::default();
+        merge(&mut snapshot, &parse(&locale_data(), "self", 100, false), &mut fresh);
+        let mut value = locale_data();
+        value["replies"][crate::locale_reads::LOCALE_VALUES_REPLY]["settings"]["localeInfo"]["timezone"] = "".into();
+        value["replies"][crate::locale_reads::LOCALE_VALUES_REPLY]["settings"]["localeInfo"]["clock"] = true.into();
+        merge(&mut snapshot, &parse(&value, "self", 200, false), &mut fresh);
+        let find = |id: &str| snapshot.settings["general"].iter().find(|row| row.id == id).unwrap();
+        for id in ["localeInfo.clock", "localeInfo.timezone"] {
+            assert!(!find(id).available);
+            assert_eq!(find(id).value, "Unavailable");
+        }
+        assert!(find("localeInfo.locales.FMT").available);
+        assert!(find("country").available);
+        assert!(find("quickStartMode").available);
+        assert!(!needs_expiry(&snapshot, &fresh, 15_200));
+        assert!(needs_expiry(&snapshot, &fresh, 15_201));
+        expire(&mut snapshot, &fresh, 15_201);
+        assert!(!snapshot.settings["general"].iter().any(|row| row.available));
+    }
+
+    #[test]
     fn keyboard_capability_requires_unsimulated_known_platform_info() {
         let mut raw = serde_json::json!({"replies":{"system_info":{"returnValue":true,"modelName":"OLED55G26LA","firmwareVersion":"23.25.55","sdkVersion":"9.2.2"}}});
         assert!(parse(&raw, "own", 0, false).system_keyboard);
@@ -923,7 +947,7 @@ pub(crate) mod tests {
         };
         let mut fresh = Freshness::default();
         merge(&mut snapshot, &first, &mut fresh);
-        assert_eq!(snapshot.settings["general"].len(), 13);
+        assert_eq!(snapshot.settings["general"].len(), 16);
         assert!(snapshot.settings["panel_care"]
             .iter()
             .all(|r| r.protected && r.available));

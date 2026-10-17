@@ -36,7 +36,7 @@ class ClosedNegativeArtworkPackageTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 receipt = json.loads((output / 'preview-package-receipt.json').read_text())
                 ipk = Path(receipt['ipk'])
-                self.assertEqual(ipk.name, _BASE.APP + '_0.61.0_arm.ipk')
+                self.assertEqual(ipk.name, _BASE.APP + '_0.62.0_arm.ipk')
                 self.assertEqual(_BASE.sha(ipk.read_bytes()), receipt['sha256'])
                 archives = _BASE.ar_members(ipk.read_bytes())
                 self.assertEqual(set(archives), {'debian-binary', 'control.tar.gz', 'data.tar.gz'})
@@ -64,7 +64,7 @@ class ClosedNegativeArtworkPackageTests(unittest.TestCase):
                 self.assertEqual(files['home-preview'], self.f.binary.read_bytes())
                 info = json.loads(files['appinfo.json'])
                 self.assertEqual((info['id'], info['version'], info['main']),
-                                 (_BASE.APP, '0.61.0', 'home-preview'))
+                                 (_BASE.APP, '0.62.0', 'home-preview'))
                 self.assertEqual(info['requiredPermissions'], [])
                 self.assertIs(receipt['closed_negative_artwork_proof'], True)
                 self.assertEqual(receipt['closed_negative_artwork_case'], case)
