@@ -18,7 +18,7 @@ class PassivePackage(unittest.TestCase):
         for n in normal:
             self.assertEqual(observed[n][1],normal[n][1],n)
             self.assertEqual(observed[n][0].mode,normal[n][0].mode,n)
-        marker={'schema':1,'lifetime_seconds':240,'snapshot_interval_ms':1000}
+        marker={'schema':2,'lifetime_seconds':240,'snapshot_interval_ms':1000}
         self.assertEqual(json.loads(observed[MARKER][1]),marker)
         self.assertEqual(observed[MARKER][0].mode,0o644)
         self.assertEqual(receipt['preview_passive_performance'],marker)

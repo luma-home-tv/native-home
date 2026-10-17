@@ -5,7 +5,7 @@ class Selection(unittest.TestCase):
     def env(self): return {ENV:'1','NATIVE_HOME_INTERACTIVE_SESSION':'1','NATIVE_HOME_CACHE_PRODUCER_BROKER':'bound-current-helper'}
     def test_default_off(self): self.assertIsNone(select({},**self.args()))
     def test_only_strict_marker_normal_profile(self):
-        self.assertEqual(select(self.env(),**self.args()),{'schema':1,'lifetime_seconds':240,'snapshot_interval_ms':1000})
+        self.assertEqual(select(self.env(),**self.args()),{'schema':2,'lifetime_seconds':240,'snapshot_interval_ms':1000})
         for k,v in [('main','control-preview'),('target','host'),('app_id','com.ash.nativehome.proof'),('test_identity',True),('interactive',False)]:
             args=self.args();args[k]=v
             with self.subTest(k=k),self.assertRaises(ValueError):select(self.env(),**args)

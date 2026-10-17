@@ -24,6 +24,7 @@ libc = "0.2"
 unicode-normalization = "=0.1.25"
 
 [dev-dependencies]
+plx_ui = { path = ".dependencies/plx-native/rust-modules/ui", features = ["test-support"] }
 plx_base = { path = ".dependencies/plx-native/rust-modules/base", features = ["test-support"] }
 
 [features]

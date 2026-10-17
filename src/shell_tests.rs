@@ -2393,3 +2393,60 @@ fn home_back_blocks_a_later_pointer_activation_in_the_same_input_batch() {
         "Back from Home is terminal; a later queued click must not launch an application"
     );
 }
+
+#[test]
+fn observed_and_noop_renderer_have_identical_painter_and_hit_state_trace() {
+    use crate::draw_diagnostics::{Clock, Phase, Probe, Timed};
+    use std::{cell::Cell, rc::Rc};
+    let _serial = plx_base::testlock::serial();
+    struct FakeClock(Rc<Cell<u64>>);
+    impl Clock for FakeClock {
+        fn micros(&mut self) -> u64 {
+            let n = self.0.get();
+            self.0.set(n + 1);
+            n
+        }
+    }
+    struct Trace<P> {
+        inner: P,
+        cuts: Vec<Phase>,
+    }
+    impl<P: Probe> Probe for Trace<P> {
+        fn cut(&mut self, p: Phase) {
+            self.cuts.push(p);
+            self.inner.cut(p);
+        }
+    }
+    let mut normal = Shell::new(fixture(), Preferences::default());
+    let mut observed = Shell::new(fixture(), Preferences::default());
+    for page in [Page::Home, Page::Applications, Page::Inputs, Page::Controls] {
+        normal.rebuild(page);
+        observed.rebuild(page);
+        settle(&mut normal, 100);
+        settle(&mut observed, 100);
+        let before = normal.presentation_probe();
+        assert_eq!(before, observed.presentation_probe());
+        let plain = plx_ui::draw_census::capture(|| {
+            plx_gfx::gfx::without_frame_clear(|| plx_ui::record_walk(|| normal.draw()))
+        });
+        let reads = Rc::new(Cell::new(0));
+        let mut probe = Trace {
+            inner: Timed::new(FakeClock(reads.clone())),
+            cuts: Vec::new(),
+        };
+        let seen = plx_ui::draw_census::capture(|| {
+            plx_gfx::gfx::without_frame_clear(|| {
+                plx_ui::record_walk(|| observed.draw_observed(&mut probe))
+            })
+        });
+        assert_eq!(plain, seen);
+        assert!(!plain.is_empty());
+        assert_eq!(normal.presentation_probe(), observed.presentation_probe());
+        assert_eq!(
+            probe.cuts,
+            [Phase::Clear, Phase::Chrome, Phase::Content, Phase::Finalize]
+        );
+        assert_eq!(reads.get(), 5);
+        let _ = probe.inner.finish();
+    }
+}

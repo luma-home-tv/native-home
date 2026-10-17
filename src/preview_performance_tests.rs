@@ -41,7 +41,7 @@ impl Temp {
             "artwork-cache-producer.json",
         ] {
             let raw = if n == NAME {
-                r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#
+                r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#
             } else {
                 "{}"
             };
@@ -86,11 +86,11 @@ fn marker_off_creates_no_metric_files_and_strict_selected_modes_refuse() {
 fn marker_closed_schema_bounds_and_symlinks_fail_closed() {
     for raw in [
         r#"{}"#,
-        r#"{"schema":1,"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":241,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":10}"#,
+        r#"{"schema":2,"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
+        r#"{"schema":2,"lifetime_seconds":241,"snapshot_interval_ms":1000}"#,
+        r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":10}"#,
         r#"{"schema":true,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000,"Proof":true}"#,
+        r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000,"Proof":true}"#,
     ] {
         assert!(Marker::parse(raw.as_bytes()).is_err());
     }
@@ -517,4 +517,73 @@ fn actual_worker_refuses_named_temp_symlink_after_write_without_following() {
     assert_eq!(r.published, 0);
     assert_eq!(std::fs::read(&victim).unwrap(), b"external target");
     assert!(t.0.join("performance-current-next.json").is_symlink());
+}
+
+#[test]
+fn old_marker_refuses_and_typed_diagnostics_encode_on_existing_worker() {
+    assert!(
+        Marker::parse(br#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#)
+            .is_err()
+    );
+    let t = Temp::new();
+    let caller = std::thread::current().id();
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let capture = observed.clone();
+    let hook: PublishHook = Box::new(move |stage, _| {
+        if stage == PublishStage::AfterWrite {
+            *capture.lock().unwrap() = Some(std::thread::current().id());
+        }
+    });
+    let mut w = Writer::start_inner(&t.0, Some(hook)).unwrap();
+    w.submit_observed(
+        crate::draw_snapshot::base(
+            0.,
+            crate::draw_diagnostics::Page::Home,
+            false,
+            false,
+            crate::performance::Monitor::default().report(),
+        ),
+        crate::draw_diagnostics::Summary::default(),
+    );
+    let report = w.finish();
+    assert!(report.error.is_none());
+    assert!(report.worker_joined);
+    assert_eq!(report.draw_diagnostic_snapshots, 1);
+    assert_ne!(observed.lock().unwrap().unwrap(), caller);
+    let raw = std::fs::read(t.0.join("performance-current.json")).unwrap();
+    assert!(crate::draw_snapshot::parse(&raw).is_ok());
+}
+
+#[test]
+fn typed_queue_is_nonblocking_and_disconnection_and_bad_envelope_stay_explicit() {
+    let (tx, rx) = mpsc::sync_channel(1);
+    let mut w = Writer {
+        tx: Some(tx),
+        worker: None,
+        dropped: 0,
+    };
+    let base = || {
+        crate::draw_snapshot::base(
+            0.,
+            crate::draw_diagnostics::Page::Home,
+            false,
+            false,
+            crate::performance::Monitor::default().report(),
+        )
+    };
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    assert_eq!(w.dropped, 1);
+    drop(rx);
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    assert_eq!(w.dropped, 2);
+    let t = Temp::new();
+    let mut worker = Writer::start(&t.0).unwrap();
+    let mut bad = base();
+    bad["private_field"] = json!("x".repeat(CAP));
+    worker.submit_observed(bad, crate::draw_diagnostics::Summary::default());
+    let report = worker.finish();
+    assert!(report.worker_joined && report.error.is_some());
+    assert_eq!(report.published, 0);
+    assert_eq!(std::fs::read_dir(&t.0).unwrap().count(), 0);
 }

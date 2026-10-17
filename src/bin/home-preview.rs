@@ -570,6 +570,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     let mut performance = (performance_proof || preview_observer.is_some())
         .then(native_home::performance::Monitor::default);
+    // Allocation and all phase clocks are selected only by the strict installed
+    // observer marker. Marker-free ordinary draw uses the shared Noop renderer.
+    let mut draw_diagnostics = preview_observer
+        .as_ref()
+        .map(|_| Box::<native_home::draw_diagnostics::Collector>::default());
     if interactive
         && [
             "text-input-proof.json",
@@ -1869,6 +1874,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     if e.kind == 2 {
                         if let Some(m) = &mut performance {
                             m.input(e.key, start.elapsed());
+                            if let Some(diagnostics) = &mut draw_diagnostics {
+                                diagnostics.input(e.key);
+                            }
                         }
                     }
                     if matches!(e.kind, 2..=6 | 9 | 10 | 11) {
@@ -2239,7 +2247,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 } else if plx_machine::idle::should_present(now) {
                     let draw_start = Instant::now();
-                    shell.draw();
+                    let draw_phases = if draw_diagnostics.is_some() {
+                        let mut probe = native_home::draw_diagnostics::Timed::new(
+                            native_home::draw_diagnostics::WallClock::default(),
+                        );
+                        shell.draw_observed(&mut probe);
+                        Some(probe.finish())
+                    } else {
+                        shell.draw();
+                        None
+                    };
                     loop_counters.draws += 1;
                     let draw_elapsed = draw_start.elapsed();
                     // Observation only: do not wait/pump/refresh to create a hit.
@@ -2317,7 +2334,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     loop_counters.swaps += 1;
                     loop_counters.hidden_presentations += u64::from(hidden_at.is_some());
                     if let Some(m) = &mut performance {
-                        m.presented(start.elapsed(), draw_elapsed, swap_start.elapsed());
+                        let at = start.elapsed();
+                        let swap_elapsed = swap_start.elapsed();
+                        m.presented(at, draw_elapsed, swap_elapsed);
+                        if let (Some(diagnostics), Some(phases)) =
+                            (&mut draw_diagnostics, draw_phases)
+                        {
+                            let context = diagnostics.context(shell.page().into());
+                            diagnostics.record(
+                                Some(context),
+                                phases,
+                                draw_elapsed,
+                                swap_elapsed,
+                                at,
+                            );
+                        }
                     }
                     plx_machine::idle::note_present(now);
                     idle_blanked = false;
@@ -2346,16 +2377,19 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }) {
                 last_performance_snapshot = start.elapsed();
                 if let Some(writer) = &mut passive_writer {
-                    let focus = shell.focused_item();
-                    writer.submit(native_home::preview_performance::snapshot(
-                        start.elapsed().as_secs_f64(),
-                        &format!("{:?}", shell.page()),
-                        focus.as_deref(),
-                        &format!("{:?}", shell.control_category()),
-                        hidden_at.is_some(),
-                        idle_blanked,
-                        monitor.report(),
-                    ));
+                    writer.submit_observed(
+                        native_home::draw_snapshot::base(
+                            start.elapsed().as_secs_f64(),
+                            shell.page().into(),
+                            hidden_at.is_some(),
+                            idle_blanked,
+                            monitor.report(),
+                        ),
+                        draw_diagnostics
+                            .as_ref()
+                            .expect("Observer collector")
+                            .summary(),
+                    );
                 } else {
                     let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
                     let path = output.join("performance-current.json");
@@ -2491,6 +2525,23 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             exit,
         )?;
     }
+    // One final nonblocking attempt through the same one-slot worker. A full
+    // slot can drop it; report the last published frame count, never retry or
+    // claim the terminal tail was captured when it was not.
+    if let (Some(writer), Some(diagnostics), Some(monitor)) =
+        (&mut passive_writer, &draw_diagnostics, &performance)
+    {
+        writer.submit_observed(
+            native_home::draw_snapshot::base(
+                start.elapsed().as_secs_f64(),
+                shell.page().into(),
+                hidden_at.is_some(),
+                idle_blanked,
+                monitor.report(),
+            ),
+            diagnostics.summary(),
+        );
+    }
     let passive_writer_report =
         passive_writer.map(native_home::preview_performance::Writer::finish);
     let packaged_icon_shutdown = shell.finish_packaged_icons();
@@ -2583,7 +2634,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
     if let Some(writer) = passive_writer_report {
         report["preview_passive_performance"] = serde_json::json!({
-            "schema":1,"profile":"preview-passive-observer","marker":preview_observer,
+            "schema":2,"profile":"preview-passive-observer-draw-v2","marker":preview_observer,
+            "draw_diagnostic_frames_seen":draw_diagnostics.as_ref().map(|d|d.summary().frames_seen),
+            "draw_diagnostics_complete":writer.error.is_none() && writer.worker_joined && !writer.worker_panicked && writer.draw_diagnostic_snapshots>0 && draw_diagnostics.as_ref().is_some_and(|d|d.summary().frames_seen==writer.draw_diagnostic_frames_published),
+            "draw_diagnostics_in_worker_snapshots_only":true,
             "actual_normal_profile":passive_profile,"writer":writer,
             "capture_marker_selected":false,"normal_Root_artwork":false,
             "source_or_pixels_or_GPU_completion_qualified":false,

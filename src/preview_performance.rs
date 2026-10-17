@@ -20,7 +20,7 @@ use std::{
 pub const NAME: &str = "preview-performance-observer.json";
 pub const LIMIT_SECONDS: u64 = 240;
 pub const SNAPSHOT_MS: u64 = 1000;
-const CAP: usize = 16384;
+const CAP: usize = crate::draw_snapshot::MAX_BYTES;
 fn invalid(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
@@ -38,7 +38,7 @@ impl Marker {
         }
         let m: Self =
             serde_json::from_slice(raw).map_err(|_| invalid("Closed observer marker schema"))?;
-        if m.schema != 1
+        if m.schema != u32::from(crate::draw_snapshot::SCHEMA)
             || m.lifetime_seconds != LIMIT_SECONDS
             || m.snapshot_interval_ms != SNAPSHOT_MS
         {
@@ -189,9 +189,16 @@ pub struct WriterReport {
     pub io_on_snapshot_worker: bool,
     pub snapshot_bytes_limit: usize,
     pub durable_snapshot_claimed: bool,
+    pub draw_diagnostic_frames_published: u64,
+    pub draw_diagnostic_snapshots: u64,
+}
+// A typed fixed diagnostic payload, not a newly formatted Value on render.
+struct Message {
+    snapshot: Value,
+    diagnostics: Option<crate::draw_diagnostics::Summary>,
 }
 pub struct Writer {
-    tx: Option<SyncSender<Value>>,
+    tx: Option<SyncSender<Message>>,
     worker: Option<JoinHandle<WriterReport>>,
     dropped: u64,
 }
@@ -299,7 +306,7 @@ impl Writer {
                 return Err(invalid("Observer refuses existing output"));
             }
         }
-        let (tx, rx) = mpsc::sync_channel::<Value>(1);
+        let (tx, rx) = mpsc::sync_channel::<Message>(1);
         let worker = thread::Builder::new()
             .name("home-passive-metrics".into())
             .spawn(move || {
@@ -309,9 +316,15 @@ impl Writer {
                     ..WriterReport::default()
                 };
                 let mut prior = None;
-                for snapshot in rx {
+                for message in rx {
+                    let frames = message.diagnostics.map(|d| d.frames_seen);
                     let result = (|| -> io::Result<()> {
-                        let raw = serde_json::to_vec(&snapshot)?;
+                        let raw = match message.diagnostics {
+                            Some(diagnostics) => {
+                                crate::draw_snapshot::encode(message.snapshot, diagnostics)?
+                            }
+                            None => serde_json::to_vec(&message.snapshot)?,
+                        };
                         if raw.len() > CAP {
                             return Err(invalid("Observer snapshot bound"));
                         }
@@ -417,6 +430,11 @@ impl Writer {
                         break;
                     }
                     report.published += 1;
+                    if let Some(frames) = frames {
+                        report.draw_diagnostic_frames_published = frames;
+                        report.draw_diagnostic_snapshots =
+                            report.draw_diagnostic_snapshots.saturating_add(1);
+                    }
                 }
                 report
             })?;
@@ -428,8 +446,25 @@ impl Writer {
     }
     /// Bounded one-slot queue: no file access, serialization or waiting on IO here.
     pub fn submit(&mut self, snapshot: Value) {
+        self.send(Message {
+            snapshot,
+            diagnostics: None,
+        });
+    }
+    /// No diagnostic JSON conversion, file IO, wait or extra queue on caller.
+    pub fn submit_observed(
+        &mut self,
+        snapshot: Value,
+        diagnostics: crate::draw_diagnostics::Summary,
+    ) {
+        self.send(Message {
+            snapshot,
+            diagnostics: Some(diagnostics),
+        });
+    }
+    fn send(&mut self, message: Message) {
         if let Some(tx) = &self.tx {
-            match tx.try_send(snapshot) {
+            match tx.try_send(message) {
                 Ok(()) => {}
                 Err(TrySendError::Full(_) | TrySendError::Disconnected(_)) => {
                     self.dropped = self.dropped.saturating_add(1)
