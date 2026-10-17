@@ -318,11 +318,22 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. The OLED55G26LA G2 retains verified 0.61.0 and its
-24-entry ordinary icon cache. Its source167 diagnostic-branch executable passed
+package modes and removal. The OLED55G26LA G2 retains the
+[Settings-lifecycle 0.61.0 delivery](docs/g2-retained-settings-lifecycle-061.md)
+from source f5, with the new executable and producer association. Its ordinary
+cache now holds two 24-entry producer generations for the same supplied catalogue.
+The earlier source167 diagnostic-branch executable passed
 the 24-card/six-category tour, two empty LG keyboard cycles, black idle/wake and
 natural exit, with original preferences and sampled Core preserved in the
-[G2 delivery record](docs/g2-retained-preview061.md).
+[G2 delivery record](docs/g2-retained-preview061.md). The later
+[ordinary Settings validation](docs/ordinary-settings-validation-progress.md)
+verifies one same-process LG Picture return and usable post-return navigation,
+followed by old-build restoration. A separate fresh Home/Apps/Home/Back scope then
+retained the matching new build, with independently replayed state preservation
+and temporary cleanup. Earlier failed scopes and saved-reader corrections remain
+recorded. Future rollback uses the current f5 bundle/IPK and private state/cache48;
+the former executable is historical. Physical input, performance and the wider
+dashboard goal remain open.
 The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
