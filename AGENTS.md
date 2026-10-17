@@ -104,6 +104,30 @@ no observer marker, wake, physical/performance/per-key pixels or promotion was
 qualified. This scope is closed; new work requires fresh actual f5 state/new
 lease and separately reviewed instrumented admission.
 
+The first instrumented N3 scope is closed in
+`docs/passive-performance-observer-g2-first-attempt.md`: original operator0 and
+exact f5/stateFD/rawprefs/cache48/sampled Core/runtime/scoped cleanup/original
+lease-agent preservation pass. Component remains false: source marker exit at
+240.021s, four SDK keys105/108/28/412, no final exit Back,12 captures. Independent
+saved audit/six adverse groups and byte-identical Root replay across17,770
+bindings pass. Preserve the disabled scaffold and literal-ENOENT reader adapter
+failure; dead actors were never rebound and no native retry followed. Two live
+snapshot epochs were accepted, two replacements stayed pending; explicit final
+joined epoch and terminal-state reread are absent. Two collections precede/follow
+rollback; source-memory first manifest stamp/final dispatch time are not
+independently serialized. Partial389-frame/four-key app metrics are schema and
+cumulative-data checked, not fullN/I, per-phase percentile, physical/GPU/panel,
+improvement or promotion proof. The72ms draw outlier has no established cause.
+Retained f5/1c4 and Root-off remain; no global mount restoration/cause claim.
+Do not rerun42369 or its dates/nonce/lease. Next source work batches redundant
+read-only probes without weakening wholeSHA/5s/actor/context/cache/lease/HOLD
+gates or extending marker240. The local-wait v1 transient lease-loss gap is
+non-admissible; no revised carrier or native scope is approved by this result.
+Draft PR7 preserves the separate private same-Cache-after-real-join source
+prerequisite. Its37 host tests/strict Clippy are not ARM/package/runtime/native
+qualification; no maintenance/deletion/eviction/Root action or product caller is
+enabled. Keep that branch and compiled d221 performance inputs separate.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on

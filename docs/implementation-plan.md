@@ -9,6 +9,15 @@ passes its own matching native component, restoration and saved replay too.
 Next measure separate navigation and idle/wake scopes. Neither ordinary result
 is a retained promotion or performance result.
 
+The [first instrumented G2 attempt](passive-performance-observer-g2-first-attempt.md)
+now supplies verified partial app-local timing data and complete restoration,
+but its original marker limit ended the app before full route acceptance. Reduce
+redundant read-only probe overhead while retaining all admission/input/HOLD
+checks before a new measurement scope. The separate
+[worker ownership prerequisite](https://github.com/luma-home-tv/native-home/pull/7)
+is host-tested source only; maintenance transactions and native integration
+remain pending.
+
 The current delivery target is a responsive native Home dashboard for the
 OLED55G26LA G2 on webOS24. The G2 is always available for coordinator-owned tests.
 The C2 is available only from 00:00 to 06:00 Europe/London or when the user

@@ -71,12 +71,19 @@ ownership is distinct from installed metadata and grants no TV permission. The
 build runner's original stop before packaging is preserved separately from the
 later package step. Private resources and binaries are not published.
 
-Next, run a fresh backed-up G2 diagnostic scope. Require actual
-normal selections and cache participation, independently sampled process
-resources, known closure and exact restoration of the retained f5 package,
-preferences, cache and measured Core state. The separate cache-consumer trial
-and its original artifact identities remain unchanged. Neither TV has received
-this observer build.
+The [current ordinary prerequisite](current-ordinary-g2-native.md) now passes its
+own matching G2 route and restoration. The
+[first instrumented G2 attempt](passive-performance-observer-g2-first-attempt.md)
+collected partial app-local timing data but reached the original marker limit
+before full route acceptance. Independent saved review and coordinator replay
+verify exact retained f5/state/cache/Core/runtime preservation and scoped cleanup.
+The retained installation remains f5; the C2 has not received this observer.
+
+Next reduce redundant read-only probe overhead, preserving all context, lease,
+whole-frame, dispatch-freshness and unknown-state barriers before another fresh
+scope. Full native workload acceptance, matched resource/performance checks and
+idle/wake qualification remain pending. The separate cache-consumer trial and
+its original artifact identities remain unchanged.
 
 For the optional real-artifact integration test, explicitly set
 `LUMA_TEST_PRIVATE_ARTIFACT_ROOT` to the private evidence directory. A configured
