@@ -56,8 +56,12 @@ opaque216-byte preference record and sampled metadata, and compared the sampled
 Core5+19 and complete app-source maps before/after. The ordinary retained UID
 was absent. Four measured runtime/cache/state-alias paths were literally absent;
 the jailed runtime alias was not measured. These are observations for planning,
-not future absence or namespace authority. Saved-data independent review is
-pending.
+not future absence or namespace authority. Independent saved-data review and a
+byte-identical coordinator replay pass, rehashing1,339 input references and
+preserving all1,327 original closed files' bytes and sampled metadata. Four
+adverse reader groups pass. Preserve the first saved-reader diagnostic-constant
+adapter failure separately; its correction required no TV rerun. The final
+bundle was not separately rehashed, and no full mount-table comparison was made.
 
 The observed screen was ineligible for app testing: another application remained
 beneath the screensaver. No app launch, input, package, settings or permission
