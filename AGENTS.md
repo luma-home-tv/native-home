@@ -45,7 +45,24 @@ are closed. Normal Root artwork stays off. Independent saved reviews plus Root
 642/556 binding readbacks pass; these are overlapping finite scopes, not every
 operation or all-pixel/physical/performance proof. Preserve the observed270→276
 read-only SDK suffix without a mount restoration/cause claim.
-Future tests need a fresh actual061 full bundle/state/cache baseline and new
+The later `docs/ordinary-settings-validation-progress.md` records successful
+additive 16+8 preparation for functional f5b4d775, preserving the original24 and
+restoring exact old061. The current cache has48 entries across two producer
+generations for the same supplied24-key catalogue. Its normal candidate attempt
+stopped before LG Settings on the original5s input guard and remains exit1.
+Separate fresh cleanup exited0, restored the above old061 ELF, removed the mapped
+runtime leaf/stage2 and preserved all48 full bodies/identities, preferences/state,
+sampledCore and oldruntime prefix. Lease/agent closed. Coordinator direct saved
+comparisons, finite independent cleanup review and byte-identical Root replay
+of its658 selected bindings pass. This is not every-operation replay. No SDKclose
+was sent because the original actor was already freshly confirmed absent.
+The source-only operator ordering/bundle-batching fixes do not qualify native
+timing or candidate retention. Next focus on one normal Settings return with
+usable postreturn Controls/Home/Apps/Back and ALWAYS old061 restoration, then a
+separate fresh matched-artifact reentry/delivery. Preserve all earlier failures;
+do not reuse expired scopes or transfer resource authority through checkpoints.
+
+Future tests need a fresh actual061 full bundle/state/cache48 baseline and new
 lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
 nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build
 physical input/performance/reliability and cache version transition/refresh/

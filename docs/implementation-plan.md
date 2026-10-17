@@ -17,8 +17,8 @@ synthetic design illustrations, not screenshots of implemented functionality.
 The [interface specification](../design.json) records the layout and interaction
 requirements; the milestone records below identify what has actually been proved.
 The [fidelity map](design-fidelity.md) compares the original concepts with the
-current native interface. G2 now retains verified [0.61.0](g2-retained-preview061.md)
-and its 24-entry ordinary icon cache, following the earlier
+current native interface. G2 retains verified [0.61.0](g2-retained-preview061.md)
+and now has a [48-entry cache across two producer generations](ordinary-settings-validation-progress.md), following the earlier
 [0.57 caption-preference delivery](g2-retained-preview057.md). The historical
 [0.58 cache observation](ordinary-artwork-cache-058-native.md) reached ordinary
 Home/Apps cache associations and returned to exact 0.57 through separately
@@ -71,11 +71,21 @@ normal Search, one-keyboard dismissal/reopen, remote focus/hold/wheel, an owned
 app launch and LG Settings return, reversible favourites and repeated entry/idle.
 The recorded normal sessions establish Home/Apps/Back and idle/wake within their
 respective scopes; latest retained G2 is [0.61](g2-retained-preview061.md) and
-latest verified C2 is 0.48. Current G2 has 24 retained icon entries; older
+latest verified C2 is 0.48. Current G2 has 48 retained icon entries across two
+producer generations for the same supplied 24-key catalogue; older
 cache-absent/057 carriers cannot be reused.
 Earlier isolated results remain useful component evidence. Qualify the relevant
 normal flows using the retained artifacts where possible, then change source only
 for an observed gap. C2 keyboard and input results require their own evidence.
+
+The [ordinary Settings validation progress](ordinary-settings-validation-progress.md)
+records completed additive preparation, a normal attempt that stopped at the
+input freshness guard before Settings, and separate successful old061 restoration.
+Prioritise a focused normal Settings return and usable postreturn navigation,
+followed by independently bounded fresh reentry. Preserve the full delivery goal:
+these intermediate tests do not qualify a retained candidate or comprehensive
+control coverage. Cache compatibility and interface work can proceed locally in
+parallel while the coordinator alone admits and operates each TV test.
 
 The bounded thumbnail fix now has matching ARM artifacts and a successful
 reviewed batch/ordinary Root-free consumer trial, with per-attempt disposition
