@@ -306,7 +306,7 @@ impl ScreenArg for Page {
     fn title(&self) -> Option<&str> {
         Some(match self {
             Self::Home => "Home",
-            Self::Applications => "Applications",
+            Self::Applications => "Apps",
             Self::Inputs => "Inputs",
             Self::Controls => "Controls",
             Self::Picture => "Picture",
@@ -455,23 +455,25 @@ impl CardSource<HomeHost> for Cards {
                     ),
                 );
             }
-        } else if !c.has_icon() && !c.loading_icon {
-            Label::new(
-                c.initials.as_ptr(),
-                theme::size::DISPLAY,
-                theme::TEXT_PRIMARY,
-            )
-            .bold()
-            .h(HAlign::Center)
-            .draw(p, tile.rect);
-        }
-        if c.loading_icon && !c.has_icon() && tile.focused {
-            p.rring(
-                tile.rect,
-                theme::CARD_RING_RAD,
-                theme::CARD_SHEEN_W,
-                theme::TEXT_SECONDARY,
-            );
+        } else if !c.has_icon() {
+            if c.loading_icon {
+                Label::new(
+                    c"Loading…".as_ptr(),
+                    theme::size::CAPTION,
+                    theme::TEXT_SECONDARY,
+                )
+                .h(HAlign::Center)
+                .draw(p, tile.rect);
+            } else {
+                Label::new(
+                    c.initials.as_ptr(),
+                    theme::size::DISPLAY,
+                    theme::TEXT_PRIMARY,
+                )
+                .bold()
+                .h(HAlign::Center)
+                .draw(p, tile.rect);
+            }
         }
         if input_key(&c.id).is_none() && !tile.focused {
             let text = cstr(&plx_gfx::text::elide(
@@ -1352,13 +1354,13 @@ impl Shell {
                     if page == Page::Applications {
                         "OK to open • hold OK for app options"
                     } else {
-                        "OK to open • hold OK to add or remove a favourite"
+                        "OK to open • hold OK to add or remove a favourite • Back to exit"
                     }
                 } else {
                     if page == Page::Applications {
                         "Hold OK for app options • launches disabled in this preview"
                     } else {
-                        "Hold OK to add or remove a favourite • launches disabled in this preview"
+                        "Hold OK to add or remove a favourite • launches disabled in this preview • Back to exit"
                     }
                 }
             }
