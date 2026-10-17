@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "status": "known_partial_marker_free_campaign_restored057",
+  "date": "2026-10-17",
+  "functional_source": "76117505dd837ead35e16a550ae194185ef3acfd",
+  "source_input_count": 136,
+  "normal_package_sha256": "b1983d33897c2ca6d075072501a1e52cd78530312dcc79601e72665ac3a2136f",
+  "normal_bundle_entries": 33,
+  "normal_payload_files": 31,
+  "normal_session_proof_marker": false,
+  "operator_actual_returncode": 1,
+  "operator_elapsed_seconds": 1735.635313987732,
+  "original_operation_seconds": 1800,
+  "original_workflow_error": null,
+  "unknown_HOLD": false,
+  "full_campaign_qualified": false,
+  "retained061_promoted": false,
+  "retained_G2_version": "0.57.0",
+  "C2_contacted": false,
+  "preparation": {
+    "separately_qualified_batches": [
+      16,
+      8
+    ],
+    "supplied_preferred_keys": 24,
+    "first_batch_identities_and_bodies_preserved": true,
+    "exact_supplied_key_body_set": true
+  },
+  "ordinary": {
+    "normal_Root_artwork_off": true,
+    "naturally_exited": "back_from_home",
+    "views": [
+      "apps",
+      "controls",
+      "home",
+      "inputs"
+    ],
+    "visually_reviewed_registered_id_count": 24,
+    "rendered_categories": [
+      "accessibility",
+      "general",
+      "network",
+      "panel-care",
+      "picture",
+      "sound"
+    ],
+    "category_row_activation_qualified": false,
+    "preferences_write_queue_attempts": 0,
+    "cache_adoptions": 1,
+    "cache_uploads": 24,
+    "packaged_uploads": 4,
+    "uploads": 28,
+    "deletes": 28,
+    "remaining_textures": 0,
+    "worker_joined": true,
+    "worker_panicked": false,
+    "reported_GL_errors": 0,
+    "native_per_key_drawing_ledger": null,
+    "keyboard_cycles_performed": 0,
+    "idle_or_wake_performed": false,
+    "physical_input_or_performance_or_pixel_identity_qualified": false
+  },
+  "known_cleanup": {
+    "retained057restored": true,
+    "original_preferences_preserved": true,
+    "Core19plus5_preserved": true,
+    "old_runtime_immutable_bytes_and_declared_log_prefix_preserved": true,
+    "new_mapped_runtime_and_cache_and_staging_absent": true,
+    "Root_scope_absent": true,
+    "no_retained_Preview_uninstall": true,
+    "OS_exit_status_measured": false
+  },
+  "host_closeout": {
+    "lease_release_verified": true,
+    "agent_cleanup_verified": true,
+    "errors": {}
+  },
+  "SDK_mount_observation": {
+    "original_rows": 260,
+    "final_rows": 266,
+    "new_readonly_duplicate_rows": 6,
+    "controlled_own_launches": 3,
+    "original_prefix_preserved": true,
+    "cache_mount_shapes_unchanged": true,
+    "mount_operations_performed": false,
+    "mounts_restored_claim": false,
+    "universal_SDK_behavior_claim": false
+  },
+  "independent_saved_review": {
+    "status": "finite_selected_receipt_comparison_passed",
+    "review_sha256": "e54fee14619bb1ae72e30476ab8aa7a5b8c2ce100d849a4dcbff1b97e2300236",
+    "selected_bindings": 239,
+    "coordinator_independent_readback_passed": true,
+    "whole_remote_operation_replay_claim": false
+  },
+  "private_receipt_sha256": {
+    "operator_terminal": "9754926dc9c8bc6c664d1ca8aae2b7143f4c1b01201dc267c66568133f5ab697",
+    "operator_summary": "a38e452066e076e2e26658f9a1a0a593b57b6a27ff58a77f5a0923e291b3e8c2",
+    "normal_terminal": "18215174688aee54fd05d5bcf9bb158f4cfb60465494623b5b7e3edb98533b4f",
+    "normal_source_grade": "3e380ce6ed0454aef182e814258fb043985f538ccaeb8a33e3b9777c4f761053",
+    "final057_bundle": "cd3f3a720800a7225dab56d46f021273f0a893574b4693bc0549b90959123a10",
+    "known_cleanup": "68fb69abbbb8ffb6d461278aa38ba3903c96235fd283580cfcc06d6f2f59bf8c",
+    "host_closeout": "946d44356da787bf4f2dfc5212c231ac0e0f289e8a711ad63c08591bedc05744"
+  },
+  "required_next": [
+    "fresh measured-budget scope and preparation nonces",
+    "Search keyboard cycles before one downward drawer pass",
+    "native empty keyboard reopen/dismiss and idle/wake",
+    "backed-up retained delivery",
+    "fresh app/Settings return, physical input and reversible favourites",
+    "matching ordinary performance and cache maintenance"
+  ]
+}

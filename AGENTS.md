@@ -84,6 +84,14 @@ C2 untouched, normal Root off. Prioritise a fresh backed-up marker-free061
 delivery/practical campaign; never reuse this expired scope or claim its proof
 marker exists in the intended retained package.
 
+The first marker-free delivery attempt in
+`docs/g2-retained-preview061-first-attempt.md` intentionally stopped after its
+24-icon/Inputs/six-category tour to preserve cleanup time. Original exit 1 is a
+known partial, not a crash or HOLD; exact057, state and known cleanup/lease/agent
+closeout pass. Keyboard/idle and retained061 remain unqualified. Future runs need
+fresh nonces/baselines and a measured finite budget, with Search before the single
+drawer pass; never extend or restart this closed scope.
+
 `probes/native-surface` now preserves the ordinary held-window prerequisite,
 with two render-gate tests, 28 environment cases, strict Clippy, a matching ARM
 build and independent SDK archive/ELF/source audit. Its new six-file font-bearing

@@ -53,6 +53,10 @@ supplied 24-key set, followed by independently audited 0.57 restoration and
 cleanup. The earlier [first](docs/controls-and-icon-observations-061-first-attempt.md)
 and [second](docs/controls-and-icon-observations-061-second-attempt.md) failures
 remain recorded. Retained 0.61 delivery and practical release acceptance remain open.
+The later [marker-free delivery attempt](docs/g2-retained-preview061-first-attempt.md)
+observed all 24 icons and six Controls categories, then deliberately ended before
+keyboard/idle to preserve cleanup time. Its original exit 1 and exact 0.57
+restoration are recorded; no retained promotion occurred.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout

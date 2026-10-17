@@ -94,6 +94,15 @@ attempts. Next prioritise the marker-free retained artifact's practical daily
 loop and backed-up delivery, then physical input/favourites and matching
 performance. Do not repeat population solely to increase component counts.
 
+The [first marker-free delivery attempt](g2-retained-preview061-first-attempt.md)
+now records the intended package's 24-icon drawer and six-category tour, natural
+exit and exact 0.57 restoration. It remains a partial campaign: keyboard/idle were
+skipped to preserve the fixed cleanup budget. Run Search first on the next tour,
+then return to the first app for one downward pass. Budget a fresh scope from
+measured phase/cleanup durations; preserve every Root, scene, identity, input and
+unknown-outcome guard. Retained promotion and the remaining practical checks are
+still required.
+
 Split host work into independent streams, with one coordinator admitting frozen
 artifacts and serialising each TV's tests:
 
