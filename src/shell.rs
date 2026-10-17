@@ -1103,6 +1103,7 @@ pub struct Shell {
     control_caption_page: Option<Page>,
     control_caption_context: Option<Context>,
     control_context_current: bool,
+    control_description_current: bool,
     control_breadcrumb: CString,
     menu: Option<AppMenu>,
     clock: crate::clock::View,
@@ -1216,6 +1217,7 @@ impl Shell {
             control_caption_page: None,
             control_caption_context: None,
             control_context_current: false,
+            control_description_current: false,
             control_breadcrumb: cstr(""),
             menu: None,
             clock: crate::clock::View::default(),
@@ -1369,6 +1371,12 @@ impl Shell {
             Page::RangeEditor => "Left/Right adjust • Down choose Apply • Back cancel",
             Page::PointerSpeed if self.pointer_pending => "Applying pointer speed…",
             Page::PointerSpeed => "OK apply selection • Back cancel",
+            Page::Accessibility | Page::Controls
+                if self.surface.control_page == Some(Page::Accessibility)
+                    && self.description_value().is_some() =>
+            {
+                "Audio-description level can be adjusted here • more controls in LG Settings"
+            }
             Page::General if self.pointer_enabled => {
                 "Pointer speed can be adjusted here • more controls in LG Settings"
             }
@@ -1762,8 +1770,11 @@ impl Shell {
             .live_state
             .as_ref()
             .is_some_and(|f| Freshness::current(f.picture, self.live_now));
+        let description_current =
+            page == Some(Page::Accessibility) && self.description_value().is_some();
         if self.control_caption_page == page
             && self.control_context_current == current
+            && self.control_description_current == description_current
             && self.control_caption_context.as_ref() == Some(&self.snapshot.context)
         {
             return;
@@ -1785,12 +1796,16 @@ impl Shell {
             Some(Page::General) if self.pointer_enabled => {
                 cstr("Pointer speed can be adjusted here")
             }
+            Some(Page::Accessibility) if description_current => {
+                cstr("Audio-description level can be adjusted here")
+            }
             Some(Page::Accessibility) => cstr("Accessibility readings • LG-managed controls"),
             Some(_) => cstr("General readings • LG-managed controls"),
             None => cstr(""),
         };
         self.control_caption_page = page;
         self.control_context_current = current;
+        self.control_description_current = description_current;
         self.control_caption_context = Some(self.snapshot.context.clone());
     }
     fn refresh_shown_data(&mut self, before: &Snapshot) {
@@ -2098,6 +2113,26 @@ impl Shell {
         };
         if !Freshness::current(stamp, self.live_now) {
             return "Reading unavailable • last state kept".into();
+        }
+        if let Some(section) = match shown {
+            Page::General => Some("general"),
+            Page::Accessibility => Some("accessibility"),
+            _ => None,
+        } {
+            let rows = self.snapshot.settings.get(section);
+            let current_row =
+                |row: &Setting| row.available && row.still_current(&self.snapshot.context);
+            if !rows.is_some_and(|rows| rows.iter().any(current_row)) {
+                return "Reading unavailable • last state kept".into();
+            }
+            if rows.is_some_and(|rows| rows.iter().any(|row| !current_row(row))) {
+                return if fresh.simulated {
+                    "Simulated update • some readings unavailable"
+                } else {
+                    "Live TV state • some readings unavailable"
+                }
+                .into();
+            }
         }
         let label = if fresh.simulated {
             "Simulated update"
@@ -3224,7 +3259,12 @@ impl Shell {
                         }
                     }
                     Some(plx_ui::form::Activation::Action(a)) => {
-                        self.status = cstr("View only — use LG Settings for changes");
+                        self.status = cstr(match &a {
+                            Action::OpenLgSettings | Action::OpenLgSettingsSection(_) => {
+                                "Opening LG Settings…"
+                            }
+                            _ => "View only — use LG Settings for changes",
+                        });
                         self.queue_external_action(a);
                     }
                     None => {}

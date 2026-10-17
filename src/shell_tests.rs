@@ -1841,6 +1841,174 @@ fn numeric_shell() -> Shell {
     s
 }
 #[test]
+fn accessibility_help_tracks_the_actual_editor_without_changing_its_admission() {
+    let _serial = plx_base::testlock::serial();
+    for page in [Page::Accessibility, Page::Controls] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        shell.open(Page::Accessibility);
+        shell.open(page);
+        let preferences = shell.preferences().clone();
+        assert!(shell.status.to_str().unwrap().contains("View only"));
+        assert!(shell
+            .control_breadcrumb
+            .to_str()
+            .unwrap()
+            .contains("LG-managed"));
+        shell.description_sample(
+            Some(crate::description_level::Level::new(10).unwrap()),
+            100,
+            100,
+        );
+        assert!(shell
+            .status
+            .to_str()
+            .unwrap()
+            .contains("Audio-description level can be adjusted"));
+        assert_eq!(
+            shell.control_breadcrumb.to_str().unwrap(),
+            "Audio-description level can be adjusted here"
+        );
+        let row = shell
+            .surface
+            .table
+            .index_of(&"audioDescriptionVolume".into())
+            .unwrap();
+        assert_eq!(
+            shell.surface.table.activate(row),
+            Some(plx_ui::form::Activation::Action(
+                Action::OpenDescriptionLevel
+            ))
+        );
+        shell.age_description(8_101);
+        assert!(shell.status.to_str().unwrap().contains("View only"));
+        assert!(shell
+            .control_breadcrumb
+            .to_str()
+            .unwrap()
+            .contains("LG-managed"));
+        let row = shell
+            .surface
+            .table
+            .index_of(&"audioDescriptionVolume".into())
+            .unwrap();
+        assert!(shell.surface.table.activate(row).is_none());
+        assert_eq!(shell.preferences(), &preferences);
+        assert!(shell.take_requests().is_empty());
+    }
+}
+
+#[test]
+fn lg_overview_activation_reports_opening_and_keeps_the_fixed_route() {
+    let _serial = plx_base::testlock::serial();
+    for section in [
+        SettingsSection::Picture,
+        SettingsSection::Sound,
+        SettingsSection::Network,
+        SettingsSection::Accessibility,
+        SettingsSection::General,
+        SettingsSection::PanelCare,
+    ] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        shell.open(section.page());
+        assert!(shell.focus_lg_settings());
+        tap(&mut shell);
+        assert_eq!(shell.status.to_str().unwrap(), "Opening LG Settings…");
+        assert_eq!(
+            shell.take_requests(),
+            vec![if section == SettingsSection::Picture {
+                Action::OpenLgSettings
+            } else {
+                Action::OpenLgSettingsSection(section)
+            }]
+        );
+    }
+}
+
+#[test]
+fn general_reading_header_distinguishes_partial_failed_and_expired_groups() {
+    let _serial = plx_base::testlock::serial();
+    for simulated in [false, true] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        let mut raw = crate::live::tests::global_raw();
+        shell.apply_live(
+            &crate::live::parse(&raw, "com.example.self", 100, simulated),
+            100,
+        );
+        shell.open(Page::General);
+        assert!(shell.snapshot.settings["general"]
+            .iter()
+            .any(|row| row.available));
+        assert!(shell.snapshot.settings["general"]
+            .iter()
+            .any(|row| !row.available));
+        assert_eq!(
+            shell.reading_label(),
+            if simulated {
+                "Simulated update • some readings unavailable"
+            } else {
+                "Live TV state • some readings unavailable"
+            }
+        );
+        shell.age_live(15_101);
+        assert_eq!(
+            shell.reading_label(),
+            "Reading unavailable • last state kept"
+        );
+        for group in ["general_option_values", "general_home_values"] {
+            raw["replies"][group]["returnValue"] = false.into();
+        }
+        shell.apply_live(
+            &crate::live::parse(&raw, "com.example.self", 15_200, simulated),
+            15_200,
+        );
+        assert!(shell.snapshot.settings["general"]
+            .iter()
+            .all(|row| !row.available));
+        assert_eq!(
+            shell.reading_label(),
+            "Reading unavailable • last state kept"
+        );
+        assert!(shell.take_requests().is_empty());
+    }
+}
+#[test]
+fn accessibility_reading_header_withdraws_failed_optional_caption_and_legacy_groups() {
+    let _serial = plx_base::testlock::serial();
+    for simulated in [false, true] {
+        let mut shell = Shell::new(fixture(), Preferences::default());
+        let mut raw = crate::live::tests::global_raw();
+        shell.apply_live(
+            &crate::live::parse(&raw, "com.example.self", 100, simulated),
+            100,
+        );
+        shell.open(Page::Accessibility);
+        assert!(shell.snapshot.settings["accessibility"]
+            .iter()
+            .any(|row| row.available));
+        assert!(
+            !shell.snapshot.settings["accessibility"]
+                .last()
+                .unwrap()
+                .available
+        );
+        assert!(shell.reading_label().contains("some readings unavailable"));
+        raw["replies"]["accessibility_values"]["returnValue"] = false.into();
+        shell.apply_live(
+            &crate::live::parse(&raw, "com.example.self", 200, simulated),
+            200,
+        );
+        assert!(shell.snapshot.settings["accessibility"]
+            .iter()
+            .all(|row| !row.available));
+        assert_eq!(
+            shell.reading_label(),
+            "Reading unavailable • last state kept"
+        );
+        assert!(shell.take_requests().is_empty());
+    }
+}
+
+#[test]
 fn numeric_editor_withdraws_stale_or_changed_samples_and_never_turns_staging_into_a_write() {
     let _serial = plx_base::testlock::serial();
     let mut s = numeric_shell();
