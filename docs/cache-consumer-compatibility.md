@@ -44,6 +44,12 @@ pixels, performance or a retained update. Private assets and binaries remain
 outside the public repository. The G2 continues to retain the separately tested
 [Settings-lifecycle build](g2-retained-settings-lifecycle-061.md).
 
+The [first temporary G2 trial](cache-consumer-g2-first-attempt.md) reached a
+captured Home screen but did not complete navigation. Its original exit 1 and
+negative component result remain separate from the successful f5 restoration
+and cleanup. Native selector/worker and Home/Apps acceptance still require a
+fresh trial; the retained installation remains f5.
+
 ## Next device acceptance
 
 Use a fresh complete baseline of that actual retained executable and package,
