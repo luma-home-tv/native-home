@@ -2369,6 +2369,7 @@ impl Shell {
     pub fn finish_packaged_icons(&mut self) -> Option<serde_json::Value> {
         let mut controller = self.packaged_icons.take()?;
         let before = controller.stats();
+        let cache_association = controller.cache_association_observation().cloned();
         let done = controller.finish();
         self.textures.clear();
         for card in &mut self.surface.cards.items {
@@ -2384,6 +2385,8 @@ impl Shell {
             "cache_readiness_is_index_not_images":true,
             "cache_uploads":before.cache_uploads,"packaged_uploads":before.packaged_uploads,
             "cache_adoptions":before.cache_adoptions,
+            "cache_consumer_association_observation":cache_association,
+            "cache_consumer_association_is_not_image_coverage":true,
             "gl":self.packaged_gl.receipt()}))
     }
     /// Diagnostic readiness only. Ordinary navigation never waits for artwork.

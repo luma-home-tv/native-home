@@ -66,6 +66,7 @@ impl Loader for RealLoader {
         self.counts.lock().unwrap().adopted += 1;
         self.at(Stage::Adopt);
         self.cache.snapshot().map(|snapshot| Adoption {
+            association: None,
             producer: Some(producer()),
             snapshot: Some(Arc::new(snapshot)),
         })
@@ -651,6 +652,14 @@ fn current_harness(
     packaged: bool,
     fail_cache: bool,
 ) -> (Harness, Arc<AtomicU64>, Arc<AtomicU64>) {
+    profile_harness(files, packaged, fail_cache, false)
+}
+fn profile_harness(
+    files: &Files,
+    packaged: bool,
+    fail_cache: bool,
+    accepted_consumer: bool,
+) -> (Harness, Arc<AtomicU64>, Arc<AtomicU64>) {
     let ui_thread = thread::current().id();
     let gl = Rc::new(RefCell::new(GlState::default()));
     let events = Arc::new(Mutex::new(Vec::new()));
@@ -684,11 +693,22 @@ fn current_harness(
         move || {
             assert_ne!(thread::current().id(), ui_thread);
             load_count.fetch_add(1, Ordering::Relaxed);
-            crate::cache_producer_profile::ExpectedProducer::load_for_test(
-                &File::open(profile_parent)?,
-                &"01".repeat(32),
-            )
-            .map(|profile| profile.map(|p| p.version()))
+            if accepted_consumer {
+                crate::cache_consumer_profile::load_for_test(
+                    &File::open(profile_parent)?,
+                    &"03".repeat(32),
+                )
+            } else {
+                crate::cache_producer_profile::ExpectedProducer::load_for_test(
+                    &File::open(profile_parent)?,
+                    &"01".repeat(32),
+                )
+                .map(|profile| {
+                    profile.map(|p| {
+                        crate::cache_consumer_profile::ReadExpectation::supplied(p.version())
+                    })
+                })
+            }
         },
         move |config| {
             assert_ne!(thread::current().id(), ui_thread);
@@ -722,6 +742,104 @@ fn write_profile(files: &Files) {
         "app_id":crate::identity::PREVIEW,"producer_kind":"joined-single-positive-v1",
         "source_revision":"a".repeat(40),"ui_sha256":"01".repeat(32),"broker_sha256":"02".repeat(32)})).unwrap()).unwrap();
     fs::set_permissions(path, fs::Permissions::from_mode(0o644)).unwrap();
+}
+
+#[test]
+fn accepted_prior_profile_reads_original_header_on_worker_and_reports_both_identities() {
+    let mut files = Files::new();
+    let map = sources("1", "icon.png", IconKind::Icon);
+    files.publish(source(&map), 70);
+    let cache = files
+        .parent
+        .join(".com.ash.nativehome.preview-artwork-cache-v1");
+    let held = || {
+        fs::read_dir(&cache)
+            .unwrap()
+            .map(|entry| {
+                let path = entry.unwrap().path();
+                let m = fs::metadata(&path).unwrap();
+                (
+                    path.file_name().unwrap().to_owned(),
+                    (
+                        fs::read(path).unwrap(),
+                        (
+                            m.dev(),
+                            m.ino(),
+                            m.uid(),
+                            m.gid(),
+                            m.mode(),
+                            m.nlink(),
+                            m.len(),
+                            m.mtime(),
+                            m.mtime_nsec(),
+                            m.ctime(),
+                            m.ctime_nsec(),
+                        ),
+                    ),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    };
+    let before = held();
+    let selector = crate::cache_consumer_profile::record_for_test(
+        &"03".repeat(32),
+        serde_json::json!({
+        "schema":1,"app_id":crate::identity::PREVIEW,"producer_kind":"joined-single-positive-v1",
+        "source_revision":"a".repeat(40),"ui_sha256":"01".repeat(32),"broker_sha256":"02".repeat(32)}),
+    );
+    let path = files.parent.join(crate::cache_consumer_profile::NAME);
+    fs::write(&path, serde_json::to_vec(&selector).unwrap()).unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+    let (mut h, loaded, opened) = profile_harness(&files, false, false, true);
+    assert!(h.icons.cache_association_observation().is_none());
+    h.icons.update_sources(Some(&map)).unwrap();
+    h.until(true, |h| h.icons.texture(ID).is_some());
+    assert_eq!(h.gl.borrow().pixels[0], [10, 20, 30, 0, 70, 50, 60, 128]);
+    assert_eq!(h.icons.stats().cache_uploads, 1);
+    assert_eq!(h.icons.stats().packaged_uploads, 0);
+    assert_eq!(loaded.load(Ordering::Relaxed), 1);
+    assert_eq!(opened.load(Ordering::Relaxed), 1);
+    let receipt = serde_json::to_value(h.icons.cache_association_observation().unwrap()).unwrap();
+    assert_eq!(receipt["consumer_ui_sha256"], "03".repeat(32));
+    assert_eq!(
+        receipt["producer"],
+        serde_json::to_value(producer()).unwrap()
+    );
+    assert_eq!(receipt["selection"], "accepted_producer");
+    assert_eq!(receipt["association_only"], true);
+    assert_eq!(before, held()); // Same original full header/body and file identities.
+    h.icons.update_sources(None).unwrap();
+    assert!(h.icons.current_cached_source(ID).is_none());
+    // This remains a historical worker-loaded association, never current coverage.
+    assert!(h.icons.cache_association_observation().is_some());
+    let done = h.icons.finish();
+    assert!(done.worker_joined && !done.worker_panicked);
+    assert!(h.gl.borrow().live.is_empty());
+}
+
+#[test]
+fn invalid_consumer_selector_keeps_packaged_fallback_without_cache_open_or_origin() {
+    let mut files = Files::new();
+    let map = sources("1", "icon.png", IconKind::Icon);
+    files.publish(source(&map), 70);
+    let selector = crate::cache_consumer_profile::record_for_test(
+        &"04".repeat(32),
+        serde_json::json!({
+        "schema":1,"app_id":crate::identity::PREVIEW,"producer_kind":"joined-single-positive-v1",
+        "source_revision":"a".repeat(40),"ui_sha256":"01".repeat(32),"broker_sha256":"02".repeat(32)}),
+    );
+    let path = files.parent.join(crate::cache_consumer_profile::NAME);
+    fs::write(&path, serde_json::to_vec(&selector).unwrap()).unwrap();
+    fs::set_permissions(path, fs::Permissions::from_mode(0o644)).unwrap();
+    let (mut h, loaded, opened) = profile_harness(&files, true, false, true);
+    h.icons.update_sources(Some(&map)).unwrap();
+    h.until(true, |h| h.icons.texture(ID).is_some());
+    assert_eq!(h.icons.stats().cache_uploads, 0);
+    assert_eq!(h.icons.stats().packaged_uploads, 1);
+    assert_eq!(loaded.load(Ordering::Relaxed), 1);
+    assert_eq!(opened.load(Ordering::Relaxed), 0);
+    assert!(h.icons.cache_association_observation().is_none());
+    assert!(h.icons.finish().worker_joined);
 }
 #[test]
 fn current_profile_is_loaded_once_on_same_worker_and_empty_package_can_later_use_cache() {
