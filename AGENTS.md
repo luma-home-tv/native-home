@@ -52,6 +52,16 @@ current3ce executable with fresh inputs, never Root chmod/chown, boot/jail edits
 an old048 marker or an unreviewed relaxation of the private-state gate.
 `docs/c2-current-permission-observation.md` records this boundary.
 
+The later corrected C2 read-only profile exited0 with exact observed opaque
+state preservation, complete32 body reads, sampled Core5+19/source-map agreement
+and known lease/agent closure. Its rejected source predecessor's two-tree
+ownership-classification counterexamples remain preserved. Four measured paths
+were absent, but the jailed runtime alias was not measured; no future absence,
+native private-store or namespace authority transfers. Saved-data review is
+pending. The screensaver/other-app context was ineligible for an app test; no
+launch/input/package/permission change followed. Continue the separate C2 Proof
+adaptation with fresh baseline/scene/lease and its own strict private-state gates.
+
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
 current physical pointer/wheel/hold and separate IME; normal app/Settings return;

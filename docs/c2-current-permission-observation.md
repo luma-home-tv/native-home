@@ -39,6 +39,31 @@ permission repair was selected. This is not full C2 runtime/core preservation
 qualification: the read-only checks stopped at the explicit prerequisites.
 Raw records, ownership details and household data remain private.
 
+## Later read-only baseline
+
+A separate reviewed reader now records the retained metadata as an exact C2
+preservation model, with no retained Store or write authority. Its first source
+proposal had a two-read gap: it checked ownership on one tree, then could
+misclassify changed ownership in the next tree as a known policy refusal.
+Coordinator and independent synthetic reproductions remain preserved. That
+proposal never contacted a TV. The corrected reader validates every actual
+tree consumed by the original bundle/body reader; fourteen author and six
+independent host test functions pass.
+
+The corrected C2 read-only run exited0 in about66 seconds and verified its own
+lease and host-agent closure. It read all32 retained file bodies, preserved the
+opaque216-byte preference record and sampled metadata, and compared the sampled
+Core5+19 and complete app-source maps before/after. The ordinary retained UID
+was absent. Four measured runtime/cache/state-alias paths were literally absent;
+the jailed runtime alias was not measured. These are observations for planning,
+not future absence or namespace authority. Saved-data independent review is
+pending.
+
+The observed screen was ineligible for app testing: another application remained
+beneath the screensaver. No app launch, input, package, settings or permission
+operation was requested. Root SSH sampled metadata is not a literal held native
+descriptor, an exclusive snapshot or proof of native effective permissions.
+
 ## Next work
 
 Keep the current G2 favourites carrier unadmitted on C2: its private-state and

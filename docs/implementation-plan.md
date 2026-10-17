@@ -61,6 +61,14 @@ baseline, lease, finite cleanup reserve and known outcome. No old nonce, actor,
 Ticket, snapshot freshness or closed-session authority transfers. C2 work needs
 separate availability and authorization; G2 results never establish it.
 
+The later C2 read-only profile now passes its finite observation and coordination
+scope. It qualifies the opaque preservation reader, with sampled Core/source-map
+agreement and four measured absent paths; saved-data review remains pending.
+It does not qualify normal C2 entry, private-store compatibility or Proof.
+The observed screensaver/other-app context was ineligible for an app test.
+Finish the C2-specific Proof baseline and known inert-install refusal cleanup,
+then use fresh LG Home context for the two-process favourites and physical checks.
+
 The current delivery target is a responsive native Home dashboard for both
 authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.
 The G2 is always available for coordinator-owned tests.
