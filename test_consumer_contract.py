@@ -6,7 +6,7 @@ import cache_consumer_contract as c
 import cache_consumer_packaging as p
 import build_provenance as provenance
 from test_cache_consumer_packaging import fixture
-ROOT=Path(__file__).resolve().parent;B=ROOT.parent.parent
+ROOT=Path(__file__).resolve().parent
 REAL_RUN=subprocess.run;REAL_POPEN=subprocess.Popen
 
 def put_manifest(row,data):
@@ -53,7 +53,9 @@ class ContractTests(unittest.TestCase):
    with patch.object(provenance,'snapshot',return_value=snap):self.assertEqual(provenance.validate_build_receipt(root,binary,receipt),result)
    result['consumer_build_contract']['selection']['enabled_feature_env']=['HOSTSIM'];receipt.write_text(json.dumps(result))
    with patch.object(provenance,'snapshot',return_value=snap),self.assertRaises(ValueError):provenance.validate_build_receipt(root,binary,receipt)
+ @unittest.skipUnless(os.environ.get('LUMA_TEST_PRIVATE_ARTIFACT_ROOT'), 'Explicit private ARM artifact fixture not configured')
  def test_actual_f5_legacy_git_receipts_derive_only_exact_known_native_recipe(self):
+  B=Path(os.environ['LUMA_TEST_PRIVATE_ARTIFACT_ROOT']).resolve(strict=True)
   ui=B/'settings-handoff-lifecycle-arm-v3/cargo/arm-unknown-linux-gnueabi/release/home-preview';helper=B/'normal-v3-artifacts-v1/helper/cargo/arm-unknown-linux-gnueabi/release/artwork-broker';profile=B/'normal-v3-artifacts-v1/package-normal/preview-package/usr/palm/applications/com.ash.nativehome.preview/artwork-cache-producer.json';repo=B/'settings-handoff-lifecycle-build-source-f5';old=json.loads(ui.with_name(ui.name+'.build.json').read_bytes());self.assertNotIn('consumer_build_contract',old);current=copy.deepcopy(old);current['binary']['sha256']='11'*32;current['git_revision']='b'*40;data=(ROOT/'Cargo.toml').read_bytes();put_manifest(current,data);calls=[]
   def git(argv,**kw):
    self.assertEqual(argv[:6],['git','--no-optional-locks','--no-replace-objects','-C',str(repo),'show']);self.assertEqual(kw['env']['GIT_NO_LAZY_FETCH'],'1');self.assertTrue(argv[6].startswith(old['git_revision']+':'));calls.append(argv[6]);
@@ -62,5 +64,4 @@ class ContractTests(unittest.TestCase):
   self.assertEqual(len(calls),len(old['snapshot']['source_inputs']));self.assertEqual(selected['producer']['ui_sha256'],old['binary']['sha256']);self.assertEqual(selected['consumer_ui_sha256'],'11'*32);p.recheck(inputs)
   with patch.object(p.subprocess,'run',side_effect=git),patch.object(p,'LEGACY_NATIVE_RECIPE_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):p.read_inputs(repo,current,ui,helper,profile)
   with patch.object(p.subprocess,'run',side_effect=git),patch.object(p,'LEGACY_NATIVE_UI_SHA','0'*64),self.assertRaisesRegex(ValueError,'Unknown legacy'):p.read_inputs(repo,current,ui,helper,profile)
-  (ROOT.parent/'legacy-f5-check.json').write_text(json.dumps({'schema':1,'actual_old_revision':old['git_revision'],'actual_old_UI_sha256':old['binary']['sha256'],'actual_legacy_Git_blobs_checked':len(old['snapshot']['source_inputs']),'old_receipts_have_selection':False,'fixed_actual_recipe_sha256':p.LEGACY_NATIVE_RECIPE_SHA,'current_consumer_identity_is_synthetic':True,'target_ELF_executed':False,'TV_contacted':False},indent=2)+'\n')
 if __name__=='__main__':unittest.main(verbosity=2)
