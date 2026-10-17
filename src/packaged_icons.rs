@@ -67,6 +67,11 @@ struct Pending {
 }
 trait Loader {
     fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon>;
+    // Only the terminating worker may move its original held cache into the
+    // exit payload. Generic/package-only loaders need no ownership payload.
+    fn take_cache(&mut self) -> Option<disk::Cache> {
+        None
+    }
     fn adopt(&mut self) -> io::Result<Adoption> {
         Ok(Adoption {
             association: None,
@@ -95,6 +100,9 @@ struct CacheLoader {
     producer: Option<ProducerVersion>,
 }
 impl Loader for CacheLoader {
+    fn take_cache(&mut self) -> Option<disk::Cache> {
+        self.cache.take()
+    }
     fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon> {
         self.packaged.decode(path)
     }
@@ -123,11 +131,49 @@ enum Event {
     Image(Reply),
     Adopted { request: u64, adoption: Adoption },
 }
+// These private, non-Clone/non-serializable values are process-local ownership,
+// not a report, queue-drain acknowledgement or permission to mutate the cache.
+struct ConsumptionEnded;
+struct WorkerExit {
+    cache: Option<disk::Cache>,
+}
+struct JoinedCache {
+    cache: disk::Cache,
+}
+#[derive(Default)]
+struct WorkerJoinOutcome {
+    panicked: bool,
+    cache: Option<JoinedCache>,
+}
+struct PendingWorkerJoin {
+    join: JoinHandle<WorkerExit>,
+    consumption_ended: Option<ConsumptionEnded>,
+}
+impl PendingWorkerJoin {
+    // Send this small handle to an ordinary supervisor; no GL/backend/controller
+    // or generic Loader needs to cross that thread boundary. Only actual join
+    // success, with controller consumption ended, can produce JoinedCache.
+    fn join(self) -> WorkerJoinOutcome {
+        match self.join.join() {
+            Ok(exit) => WorkerJoinOutcome {
+                panicked: false,
+                cache: self
+                    .consumption_ended
+                    .and_then(|_| exit.cache.map(|cache| JoinedCache { cache })),
+            },
+            Err(_) => WorkerJoinOutcome {
+                panicked: true,
+                cache: None,
+            },
+        }
+    }
+}
 struct Worker {
     jobs: Option<SyncSender<Command>>,
     replies: Option<Receiver<Event>>,
     stop: Arc<AtomicBool>,
-    join: Option<JoinHandle<()>>,
+    return_cache: Arc<AtomicBool>,
+    join: Option<JoinHandle<WorkerExit>>,
 }
 impl Worker {
     fn start<L: Loader + 'static>(
@@ -137,6 +183,8 @@ impl Worker {
         let (complete, replies) = mpsc::sync_channel(1);
         let stop = Arc::new(AtomicBool::new(false));
         let stopped = stop.clone();
+        let return_cache = Arc::new(AtomicBool::new(false));
+        let returning_cache = return_cache.clone();
         let join = thread::Builder::new()
             .name("packaged-icons".into())
             .spawn(move || {
@@ -215,19 +263,42 @@ impl Worker {
                         break;
                     }
                 }
+                WorkerExit {
+                    cache: if returning_cache.load(Ordering::Acquire) {
+                        loader.as_mut().and_then(|loader| loader.take_cache())
+                    } else {
+                        None
+                    },
+                }
             })?;
         Ok(Self {
             jobs: Some(jobs),
             replies: Some(replies),
             stop,
+            return_cache,
             join: Some(join),
         })
     }
-    fn finish(&mut self) -> bool {
+    fn begin_join(
+        &mut self,
+        consumption_ended: Option<ConsumptionEnded>,
+    ) -> Option<PendingWorkerJoin> {
+        // Taking the handle first makes a later Worker::drop a no-op. In
+        // particular it cannot reset the handoff request before worker exit.
+        let join = self.join.take()?;
+        self.return_cache
+            .store(consumption_ended.is_some(), Ordering::Release);
         self.stop.store(true, Ordering::Release);
         drop(self.replies.take()); // Drop a queued RGBA buffer before waiting.
         drop(self.jobs.take()); // Wake an idle recv; no new job can arrive.
-        self.join.take().is_none_or(|join| join.join().is_ok())
+        Some(PendingWorkerJoin {
+            join,
+            consumption_ended,
+        })
+    }
+    fn finish(&mut self) -> bool {
+        self.begin_join(None)
+            .is_none_or(|join| !join.join().panicked)
     }
 }
 impl Drop for Worker {
@@ -997,9 +1068,12 @@ impl<B: TextureBackend> PackagedIcons<B> {
             ..self.stats
         }
     }
-    pub fn finish(&mut self) -> Finish {
-        if let Some(finished) = self.finished {
-            return finished;
+    // Internal opt-in boundary only; no product maintenance callsite exists.
+    // `true` ends controller consumption and returns an UNJOINED handle. It
+    // does not authorize deletion, reopen a cache or acquire a writer slot.
+    fn begin_shutdown(&mut self, preserve_cache: bool) -> Option<PendingWorkerJoin> {
+        if self.finished.is_some() {
+            return None;
         }
         if let Some(cache) = &mut self.cache {
             if let Some(snapshot) = cache.snapshot.take() {
@@ -1008,7 +1082,42 @@ impl<B: TextureBackend> PackagedIcons<B> {
             cache.selected.clear();
             cache.sources.clear();
         }
-        let joined = self.worker.take().is_none_or(|mut worker| worker.finish());
+        let consumption_ended = if preserve_cache {
+            self.epoch = self.epoch.wrapping_add(1);
+            if let Some(pending) = self.pending.take() {
+                pending.abandoned.store(true, Ordering::Release);
+            }
+            self.ready = None;
+            for old in std::mem::take(&mut self.textures).into_values() {
+                self.backend.delete(old.handle);
+            }
+            self.bytes = 0;
+            self.closed = true;
+            self.finished = Some(Finish {
+                worker_joined: false,
+                worker_panicked: false,
+                remaining_textures: 0,
+            });
+            Some(ConsumptionEnded)
+        } else {
+            None
+        };
+        self.worker
+            .take()
+            .and_then(|mut worker| worker.begin_join(consumption_ended))
+    }
+    pub fn finish(&mut self) -> Finish {
+        if let Some(finished) = self.finished {
+            return finished;
+        }
+        let outcome = self
+            .begin_shutdown(false)
+            .map(PendingWorkerJoin::join)
+            .unwrap_or_default();
+        // Default finish never requests a returned cache: it is still dropped
+        // on the worker, as before. Only the private opt-in branch can keep it.
+        debug_assert!(outcome.cache.is_none());
+        drop(outcome.cache.map(|joined| joined.cache));
         self.pending = None;
         self.ready = None;
         for old in std::mem::take(&mut self.textures).into_values() {
@@ -1018,7 +1127,7 @@ impl<B: TextureBackend> PackagedIcons<B> {
         self.closed = true;
         let finished = Finish {
             worker_joined: true,
-            worker_panicked: !joined,
+            worker_panicked: outcome.panicked,
             remaining_textures: 0,
         };
         self.finished = Some(finished);
