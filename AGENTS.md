@@ -31,7 +31,29 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
-The latest verified retained G2 installation is 0.61.0, with dashboard ELF
+The latest verified retained G2 installation is still version0.61.0, now from
+functional source `f5b4d7758e700e22b6f88183535cc0537d60a5e0`, dashboard ELF
+SHA-256 `46743fad9f205c320072a59f4173368a715aa829e2d323dfa3661f46743061ed`,
+normal IPK `1c4f536773f1bd59a9c50bff58a7a83ce6a909ca73a8240e44ca5a8e46ed4afd`
+and producer sidecar `05f2c892d03e3a9d966ebc185d35c1162a92611334394f3a6892f549341c6a81`.
+`docs/g2-retained-settings-lifecycle-061.md` records separate closed successful
+Settings-return/old-build restoration and fresh reentry/new-build retention.
+The latter actual operator0, strict no-handoff/naturalBack terminal, current
+source keys and joined GL12 pass independent saved review plus byte-identical
+Root replay/3738 rehashed bindings. Preserve its sole launch_points reader
+failure; exact fixed-key correction changed no native record or original template.
+The current33/31 bundle is verified; cache48/prefs216/Core5+19 and prior runtime
+140/92immutable/eventprefix with131B appended are preserved. Mapped temporary
+runtime/stage and lease/agent are closed.
+Normal Root artwork remains off. SDK suffix observations grant no global mount
+restoration/cause claim. No combined single-scope/fullproduct, physical, pixel or
+performance qualification follows. Every recorded A/B scope is closed: never
+restart it or transfer actor/Ticket/resource/lease authority through its data.
+Future backup/rollback MUST use this actual f5/1c4 complete bundle and fresh
+private state/cache48. The former06cc ELF/4f52 IPK are historical rollback inputs,
+not the current baseline; version0.61 alone is insufficient to distinguish them.
+
+The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
 `codex/native-context-diagnostics` (PR #2). `docs/g2-retained-preview061.md`
@@ -70,15 +92,15 @@ saved review and byte-identical Root replay cover5509 rehashed bindings. Preserv
 both saved-reader layout failures; source-derived fixes changed no native record.
 Its new2400s/45m scope kept the original Settings and5s dispatch bounds; no old
 scope was extended. SDK suffix observations grant no global restoration/cause
-claim. Fresh reentry/delivery has NOT run; retained ELF remains06cc above, normal
-Root off. No physical/performance/allpixel/fullproduct qualification follows.
-Next use a fresh matched-artifact baseline, lease and process map for reentry;
-never transfer actor/resource/Ticket/lease authority through the positive data.
+claim. The later fresh reentry/delivery above now retains f5; its known terminal
+and own baseline are separate from this restored-old061 scope. No physical,
+performance, allpixel or fullproduct qualification follows from either result.
 
-Future tests need a fresh actual061 full bundle/state/cache48 baseline and new
-lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
-nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build
-physical input/performance/reliability and cache version transition/refresh/
+Future tests need a fresh actualf5 full bundle/state/cache48 baseline and new
+lease. Never run old06cc/old057/cache-absent restoration carriers or reuse closed
+Settings/reentry scopes, nonces, Tickets or session97400. Broader app actions,
+restart/favourites, current-build physical input/performance/reliability and
+cache version transition/refresh/
 eviction/stale-writer recovery remain open. Keep the separate062 source/artifacts
 separate until deliberately integrated. Older paragraphs below describe historical
 milestones and their then-current baselines, not the present installed state.

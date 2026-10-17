@@ -12,19 +12,22 @@ by the user. This supersedes the earlier dated availability windows; historical
 operators retain their own expired execution limits and cannot be reused as
 current admission. All TV access stays with the coordinator, with distinct
 leases, current foreground/baseline checks and private agents. Current retained deliveries are
-[G2 0.61](g2-retained-preview061.md) and [C2 0.48](c2-retained-preview-048.md),
+[G2 Settings-lifecycle 0.61](g2-retained-settings-lifecycle-061.md) and
+[C2 0.48](c2-retained-preview-048.md),
 with device-specific resources, saved preferences and fresh normal sessions.
 C2's ordinary-owner metadata roundtrip/restoration precedes its retained result;
 G2 evidence never establishes C2 permissions. The isolated 0.44 C2 static result
 and its preserved 0.20 baseline remain historical evidence.
 The latest [ordinary Settings validation](ordinary-settings-validation-progress.md)
-now qualifies one candidate same-process LG Picture return and usable post-return
-route, followed by exact old061 restoration. Independent saved review and
-coordinator replay cover 5,509 selected bindings. Earlier failed scopes and
-separate successful cleanups remain distinct. The immediate device lane is a
-fresh matched-artifact reentry/delivery; host-only cache maintenance and UI work
-can continue alongside it. Candidate retention, broader input, performance and
-the full dashboard goal remain open.
+qualifies one same-process LG Picture return and usable post-return route,
+followed by old-build restoration, then a separate fresh reentry scope retaining
+the matching f5 build. Independent saved reviews and coordinator replays cover
+5,509 and 3,738 selected bindings respectively; the scopes and overlapping evidence
+remain distinct. Earlier failed scopes and separate successful cleanups remain.
+Device work now starts from the current f5/full-bundle/private-state/cache48
+baseline. Current-build input/favourites, performance and reliability can proceed
+alongside host-only cache/UI changes; every new candidate still needs matching
+build, package and native acceptance. The wider dashboard goal remains open.
 The [normal055 owned-app observation](g2-normal055-app-launch-return.md) now adds
 one real drawer launch and a later explicitly launched fresh Luma session, with
 independently replayed cleanup and preservation. The original operator remains
@@ -394,5 +397,6 @@ ARM builds. Independent local artifact auditing and native carrier preparation
 continue in parallel. Main/UI integration, artifact admission, publication and
 all TV contact remain coordinator-owned. That source wave preceded native cache
 execution. The later [ordinary Settings record](ordinary-settings-validation-progress.md)
-tracks the closed preparation and normal-return evidence against retained0.61;
-fresh reentry and candidate promotion still need their own acceptance.
+tracks closed preparation, normal return and separate fresh reentry/retention of
+the f5/0.61 build. Later candidates still need their own matching acceptance and
+must preserve this current installed baseline.

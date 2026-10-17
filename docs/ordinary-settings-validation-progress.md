@@ -1,9 +1,12 @@
-# Ordinary Settings validation: return verified, baseline restored
+# Ordinary Settings validation: return, fresh reentry and retention
 
-The G2 retains the previously verified 0.61 dashboard from functional source
-`167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c`. Its ordinary artwork cache now contains
-48 entries: the original 24 and 24 prepared for the Settings-lifecycle candidate
-at `f5b4d7758e700e22b6f88183535cc0537d60a5e0`. These are two producer generations
+The G2 now retains the 0.61 Settings-lifecycle dashboard from functional source
+`f5b4d7758e700e22b6f88183535cc0537d60a5e0`, following the separate successful
+Settings-return and fresh-reentry scopes below. The
+[retained delivery record](g2-retained-settings-lifecycle-061.md) identifies its
+exact new executable, IPK and producer association; the version number is still
+0.61.0. Its ordinary artwork cache contains the original 24 records and 24 prepared
+for this executable. These are two producer generations
 for the supplied catalogue, not 48 different apps or new all-app coverage.
 Normal interaction keeps privileged artwork preparation off.
 
@@ -53,8 +56,9 @@ the observed suffix.
 A later normal Settings-first attempt reached only part of the required route,
 then stopped at the review/cleanup reserve guard within its original 900-second
 scope. Its operator exited 1 with the workflow unqualified and its HOLD preserved.
-This is a separate failure from the earlier five-second input-guard refusal; partial navigation did
-not establish the complete Settings-return session or ordinary source shutdown.
+This is a separate failure from the earlier five-second input-guard refusal;
+partial navigation did not establish the complete Settings-return session or
+ordinary source shutdown.
 
 A separate fresh cleanup exited 0 after retiring the exact old owner and taking
 a new lease. Fresh observations found the original actor absent, so no SDK close
@@ -113,15 +117,38 @@ are finite saved comparisons, not every-operation or historical preparation
 replay. Source-enforced deadlines and command/frame associations do not provide
 independent atomic dispatch timing, all-pixel or physical-input proof.
 
-## Next acceptance
+## Separate fresh reentry and retention
 
-Fresh reentry and retained candidate delivery remain unqualified. A separate
-new session must establish Home/Apps/Back reentry and complete backed-up delivery
-against the same exact application artifacts. It requires a fresh full baseline,
-lease, process/runtime mapping and scene checks. The closed positive Settings
-result supplies matching data only; no actor, resource, Ticket or lease authority
-crosses between scopes. The retained dashboard remains the previous verified
-0.61 executable listed at the start of this document.
+A later fresh scope exited 0 after installing the same frozen candidate, binding
+its own new ordinary process/runtime map and exercising Home/Apps/Home/Back.
+Its strict terminal report has zero actions and Settings-return events, no
+handoff and natural Home Back closure. The image worker joined, its 12 uploads
+and deletions balance, and no GL errors were reported. The scope matched the
+separately closed positive Settings data against the exact source, artifacts,
+full source descriptors and cache, with a fresh baseline and lease throughout.
+No actor, resource, Ticket or lease authority crossed from the Settings scope.
+
+This scope retained the new ordinary package, preserving the complete 48-entry
+cache, original 216-byte preferences/full state, sampled Core5+19 and prior
+140-entry runtime/92 immutable files/event prefix with 131 appended bytes.
+Mapped temporary runtime and staged packages were removed; lease and private
+host agent closed. Its 775.6-second duration includes review and preservation
+work, not UI latency. The independent saved audit and coordinator replay pass
+with 3,738 rehashed bindings and byte-identical reports. One saved-reader failure
+on the source-declared `launch_points` frame name remains preserved; the exact
+reader correction changed neither native records nor the original template.
+
+The earlier Settings scope restored the old package; this fresh reentry scope
+retained the new one. Their successful results remain distinct and do not prove
+one combined workflow or the full dashboard goal. No expired scope was revived.
+
+## Next acceptance and current backup boundary
+
+Future updates must back up and verify the actual retained f5 executable and
+matching IPK/full bundle, private state and cache48 described in the
+[current delivery record](g2-retained-settings-lifecycle-061.md). The former
+source167/`06cc…` executable and `4f52…` rollback package are historical. None of
+these closed Settings/reentry operators may run against the new baseline.
 
 Practical current-build input/favourites, matched performance, real HDMI video,
 cache refresh/retirement/stale-writer recovery, broader native controls and
