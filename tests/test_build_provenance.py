@@ -1,4 +1,5 @@
 """Temporary source/artifact fixtures, mocked read-only framework checker; no builds/TV."""
+from cache_consumer_contract import native_selection
 import copy
 import importlib.util
 import json
@@ -25,6 +26,7 @@ class ProvenanceTests(unittest.TestCase):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text('fixture ' + name)
+        (self.root / 'Cargo.toml').write_text('[package]\nname="fixture"\nversion="0.1.0"\n')
         (self.root / 'dependency-lock.json').write_text(json.dumps({'integration_patch': 'patches/framework.patch'}))
         (self.root / 'patches').mkdir()
         (self.root / 'patches/framework.patch').write_text('fixed patch')
@@ -43,7 +45,7 @@ class ProvenanceTests(unittest.TestCase):
 
     def record(self, target='arm'):
         before = p.snapshot(self.root)
-        return p.record_build_receipt(self.root, self.binary, target, before, p.snapshot(self.root))
+        return p.record_build_receipt(self.root, self.binary, target, before, p.snapshot(self.root), build_selection=(native_selection((self.root / 'Cargo.toml').read_bytes()) if target == 'arm' else None))
 
     def test_real_hash_receipt_private_atomic_and_validates(self):
         result = self.record()
@@ -63,11 +65,11 @@ class ProvenanceTests(unittest.TestCase):
                 binary = self.binary.with_name(name)
                 binary.write_bytes(raw)
                 before = p.snapshot(self.root)
-                receipt = p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root))
+                receipt = p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root), build_selection=native_selection((self.root / 'Cargo.toml').read_bytes()))
                 self.assertEqual(p.validate_build_receipt(self.root, binary, receipt)['binary']['name'], name)
                 binary.write_bytes(b'not an ARM executable')
                 with self.assertRaisesRegex(ValueError, 'Actual ARM32'):
-                    p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root))
+                    p.record_build_receipt(self.root, binary, 'arm', before, p.snapshot(self.root), build_selection=native_selection((self.root / 'Cargo.toml').read_bytes()))
 
     def test_missing_receipt_or_binary_refuses(self):
         with self.assertRaises(FileNotFoundError):
@@ -96,7 +98,7 @@ class ProvenanceTests(unittest.TestCase):
         (self.root / 'src/input.txt').write_text('changed')
         for after in (p.snapshot(self.root), before):
             with self.assertRaisesRegex(ValueError, 'changed during build'):
-                p.record_build_receipt(self.root, self.binary, 'arm', before, after)
+                p.record_build_receipt(self.root, self.binary, 'arm', before, after, build_selection=native_selection((self.root / 'Cargo.toml').read_bytes()))
             self.assertFalse(self.receipt.exists())
 
     def test_untracked_sources_assets_fonts_included_docs_and_caches_ignored(self):
