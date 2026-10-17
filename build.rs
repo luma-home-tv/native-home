@@ -4,6 +4,7 @@ mod host_link;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
     verify_framework();
+    consumer_contract();
     println!("cargo:rerun-if-changed=.dependencies/plx-native/rust-modules/build_support/host_link.rs");
     if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default()=="arm" {
         println!("cargo:rustc-link-lib=luna-service2");
@@ -60,4 +61,21 @@ fn compile_events() {
         .unwrap();
     assert!(status.success(), "SDL adapter compile");
     println!("cargo:rustc-link-arg={}", out.display());
+}
+
+fn consumer_contract() {
+    for path in ["Cargo.toml", "cache_consumer_contract.py"] {
+        println!("cargo:rerun-if-changed={path}");
+    }
+    println!("cargo:rerun-if-env-changed=NATIVE_HOME_CONSUMER_BUILD_SELECTION");
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let output = std::path::Path::new(&std::env::var("OUT_DIR").unwrap())
+        .join("cache-consumer-build-contract.json");
+    let result = std::process::Command::new("python3")
+        .arg(root.join("cache_consumer_contract.py")).arg(root).arg(output)
+        .output().expect("Compile actual Cargo selection contract");
+    assert!(result.status.success(), "Consumer build contract failed: {}",
+        String::from_utf8_lossy(&result.stderr));
+    assert!(result.stdout.len() < 4096, "Bounded compile contract output");
+    print!("{}", String::from_utf8(result.stdout).unwrap());
 }

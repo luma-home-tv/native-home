@@ -31,6 +31,10 @@ else:
     output.mkdir(parents=True, exist_ok=True)
     sysroot = sdk / 'arm-webos-linux-gnueabi/sysroot'
     cc = sdk / 'bin/arm-webos-linux-gnueabi-gcc'
+    from cache_consumer_contract import native_selection
+    consumer_selection = native_selection((here / 'Cargo.toml').read_bytes())
+    import json
+    env['NATIVE_HOME_CONSUMER_BUILD_SELECTION'] = json.dumps(consumer_selection, sort_keys=True, separators=(',', ':'))
     objects = []
     for source, name in [(framework / 'src/svg.c', 'svg-arm.o'), (framework / 'src/compat/getauxval.c', 'getauxval-arm.o'), (here / 'sdl-events.c', 'sdl-events-arm.o')]:
         obj = output / name
@@ -59,4 +63,5 @@ if args.target != 'test':
         target_dir = here / target_dir
     binary = (target_dir / 'debug' / args.bin if args.target == 'host' else
               target_dir / 'arm-unknown-linux-gnueabi/release' / args.bin)
-    print('Build receipt:', record_build_receipt(here, binary, args.target, before, after))
+    print('Build receipt:', record_build_receipt(here, binary, args.target, before, after,
+          build_selection=consumer_selection if args.target == 'arm' else None))

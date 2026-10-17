@@ -69,6 +69,7 @@ trait Loader {
     fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon>;
     fn adopt(&mut self) -> io::Result<Adoption> {
         Ok(Adoption {
+            association: None,
             producer: None,
             snapshot: None,
         })
@@ -82,11 +83,13 @@ trait Loader {
     }
 }
 struct Adoption {
+    association: Option<Box<crate::cache_consumer_profile::ConsumerAssociation>>,
     // Independently supplied/profile-loaded on worker, NEVER cache metadata.
     producer: Option<ProducerVersion>,
     snapshot: Option<Arc<Snapshot>>,
 }
 struct CacheLoader {
+    association: Option<crate::cache_consumer_profile::ConsumerAssociation>,
     packaged: PackagedIconReader,
     cache: Option<disk::Cache>,
     producer: Option<ProducerVersion>,
@@ -97,6 +100,7 @@ impl Loader for CacheLoader {
     }
     fn adopt(&mut self) -> io::Result<Adoption> {
         Ok(Adoption {
+            association: self.association.clone().map(Box::new),
             producer: self.producer.clone(),
             snapshot: self
                 .cache
@@ -150,6 +154,7 @@ impl Worker {
                                     .as_mut()
                                     .and_then(|l| l.adopt().ok())
                                     .unwrap_or(Adoption {
+                                        association: None,
                                         producer: None,
                                         snapshot: None,
                                     });
@@ -345,6 +350,7 @@ pub struct PackagedIcons<B: TextureBackend> {
     closed: bool,
     finished: Option<Finish>,
     stats: Stats,
+    loaded_cache_association: Option<crate::cache_consumer_profile::ConsumerAssociation>,
     limits: (usize, usize),
     _render_thread: PhantomData<Rc<()>>,
 }
@@ -382,7 +388,11 @@ impl<B: TextureBackend> PackagedIcons<B> {
             backend,
             config,
             ExpectedPolicy::Supplied(producer),
-            move || Ok(Some(supplied)),
+            move || {
+                Ok(Some(
+                    crate::cache_consumer_profile::ReadExpectation::supplied(supplied),
+                ))
+            },
             disk::Cache::open_current,
         )
     }
@@ -401,10 +411,7 @@ impl<B: TextureBackend> PackagedIcons<B> {
             backend,
             config,
             ExpectedPolicy::WorkerProfile,
-            || {
-                crate::cache_producer_profile::load_current()
-                    .map(|profile| profile.map(|value| value.version()))
-            },
+            crate::cache_consumer_profile::load_current,
             disk::Cache::open_current,
         )
     }
@@ -414,7 +421,9 @@ impl<B: TextureBackend> PackagedIcons<B> {
         backend: B,
         config: disk::Config,
         expected: ExpectedPolicy,
-        load_expected: impl FnOnce() -> io::Result<Option<ProducerVersion>> + Send + 'static,
+        load_expected: impl FnOnce() -> io::Result<Option<crate::cache_consumer_profile::ReadExpectation>>
+            + Send
+            + 'static,
         open_cache: impl FnOnce(disk::Config) -> io::Result<disk::Cache> + Send + 'static,
     ) -> io::Result<Self> {
         let mut controller = Self::start_using(
@@ -428,12 +437,19 @@ impl<B: TextureBackend> PackagedIcons<B> {
                     .open(root)?;
                 let packaged = PackagedIconReader::from_directory(directory)?;
                 // Independent expectation ONCE, before scan; no record can fill it.
-                let producer = load_expected().ok().flatten();
+                let (producer, association) = match load_expected().ok().flatten() {
+                    Some(expected) => {
+                        let (producer, association) = expected.into_parts();
+                        (Some(producer), association)
+                    }
+                    None => (None, None),
+                };
                 let cache = producer.as_ref().and_then(|_| open_cache(config).ok());
                 Ok(CacheLoader {
                     packaged,
                     cache,
                     producer,
+                    association,
                 })
             },
         )?;
@@ -549,6 +565,7 @@ impl<B: TextureBackend> PackagedIcons<B> {
             closed: false,
             finished: None,
             stats: Stats::default(),
+            loaded_cache_association: None,
             limits,
             _render_thread: PhantomData,
         })
@@ -706,6 +723,9 @@ impl<B: TextureBackend> PackagedIcons<B> {
                         cache.refresh = false;
                     }
                     if current && allowed_producer {
+                        if let Some(association) = adoption.association {
+                            self.loaded_cache_association = Some(*association);
+                        }
                         if let (Some(snapshot), Some(producer)) =
                             (adoption.snapshot, adoption.producer)
                         {
@@ -952,6 +972,12 @@ impl<B: TextureBackend> PackagedIcons<B> {
             }
         }
         update
+    }
+    /// One worker-loaded association observation; independent of current image readiness.
+    pub fn cache_association_observation(
+        &self,
+    ) -> Option<&crate::cache_consumer_profile::ConsumerAssociation> {
+        self.loaded_cache_association.as_ref()
     }
     pub fn stats(&self) -> Stats {
         Stats {

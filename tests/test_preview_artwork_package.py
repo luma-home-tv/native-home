@@ -3,6 +3,7 @@
 No compiler, SDK tool, service, privileged process or device is used. Positive
 cases inspect the real control/data archives assembled by the entrypoint.
 """
+from cache_consumer_contract import native_selection
 import hashlib
 import importlib.util
 import io
@@ -59,7 +60,7 @@ class PreviewArtworkPackageTests(unittest.TestCase):
         self.helper_receipt = self.helper.with_name(self.helper.name + '.build.json')
         snapshot = PROVENANCE.snapshot(self.f.root)
         PROVENANCE.record_build_receipt(self.f.root, self.helper, 'arm', snapshot,
-                                       PROVENANCE.snapshot(self.f.root))
+                                       PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.f.record()
         self.pins = {
             'schema': 1, 'profile': 'preview', 'rendezvous_nonce': 'a' * 32,
@@ -273,7 +274,7 @@ class PreviewArtworkPackageTests(unittest.TestCase):
         helper.write_bytes(self.helper.read_bytes())
         snapshot = PROVENANCE.snapshot(self.f.root)
         PROVENANCE.record_build_receipt(self.f.root, helper, 'arm', snapshot,
-                                       PROVENANCE.snapshot(self.f.root))
+                                       PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.write_pins(self.pins | {'profile': 'proof'})
         result, output = self.package({
             'NATIVE_HOME_TEST_IDENTITY': '1',

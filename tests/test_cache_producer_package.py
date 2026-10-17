@@ -1,4 +1,5 @@
 """Actual packager with temporary Git/ARM-receipt/inert-ar fixtures; no TV/build."""
+from cache_consumer_contract import native_selection
 import importlib.util
 import io
 import json
@@ -41,7 +42,7 @@ class CacheProducerPackageTests(unittest.TestCase):
         before = BASE.PROVENANCE.snapshot(self.f.root)
         BASE.PROVENANCE.record_build_receipt(
             self.f.root, self.fixture.helper, 'arm', before,
-            BASE.PROVENANCE.snapshot(self.f.root))
+            BASE.PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.f.record()
 
     def package(self, *, diagnostic=False, extra=None, association=True):
