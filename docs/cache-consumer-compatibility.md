@@ -50,6 +50,12 @@ negative component result remain separate from the successful f5 restoration
 and cleanup. Native selector/worker and Home/Apps acceptance still require a
 fresh trial; the retained installation remains f5.
 
+The [second temporary G2 trial](cache-consumer-g2-second-attempt.md) completed
+restoration and cleanup in the original process with operator exit 0. Its frame
+review also timed out before navigation, so the component result remains false.
+Direct raw-pixel comparison withdrew an apparent missing-texture impression from
+the image viewer; no renderer correction follows from those captures.
+
 ## Next device acceptance
 
 Use a fresh complete baseline of that actual retained executable and package,

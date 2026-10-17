@@ -53,6 +53,20 @@ Future backup/rollback MUST use this actual f5/1c4 complete bundle and fresh
 private state/cache48. The former06cc ELF/4f52 IPK are historical rollback inputs,
 not the current baseline; version0.61 alone is insufficient to distinguish them.
 
+The later compatible-cache candidate trials preserve retained f5. The first
+original operator1 and separate cleanup0 remain recorded in
+`docs/cache-consumer-g2-first-attempt.md`. The second original operator0 completed
+known negative recovery, exact f5/state/cache48/Core/runtime preservation and
+scoped cleanup with the original lease/agent closed. Independent saved review
+and byte-identical coordinator replay cover 15,673 bindings; component acceptance
+remains false, `window_closed` is refused and no navigation key ran. Repeated
+host-manifest identity is source-mediated, with no independent saved first stamp.
+`docs/cache-consumer-g2-second-attempt.md` also withdraws the apparent missing
+textures from a full-frame viewer impression: the saved raw frames differ only
+in 385 clock pixels. No renderer fix, physical-panel or performance claim follows.
+All trial scopes are closed; future work needs a fresh actual f5 baseline and
+lease. Timely readable frame crops may aid review but never relax input gates.
+
 The earlier retained G2 installation was also0.61.0, with dashboard ELF
 SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
 from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
