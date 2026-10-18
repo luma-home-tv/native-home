@@ -71,6 +71,13 @@ Passing the daily-use tests does not fill the following implementation gaps:
    already exists; it needs current ordinary native proof rather than another
    implementation. The shared Home options candidate addresses a separate
    interaction inconsistency.
+   The first continuity slice will remember only the last deliberate Home
+   favourite in a separate bounded app-owned sidecar. This keeps the existing
+   favourites record readable by older builds, which reject unknown fields.
+   Hover, automatic reconciliation, actions, menus and search text are excluded.
+   Reentry remains an explicit fresh launch through LG; no longer background
+   lifetime or automatic relaunch is planned for this slice. Abrupt eviction can
+   lose the latest unsaved selection.
 2. **Input switching on both targets.** Ordinary C2 input changes currently fail
    closed. They need a dedicated operation-specific selection/readback and exact
    original-source restoration before enablement. G2 results, a Proof identity
