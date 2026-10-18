@@ -80,8 +80,9 @@ Returned write errors, short writes or `EINTR` are not retried: the process
 returns 1 without path I/O, image content or further stderr diagnostics. With
 the default signal policy, a closed pipe can instead terminate it with
 `SIGPIPE` before the write returns. A blocked lifecycle write is governed by
-the same original alarm. Nonzero status, signal termination and missing/partial
-lifecycle records must not qualify a call or grant cleanup authority.
+the same original alarm. Any nonzero status or signal termination is unsuccessful.
+Missing or partial lifecycle records provide no reader identity; cleanup requires
+a separately reviewed controller to establish exact ownership and closure.
 
 Validation refusals exit 1 with **zero stdout bytes**. A failure before the
 Root/root-kind checks has only `public icon read refused` plus LF on stderr;
