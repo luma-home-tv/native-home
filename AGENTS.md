@@ -79,6 +79,15 @@ a G2-only mount exception and is blocked pending a new corrected source review.
 Normal startup may initialize state before its native view is observed; do not
 call it an inert read-only permissions selector or infer repair authority.
 
+PR#9 (`codex/public-icon-reader`, sourcee7017b3) is a standalone Root-admin
+public-app icon primitive only. Strict/sanitised host tests, independent source
+review, six extra host groups/Root replay and actual ARM ELF853f build pass;
+`docs/public-icon-reader-foundation.md` states the finite limits. It is not a
+service, setuid/ordinary-app fallback, collector or cache writer. No TV was
+contacted. Never enable the unchanged legacy shell pathname copier as a fallback.
+The next one-icon headless proof needs its own fresh lease/baseline/private stage,
+exact executable/request/child/namespace evidence and complete known removal.
+
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
 current physical pointer/wheel/hold and separate IME; normal app/Settings return;

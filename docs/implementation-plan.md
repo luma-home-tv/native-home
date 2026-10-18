@@ -93,6 +93,15 @@ Normal startup can initialize state before observation if its native view
 allows it; this must not be described as an inert read-only permission probe.
 Neither workflow authorizes permission repair.
 
+The separate [public icon reader foundation](public-icon-reader-foundation.md)
+now has a frozen source commit and draft PR9, strict/sanitised host checks,
+independent source/host review, coordinator replay and an actual ARM build.
+This replaces the unsafe pathname-reopen approach only as a candidate primitive;
+the legacy collector is unchanged and must not be used as a fallback. Next
+qualify one known packaged-icon read in a separate headless device scope before
+building a broader collector. No normal Root artwork, cache writes or TV
+deployment follows from the local milestone.
+
 The current delivery target is a responsive native Home dashboard for both
 authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.
 The G2 is always available for coordinator-owned tests.
