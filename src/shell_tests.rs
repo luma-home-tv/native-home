@@ -2752,3 +2752,147 @@ fn home_back_blocks_a_later_pointer_activation_in_the_same_input_batch() {
         "Back from Home is terminal; a later queued click must not launch an application"
     );
 }
+
+#[test]
+fn home_focus_bookmark_restores_deliberate_favourite_after_restart_without_replaying_input() {
+    let _serial = plx_base::testlock::serial();
+    let mut first = Shell::new(fixture(), Preferences::default());
+    first.take_preferences_changed();
+    assert!(first.take_home_focus_changed().is_none());
+    first.direction(Dir::Right);
+    first.direction(Dir::Right);
+    let id = first.take_home_focus_changed().unwrap();
+    assert_eq!(id, "com.example.app02");
+    assert!(first.take_home_focus_changed().is_none());
+    let saved = serde_json::to_string(first.preferences()).unwrap();
+    let mut restarted = Shell::new(fixture(), serde_json::from_str(&saved).unwrap());
+    assert!(restarted.restore_home_focus(&id));
+    assert_eq!(restarted.focused_item().as_deref(), Some(id.as_str()));
+    assert!(restarted.take_home_focus_changed().is_none());
+    assert!(!restarted.take_preferences_changed());
+    assert!(restarted.take_requests().is_empty());
+    assert!(restarted.menu_application().is_none());
+    assert!(!restarted.drawer_state().editing);
+    assert!(!restarted.should_exit());
+}
+
+#[test]
+fn home_focus_bookmark_missing_unpinned_and_explicit_empty_use_default_without_rewriting() {
+    let _serial = plx_base::testlock::serial();
+    for missing in ["com.example.gone", "com.example.app11"] {
+        let mut s = Shell::new(fixture(), Preferences::default());
+        s.take_preferences_changed();
+        assert!(!s.restore_home_focus(missing));
+        assert_eq!(s.focused_item().as_deref(), Some("com.example.app00"));
+        assert!(s.take_home_focus_changed().is_none());
+        assert!(!s.take_preferences_changed());
+        assert!(s.take_requests().is_empty());
+    }
+    let mut s = Shell::new(
+        fixture(),
+        Preferences {
+            initialized: true,
+            ..Preferences::default()
+        },
+    );
+    assert!(!s.restore_home_focus("com.example.app00"));
+    assert_eq!(focus(&s), HOME_APPS_LINK);
+    assert!(s.preferences().favourites.is_empty());
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+}
+
+#[test]
+fn home_focus_bookmark_rename_reorder_and_automatic_reconciliation_never_dirty_it() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    assert!(s.restore_home_focus("com.example.app03"));
+    let before = s.snapshot.clone();
+    s.snapshot.applications.reverse();
+    s.snapshot
+        .applications
+        .iter_mut()
+        .find(|a| a.id == "com.example.app03")
+        .unwrap()
+        .title = "ZZ renamed".into();
+    s.catalogue
+        .refresh(&s.snapshot.applications, &s.snapshot.launch_ids);
+    s.refresh_shown_data(&before);
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app03"));
+    s.focus_application("com.example.app02");
+    s.open(Page::Applications);
+    s.direction(Dir::Right);
+    s.open(Page::Home);
+    assert!(s.take_home_focus_changed().is_none());
+    let before = s.snapshot.clone();
+    s.snapshot
+        .applications
+        .retain(|a| a.id != "com.example.app02");
+    s.snapshot.launch_ids.remove("com.example.app02");
+    s.catalogue
+        .refresh(&s.snapshot.applications, &s.snapshot.launch_ids);
+    s.refresh_shown_data(&before);
+    assert!(s.take_home_focus_changed().is_none());
+}
+
+#[test]
+fn home_focus_bookmark_pointer_hover_is_quiet_but_click_is_deliberate_once() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    let card = &s.surface.cards.items[3];
+    let key = FocusKey {
+        entry: entry(Page::Home),
+        elem: card.key,
+    };
+    let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
+    s.input.hit.fill(vec![Stop {
+        key,
+        rect,
+        rest_rect: rect,
+        clip: CONTENT,
+        hover: Hover::Focus,
+        activate: Activate::Press,
+    }]);
+    s.input.hit.swap();
+    for _ in 0..10 {
+        s.pointer(rect.cx(), rect.cy(), false);
+    }
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app03"));
+    assert!(s.take_home_focus_changed().is_none());
+    s.pointer(rect.cx(), rect.cy(), true);
+    assert_eq!(
+        s.take_home_focus_changed().as_deref(),
+        Some("com.example.app03")
+    );
+    s.pointer(rect.cx(), rect.cy(), true);
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+}
+
+#[test]
+fn home_focus_bookmark_hold_release_and_menu_do_not_duplicate_or_save_menu_ids() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    assert!(s.focus_application("com.example.app03"));
+    assert!(s.take_home_focus_changed().is_none());
+    s.press(true, PressFrom::Key);
+    for ms in (0..=800).step_by(16) {
+        s.tick(ms, 0.016);
+        s.repeat();
+    }
+    assert_eq!(
+        s.take_home_focus_changed().as_deref(),
+        Some("com.example.app03")
+    );
+    s.press(false, PressFrom::Key);
+    for ms in (816..1200).step_by(16) {
+        s.tick(ms, 0.016);
+    }
+    s.direction(Dir::Down);
+    s.back();
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+    assert!(s.take_requests().is_empty());
+}

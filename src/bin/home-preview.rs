@@ -807,6 +807,24 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
     let mut committed_preferences = None;
+    // Optional navigation persistence belongs to ordinary interactive sessions,
+    // not capture/performance/keyboard observation recipes.
+    let home_focus_enabled = interactive
+        && !session_capture
+        && !performance_proof
+        && !observer_requested
+        && preview_observer.is_none();
+    let (loaded_home_focus, mut home_focus_error) = if home_focus_enabled {
+        match persistence.as_ref().map(Persistence::loaded_home_focus) {
+            Some(Ok(focus)) => (focus, None),
+            Some(Err(error)) => (None, Some(error)),
+            None => (None, None),
+        }
+    } else {
+        (None, None)
+    };
+    let mut committed_home_focus = loaded_home_focus.clone();
+    let mut home_focus_write_attempts = 0_u64;
     let initial_preferences = if icon_presentation_marker.is_some() {
         if loaded_preferences.is_some() || storage_error.is_some() {
             return Err("Icon presentation requires fresh isolated preferences".into());
@@ -821,6 +839,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         loaded_preferences.clone().unwrap_or_default()
     };
     let mut shell = Shell::new(snapshot, initial_preferences);
+    let home_focus_restored = loaded_home_focus
+        .as_deref()
+        .is_some_and(|id| shell.restore_home_focus(id));
     let mut preference_write_attempts = 0_u64;
     if preview_artwork_marker.is_none() {
         queue_preferences(
@@ -2115,15 +2136,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &mut storage_error,
                 &mut preference_write_attempts,
             );
+            if home_focus_enabled {
+                queue_home_focus(
+                    &mut shell,
+                    &mut persistence,
+                    &mut home_focus_error,
+                    &mut home_focus_write_attempts,
+                );
+            }
             if let Some(writer) = &mut persistence {
                 accept_replies(
                     writer.poll(),
                     &mut committed_preferences,
                     &mut storage_error,
                 );
+                accept_focus_replies(
+                    writer.poll_home_focus(),
+                    &mut committed_home_focus,
+                    &mut home_focus_error,
+                );
             }
             if storage_error.is_some() {
                 shell.storage_notice("Favourites could not be saved • previous data kept");
+            } else if home_focus_error.is_some() {
+                shell.storage_notice("Home focus could not be saved • favourites unchanged");
             }
             if let Some(worker) = &action_worker {
                 for reply in worker.poll() {
@@ -2410,6 +2446,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         reason = session_exit_reason(shell.should_exit(), reason);
     }
+    // A close can end an input batch before its ordinary per-frame persistence pump.
+    // Drain the last deliberate Home selection through the same worker before joining it.
+    if home_focus_enabled {
+        queue_home_focus(
+            &mut shell,
+            &mut persistence,
+            &mut home_focus_error,
+            &mut home_focus_write_attempts,
+        );
+    }
     if shell.page() == Page::Applications && shell.drawer_state().editing {
         shell.back();
     }
@@ -2433,10 +2479,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_arch = "arm")]
     clock_worker.finish();
     if let Some(writer) = persistence {
+        let outcomes = writer.finish_all();
         accept_replies(
-            writer.finish(),
+            outcomes.preferences,
             &mut committed_preferences,
             &mut storage_error,
+        );
+        accept_focus_replies(
+            outcomes.home_focus,
+            &mut committed_home_focus,
+            &mut home_focus_error,
         );
     }
     let native_api_probe = match native_probe {
@@ -2535,6 +2587,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof && broker_startup_marker.is_none() && broker_negative_marker.is_none() && installed_artwork_marker.is_none()
         && preview_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
     report["settings_handoff"] = settings_handoff.diagnostics();
+    report["home_focus"] = serde_json::json!({
+        "enabled": home_focus_enabled,
+        "loaded": loaded_home_focus,
+        "restored": home_focus_restored,
+        "bookmark": shell.home_focus_bookmark(),
+        "queue_attempts": home_focus_write_attempts,
+        "readback_confirmed": committed_home_focus.is_some()
+            && committed_home_focus.as_deref() == shell.home_focus_bookmark()
+            && home_focus_error.is_none(),
+        "error": home_focus_error,
+        "restores_actions": false,
+    });
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
     report["packaged_icon_shutdown"] = serde_json::json!(packaged_icon_shutdown);
     report["ordinary_current_cache_selected"] = serde_json::json!(ordinary_current_cache_selected);
@@ -2784,6 +2848,33 @@ fn queue_preferences(
         *attempts = attempts.saturating_add(1);
         if let Err(failure) = writer.queue(shell.preferences()) {
             *error = Some(failure);
+        }
+    }
+}
+fn queue_home_focus(
+    shell: &mut Shell,
+    writer: &mut Option<Persistence>,
+    error: &mut Option<String>,
+    attempts: &mut u64,
+) {
+    if let Some(id) = shell.take_home_focus_changed() {
+        if let Some(writer) = writer {
+            *attempts = attempts.saturating_add(1);
+            if let Err(failure) = writer.queue_home_focus(&id) {
+                *error = Some(failure);
+            }
+        }
+    }
+}
+fn accept_focus_replies(
+    replies: Vec<Result<String, String>>,
+    committed: &mut Option<String>,
+    error: &mut Option<String>,
+) {
+    for reply in replies {
+        match reply {
+            Ok(id) => *committed = Some(id),
+            Err(failure) => *error = Some(failure),
         }
     }
 }
@@ -5090,5 +5181,59 @@ mod session_cache_capture_tests {
             bounded_cache_frame_json(&too_large).unwrap_err().kind(),
             std::io::ErrorKind::InvalidData
         );
+    }
+}
+
+#[cfg(test)]
+mod home_focus_main_tests {
+    use super::*;
+    #[test]
+    fn actual_queue_finish_and_reopen_restore_only_latest_deliberate_home_focus() {
+        let _serial = plx_base::testlock::serial();
+        let path =
+            std::env::temp_dir().join(format!("native-home-main-focus-{}", std::process::id()));
+        let store = native_home::preferences::Store::open(&path).unwrap();
+        let prefs = Preferences {
+            initialized: true,
+            favourites: ["com.example.a".into(), "com.example.b".into()].into(),
+            favourite_order: Vec::new(),
+        };
+        store.save(&prefs).unwrap();
+        let before = std::fs::read(path.join("preferences.json")).unwrap();
+        let fixture = || {
+            serde_json::from_value::<Snapshot>(serde_json::json!({"captured_at":"synthetic","applications":[{"id":"com.example.a","title":"A","type":"native"},{"id":"com.example.b","title":"B","type":"native"}],"launch_ids":["com.example.a","com.example.b"],"inputs":[],"context":{"input":"","dynamic_range":"","picture_mode":""},"settings":{}})).unwrap()
+        };
+        let (writer, loaded) = Persistence::start(&path).unwrap();
+        let mut writer = Some(writer);
+        let mut shell = Shell::new(fixture(), loaded.unwrap());
+        let mut error = None;
+        let mut attempts = 0;
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        assert_eq!(attempts, 0);
+        assert!(!path.join("home-focus.json").exists());
+        shell.direction(Dir::Right);
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        shell.direction(Dir::Left);
+        // Emulate a normal close before the next per-frame queue. The final drain
+        // must retain this newer selection rather than just the earlier queued one.
+        shell.request_exit();
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        let result = writer.unwrap().finish_all();
+        let mut committed = None;
+        accept_focus_replies(result.home_focus, &mut committed, &mut error);
+        assert_eq!(committed.as_deref(), Some("com.example.a"));
+        assert!(error.is_none());
+        assert!(result.preferences.is_empty());
+        assert_eq!(attempts, 2);
+        assert_eq!(
+            std::fs::read(path.join("preferences.json")).unwrap(),
+            before
+        );
+        let mut restarted = Shell::new(fixture(), store.load().unwrap().unwrap());
+        assert!(restarted.restore_home_focus(&store.load_home_focus().unwrap().unwrap()));
+        assert_eq!(restarted.focused_item().as_deref(), Some("com.example.a"));
+        assert!(restarted.take_home_focus_changed().is_none());
+        assert!(restarted.take_requests().is_empty());
+        std::fs::remove_dir_all(path).unwrap();
     }
 }

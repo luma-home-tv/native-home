@@ -14,6 +14,8 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
 };
 const NAME: &std::ffi::CStr = c"preferences.json";
+const HOME_FOCUS_NAME: &std::ffi::CStr = c"home-focus.json";
+const HOME_FOCUS_MAX_BYTES: usize = 1024;
 const MAX_BYTES: u64 = 64 * 1024;
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 #[derive(Serialize, Deserialize)]
@@ -21,6 +23,24 @@ static SERIAL: AtomicU64 = AtomicU64::new(0);
 struct Record {
     schema: u32,
     preferences: Preferences,
+}
+/// A separate sidecar keeps the existing favourites schema readable by older builds.
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HomeFocusRecord {
+    schema: u32,
+    app_id: String,
+}
+fn decode_home_focus(bytes: &[u8]) -> io::Result<String> {
+    if bytes.len() > HOME_FOCUS_MAX_BYTES {
+        return Err(invalid("Home focus record too large"));
+    }
+    let record: HomeFocusRecord =
+        serde_json::from_slice(bytes).map_err(|_| invalid("Malformed home focus record"))?;
+    if record.schema != 1 || !valid_app_id(&record.app_id) {
+        return Err(invalid("Unsupported or invalid home focus record"));
+    }
+    Ok(record.app_id)
 }
 fn invalid(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
@@ -192,6 +212,90 @@ impl Store {
         }
         write
     }
+    /// Optional UI state only; this never changes favourites or supplies an action.
+    pub fn load_home_focus(&self) -> io::Result<Option<String>> {
+        let fd = unsafe {
+            libc::openat(
+                self.dir.as_raw_fd(),
+                HOME_FOCUS_NAME.as_ptr(),
+                libc::O_RDONLY | libc::O_NOFOLLOW | libc::O_CLOEXEC | libc::O_NONBLOCK,
+            )
+        };
+        if fd < 0 {
+            let error = io::Error::last_os_error();
+            return if error.kind() == io::ErrorKind::NotFound {
+                Ok(None)
+            } else {
+                Err(error)
+            };
+        }
+        let mut file = unsafe { File::from_raw_fd(fd) };
+        private_file(&file)?;
+        if file.metadata()?.len() > HOME_FOCUS_MAX_BYTES as u64 {
+            return Err(invalid("Home focus record too large"));
+        }
+        let mut bytes = Vec::new();
+        Read::by_ref(&mut file)
+            .take(HOME_FOCUS_MAX_BYTES as u64 + 1)
+            .read_to_end(&mut bytes)?;
+        decode_home_focus(&bytes).map(Some)
+    }
+    pub fn save_home_focus(&self, app_id: &str) -> io::Result<()> {
+        let temp = CString::new(format!(
+            ".home-focus-{}-{}.tmp",
+            std::process::id(),
+            SERIAL.fetch_add(1, Ordering::Relaxed)
+        ))
+        .unwrap();
+        self.save_home_focus_at_temp(app_id, &temp)
+    }
+    fn save_home_focus_at_temp(&self, app_id: &str, temp: &std::ffi::CStr) -> io::Result<()> {
+        if !valid_app_id(app_id) {
+            return Err(invalid("Invalid home focus identity"));
+        }
+        // Preserve unreadable, foreign, corrupt or newer sidecars rather than repairing them.
+        self.load_home_focus()?;
+        let fd = unsafe {
+            libc::openat(
+                self.dir.as_raw_fd(),
+                temp.as_ptr(),
+                libc::O_WRONLY | libc::O_CREAT | libc::O_EXCL | libc::O_NOFOLLOW | libc::O_CLOEXEC,
+                0o600,
+            )
+        };
+        if fd < 0 {
+            return Err(io::Error::last_os_error());
+        }
+        let mut file = unsafe { File::from_raw_fd(fd) };
+        let write = (|| {
+            serde_json::to_writer(
+                &mut file,
+                &HomeFocusRecord {
+                    schema: 1,
+                    app_id: app_id.into(),
+                },
+            )?;
+            file.write_all(b"\n")?;
+            file.sync_all()?;
+            if unsafe {
+                libc::renameat(
+                    self.dir.as_raw_fd(),
+                    temp.as_ptr(),
+                    self.dir.as_raw_fd(),
+                    HOME_FOCUS_NAME.as_ptr(),
+                )
+            } < 0
+            {
+                return Err(io::Error::last_os_error());
+            }
+            self.dir.sync_all()?;
+            Ok(())
+        })();
+        if write.is_err() {
+            unsafe { libc::unlinkat(self.dir.as_raw_fd(), temp.as_ptr(), 0) };
+        }
+        write
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -337,57 +441,105 @@ mod tests {
 }
 
 /// Disk work runs off the render thread. Acknowledgements report readback, not merely queueing.
+#[derive(Default)]
+struct WriteBatch {
+    preferences: Option<Preferences>,
+    home_focus: Option<String>,
+}
+impl WriteBatch {
+    fn merge(&mut self, newer: Self) {
+        if newer.preferences.is_some() {
+            self.preferences = newer.preferences;
+        }
+        if newer.home_focus.is_some() {
+            self.home_focus = newer.home_focus;
+        }
+    }
+    fn is_empty(&self) -> bool {
+        self.preferences.is_none() && self.home_focus.is_none()
+    }
+}
 pub struct Persistence {
-    sender: std::sync::mpsc::SyncSender<Preferences>,
-    pending: Option<Preferences>,
+    sender: std::sync::mpsc::SyncSender<WriteBatch>,
+    pending: WriteBatch,
     replies: std::sync::mpsc::Receiver<Result<Preferences, String>>,
+    focus_replies: std::sync::mpsc::Receiver<Result<String, String>>,
+    loaded_focus: Result<Option<String>, String>,
     worker: std::thread::JoinHandle<()>,
+}
+pub struct PersistenceOutcome {
+    pub preferences: Vec<Result<Preferences, String>>,
+    pub home_focus: Vec<Result<String, String>>,
 }
 impl Persistence {
     pub fn start(path: &Path) -> io::Result<(Self, Option<Preferences>)> {
         let store = Store::open(path)?;
         let loaded = store.load()?;
-        let (sender, requests) = std::sync::mpsc::sync_channel::<Preferences>(1);
+        // Optional navigation damage must not make healthy favourites unavailable.
+        let loaded_focus = store.load_home_focus().map_err(|e| e.to_string());
+        let (sender, requests) = std::sync::mpsc::sync_channel::<WriteBatch>(1);
         let (ack, replies) = std::sync::mpsc::channel();
+        let (focus_ack, focus_replies) = std::sync::mpsc::channel();
         let worker = std::thread::Builder::new()
             .name("home-preferences".into())
             .spawn(move || {
-                while let Ok(mut prefs) = requests.recv() {
-                    // A fast pin/unpin burst saves its final state instead of blocking animation.
+                while let Ok(mut batch) = requests.recv() {
+                    // Coalesce each independent file without losing the other kind of write.
                     while let Ok(newest) = requests.try_recv() {
-                        prefs = newest;
+                        batch.merge(newest);
                     }
-                    let result = (|| {
-                        store.save(&prefs)?;
-                        if store.load()? != Some(prefs.clone()) {
-                            return Err(invalid("Preference readback mismatch"));
+                    if let Some(prefs) = batch.preferences {
+                        let result = (|| {
+                            store.save(&prefs)?;
+                            if store.load()? != Some(prefs.clone()) {
+                                return Err(invalid("Preference readback mismatch"));
+                            }
+                            Ok(prefs)
+                        })()
+                        .map_err(|e: io::Error| e.to_string());
+                        if ack.send(result).is_err() {
+                            break;
                         }
-                        Ok(prefs)
-                    })()
-                    .map_err(|e: io::Error| e.to_string());
-                    if ack.send(result).is_err() {
-                        break;
+                    }
+                    if let Some(id) = batch.home_focus {
+                        let result = (|| {
+                            store.save_home_focus(&id)?;
+                            if store.load_home_focus()?.as_deref() != Some(id.as_str()) {
+                                return Err(invalid("Home focus readback mismatch"));
+                            }
+                            Ok(id)
+                        })()
+                        .map_err(|e: io::Error| e.to_string());
+                        if focus_ack.send(result).is_err() {
+                            break;
+                        }
                     }
                 }
             })?;
         Ok((
             Self {
                 sender,
-                pending: None,
+                pending: WriteBatch::default(),
                 replies,
+                focus_replies,
+                loaded_focus,
                 worker,
             },
             loaded,
         ))
     }
+    pub fn loaded_home_focus(&self) -> Result<Option<String>, String> {
+        self.loaded_focus.clone()
+    }
     fn flush(&mut self) -> Result<(), String> {
-        let Some(prefs) = self.pending.take() else {
+        if self.pending.is_empty() {
             return Ok(());
-        };
-        match self.sender.try_send(prefs) {
+        }
+        let batch = std::mem::take(&mut self.pending);
+        match self.sender.try_send(batch) {
             Ok(()) => Ok(()),
-            Err(std::sync::mpsc::TrySendError::Full(prefs)) => {
-                self.pending = Some(prefs);
+            Err(std::sync::mpsc::TrySendError::Full(batch)) => {
+                self.pending = batch;
                 Ok(())
             }
             Err(std::sync::mpsc::TrySendError::Disconnected(_)) => {
@@ -397,7 +549,14 @@ impl Persistence {
     }
     pub fn queue(&mut self, prefs: &Preferences) -> Result<(), String> {
         validate(prefs).map_err(|e| e.to_string())?;
-        self.pending = Some(prefs.clone());
+        self.pending.preferences = Some(prefs.clone());
+        self.flush()
+    }
+    pub fn queue_home_focus(&mut self, id: &str) -> Result<(), String> {
+        if !valid_app_id(id) {
+            return Err("Invalid home focus identity".into());
+        }
+        self.pending.home_focus = Some(id.to_owned());
         self.flush()
     }
     pub fn poll(&mut self) -> Vec<Result<Preferences, String>> {
@@ -407,23 +566,39 @@ impl Persistence {
         }
         results
     }
+    pub fn poll_home_focus(&mut self) -> Vec<Result<String, String>> {
+        self.focus_replies.try_iter().collect()
+    }
     pub fn finish(self) -> Vec<Result<Preferences, String>> {
+        self.finish_all().preferences
+    }
+    pub fn finish_all(self) -> PersistenceOutcome {
         let Self {
             sender,
             pending,
             replies,
+            focus_replies,
             worker,
+            ..
         } = self;
-        let final_failed = pending.is_some_and(|prefs| sender.send(prefs).is_err());
+        let final_failed = !pending.is_empty() && sender.send(pending).is_err();
         drop(sender);
         if worker.join().is_err() {
-            return vec![Err("Preference writer panicked".into())];
+            return PersistenceOutcome {
+                preferences: vec![Err("Preference writer panicked".into())],
+                home_focus: vec![Err("Home focus writer panicked".into())],
+            };
         }
-        let mut results = replies.try_iter().collect::<Vec<_>>();
+        let mut preferences = replies.try_iter().collect::<Vec<_>>();
+        let mut home_focus = focus_replies.try_iter().collect::<Vec<_>>();
         if final_failed {
-            results.push(Err("Final preference write failed".into()));
+            preferences.push(Err("Final preference write failed".into()));
+            home_focus.push(Err("Final home focus write failed".into()));
         }
-        results
+        PersistenceOutcome {
+            preferences,
+            home_focus,
+        }
     }
 }
 #[cfg(test)]
@@ -472,5 +647,191 @@ mod ordering_tests {
         assert!(validate(&p).is_err());
         p.favourite_order = vec!["com.example.b".into(), "com.example.a".into()];
         assert!(validate(&p).is_ok());
+    }
+}
+
+#[cfg(test)]
+mod home_focus_tests {
+    use super::*;
+    use std::os::unix::fs::{symlink, PermissionsExt};
+    struct Scratch(std::path::PathBuf);
+    impl Scratch {
+        fn new() -> Self {
+            Self(std::env::temp_dir().join(format!(
+                "native-home-focus-{}-{}",
+                std::process::id(),
+                SERIAL.fetch_add(1, Ordering::Relaxed)
+            )))
+        }
+    }
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            std::fs::remove_dir_all(&self.0).unwrap();
+        }
+    }
+    fn prefs() -> Preferences {
+        Preferences {
+            initialized: true,
+            favourites: ["com.example.a".into(), "com.example.b".into()].into(),
+            favourite_order: Vec::new(),
+        }
+    }
+    #[test]
+    fn sidecar_roundtrip_keeps_old_favourite_bytes_and_explicit_empty_schema() {
+        let path = Scratch::new();
+        let store = Store::open(&path.0).unwrap();
+        let empty = Preferences {
+            initialized: true,
+            ..Preferences::default()
+        };
+        store.save(&empty).unwrap();
+        let before = std::fs::read(path.0.join("preferences.json")).unwrap();
+        assert!(store.load_home_focus().unwrap().is_none());
+        store.save_home_focus("com.example.a").unwrap();
+        drop(store);
+        let store = Store::open_existing(&path.0).unwrap();
+        assert_eq!(
+            store.load_home_focus().unwrap().as_deref(),
+            Some("com.example.a")
+        );
+        assert_eq!(store.load().unwrap(), Some(empty));
+        assert_eq!(
+            std::fs::read(path.0.join("preferences.json")).unwrap(),
+            before
+        );
+        assert_eq!(
+            std::fs::metadata(path.0.join("home-focus.json"))
+                .unwrap()
+                .mode()
+                & 0o777,
+            0o600
+        );
+    }
+    #[test]
+    fn sidecar_unknown_corrupt_duplicate_trailing_and_oversized_records_are_preserved() {
+        let path = Scratch::new();
+        let store = Store::open(&path.0).unwrap();
+        store.save(&prefs()).unwrap();
+        store.save_home_focus("com.example.a").unwrap();
+        let target = path.0.join("home-focus.json");
+        for raw in [
+            r#"{"schema":2,"app_id":"com.example.a"}"#.to_owned(),
+            r#"{"schema":1,"app_id":"../../bad"}"#.into(),
+            r#"{"schema":1,"app_id":"com.example.a","app_id":"com.example.b"}"#.into(),
+            r#"{"schema":1,"app_id":"com.example.a"} {}"#.into(),
+            r#"{"schema":1,"app_id":"com.example.a","action":"launch"}"#.into(),
+            " ".repeat(HOME_FOCUS_MAX_BYTES + 1),
+        ] {
+            std::fs::write(&target, &raw).unwrap();
+            assert!(store.load_home_focus().is_err());
+            assert!(store.save_home_focus("com.example.b").is_err());
+            assert_eq!(std::fs::read_to_string(&target).unwrap(), raw);
+            assert_eq!(store.load().unwrap(), Some(prefs()));
+        }
+    }
+    #[test]
+    fn sidecar_symlink_hardlink_public_mode_and_fifo_cannot_redirect_or_block() {
+        let path = Scratch::new();
+        let store = Store::open(&path.0).unwrap();
+        let target = path.0.join("home-focus.json");
+        let outside = path.0.join("sentinel");
+        std::fs::write(&outside, b"untouched").unwrap();
+        symlink(&outside, &target).unwrap();
+        assert!(store.save_home_focus("com.example.a").is_err());
+        std::fs::remove_file(&target).unwrap();
+        assert_eq!(std::fs::read(&outside).unwrap(), b"untouched");
+        store.save_home_focus("com.example.a").unwrap();
+        std::fs::hard_link(&target, path.0.join("link")).unwrap();
+        assert!(store.load_home_focus().is_err());
+        std::fs::remove_file(path.0.join("link")).unwrap();
+        std::fs::set_permissions(&target, std::fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(store.save_home_focus("com.example.b").is_err());
+        std::fs::remove_file(&target).unwrap();
+        let name = CString::new(target.as_os_str().as_encoded_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(name.as_ptr(), 0o600) }, 0);
+        assert!(store.load_home_focus().is_err());
+    }
+    #[test]
+    fn sidecar_writes_stay_in_held_original_directory_after_parent_rename() {
+        let tmp = Scratch::new();
+        std::fs::create_dir(&tmp.0).unwrap();
+        let original = tmp.0.join("state");
+        let moved = tmp.0.join("moved");
+        let store = Store::open(&original).unwrap();
+        std::fs::rename(&original, &moved).unwrap();
+        std::fs::create_dir(&original).unwrap();
+        store.save_home_focus("com.example.a").unwrap();
+        assert!(moved.join("home-focus.json").is_file());
+        assert!(!original.join("home-focus.json").exists());
+    }
+    #[test]
+    fn one_writer_coalesces_both_files_and_restart_loads_only_acknowledged_latest_state() {
+        let path = Scratch::new();
+        let (mut writer, _) = Persistence::start(&path.0).unwrap();
+        assert_eq!(writer.loaded_home_focus().unwrap(), None);
+        writer.queue(&prefs()).unwrap();
+        writer.queue_home_focus("com.example.a").unwrap();
+        let mut newer = prefs();
+        newer.favourites.clear();
+        writer.queue(&newer).unwrap();
+        writer.queue_home_focus("com.example.b").unwrap();
+        let result = writer.finish_all();
+        assert_eq!(result.preferences.last().unwrap().as_ref().unwrap(), &newer);
+        assert_eq!(
+            result.home_focus.last().unwrap().as_ref().unwrap(),
+            "com.example.b"
+        );
+        let (writer, loaded) = Persistence::start(&path.0).unwrap();
+        assert_eq!(loaded, Some(newer));
+        assert_eq!(
+            writer.loaded_home_focus().unwrap().as_deref(),
+            Some("com.example.b")
+        );
+        let result = writer.finish_all();
+        assert!(result.preferences.is_empty() && result.home_focus.is_empty());
+    }
+    #[test]
+    fn damaged_optional_sidecar_does_not_disable_or_rewrite_favourites() {
+        let path = Scratch::new();
+        let store = Store::open(&path.0).unwrap();
+        store.save(&prefs()).unwrap();
+        store.save_home_focus("com.example.a").unwrap();
+        let bad = br#"{"schema":2,"app_id":"com.example.a"}"#;
+        std::fs::write(path.0.join("home-focus.json"), bad).unwrap();
+        let (mut writer, loaded) = Persistence::start(&path.0).unwrap();
+        assert_eq!(loaded, Some(prefs()));
+        assert!(writer.loaded_home_focus().is_err());
+        writer.queue(&prefs()).unwrap();
+        writer.queue_home_focus("com.example.b").unwrap();
+        let result = writer.finish_all();
+        assert!(result.preferences.iter().all(Result::is_ok));
+        assert!(result.home_focus.iter().any(Result::is_err));
+        assert_eq!(std::fs::read(path.0.join("home-focus.json")).unwrap(), bad);
+    }
+}
+
+#[cfg(test)]
+mod home_focus_interrupted_tests {
+    use super::*;
+    #[test]
+    fn existing_interrupted_temp_refuses_new_write_without_losing_prior_sidecar() {
+        let path = std::env::temp_dir().join(format!(
+            "native-home-focus-interrupted-{}-{}",
+            std::process::id(),
+            SERIAL.fetch_add(1, Ordering::Relaxed)
+        ));
+        let store = Store::open(&path).unwrap();
+        store.save_home_focus("com.example.a").unwrap();
+        let before = std::fs::read(path.join("home-focus.json")).unwrap();
+        // Exercise the production atomic-write body against an existing interrupted temp.
+        let name = c".home-focus-interrupted-test.tmp";
+        let temp = path.join(name.to_str().unwrap());
+        std::fs::write(&temp, b"incomplete prior attempt").unwrap();
+        assert!(store
+            .save_home_focus_at_temp("com.example.b", name)
+            .is_err());
+        assert_eq!(std::fs::read(path.join("home-focus.json")).unwrap(), before);
+        assert_eq!(std::fs::read(&temp).unwrap(), b"incomplete prior attempt");
+        std::fs::remove_dir_all(path).unwrap();
     }
 }

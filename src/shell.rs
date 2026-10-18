@@ -1090,6 +1090,8 @@ pub struct Shell {
     pending: Vec<Action>,
     exit: bool,
     preferences_changed: bool,
+    home_focus: Option<String>,
+    home_focus_changed: bool,
     live_state: Option<Freshness>,
     live_now: u32,
     live_updates: u32,
@@ -1204,6 +1206,8 @@ impl Shell {
             pending: Vec::new(),
             exit: false,
             preferences_changed: seeded,
+            home_focus: None,
+            home_focus_changed: false,
             live_state: None,
             live_now: 0,
             live_updates: 0,
@@ -2925,6 +2929,7 @@ impl Shell {
             .engine
             .move_dir(owner, &self.surface, &links, dir, &cx);
         self.moved(outcome);
+        self.remember_home_focus();
     }
     pub fn cancel_press(&mut self) {
         self.input.cancel_press();
@@ -3284,6 +3289,9 @@ impl Shell {
         };
         let id = card.id.clone();
         let input = input_key(&id).is_some();
+        if !input && self.surface.page == Page::Home {
+            self.remember_home_focus();
+        }
         if hold && !input && matches!(self.surface.page, Page::Home | Page::Applications) {
             let index = self
                 .surface
@@ -3437,6 +3445,49 @@ impl Shell {
     }
     pub fn menu_application(&self) -> Option<&str> {
         self.menu.as_ref().map(|m| m.id.as_str())
+    }
+    /// Restore UI focus only. Automatic reconciliation and missing-ID fallback never save it.
+    pub fn restore_home_focus(&mut self, id: &str) -> bool {
+        if self.surface.page != Page::Home || self.menu.is_some() || !crate::model::valid_app_id(id)
+        {
+            return false;
+        }
+        self.home_focus = Some(id.to_owned());
+        if self.prefs.favourites.contains(id) && self.focus_application(id) {
+            true
+        } else {
+            if self.surface.cards.items.is_empty() {
+                self.focus_home_link(0);
+            }
+            false
+        }
+    }
+    fn remember_home_focus(&mut self) {
+        if self.surface.page != Page::Home || self.menu.is_some() {
+            return;
+        }
+        let Some(id) = self
+            .focused_item()
+            .filter(|id| self.prefs.favourites.contains(id))
+        else {
+            return;
+        };
+        if self.home_focus.as_ref() != Some(&id) {
+            self.home_focus = Some(id);
+            self.home_focus_changed = true;
+        }
+    }
+    /// Only explicit Home direction/wheel movement or card activation reaches this queue.
+    /// Pointer hover, programmatic focus, rebuild and fallback do not dirty the bookmark.
+    pub fn take_home_focus_changed(&mut self) -> Option<String> {
+        if std::mem::take(&mut self.home_focus_changed) {
+            self.home_focus.clone()
+        } else {
+            None
+        }
+    }
+    pub fn home_focus_bookmark(&self) -> Option<&str> {
+        self.home_focus.as_deref()
     }
     /// Process queued input at this frame's controller time. Deferred gestures are
     /// advanced only after the batch, so queued cancellation can win the frame.
