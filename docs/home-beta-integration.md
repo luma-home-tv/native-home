@@ -84,6 +84,24 @@ tests; the first failed local merge-resolution assertion remains recorded.
 
 ## Next native sequence
 
+The matching two-session C2 workflow now passes source/offline review: 87 author
+checks, nine focused review groups and a separate coordinator replay. All 968
+review bindings remain unchanged before and after replay. The workflow is still
+unadmitted: no actual test dates, device lease, baseline or human readiness are
+supplied by these results.
+
+Review preserved three earlier runner defects: a launch-copy hash cycle,
+incomplete startup-failure validation, and a malformed final report being treated
+as a known component failure. The corrected workflow validates the full ordinary
+report on every completion/abort path before grading its meaning. Unknown data
+continues to stop cleanup; a conforming report can still describe an unsuccessful
+component test. These checks do not establish native storage or cleanup success.
+
+The coordinator also checked the relocated source and helper bootstrap with an
+invalid test window and a mocked contact gate. No TV command, actual admission
+record or operational output directory was created. Current native installation,
+permissions, both-file persistence, physical input and visual focus remain open.
+
 1. Use a fresh C2 availability/context/lease and complete actual retained-state
    baseline. Establish the isolated app's actual native state access without
    permission repair. The separate one-icon reader can be qualified independently;
