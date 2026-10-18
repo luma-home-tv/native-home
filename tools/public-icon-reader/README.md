@@ -76,10 +76,12 @@ PID cannot be treated as absent, and no live raw7 observation is implied.
 Trusted system shell/env/libc and the reviewed no-fork source are prerequisites;
 this is not a broad Root-process or hostile-Root proof.
 
-Failed, short or interrupted lifecycle writes are not retried: the process
-returns 1 without path I/O, image content or further stderr diagnostics. A blocked
-lifecycle write is governed by the same original alarm. Missing/partial lifecycle
-records must not qualify a call or grant cleanup authority.
+Returned write errors, short writes or `EINTR` are not retried: the process
+returns 1 without path I/O, image content or further stderr diagnostics. With
+the default signal policy, a closed pipe can instead terminate it with
+`SIGPIPE` before the write returns. A blocked lifecycle write is governed by
+the same original alarm. Nonzero status, signal termination and missing/partial
+lifecycle records must not qualify a call or grant cleanup authority.
 
 Validation refusals exit 1 with **zero stdout bytes**. A failure before the
 Root/root-kind checks has only `public icon read refused` plus LF on stderr;
