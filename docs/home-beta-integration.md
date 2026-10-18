@@ -59,6 +59,24 @@ selection is the retained 143 paths plus exactly `src/control_tasks.rs`,
 `icon_acquisition.py` and `tools/public-icon-reader/protocol.py`. The reader is a
 separate primitive; compiling this dashboard does not bundle or authorize it.
 
+A matching ordinary interactive Proof IPK also builds through the actual
+packager and SDK archiver. It has 9 files, 11 bundle attributes and 14 archive
+entries, the exact dashboard
+above and only the interactive-session marker. Its supplied catalogue is
+synthetic and its acquired image is the repository's own logo. The explicit
+acquisition receipt is recorded externally, with native authority and verified
+closure both false. No household inventory or icons enter this local test.
+
+The package SHA-256 is
+`025de7416a601a61dc6bd2625e2bbffea56edf4ca89d38a6af707d875fca3820`.
+Independent archive/profile review, eight adverse checks and a byte-identical
+coordinator replay pass, with all 378 review bindings unchanged. This
+profile selects ordinary persistence, without capture/observer/performance,
+Root, cache-producer or helper roles. Actual private-store access, state readback
+and focus appearance still require native execution. The synthetic favourite
+may remain stored while disappearing from Home after a real catalogue arrives;
+the native recipe must distinguish stored IDs from eligible visible favourites.
+
 Independent source review preserved two focus-startup prototype failures and a
 receipt-presence bug that could treat a dangling receipt link as legacy assets.
 Their corrected cases pass. The combined merge preserved both sets of Shell
