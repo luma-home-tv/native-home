@@ -59,6 +59,36 @@ are source foundations, with no mutation caller or native maintenance proof.
 Automatic retirement/eviction and new diagnostic schema integration are later
 work, not prerequisites for the first fixed-catalogue beta.
 
+## Remaining product work
+
+Passing the daily-use tests does not fill the following implementation gaps:
+
+1. **Return and Home continuity.** Ordinary departures to another app currently
+   end Luma after 500 ms hidden. Define and verify explicit user reentry without
+   intercepting Home or extending an unknown background lifetime. Restore a
+   stable last-deliberate favourite across a fresh process, with old-record,
+   removed-app and empty-shelf fallbacks. The Settings cover/return state machine
+   already exists; it needs current ordinary native proof rather than another
+   implementation. The shared Home options candidate addresses a separate
+   interaction inconsistency.
+2. **Input switching on both targets.** Ordinary C2 input changes currently fail
+   closed. They need a dedicated operation-specific selection/readback and exact
+   original-source restoration before enablement. G2 results, a Proof identity
+   and host checks cannot unlock this. Signal presence, selected source and
+   actual video format must remain distinct; retain Unavailable where no
+   trustworthy format read exists.
+3. **Settings tasks and artwork supply.** Named timers, app/storage,
+   external-device/CEC/Bluetooth and tuner/channel tasks need honest LG-managed
+   destinations or individually qualified native controls. Existing category
+   overviews do not establish direct task destinations or comprehensive parity.
+   Separately, implement a current-catalogue icon acquisition/refresh flow after
+   qualifying the new reader. A one-icon CLI and fallback initials do not supply
+   that flow. Keep normal Root artwork off until the complete path is qualified.
+
+Source agents can design and test these changes in parallel. The coordinator
+alone owns hardware tests and retained updates; new candidates must remain
+separate from the frozen executable used by the current test workflow.
+
 The initial resumed campaign used G2. The user has since explicitly redirected
 manual testing to C2. Its [fresh permission observation](c2-current-permission-observation.md)
 blocks reuse of the current G2 favourites carrier. A separately reviewed C2
