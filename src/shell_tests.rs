@@ -3059,3 +3059,136 @@ fn home_focus_valid_hover_change_cancels_restore_without_saving_but_same_hover_d
         assert!(s.take_requests().is_empty());
     }
 }
+
+#[test]
+fn home_focus_empty_packaged_shelf_then_fresh_absence_selects_first_eligible_favourite() {
+    let _serial = plx_base::testlock::serial();
+    for order in [
+        Vec::new(),
+        vec![
+            "com.example.app11".to_owned(),
+            "com.example.app10".to_owned(),
+            "com.example.app09".to_owned(),
+        ],
+    ] {
+        let mut packaged = fixture();
+        packaged.applications.retain(|a| {
+            !matches!(
+                a.id.as_str(),
+                "com.example.app09" | "com.example.app10" | "com.example.app11"
+            )
+        });
+        packaged.launch_ids.retain(|id| {
+            !matches!(
+                id.as_str(),
+                "com.example.app09" | "com.example.app10" | "com.example.app11"
+            )
+        });
+        let prefs = Preferences {
+            initialized: true,
+            favourites: [
+                "com.example.app09".into(),
+                "com.example.app10".into(),
+                "com.example.app11".into(),
+            ]
+            .into(),
+            favourite_order: order.clone(),
+        };
+        let mut s = Shell::new(packaged, prefs);
+        assert!(!s.restore_home_focus("com.example.app09"));
+        assert_eq!(focus(&s), HOME_APPS_LINK);
+        let mut fresh = live_update(100);
+        fresh.simulated = false;
+        if let crate::live::Reading::Value(c) = &mut fresh.catalogue {
+            c.apps.retain(|a| a.id != "com.example.app09");
+            c.launch_ids.remove("com.example.app09");
+        }
+        s.apply_live(&fresh, 100);
+        assert_eq!(
+            s.focused_item().as_deref(),
+            Some(if order.is_empty() {
+                "com.example.app10"
+            } else {
+                "com.example.app11"
+            })
+        );
+        assert!(!s.home_focus_restore_pending());
+        assert!(!s.home_focus_restored_from_live());
+        assert!(s.take_home_focus_changed().is_none());
+        assert!(!s.take_preferences_changed());
+        assert!(s.take_requests().is_empty());
+    }
+}
+#[test]
+fn home_focus_initial_fallback_is_explicit_first_favourite_not_existing_programmatic_focus() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    assert!(s.focus_application("com.example.app03"));
+    assert!(!s.restore_home_focus("com.example.gone"));
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app00"));
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+    assert!(s.take_requests().is_empty());
+}
+#[test]
+fn home_focus_fresh_hidden_unregistered_and_unpinned_saved_id_use_eligible_fallback() {
+    let _serial = plx_base::testlock::serial();
+    for variant in 0..3 {
+        let mut packaged = fixture();
+        packaged.applications.clear();
+        packaged.launch_ids.clear();
+        let prefs = Preferences {
+            initialized: true,
+            favourites: if variant == 2 {
+                ["com.example.app10".into()].into()
+            } else {
+                ["com.example.app09".into(), "com.example.app10".into()].into()
+            },
+            favourite_order: Vec::new(),
+        };
+        let mut s = Shell::new(packaged, prefs);
+        assert!(!s.restore_home_focus("com.example.app09"));
+        let mut fresh = live_update(100);
+        fresh.simulated = false;
+        if let crate::live::Reading::Value(c) = &mut fresh.catalogue {
+            if variant == 0 {
+                c.apps
+                    .iter_mut()
+                    .find(|a| a.id == "com.example.app09")
+                    .unwrap()
+                    .visible = false;
+            }
+            if variant == 1 {
+                c.launch_ids.remove("com.example.app09");
+            }
+        }
+        s.apply_live(&fresh, 100);
+        assert_eq!(s.focused_item().as_deref(), Some("com.example.app10"));
+        assert!(!s.home_focus_restore_pending());
+        assert!(!s.home_focus_restored_from_live());
+        assert!(s.take_home_focus_changed().is_none());
+        assert!(s.take_requests().is_empty());
+    }
+}
+#[test]
+fn home_focus_fresh_catalogue_with_explicit_empty_favourites_stays_on_view_all_without_seeding() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(
+        fixture(),
+        Preferences {
+            initialized: true,
+            ..Preferences::default()
+        },
+    );
+    assert!(!s.restore_home_focus("com.example.app09"));
+    let mut fresh = live_update(100);
+    fresh.simulated = false;
+    s.apply_live(&fresh, 100);
+    assert_eq!(focus(&s), HOME_APPS_LINK);
+    assert!(s.preferences().favourites.is_empty());
+    assert!(!s.home_focus_restore_pending());
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+    assert!(s.take_requests().is_empty());
+}

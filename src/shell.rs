@@ -1748,9 +1748,7 @@ impl Shell {
             && Freshness::current(Some(update.observed_ms), now)
         {
             if let Some(id) = self.pending_home_focus_restore.take() {
-                self.home_focus_restored_from_live = self.surface.page == Page::Home
-                    && self.prefs.favourites.contains(&id)
-                    && self.focus_application(&id);
+                self.home_focus_restored_from_live = self.restore_home_favourite_or_default(&id);
             }
         }
         self.validate_pointer_picker();
@@ -3486,10 +3484,18 @@ impl Shell {
         }
         self.home_focus = Some(id.to_owned());
         self.pending_home_focus_restore = Some(id.to_owned());
+        self.restore_home_favourite_or_default(id)
+    }
+    fn restore_home_favourite_or_default(&mut self, id: &str) -> bool {
+        if self.surface.page != Page::Home || self.menu.is_some() {
+            return false;
+        }
         if self.prefs.favourites.contains(id) && self.focus_application(id) {
             true
         } else {
-            if self.surface.cards.items.is_empty() {
+            if let Some(first) = self.surface.cards.items.first().map(|card| card.id.clone()) {
+                self.focus_application(&first);
+            } else {
                 self.focus_home_link(0);
             }
             false
