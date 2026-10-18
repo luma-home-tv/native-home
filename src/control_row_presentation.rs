@@ -46,6 +46,7 @@ pub fn policy(section: Option<SettingsSection>, setting_id: &str) -> Policy {
         (Some(S::PanelCare | S::Network), _)
         | (Some(S::General), "quickStartMode" | "homeAutoLaunch"
             | "localeInfo.locales.UI" | "localeInfo.locales.AUD" | "localeInfo.locales.AUD2"
+            | "localeInfo.clock" | "localeInfo.timezone" | "localeInfo.locales.FMT"
             | "country" | "smartServiceCountryCode2") => Policy::Protected,
         (
             Some(S::Picture),
@@ -211,6 +212,9 @@ mod tests {
             (SettingsSection::General, "localeInfo.locales.AUD2"),
             (SettingsSection::General, "country"),
             (SettingsSection::General, "smartServiceCountryCode2"),
+            (SettingsSection::General, "localeInfo.clock"),
+            (SettingsSection::General, "localeInfo.timezone"),
+            (SettingsSection::General, "localeInfo.locales.FMT"),
         ] {
             let mut row = input(section, id);
             row.write = Some(WriteCapability {
