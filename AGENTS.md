@@ -137,6 +137,23 @@ menu appearance, physical input and persistence remain open. Preserve the source
 and build identities; the separate Home-bookmark branch must not alter them. See
 `docs/home-app-options-candidate.md`.
 
+PR#11 (`codex/home-focus-bookmark`, functional65868df) adds an optional Home-only
+stable-ID sidecar through the same persistence worker. Favourites schema remains
+unchanged; deliberate navigation/activation writes, hover/restore/fallback do
+not. First fresh real catalogue resolves startup once; explicit input cancels;
+missing/ineligible IDs choose first current eligible favourite or Viewallapps.
+Keep ordinary500ms/Settings lifetimes and all action/Root gates unchanged.
+Author829library+16UI/Clippy, independent31library+1main composition and Root180
+binding rehash pass. Actual ARM UI4dda/receipt45d5 matches143 inputs and immutable
+copies; local artifact/ABI review is separate/pending. Preserve both original
+243/82 counterexamples and blocked scopes/old82 ARM, not later promotion. Old
+live-worktree manifest paths deliberately drifted; use immutable saved copies
+and Git for historical evidence. No TV/package/new native permission follows.
+Captured/observer modes exclude bookmark writes; a future native proof must use
+an enabled ordinary isolated profile and its own sidecar-aware baseline/cleanup.
+Hold658 HEAD stable for artifact review; Controls task guides remain in a
+separate worktree. See `docs/home-focus-bookmark-candidate.md`.
+
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
 current physical pointer/wheel/hold and separate IME; normal app/Settings return;
