@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 ROOT_FILES = ('Cargo.toml', 'Cargo.lock', 'build.rs', 'sdl-events.c', 'build-client.py',
-              'package-preview.py', 'prepare-framework.py', 'dependency-lock.json',
+              'package-preview.py', 'icon_acquisition.py', 'tools/public-icon-reader/protocol.py', 'prepare-framework.py', 'dependency-lock.json',
               'build_provenance.py', 'cache_consumer_packaging.py', 'cache_consumer_contract.py', 'preview_performance_packaging.py', 'tools/verify-framework.py')
 TREES = ('src', 'assets/luma-home', 'resources/fonts')
 BINARY_NAMES = {'home-preview', 'control-preview', 'launch-target', 'artwork-broker-proof', 'artwork-broker-startup-proof', 'artwork-broker'}
