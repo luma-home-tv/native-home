@@ -43,7 +43,7 @@ not decode images or prove valid dimensions/pixels. It does not accept arbitrary
 paths, follow symlinks, read account files through links, call a shell, modify
 permissions, write a TV file, contact a network endpoint or start another process.
 
-## Response and refusal
+## Response, lifecycle and refusal
 
 Stdout is exactly:
 
@@ -60,7 +60,32 @@ regular-file type bits. The host computes SHA-256; no crypto dependency is added
 public file policy, signature and body length. It performs no transport or
 execution and cannot establish helper identity or Root authority.
 
-Validation refusals exit 1 with **zero stdout bytes** and a fixed stderr message.
+After all real/effective Root UID/GID checks and closed root-kind selection,
+before opening any path, the reader makes exactly one bounded stderr write:
+
+```
+LUMA_PUBLIC_ICON_READER_V1 pid=<actual getpid()>\n
+```
+
+The displayed `\n` means one LF byte. The PID is a positive decimal integer.
+This record is reader identity data, **not closure or authority**. A future
+controller must bind exactly one such line to its own fresh nonce-bound SSH
+stream, require known complete child status and then fresh literal absence of
+that exact PID. A wrapper's `$$` is a separate identity. A live/reused/unknown
+PID cannot be treated as absent, and no live raw7 observation is implied.
+Trusted system shell/env/libc and the reviewed no-fork source are prerequisites;
+this is not a broad Root-process or hostile-Root proof.
+
+Failed, short or interrupted lifecycle writes are not retried: the process
+returns 1 without path I/O, image content or further stderr diagnostics. A blocked
+lifecycle write is governed by the same original alarm. Missing/partial lifecycle
+records must not qualify a call or grant cleanup authority.
+
+Validation refusals exit 1 with **zero stdout bytes**. A failure before the
+Root/root-kind checks has only `public icon read refused` plus LF on stderr;
+a later policy/path refusal has the exact PID line followed by that fixed
+message. Success has only the PID line. The CLI and stdout `LPI1` schema remain
+unchanged from the preceding revision.
 A single original process-wide 5-second `SIGALRM` begins before argument/path I/O,
 is never renewed, explicitly unblocks an inherited alarm mask, and exits 124. Reads, writes and polls do not retry `EINTR`.
 An output failure or timeout during emission can leave a partial frame: the host
@@ -90,4 +115,7 @@ is absent from that translation unit. There is no production test flag or
 environment-variable bypass. Real filesystem tests cover symlink/parent/root
 replacement, same-body new inode, growth/rewrite, hard links, FIFOs, private modes,
 wrong ownership policy, size limits, malformed keys and timeout before emission.
+The shared PID writer/request path is also tested against actual getpid(),
+invalid/closed descriptors, a genuine resource-limited short write, interrupted
+and blocked pipe writes; refused writes never enter the path-walk hook.
 All test images/IDs are synthetic. No SDK, ARM compiler or TV is used.

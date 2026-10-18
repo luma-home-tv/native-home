@@ -75,6 +75,21 @@ class NativeFiles(unittest.TestCase):
             self.assertEqual(result.returncode, 124)
             self.assertEqual(result.stdout, b'')
 
+    def test_actual_pid_lifecycle_write_and_path_admission(self):
+        with tempfile.TemporaryDirectory(dir=self.root) as fixture:
+            child = subprocess.Popen([str(BUILD / 'test-reader'), fixture, 'pid-correct'],
+                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = child.communicate(timeout=4)
+            self.assertEqual(child.returncode, 0, err)
+            self.assertEqual(out, f'LUMA_PUBLIC_ICON_READER_V1 pid={child.pid}\n'.encode())
+        for case in ('pid-pipeline', 'pid-failed', 'pid-short', 'pid-closed', 'pid-interrupted'):
+            result = self.case(case)
+            self.assertEqual(result.returncode, 0, (case, result.stderr))
+            self.assertEqual(result.stdout, b'')
+        result = self.case('pid-blocked')
+        self.assertEqual(result.returncode, 124)
+        self.assertEqual(result.stdout, b'')  # No PATH_IO hook or image data.
+
     def test_production_has_no_test_root_UID_or_environment_entry(self):
         env = dict(os.environ, PIR_TEST_ROOT=str(self.root), PIR_TEST_UID=str(os.getuid()))
         for args in [[], ['--test-root', str(self.root)],

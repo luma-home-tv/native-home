@@ -2,6 +2,7 @@
 #define PIR_TESTING 1
 #include "reader.c"
 #include <limits.h>
+#include <sys/resource.h>
 
 static const char *base;
 static int point_to_change;
@@ -50,6 +51,78 @@ static void modify(int point) {
     test_hook=NULL;
 }
 static void pause_hook(int point) {if(point==2)sleep(10);}
+static int path_attempts, report_path_attempt;
+static volatile sig_atomic_t interrupted;
+static void pid_path_hook(int point) {
+    if (point == 6) {
+        path_attempts++;
+        if (report_path_attempt && write(STDOUT_FILENO, "PATH_IO", 7) != 7) abort();
+    }
+}
+static void interrupt_write(int n) { (void)n; interrupted = 1; }
+static int full_pipe(int p[2]) {
+    if (pipe(p)) abort();
+    int original = fcntl(p[1], F_GETFL);
+    if (original < 0 || fcntl(p[1], F_SETFL, original | O_NONBLOCK)) abort();
+    char fill[4096]; memset(fill, 'x', sizeof(fill));
+    size_t total = 0;
+    while (total <= 1024 * 1024) {
+        ssize_t n = write(p[1], fill, sizeof(fill));
+        if (n < 0) { if (errno != EAGAIN) abort(); break; }
+        total += (size_t)n;
+    }
+    if (total > 1024 * 1024 || fcntl(p[1], F_SETFL, original)) abort();
+    return p[1];
+}
+static int pid_case(const char *which) {
+    int fd = -1, pipes[2] = {-1,-1};
+    FILE *output = tmpfile(), *lifecycle = NULL;
+    if (!output) abort();
+    if (!strcmp(which, "pid-correct")) { int result = emit_reader_pid(STDOUT_FILENO); fclose(output); return result ? 94 : 0; }
+    test_hook = pid_path_hook;
+    if (!strcmp(which, "pid-short")) {
+        lifecycle = tmpfile(); if (!lifecycle) abort(); fd = fileno(lifecycle);
+        struct rlimit limit = {8,8};
+        if (signal(SIGXFSZ, SIG_IGN) == SIG_ERR || setrlimit(RLIMIT_FSIZE, &limit)) abort();
+    } else if (!strcmp(which, "pid-closed")) {
+        if (pipe(pipes) || signal(SIGPIPE, SIG_IGN) == SIG_ERR) abort();
+        close(pipes[0]); pipes[0] = -1; fd = pipes[1];
+    } else if (!strcmp(which, "pid-blocked") || !strcmp(which, "pid-interrupted")) {
+        fd = full_pipe(pipes);
+        if (!strcmp(which, "pid-blocked")) {
+            report_path_attempt = 1;
+            if (start_deadline(1)) abort();
+        } else {
+            struct sigaction action; memset(&action,0,sizeof(action)); action.sa_handler = interrupt_write;
+            if (sigaction(SIGALRM,&action,NULL)) abort(); alarm(1);
+        }
+    } else if (!strcmp(which, "pid-pipeline")) {
+        lifecycle = tmpfile(); if (!lifecycle) abort(); fd = fileno(lifecycle);
+    }
+    int result = request_from(base, "", getuid(), getgid(), "developer_apps",
+                              "com.example.app", "icon.png", fileno(output), fd);
+    if (!strcmp(which, "pid-pipeline")) {
+        if (result || path_attempts != 1 || fseek(lifecycle,0,SEEK_SET)) return 95;
+        char actual[96], expected[96]; size_t n = fread(actual,1,sizeof(actual),lifecycle);
+        int size = snprintf(expected,sizeof(expected),"LUMA_PUBLIC_ICON_READER_V1 pid=%" PRIdMAX "\n",(intmax_t)getpid());
+        if (size <= 0 || n != (size_t)size || memcmp(actual,expected,n) || fseek(output,0,SEEK_END) || ftell(output) <= 8) return 96;
+        /* PID stderr admission must leave the exact existing stdout packet unchanged. */
+        FILE *reference = tmpfile(); struct chain prior;
+        if (!reference || anchor(&prior,base,getuid(),getgid()) ||
+            read_emit(&prior,"developer_apps","com.example.app","icon.png",fileno(reference))) abort();
+        close_chain(&prior);
+        if (fseek(reference,0,SEEK_SET) || fseek(output,0,SEEK_SET)) abort();
+        for (;;) { int a=fgetc(reference), b=fgetc(output); if(a!=b)return 96; if(a==EOF)break; }
+        fclose(reference);
+    } else {
+        if (result != -2 || path_attempts || fseek(output,0,SEEK_END) || ftell(output) != 0) return 97;
+        if (!strcmp(which,"pid-short") && (fseek(lifecycle,0,SEEK_END) || ftell(lifecycle) != 8)) return 98;
+        if (!strcmp(which,"pid-interrupted") && !interrupted) return 99;
+    }
+    if (lifecycle) fclose(lifecycle);
+    if (pipes[0]>=0)close(pipes[0]); if(pipes[1]>=0)close(pipes[1]);
+    fclose(output); return 0;
+}
 int main(int argc,char **argv) {
     struct chain c; char app[PATH_MAX],icon[PATH_MAX],other[PATH_MAX];
     const char *id="com.example.app", *relative="icon.png";
@@ -57,6 +130,7 @@ int main(int argc,char **argv) {
     if(argc!=3)return 90;
     base=argv[1];change=argv[2];path(app,"/com.example.app");path(icon,"/com.example.app/icon.png");
     if(chmod(base,0755)||mkdir(app,0755))return 91;
+    if(!strncmp(change,"pid-",4)){file(icon,32,137);return pid_case(change);}
     if(!strcmp(change,"oversize"))size=ICON_CAP+1;
     if(!strcmp(change,"max"))size=ICON_CAP;
     if(!strcmp(change,"empty"))size=0;

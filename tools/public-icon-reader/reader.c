@@ -222,6 +222,32 @@ static int start_deadline(unsigned seconds) {
         sigprocmask(SIG_UNBLOCK, &unblocked, NULL)) return -1;
     alarm(seconds); return 0;
 }
+/* One reserved lifecycle write. No retry, path I/O or stdout on write refusal. */
+static int emit_reader_pid(int fd) {
+    char line[96]; pid_t pid = getpid();
+    if (pid <= 1) return -1;
+    int n = snprintf(line, sizeof(line), "LUMA_PUBLIC_ICON_READER_V1 pid=%" PRIdMAX "\n", (intmax_t)pid);
+    if (n <= 0 || (size_t)n >= sizeof(line)) return -1;
+    return write(fd, line, (size_t)n) == n ? 0 : -1;
+}
+/* Fixed literal arguments in production; fixture anchor/UID only in test TU. */
+static int request_from(const char *anchor_path, const char *public_root,
+                        uid_t uid, gid_t gid, const char *kind, const char *id,
+                        const char *relative, int output, int lifecycle) {
+    struct chain c; char root_copy[128]; char *part, *state;
+    int result = -1;
+    if (emit_reader_pid(lifecycle)) return -2;
+    HOOK(6); /* Test-only evidence that no path walk starts after failed PID write. */
+    if (anchor(&c, anchor_path, uid, gid)) { close_chain(&c); return -1; }
+    size_t length = strnlen(public_root, sizeof(root_copy));
+    if (length >= sizeof(root_copy)) goto closed;
+    memcpy(root_copy, public_root, length + 1);
+    for (part = strtok_r(root_copy, "/", &state); part; part = strtok_r(NULL, "/", &state))
+        if (descend(&c, part)) goto closed;
+    result = read_emit(&c, kind, id, relative, output);
+ closed:
+    close_chain(&c); return result;
+}
 #ifndef PIR_TESTING
 int main(int argc, char **argv) {
     static const struct { const char *kind, *root; } roots[] = {
@@ -229,20 +255,16 @@ int main(int argc, char **argv) {
         {"encrypted_apps", "/media/cryptofs/apps/usr/palm/applications"},
         {"developer_apps", "/media/developer/apps/usr/palm/applications"}
     };
-    struct chain c; char root_copy[128]; char *part, *state;
     int root = -1, result = -1;
     if (start_deadline(IO_SECONDS)) return 1; /* Original deadline; never renewed. */
     if (argc != 4 || getuid() != 0 || geteuid() != 0 || getgid() != 0 || getegid() != 0) goto refused;
     for (size_t i = 0; i < sizeof(roots) / sizeof(roots[0]); ++i)
         if (!strcmp(argv[1], roots[i].kind)) root = (int)i;
-    if (root < 0 || anchor(&c, "/", 0, 0)) goto refused;
-    strcpy(root_copy, roots[root].root);
-    for (part = strtok_r(root_copy, "/", &state); part; part = strtok_r(NULL, "/", &state))
-        if (descend(&c, part)) goto closed;
-    result = read_emit(&c, roots[root].kind, argv[2], argv[3], STDOUT_FILENO);
- closed:
-    close_chain(&c);
+    if (root < 0) goto refused;
+    result = request_from("/", roots[root].root, 0, 0, roots[root].kind,
+                          argv[2], argv[3], STDOUT_FILENO, STDERR_FILENO);
     if (!result) return 0;
+    if (result == -2) return 1; /* Missing/partial lifecycle record is not retried. */
  refused:
     fputs("public icon read refused\n", stderr); return 1;
 }
