@@ -31,6 +31,18 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+The combined undeployed Home beta at functional
+`adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f` has
+matching146-input host/ARM and separate artifact/direct-ABI evidence, documented
+in `docs/home-beta-integration.md`. ELF6b752f23e71ba73d503f903002e99ca7078cda69cb0c577ef1dd131d726996f7
+adds no direct libraries/imports against the actual retained3ce UI. Root's
+byte-identical replay checked398 bindings; this is not native/retained promotion.
+The ordinary isolated bookmark test must enable persistence and account for both
+favourite and home-focus files; old capture/observer profiles exclude those focus
+writes and cannot qualify it. The collector now defaults to metadata only and
+explicit offline acquisition/receipt ingestion grants no native closure or Root
+authority. Preserve normal Root-off and actual retained3ce installations/state.
+
 The user's latest direction makes C2 the current manual-test target, superseding
 the earlier resumed campaign's C2 exclusion. Current human availability belongs
 in private coordination records. Do not blindly retarget a G2 carrier or transfer
@@ -69,7 +81,92 @@ PR#8 (`codex/controls-label-clarity`, functional1f75701) is a separate undeploye
 Controls label/source-inventory candidate. Its69 Shell tests, strict host Clippy,
 unchanged pinned framework and independent source review pass. It adds no setter
 or permission and does not change either retained3ce executable or the current
-Proof artifact. ARM/native visual qualification remains separate.
+Proof artifact. Actual ARM UI build8f06 at1f75701 now passes, with independent
+143-input/source/compiler-receipt and direct ABI review plus byte-identical Root
+replay (11NEEDED/223 full import tuples, none new against retained3ce). No package,
+target execution, transitive loader or native visual qualification follows.
+The complete C2 disposable Proof carrier passes independent source review but
+has no native admission. The first separate no-install C2 normal proposal retains
+a G2-only mount exception and is blocked pending a new corrected source review.
+Normal startup may initialize state before its native view is observed; do not
+call it an inert read-only permissions selector or infer repair authority.
+Later normal-v2 review found a first-occurrence mount parser edge shared by the
+full C2 Proof: an invalid early app-path fragment can hide a later valid alias.
+Hold both future native admissions until corrected versions are independently
+reviewed. This is a synthetic actual-method counterexample, not native input or
+device harm. Preserve earlier finite reviews and the new failure separately.
+Corrected normal-v3 source74095515 and Proof-v2 sourcef91dc2fd now pass
+independent focused source review (21/19 groups) plus Root17+17 alias/limit
+replays with343/436 bindings unchanged. All qualified occurrences are enumerated
+under explicit table/row/target/match/root bounds; original counterexamples
+refuse. These new sources supersede the old admission hold only at source level:
+no dates/lease/native authority follows. Normal selected drift still permits
+only guarded own closure and retains HOLD; no cleanup/release authority is
+inferred. The corrected final-only coordinator closeout now passes separate
+source review only. It permits coordination release after an original normal
+workflow has already closed every owned resource, never selected/midphase
+adoption or resource/mount repair. No matching original normal run or native
+companion execution exists.
+
+PR#9 (`codex/public-icon-reader`, functional092a304, published docs d78f3f6)
+is a standalone Root-admin
+public-app icon primitive only. Strict/sanitised host tests, independent source
+review, six extra host groups/Root replay and actual ARM ELFa8ec build pass;
+`docs/public-icon-reader-foundation.md` states the finite limits. It is not a
+service, setuid/ordinary-app fallback, collector or cache writer. No TV was
+contacted. Never enable the unchanged legacy shell pathname copier as a fallback.
+The next one-icon headless proof needs its own fresh lease/baseline/private stage,
+exact executable/request/child/namespace evidence and complete known removal.
+Reader96c reports its own PID in one bounded stderr write before path I/O;
+failed/short writes cannot enter the path walk. Default SIGPIPE may terminate
+before an error return. PID/wrapper records grant no Root or cleanup authority
+alone; unknown/missing identity stays HOLD. Keep old e701/1872/853f evidence
+historical and use the new source/ELF for any future PID-based proof.
+The independent ARM audit now reproduces a8ec byte-for-byte, checks all37 import
+tuples against raw ELF/SDKwide and passes nine adverse groups; Root offlinegate
+replay/207file rehash pass. SDK33strong+4optional declarations do not qualify
+actual targetlibc/loader identity, native permissions or execution. The headless
+controller must qualify fresh target association before dispatch.
+
+The first headless attempt is closed with original operator1/HOLD at initial SSH
+connectivity, before device-lease acquisition, staging, baseline collection or
+reader execution. Local agent closeout passed; no device lease existed. Preserve
+the original CRLF error and first LF-only closeout-reader failure. No native or
+device-preservation result follows. Never restart its closed scope/supervisor;
+future work needs fresh reachability, dates/output/lease and actual baseline.
+See `docs/public-icon-reader-first-connectivity-attempt.md`.
+
+PR#10 (`codex/home-favourite-menu`, functional736ba42) adds Home long-press
+options through the existing shared Apps menu, with explicit Unpin and stable-ID
+Back/Close. Source/host review passes81 Shell tests; the author75 tests/strict
+Clippy and actual ARM UI4b31 build pass against143 inputs. The additional author
+local artifact/direct-ABI gate plus separate Root source review/byte-identical
+replay pass371 bindings, with11NEEDED/223 complete imported tuples exact retained
+UI3ce and no network in the replay process tree. This is not transitive/native
+qualification. It is based on PR#8,
+not integrated with current retained3ce or the existing Proof package. Native
+menu appearance, physical input and persistence remain open. Preserve the source
+and build identities; the separate Home-bookmark branch must not alter them. See
+`docs/home-app-options-candidate.md`.
+
+PR#11 (`codex/home-focus-bookmark`, functional65868df) adds an optional Home-only
+stable-ID sidecar through the same persistence worker. Favourites schema remains
+unchanged; deliberate navigation/activation writes, hover/restore/fallback do
+not. First fresh real catalogue resolves startup once; explicit input cancels;
+missing/ineligible IDs choose first current eligible favourite or Viewallapps.
+Keep ordinary500ms/Settings lifetimes and all action/Root gates unchanged.
+Author829library+16UI/Clippy, independent31library+1main composition and Root180
+binding rehash pass. Actual ARM UI4dda/receipt45d5 matches143 inputs and immutable
+copies; separate local artifact/ABI review and Root byte-identical replay pass366
+bindings with process-tree network denied,15 guards and exact retainedUI3ce
+11NEEDED/223 complete imports. This is not transitive/native authority. Preserve both original
+243/82 counterexamples and blocked scopes/old82 ARM, not later promotion. Old
+live-worktree manifest paths deliberately drifted; use immutable saved copies
+and Git for historical evidence. No TV/package/new native permission follows.
+Captured/observer modes exclude bookmark writes; a future native proof must use
+an enabled ordinary isolated profile and its own sidecar-aware baseline/cleanup.
+Hold658 HEAD stable for artifact review; Controls task guides remain in a
+separate worktree. See `docs/home-focus-bookmark-candidate.md`.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;

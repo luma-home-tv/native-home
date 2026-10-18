@@ -22,6 +22,23 @@ not current physical input, combined full-product or C2 runtime qualification.
 
 ## Current delivery sequence
 
+The [combined Home beta candidate](home-beta-integration.md) now brings the
+reviewed Home menu, focus restoration, Controls guides and offline icon tooling
+into one 146-input tree. Its actual host checks, ARM build and separate local
+artifact/direct-ABI review with coordinator replay pass. It is not deployed.
+C2 is the current native-test target; human checks need fresh availability.
+
+Current source work also addresses a concrete Home interaction gap: the
+[shared app-options candidate](home-app-options-candidate.md) replaces Home's
+immediate long-press unpin with the Apps drawer's explicit options menu. Source
+review, targeted host checks and an actual ARM build pass; it remains undeployed.
+
+The first separate headless icon-reader attempt
+[stopped at initial SSH connectivity](public-icon-reader-first-connectivity-attempt.md)
+before acquiring a device lease or executing anything on the TV. Preserve its
+exit 1/HOLD. No native reader result follows and the closed scope must not be
+restarted. Continue source work while the TV is unreachable.
+
 | Gate | Concrete result required | Work owner and boundary |
 | --- | --- | --- |
 | 1. Current retained G2 smoke | Fresh actual3ce full bundle/state/cache/runtime baseline; normal entry, Home/Apps/Home and natural exit; preserved saved favourites and known closeout | Coordinator only, new lease and bounded reviewed scope. No old f5 rollback carrier. |
@@ -47,6 +64,57 @@ maintenance [planning](https://github.com/luma-home-tv/native-home/pull/6) and
 are source foundations, with no mutation caller or native maintenance proof.
 Automatic retirement/eviction and new diagnostic schema integration are later
 work, not prerequisites for the first fixed-catalogue beta.
+
+## Remaining product work
+
+Passing the daily-use tests does not fill the following implementation gaps:
+
+1. **Return and Home continuity.** Ordinary departures to another app currently
+   end Luma after 500 ms hidden. Define and verify explicit user reentry without
+   intercepting Home or extending an unknown background lifetime. Restore a
+   stable last-deliberate favourite across a fresh process, with old-record,
+   removed-app and empty-shelf fallbacks. The Settings cover/return state machine
+   already exists; it needs current ordinary native proof rather than another
+   implementation. The shared Home options candidate addresses a separate
+   interaction inconsistency.
+   The first continuity slice will remember only the last deliberate Home
+   favourite in a separate bounded app-owned sidecar. This keeps the existing
+   favourites record readable by older builds, which reject unknown fields.
+   Hover, automatic reconciliation, actions, menus and search text are excluded.
+   Reentry remains an explicit fresh launch through LG; no longer background
+   lifetime or automatic relaunch is planned for this slice. Abrupt eviction can
+   lose the latest unsaved selection.
+   [Draft PR11](home-focus-bookmark-candidate.md) now implements this slice at
+   source65868df: source/host review, matching ARM build and local direct-ABI
+   review/coordinator replay pass. A new enabled ordinary native scope remains
+   open. Both initial
+   catalogue/fallback prototype failures are preserved; no TV received them.
+2. **Input switching on both targets.** Ordinary C2 input changes currently fail
+   closed. They need a dedicated operation-specific selection/readback and exact
+   original-source restoration before enablement. G2 results, a Proof identity
+   and host checks cannot unlock this. Signal presence, selected source and
+   actual video format must remain distinct; retain Unavailable where no
+   trustworthy format read exists.
+3. **Settings tasks and artwork supply.** Named timers, app/storage,
+   external-device/CEC/Bluetooth and tuner/channel tasks need honest LG-managed
+   destinations or individually qualified native controls. Existing category
+   overviews do not establish direct task destinations or comprehensive parity.
+   Separately, implement a current-catalogue icon acquisition/refresh flow after
+   qualifying the new reader. A one-icon CLI and fallback initials do not supply
+   that flow. Keep normal Root artwork off until the complete path is qualified.
+
+The [named task-guide candidate](controls-task-guides-candidate.md) now adds five
+existing overview links and two read-only guides. Source/host review passes;
+the combined Home/menu/focus/task tree passes 836 library and 16 UI host tests
+and strict Clippy. These guides do not add native setters, direct task links,
+storage capacity or actual TV destination/return qualification. The separate
+offline icon-tool candidate now passes independent source review and is included
+in the matching combined ARM build. This is local source/artifact evidence; the
+reader and actual icon-supply path still need separate native qualification.
+
+Source agents can design and test these changes in parallel. The coordinator
+alone owns hardware tests and retained updates; new candidates must remain
+separate from the frozen executable used by the current test workflow.
 
 The initial resumed campaign used G2. The user has since explicitly redirected
 manual testing to C2. Its [fresh permission observation](c2-current-permission-observation.md)
@@ -74,8 +142,57 @@ A separate [Controls label candidate](https://github.com/luma-home-tv/native-hom
 now fixes editor-readiness help, LG-opening status and partial General/Accessibility
 headers. Its69 Shell tests, strict host Clippy, pinned-framework check and
 independent source review pass. It also records the current source inventory
-and remaining control-centre gaps. No ARM package, TV deployment or new setter
-is included; it does not change the retained test executable.
+and remaining control-centre gaps. The actual ARM UI build now passes at
+functional source `1f75701f7f8760ad839ae626f2b1119b5dabebe6`, producing ELF
+`8f06c1a689667e7168066740a8ab70c3b2ad83081558aa9d311f2f3f6d5f419a`.
+Independent local review and byte-identical coordinator replay bind all143
+selected source inputs and find no new direct dependencies or imports against
+the retained UI (11 libraries,223 complete symbol/version/type/binding tuples).
+This is direct ABI evidence, not transitive loading or native rendering proof.
+No ARM package, TV deployment or new setter is included; it does not change the
+retained test executable.
+
+The complete C2 disposable favourites carrier has passed independent source
+review, including terminal-known mode refusal and separately guarded inert
+removal. Native admission and physical favourites/restart remain open. The
+separate no-install normal C2 smoke is still under review: its first proposal
+inherited a G2-only SDK mount exception and must be corrected before admission.
+Normal startup can initialize state before observation if its native view
+allows it; this must not be described as an inert read-only permission probe.
+Neither workflow authorizes permission repair.
+
+Later independent review of the normal v2 source found a repeated-path-fragment
+edge: looking only at the first canonical app-path occurrence can miss a later
+valid same-app mount alias. The full disposable C2 Proof shares that algorithm.
+Both future native admissions are held pending corrected source and fresh
+review. The counterexample is synthetic source evidence; no native dispatch or
+device effect was demonstrated. Preserve the earlier finite reviews and failed
+counterexample rather than treating their passing fixtures as broad proof.
+
+Corrected normal v3 (`74095515`) and disposable Proof v2 (`f91dc2fd`) now pass
+independent source review. They enumerate every boundary-qualified app-path
+occurrence, retain raw row order/duplicates and refuse overflow rather than
+truncate: table1MiB, row8192B, target4096B,4096 occurrences and64 roots. The
+previous actual-method counterexamples now refuse. Author suites pass49/48
+groups, independent focused checks pass21/19, and two fresh coordinator replays
+pass17 alias/limit groups each with343/436 original bindings unchanged.
+These are source/host results. Only the new versions may be considered for a
+fresh native scope; neither is dated or admitted. Normal selected-drift closure
+remains distinct from cleanup/lease release, and the final-only coordination
+companion now passes its separate source review. It can close coordination only
+after an original normal workflow has already closed all owned resources; it
+cannot repair mounts or adopt a selected/midphase failure. No matching original
+normal run or native companion execution exists. No TV test follows automatically.
+
+The separate [public icon reader foundation](public-icon-reader-foundation.md)
+now has a frozen source commit and draft PR9, strict/sanitised host checks,
+independent source/host review, coordinator replay and an actual ARM build.
+This replaces the unsafe pathname-reopen approach only as a candidate primitive;
+the combined candidate removes the legacy automatic shell file reads and makes
+collection metadata-only by default, with explicit offline body/receipt ingestion.
+Next qualify one known packaged-icon read in a separate headless device scope
+before connecting a broader native collector. No normal Root artwork, cache writes or TV
+deployment follows from the local milestone.
 
 The current delivery target is a responsive native Home dashboard for both
 authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.
