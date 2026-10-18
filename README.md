@@ -11,6 +11,26 @@ The earlier combined prototype is preserved in
 [native-home-prototype-history](https://github.com/luma-home-tv/native-home-prototype-history)
 as an attributed PlxNative fork. It is historical reference; development continues here.
 
+## Current delivery status
+
+Both authorised TVs last received normal 0.61.0 from functional source
+`d2215d5d8761fe385ae7ae3dd76ab173793c5bb8`, recorded in the
+[retained deployment checkpoint](docs/retained-preview-pause-checkpoint.md).
+Installation and saved-state preservation are separate from runtime qualification;
+the [current G2 smoke](docs/retained-current-g2-smoke.md) does not qualify C2.
+Fresh device, ownership and state baselines are required before another test.
+
+[Draft PR14](https://github.com/luma-home-tv/native-home/pull/14) combines explicit
+Home app options, focus across launches, LG-managed task guides and offline icon
+tooling. Its matching host checks, ARM build and isolated package review pass;
+it has not been deployed. See the [combined candidate](docs/home-beta-integration.md)
+and [delivery plan](docs/implementation-plan.md) for remaining native checks.
+The full dashboard goal remains incomplete. Retained installations and favourites
+must be preserved; normal Root artwork stays off.
+
+The component records below retain their historical versions and scopes. Their
+earlier installation and rollback statements do not supersede this checkpoint.
+
 ## PlxNative framework dependency
 
 Luma Home builds on the research and engineering of
@@ -62,6 +82,11 @@ declined inert preflight after an unavailable native LS2 foreground read. It
 submitted no second-batch resource work and restored exact 0.57. The later [retained 0.61 campaign](docs/g2-retained-preview061.md) uses separate
 typed diagnostics and completes its normal icon/keyboard/idle tour. The earlier
 failure cause remains unknown.
+The [native context diagnostic source](docs/native-context-diagnostics.md) now
+preserves bounded typed results and timing for those existing calls. Host/ARM,
+package/SDK checks and the recorded native campaign pass. The two saved preflights
+have 15 complete records; this does not recover the historical cause or establish
+an LS2 repair, general permissions, physical input or performance.
 
 The current upstream build scripts also need their SVG rasterizer, vector-icon
 assets, locale catalogue and install-identity generator. The external checkout
@@ -70,7 +95,7 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
-Current retained normal deliveries are [G2 0.61](docs/g2-retained-preview061.md)
+Earlier retained normal deliveries were [G2 0.61](docs/g2-retained-preview061.md)
 and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
 saved preferences and native-session device evidence. The C2 trial omitted
 Search/IME. Normal Root artwork remains off. The separate
@@ -313,19 +338,44 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. The OLED55G26LA G2 retains verified 0.61.0 and its
-24-entry ordinary icon cache. Its source167 diagnostic-branch executable passed
+package modes and removal. The historical OLED55G26LA G2
+[Settings-lifecycle 0.61.0 delivery](docs/g2-retained-settings-lifecycle-061.md)
+used source f5, with its executable and producer association. Its ordinary
+cache then held two 24-entry producer generations for the same supplied catalogue.
+The earlier source167 diagnostic-branch executable passed
 the 24-card/six-category tour, two empty LG keyboard cycles, black idle/wake and
 natural exit, with original preferences and sampled Core preserved in the
-[G2 delivery record](docs/g2-retained-preview061.md).
-The latest [G2 Settings trial](docs/g2-retained-preview061-settings-return-first-attempt.md)
-confirmed launch but ended with Luma's `window_hidden` exit. Usable return is
-unqualified on retained 0.61; separate no-input cleanup and preservation passed.
-The OLED65C26LD C2 now retains [verified 0.48.0](docs/c2-retained-preview-048.md):
+[G2 delivery record](docs/g2-retained-preview061.md). The later
+[ordinary Settings validation](docs/ordinary-settings-validation-progress.md)
+verifies one same-process LG Picture return and usable post-return navigation,
+followed by old-build restoration. A separate fresh Home/Apps/Home/Back scope then
+retained the matching new build, with independently replayed state preservation
+and temporary cleanup. Earlier failed scopes and saved-reader corrections remain
+recorded. That campaign used the f5 bundle/IPK and private state/cache48.
+Future rollback must use a fresh actual retained baseline. Physical input,
+performance and the wider dashboard goal remain open.
+The [compatible ordinary artwork reader](docs/cache-consumer-compatibility.md)
+has passed source checks, matching ARM builds and independent local package/ABI
+review. Native selector and preservation acceptance remain pending; this source
+has not replaced the retained G2 build.
+An opt-in [ordinary-dashboard performance observer](docs/passive-performance-observer.md)
+now passes integrated host checks, both actual ARM builds, compiler-contract and
+direct SDK ABI checks. Both private packages pass their complete archive/payload
+comparison, with the diagnostic marker as their only payload difference. Native
+measurement remains pending; earlier isolated-profile numbers do not establish
+its performance.
+The OLED65C26LD C2's historical
+[0.48.0 delivery](docs/c2-retained-preview-048.md) verified
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
-roundtrip and separate restoration were qualified first. The latest trial
-exercised no Search/IME or Root artwork. The earlier
+roundtrip and separate restoration were qualified first. That retained-delivery trial
+exercised no Search/IME or Root artwork. A later separate
+[physical input check](docs/c2-physical-input-048.md) qualifies pointer clicking,
+wheel movement and LG-keyboard typing with Done and Back on the isolated 0.48 build,
+with separate verified cleanup after a host receipt-save failure. It did not
+update the retained installation. These historical delivery observations
+do not replace fresh ownership, permissions and state checks before another run.
+The earlier
 [isolated startup observation](docs/c2-startup-collection.md) remains a separate
 collection result. The [branding/status milestone](docs/branding-status-milestone.json)
 records native branding and live sound/network reads. The
@@ -345,7 +395,7 @@ qualifies first-OK suppression and a distinct second-OK action on both models.
 The [G2 human check](docs/manual-keyboard-milestone.json) confirms `lu` + Done,
 reopen, then `ma` + Back retains `luma` with no second keypad. Its native trace
 also records one safely drained same-batch closing-key release. Broader dismissal
-races, C2 physical typing, performance and broader delivery remain separate
+races, current-build physical input, performance and broader delivery remain separate
 acceptance gates. The G2 normal update is recorded separately from the earlier
 human check. One G2 attempt exited on early focus loss before readiness;
 cold-entry reliability remains under investigation. The
@@ -370,6 +420,10 @@ two-column source grid and graphite detail pane, matched to the concept. Both TV
 render the Luma mark/name and independently read source status. A separate G2
 trial confirmed HDMI selection and restoration; C2 tuner restoration and live
 video-format/playback remain unverified.
+The [native preview plan](docs/native-source-preview-plan.md) records the intended
+focused-source viewport, relevant attributed framework research and the remaining
+native routing/lifetime questions. Live embedding and simultaneous previews are
+not qualified by the existing switching result.
 
 The [LG Home return milestone](docs/lg-home-return-milestone.json) adds the
 concept's separate rail shortcut. It uses a fixed normal LG app launch, verifies

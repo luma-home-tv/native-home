@@ -1,32 +1,18 @@
-"""Read-only TV snapshot and bounded local icon copies for the isolated Home renderer.
+"""Read-only metadata snapshot; icons require completed private acquisition data.
 Nothing is installed, launched, set or written on the TV. Captures are private build artifacts.
 """
 import argparse
 import datetime
 import json
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import shlex
 import subprocess
+from icon_acquisition import catalogue, prepare, publish, PrivateDirectory, encoded, make_private_output
 
 
 def app_id(value):
     return isinstance(value, str) and bool(re.fullmatch(r'[A-Za-z0-9._-]{1,180}', value))
-
-
-def icon_path(folder, image, identity):
-    prefixes = ('/usr/palm/applications', '/media/cryptofs/apps/usr/palm/applications',
-                '/media/developer/apps/usr/palm/applications')
-    if not app_id(identity) or folder not in [p + '/' + identity for p in prefixes]:
-        return None
-    if not isinstance(image, str) or '\x00' in image:
-        return None
-    path = PurePosixPath(image)
-    if '..' in path.parts:
-        return None
-    if not path.is_absolute():
-        path = PurePosixPath(folder) / path
-    return str(path) if str(path).startswith(folder + '/') and path.suffix.lower() in ('.png', '.jpg', '.jpeg') else None
 
 
 def main():
@@ -35,11 +21,12 @@ def main():
     parser.add_argument('--identity', type=Path, required=True)
     parser.add_argument('--known-hosts', type=Path, required=True)
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--own-id', default='com.ash.nativehome.preview')
+    parser.add_argument('--icon-acquisition', type=Path, help='Completed external acquisition manifest; never invokes a reader')
     args = parser.parse_args()
     if not re.fullmatch(r'[A-Za-z0-9.:-]+', args.host):
         parser.error('Invalid host')
-    output = args.out.resolve(); output.mkdir(mode=0o700, parents=True, exist_ok=False)
-    (output / 'icons').mkdir(mode=0o700)
+    output = make_private_output(args.out)
     base = ['ssh', '-i', str(args.identity.resolve()), '-o', 'IdentitiesOnly=yes', '-o', 'BatchMode=yes',
             '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' + str(args.known_hosts.resolve()),
             '-o', 'ConnectTimeout=5', 'root@' + args.host]
@@ -50,37 +37,15 @@ def main():
         data = json.loads(result.stdout)
         receipts[name] = data
         return data
-    apps = luna('apps', 'com.webos.applicationManager/listApps', {}).get('apps', [])
+    luna('apps', 'com.webos.applicationManager/listApps', {})
     points = luna('launch_points', 'com.webos.applicationManager/listLaunchPoints', {}).get('launchPoints', [])
     inputs = luna('inputs', 'com.webos.service.eim/getAllInputStatus', {}).get('devices', [])
     picture = luna('picture', 'com.webos.service.settings/getSystemSettings', {'category': 'picture', 'keys': ['pictureMode', 'backlight', 'contrast', 'brightness']})
     sound = luna('audio', 'com.webos.service.audio/master/getVolume', {})
-    ids = {p['id'] for p in points if app_id(p.get('id'))}
-    point_by_id = {p['id']: p for p in points if p.get('id') in ids}
-    applications = []
-    for app in apps:
-        identity = app.get('id')
-        if not app_id(identity) or identity not in ids or app.get('visible') is not True or app.get('type') not in ('native', 'native_builtin', 'web'):
-            continue
-        item = {key: app[key] for key in ('id', 'title', 'type', 'visible')}
-        folder = app.get('folderPath')
-        point = point_by_id[identity]
-        candidates = [point.get('extraLargeIcon'), point.get('largeIcon'), app.get('icon')]
-        if len(applications) < 64:
-            for candidate in candidates:
-                path = icon_path(folder, candidate, identity)
-                if not path: continue
-                # Fixed, bounded read. Values are paths from registered metadata, shell-quoted.
-                quoted = shlex.quote(path)
-                cmd = 'test -f '+quoted+' && test ! -L '+quoted+' && test "$(stat -c %s '+quoted+')" -le 1048576 && head -c 1048576 '+quoted
-                result = subprocess.run(base + [cmd], capture_output=True, timeout=8)
-                data = result.stdout
-                if result.returncode or not (data.startswith(b'\x89PNG\r\n\x1a\n') or data.startswith(b'\xff\xd8\xff')): continue
-                name = f'icons/{identity}' + PurePosixPath(path).suffix.lower()
-                with (output / name).open('xb') as stream: stream.write(data)
-                item['icon'] = name
-                break
-        applications.append(item)
+    raw_catalogue = {'replies': {'apps': receipts['apps'], 'launch_points': receipts['launch_points']}}
+    admitted = catalogue(raw_catalogue, args.own_id)
+    ids = {p['id'] for p in points if type(p) is dict and app_id(p.get('id')) and p['id'] != args.own_id}
+    applications = [row['app'] for _, row in sorted(admitted.items())]
     dimension = picture.get('dimension', {})
     context = {'input': dimension.get('input', 'unknown'), 'dynamic_range': dimension.get('dynamicRange', 'unknown'),
                'picture_mode': dimension.get('pictureMode', 'unknown')}
@@ -101,9 +66,17 @@ def main():
                             'signal': bool(d.get('hdmiSignalExist')), 'active': bool(d.get('activate'))}
                            for d in inputs if re.fullmatch(r'HDMI_[1-4]', d.get('id', ''))],
                 'context': context, 'settings': settings}
-    (output / 'snapshot.json').write_text(json.dumps(snapshot, indent=2) + '\n')
-    (output / 'read-only-receipts.json').write_text(json.dumps(receipts, indent=2) + '\n')
-    print(json.dumps({'applications': len(applications), 'icons': len(list((output/'icons').iterdir())),
-                      'inputs': len(snapshot['inputs']), 'captured_at': captured, 'tv_writes': False}))
+    if args.icon_acquisition is not None:
+        snapshot, bodies, record = prepare(args.icon_acquisition, raw_catalogue, snapshot)
+        publish(output, snapshot, bodies, record)
+    else:
+        # Same private publication path, without any icon provenance/authority claim.
+        with PrivateDirectory(output) as directory:
+            directory.write('snapshot.json', encoded(snapshot))
+    with PrivateDirectory(output) as directory:
+        directory.write('read-only-receipts.json', encoded(receipts))
+    print(json.dumps({'applications': len(applications), 'icons': sum('icon' in a for a in snapshot['applications']),
+                      'inputs': len(snapshot['inputs']), 'captured_at': captured, 'tv_writes': False,
+                      'icon_reader_invoked': False, 'native_icon_authority': False}))
 
 if __name__ == '__main__': main()

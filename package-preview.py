@@ -35,6 +35,9 @@ if artwork_target_fixture:
 if any(os.environ.get(k)=='1' for k in ('NATIVE_HOME_MANUAL_TEXT_PROOF','NATIVE_HOME_KEYBOARD_FLOW_PROOF')) and os.environ.get('NATIVE_HOME_TEXT_INPUT_PROOF') != '1':
     raise ValueError('Manual text trial requires isolated text proof')
 interactive = os.environ.get('NATIVE_HOME_INTERACTIVE_SESSION') == '1'
+from preview_performance_packaging import select as select_passive_performance, NAME as PASSIVE_PERFORMANCE_NAME
+passive_performance_marker = select_passive_performance(os.environ, main=main, target=build_receipt['target'],
+    app_id=app_id, test_identity=test_identity, interactive=interactive)
 sound_read_proof = os.environ.get('NATIVE_HOME_SOUND_READ_PROOF') == '1'
 broker_identify_proof = os.environ.get('NATIVE_HOME_BROKER_IDENTIFY_PROOF') == '1'
 broker_artwork_read_proof = os.environ.get('NATIVE_HOME_ARTWORK_READ_PROOF') == '1'
@@ -118,6 +121,20 @@ if preferences_migration_mode not in ('', '1'):
 preferences_migration_proof = preferences_migration_mode == '1'
 preferences_migration_marker = None
 preferences_migration_pins_sha256 = None
+cache_consumer_mode = os.environ.get('NATIVE_HOME_CACHE_CONSUMER_COMPATIBILITY', '')
+if cache_consumer_mode not in ('', '1'):
+    raise ValueError('Consumer compatibility mode must be explicitly 1')
+cache_consumer_paths = ('NATIVE_HOME_CACHE_CONSUMER_OLD_UI', 'NATIVE_HOME_CACHE_CONSUMER_OLD_BROKER',
+                        'NATIVE_HOME_CACHE_CONSUMER_OLD_PROFILE')
+cache_consumer_selected = cache_consumer_mode == '1'
+if (any(k in os.environ for k in cache_consumer_paths) and not cache_consumer_selected or
+    cache_consumer_selected and (not all(os.environ.get(k) for k in cache_consumer_paths) or
+      main != 'home-preview' or test_identity or not interactive or preview_artwork_admission or
+      not os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER'))):
+    raise ValueError('Read-only consumer selector requires ordinary interactive Preview and existing current producer provenance')
+cache_consumer = None
+cache_consumer_inputs = None
+cache_consumer_raw = None
 cache_producer_binary = os.environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER')
 cache_producer = None
 cache_producer_helper_build = None
@@ -137,6 +154,10 @@ if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
             'NATIVE_HOME_SESSION_CAPTURE_PROOF'})
     if cache_preparation:
         cache_environment.update({'NATIVE_HOME_CACHE_PREPARATION','NATIVE_HOME_CACHE_PREPARATION_PINS'})
+    if cache_consumer_selected:
+        cache_environment.update({'NATIVE_HOME_CACHE_CONSUMER_COMPATIBILITY', *cache_consumer_paths})
+    if passive_performance_marker is not None:
+        cache_environment.add('NATIVE_HOME_PREVIEW_PASSIVE_PERFORMANCE')
     cache_others = [k for k,v in os.environ.items() if v and
         k.startswith('NATIVE_HOME_') and k not in cache_environment]
     if (not cache_producer_binary or main != 'home-preview' or test_identity or
@@ -174,6 +195,13 @@ if 'NATIVE_HOME_CACHE_PRODUCER_BROKER' in os.environ:
         'producer_kind':'joined-single-positive-v1', 'source_revision':revision,
         'ui_sha256':build_receipt['binary']['sha256'],
         'broker_sha256':cache_producer_helper_build['binary']['sha256']}
+if cache_consumer_selected:
+    from cache_consumer_packaging import read_inputs as read_consumer_inputs
+    cache_consumer, cache_consumer_inputs = read_consumer_inputs(repo, build_receipt,
+        *(Path(os.environ[k]) for k in cache_consumer_paths))
+    cache_consumer_raw = (json.dumps(cache_consumer, sort_keys=True, separators=(',', ':')) + '\n').encode()
+    if len(cache_consumer_raw) > 4096:
+        raise ValueError('Consumer selector exceeds its native fixed bound')
 if preferences_migration_proof:
     allowed = {'NATIVE_HOME_BUILD_DIR', 'NATIVE_HOME_WEBOS_SDK', 'NATIVE_HOME_ARM_BINARY',
                'NATIVE_HOME_RUST_TOOLCHAIN', 'NATIVE_HOME_CARGO', 'NATIVE_HOME_PREVIEW_ICON',
@@ -402,6 +430,9 @@ info = {'id': app_id, 'version': version, 'vendor': 'Native Home development',
 if artwork_target_fixture:
     info['title']='AAA Luma Artwork Fixture'
 (stage / 'appinfo.json').write_text(json.dumps(info, indent=2) + '\n')
+if cache_consumer_selected:
+    (stage / 'artwork-cache-consumer.json').write_bytes(cache_consumer_raw)
+    (stage / 'artwork-cache-consumer.json').chmod(0o644)
 if cache_producer is not None:
     cache_sidecar = (json.dumps(cache_producer, sort_keys=True, separators=(',', ':')) + '\n').encode()
     (stage / 'artwork-cache-producer.json').write_bytes(cache_sidecar)
@@ -416,7 +447,18 @@ if preferences_migration_proof:
     marker_path.write_text(json.dumps(preferences_migration_marker, separators=(',', ':')) + '\n')
     marker_path.chmod(0o644)
 if main == 'home-preview' and not preferences_migration_proof:
-    assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).absolute()
+    acquired_assets = None
+    acquisition_receipt_sha256 = None
+    acquisition_path = os.environ.get('NATIVE_HOME_ICON_ACQUISITION')
+    acquisition_pin = os.environ.get('NATIVE_HOME_ICON_ACQUISITION_SHA256')
+    from icon_acquisition import acquisition_receipt_present
+    if acquisition_path is not None or acquisition_pin is not None or acquisition_receipt_present(assets):
+        from icon_acquisition import package_assets
+        if acquisition_path is None or acquisition_pin is None:
+            raise ValueError('Acquisition assets require explicit receipt path and SHA256')
+        acquired_assets = package_assets(assets, acquisition_path, acquisition_pin)
+        acquisition_receipt_sha256 = acquired_assets[2]
     if broker_startup_marker is not None:
         marker_path=stage/'broker-startup-proof.json'
         marker_path.write_text(json.dumps(broker_startup_marker,separators=(',',':'))+'\n')
@@ -449,6 +491,9 @@ if main == 'home-preview' and not preferences_migration_proof:
         marker_path = stage / 'icon-presentation-proof.json'
         marker_path.write_text(json.dumps(icon_presentation_marker,separators=(',',':'))+'\n')
         marker_path.chmod(0o644)
+    if passive_performance_marker is not None:
+        (stage / PASSIVE_PERFORMANCE_NAME).write_text(json.dumps(passive_performance_marker, separators=(',', ':'))+'\n')
+        (stage / PASSIVE_PERFORMANCE_NAME).chmod(0o644)
     if os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1':
         if not test_identity or not interactive: raise ValueError('Performance proof requires isolated interactive identity')
         (stage / 'performance-proof.json').write_text('{}\n')
@@ -470,10 +515,11 @@ if main == 'home-preview' and not preferences_migration_proof:
         (stage / 'management-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_DRAWER_PROBE') == '1':
         (stage / 'drawer-proof.json').write_text('{}\n')
-    snapshot = json.loads((assets / 'snapshot.json').read_text())
+    snapshot_bytes = acquired_assets[0] if acquired_assets is not None else (assets / 'snapshot.json').read_bytes()
+    snapshot = json.loads(snapshot_bytes)
     if closed_negative_artwork_proof and (type(snapshot) is not dict or snapshot.get('applications') != []):
         raise ValueError('Closed-negative artwork requires an empty packaged catalogue; its fixed Target source must be live')
-    shutil.copy2(assets / 'snapshot.json', stage / 'snapshot.json')
+    (stage / 'snapshot.json').write_bytes(snapshot_bytes)
     (stage / 'snapshot.json').chmod(0o644)
     if os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1':
         (stage / 'launch-proof.json').write_text(json.dumps({'kind':'Application','id':'com.ash.nativehome.targetproof'})+'\n')
@@ -530,18 +576,22 @@ if main == 'home-preview' and not preferences_migration_proof:
         marker_path.chmod(0o644)
     if sound_read_proof:
         (stage / 'sound-read-proof.json').write_text('{}\n')
-    for app in snapshot['applications']:
-        icon_path = app.get('icon')
-        if not icon_path: continue
-        relative = Path(icon_path)
-        if relative.is_absolute() or len(relative.parts) != 2 or relative.parts[0] != 'icons' or '..' in relative.parts:
-            raise ValueError('Unexpected icon path')
-        source = assets / relative
-        if source.is_symlink() or source.stat().st_size > 1024 * 1024:
-            raise ValueError('Unsafe icon asset')
-        (stage / 'icons').mkdir(exist_ok=True)
-        shutil.copy2(source, stage / relative)
-        (stage / relative).chmod(0o644)
+    if acquired_assets is not None:
+        from icon_acquisition import stage_package_icons
+        stage_package_icons(stage, acquired_assets[1])
+    else:
+        for app in snapshot['applications']:
+            icon_path = app.get('icon')
+            if not icon_path: continue
+            relative = Path(icon_path)
+            if relative.is_absolute() or len(relative.parts) != 2 or relative.parts[0] != 'icons' or '..' in relative.parts:
+                raise ValueError('Unexpected icon path')
+            source = assets / relative
+            if source.is_symlink() or source.stat().st_size > 1024 * 1024:
+                raise ValueError('Unsafe icon asset')
+            (stage / 'icons').mkdir(exist_ok=True)
+            shutil.copy2(source, stage / relative)
+            (stage / relative).chmod(0o644)
 
 if preferences_migration_proof and {p.name for p in stage.iterdir() if p.is_file() and not p.is_symlink()} != {
         'appinfo.json', 'home-preview', 'icon.png', 'preferences-migration-proof.json'}:
@@ -550,6 +600,11 @@ if preferences_migration_proof and any(not p.is_file() or p.is_symlink() for p i
     raise RuntimeError('Preferences migration payload must not contain directories or links')
 if validate_build_receipt(here, binary, build_receipt_path) != build_receipt:
     raise RuntimeError('Build receipt changed during packaging')
+if cache_consumer_selected:
+    from cache_consumer_packaging import recheck as recheck_consumer_inputs
+    recheck_consumer_inputs(cache_consumer_inputs)
+    if (stage / 'artwork-cache-consumer.json').read_bytes() != cache_consumer_raw:
+        raise ValueError('Read-only consumer selector changed during packaging')
 if cache_producer is not None:
     if validate_build_receipt(here, cache_producer_binary,
                               cache_producer_helper_receipt) != cache_producer_helper_build:
@@ -594,11 +649,13 @@ subprocess.run([str(ar), 'rc', str(ipk), 'debian-binary', 'control.tar.gz', 'dat
 members = subprocess.check_output([str(ar), 't', str(ipk)], text=True).splitlines()
 if members != ['debian-binary', 'control.tar.gz', 'data.tar.gz']: raise RuntimeError('Invalid IPK members')
 receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_bytes()).hexdigest(),
+           **({'icon_acquisition_receipt_sha256': acquisition_receipt_sha256} if main == 'home-preview' and not preferences_migration_proof and acquisition_receipt_sha256 is not None else {}),
            'build_receipt_sha256': build_receipt_sha256,
            'build_source_revision': build_receipt['git_revision'],
            'framework': build_receipt['snapshot']['framework'],
            'binary_sha256': staged_binary_sha256, 'bytes': ipk.stat().st_size,
            'performance_proof': os.environ.get('NATIVE_HOME_PERFORMANCE_PROOF') == '1',
+           **({'preview_passive_performance': passive_performance_marker} if passive_performance_marker is not None else {}),
            'controls_probe': os.environ.get('NATIVE_HOME_CONTROLS_PROBE') == '1',
            'management_probe': os.environ.get('NATIVE_HOME_MANAGEMENT_PROBE') == '1',
            'preference_hold_probe': os.environ.get('NATIVE_HOME_PREFERENCES_PROBE') == '1',
@@ -624,6 +681,9 @@ receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_
            'cache_preparation_execution_verified': False,
            'cache_preparation_prepared_coverage_verified': False,
            'cache_preparation_Root_authority_granted': False,
+           'cache_consumer': cache_consumer,
+           'cache_consumer_selector_sha256': hashlib.sha256(cache_consumer_raw).hexdigest() if cache_consumer_raw is not None else None,
+           'cache_consumer_historical_input_sha256': {p:r['sha256'] for p,r in cache_consumer_inputs.items()} if cache_consumer_inputs is not None else None,
            'cache_producer': cache_producer,
            'cache_producer_sidecar_sha256': hashlib.sha256(cache_sidecar).hexdigest() if cache_producer is not None else None,
            'cache_producer_helper_receipt_sha256': hashlib.sha256(cache_producer_helper_receipt_raw).hexdigest() if cache_producer is not None else None,

@@ -1,5 +1,7 @@
 # G2 retained 0.61: ordinary icons, keyboard and idle
 
+This is the historical source167 delivery. The [retained deployment checkpoint](retained-preview-pause-checkpoint.md) identifies the later installed executable.
+
 The G2 now retains the marker-free 0.61.0 dashboard and its 24-entry ordinary
 artwork cache. The original operator exited 0 after 1,806.48 seconds within its
 unchanged 2,400-second budget. This supersedes the earlier 0.57 retained baseline;

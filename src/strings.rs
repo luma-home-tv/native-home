@@ -9,7 +9,7 @@ impl Message {
     pub const fn text(self) -> &'static str {
         match self {
             Self::AppTitle => "Luma Home",
-            Self::Applications => "Applications",
+            Self::Applications => "Apps",
             Self::Controls => "Controls",
             Self::CurrentSettings => "Current settings",
             Self::MoreSettings => "More settings",

@@ -1,4 +1,5 @@
 """Actual packager in composed temporary fixtures; no compiler, SDK or TV calls."""
+from cache_consumer_contract import native_selection
 import importlib.util
 import io
 import json
@@ -157,7 +158,7 @@ class InstalledArtworkPackageTests(unittest.TestCase):
         control.write_bytes(self.f.binary.read_bytes())
         snapshot = _BASE.PROVENANCE.snapshot(self.f.root)
         _BASE.PROVENANCE.record_build_receipt(
-            self.f.root, control, 'arm', snapshot, _BASE.PROVENANCE.snapshot(self.f.root))
+            self.f.root, control, 'arm', snapshot, _BASE.PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.refused({'NATIVE_HOME_ARM_BINARY': str(control)},
                      'Test identity is for the dashboard only')
 

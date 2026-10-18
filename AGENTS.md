@@ -31,6 +31,167 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+The combined undeployed Home beta at functional
+`adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f` has
+matching146-input host/ARM and separate artifact/direct-ABI evidence, documented
+in `docs/home-beta-integration.md`. ELF6b752f23e71ba73d503f903002e99ca7078cda69cb0c577ef1dd131d726996f7
+adds no direct libraries/imports against the actual retained3ce UI. Root's
+byte-identical replay checked398 bindings; this is not native/retained promotion.
+The ordinary isolated bookmark test must enable persistence and account for both
+favourite and home-focus files; old capture/observer profiles exclude those focus
+writes and cannot qualify it. The collector now defaults to metadata only and
+explicit offline acquisition/receipt ingestion grants no native closure or Root
+authority. Preserve normal Root-off and actual retained3ce installations/state.
+
+The user's latest direction makes C2 the current manual-test target, superseding
+the earlier resumed campaign's C2 exclusion. Current human availability belongs
+in private coordination records. Do not blindly retarget a G2 carrier or transfer
+its evidence. Fresh C2 read-only checks through Root SSH now observe all 34
+current bundle entries
+at mode0777, with the same payload hashes, and the retained preference directory
+and file at777/777 with a216B file. This differs from the historical checkpoint's
+root-only777/private700/600 model. Both readonly operators intentionally exited1;
+their original HOLD results remain. Exact lease-only continuations closed both
+original leases and agents; one wrong-local-filename cleanup failure also remains
+preserved. No app/setting/permission/cache/runtime write was selected. The current
+C2 metadata mismatch blocks reuse of the G2 favourites carrier. A separately
+reviewed C2 exact-preservation model may permit disposable Proof testing with
+its independent private store, without retained repair or write authority. Native
+effective metadata and object/namespace association remain unobserved; qualify
+that view before selecting repair. Preserve actual
+bytes/owners/modes; investigate the existing ordinary-owner migration in the
+current3ce executable with fresh inputs, never Root chmod/chown, boot/jail edits,
+an old048 marker or an unreviewed relaxation of the private-state gate.
+`docs/c2-current-permission-observation.md` records this boundary.
+
+The later corrected C2 read-only profile exited0 with exact observed opaque
+state preservation, complete32 body reads, sampled Core5+19/source-map agreement
+and known lease/agent closure. Its rejected source predecessor's two-tree
+ownership-classification counterexamples remain preserved. Four measured paths
+were absent, but the jailed runtime alias was not measured; no future absence,
+native private-store or namespace authority transfers. Independent saved-data
+audit and byte-identical Root replay pass with1,339 bound inputs and1,327
+original files unchanged; preserve the initial saved-reader constant-adapter
+failure. No separate final bundle rehash or full mount-table comparison occurred.
+The screensaver/other-app context was ineligible for an app test; no
+launch/input/package/permission change followed. Continue the separate C2 Proof
+adaptation with fresh baseline/scene/lease and its own strict private-state gates.
+
+PR#8 (`codex/controls-label-clarity`, functional1f75701) is a separate undeployed
+Controls label/source-inventory candidate. Its69 Shell tests, strict host Clippy,
+unchanged pinned framework and independent source review pass. It adds no setter
+or permission and does not change either retained3ce executable or the current
+Proof artifact. Actual ARM UI build8f06 at1f75701 now passes, with independent
+143-input/source/compiler-receipt and direct ABI review plus byte-identical Root
+replay (11NEEDED/223 full import tuples, none new against retained3ce). No package,
+target execution, transitive loader or native visual qualification follows.
+The complete C2 disposable Proof carrier passes independent source review but
+has no native admission. The first separate no-install C2 normal proposal retains
+a G2-only mount exception and is blocked pending a new corrected source review.
+Normal startup may initialize state before its native view is observed; do not
+call it an inert read-only permissions selector or infer repair authority.
+Later normal-v2 review found a first-occurrence mount parser edge shared by the
+full C2 Proof: an invalid early app-path fragment can hide a later valid alias.
+Hold both future native admissions until corrected versions are independently
+reviewed. This is a synthetic actual-method counterexample, not native input or
+device harm. Preserve earlier finite reviews and the new failure separately.
+Corrected normal-v3 source74095515 and Proof-v2 sourcef91dc2fd now pass
+independent focused source review (21/19 groups) plus Root17+17 alias/limit
+replays with343/436 bindings unchanged. All qualified occurrences are enumerated
+under explicit table/row/target/match/root bounds; original counterexamples
+refuse. These new sources supersede the old admission hold only at source level:
+no dates/lease/native authority follows. Normal selected drift still permits
+only guarded own closure and retains HOLD; no cleanup/release authority is
+inferred. The corrected final-only coordinator closeout now passes separate
+source review only. It permits coordination release after an original normal
+workflow has already closed every owned resource, never selected/midphase
+adoption or resource/mount repair. No matching original normal run or native
+companion execution exists.
+
+PR#9 (`codex/public-icon-reader`, functional092a304, published docs d78f3f6)
+is a standalone Root-admin
+public-app icon primitive only. Strict/sanitised host tests, independent source
+review, six extra host groups/Root replay and actual ARM ELFa8ec build pass;
+`docs/public-icon-reader-foundation.md` states the finite limits. It is not a
+service, setuid/ordinary-app fallback, collector or cache writer. No TV was
+contacted. Never enable the unchanged legacy shell pathname copier as a fallback.
+The next one-icon headless proof needs its own fresh lease/baseline/private stage,
+exact executable/request/child/namespace evidence and complete known removal.
+Reader96c reports its own PID in one bounded stderr write before path I/O;
+failed/short writes cannot enter the path walk. Default SIGPIPE may terminate
+before an error return. PID/wrapper records grant no Root or cleanup authority
+alone; unknown/missing identity stays HOLD. Keep old e701/1872/853f evidence
+historical and use the new source/ELF for any future PID-based proof.
+The independent ARM audit now reproduces a8ec byte-for-byte, checks all37 import
+tuples against raw ELF/SDKwide and passes nine adverse groups; Root offlinegate
+replay/207file rehash pass. SDK33strong+4optional declarations do not qualify
+actual targetlibc/loader identity, native permissions or execution. The headless
+controller must qualify fresh target association before dispatch.
+
+The first headless attempt is closed with original operator1/HOLD at initial SSH
+connectivity, before device-lease acquisition, staging, baseline collection or
+reader execution. Local agent closeout passed; no device lease existed. Preserve
+the original CRLF error and first LF-only closeout-reader failure. No native or
+device-preservation result follows. Never restart its closed scope/supervisor;
+future work needs fresh reachability, dates/output/lease and actual baseline.
+See `docs/public-icon-reader-first-connectivity-attempt.md`.
+
+PR#10 (`codex/home-favourite-menu`, functional736ba42) adds Home long-press
+options through the existing shared Apps menu, with explicit Unpin and stable-ID
+Back/Close. Source/host review passes81 Shell tests; the author75 tests/strict
+Clippy and actual ARM UI4b31 build pass against143 inputs. The additional author
+local artifact/direct-ABI gate plus separate Root source review/byte-identical
+replay pass371 bindings, with11NEEDED/223 complete imported tuples exact retained
+UI3ce and no network in the replay process tree. This is not transitive/native
+qualification. It is based on PR#8,
+not integrated with current retained3ce or the existing Proof package. Native
+menu appearance, physical input and persistence remain open. Preserve the source
+and build identities; the separate Home-bookmark branch must not alter them. See
+`docs/home-app-options-candidate.md`.
+
+PR#11 (`codex/home-focus-bookmark`, functional65868df) adds an optional Home-only
+stable-ID sidecar through the same persistence worker. Favourites schema remains
+unchanged; deliberate navigation/activation writes, hover/restore/fallback do
+not. First fresh real catalogue resolves startup once; explicit input cancels;
+missing/ineligible IDs choose first current eligible favourite or Viewallapps.
+Keep ordinary500ms/Settings lifetimes and all action/Root gates unchanged.
+Author829library+16UI/Clippy, independent31library+1main composition and Root180
+binding rehash pass. Actual ARM UI4dda/receipt45d5 matches143 inputs and immutable
+copies; separate local artifact/ABI review and Root byte-identical replay pass366
+bindings with process-tree network denied,15 guards and exact retainedUI3ce
+11NEEDED/223 complete imports. This is not transitive/native authority. Preserve both original
+243/82 counterexamples and blocked scopes/old82 ARM, not later promotion. Old
+live-worktree manifest paths deliberately drifted; use immutable saved copies
+and Git for historical evidence. No TV/package/new native permission follows.
+Captured/observer modes exclude bookmark writes; a future native proof must use
+an enabled ordinary isolated profile and its own sidecar-aware baseline/cleanup.
+Hold658 HEAD stable for artifact review; Controls task guides remain in a
+separate worktree. See `docs/home-focus-bookmark-candidate.md`.
+
+The user has now resumed this goal. `docs/implementation-plan.md` gives the
+current delivery order: retained-current G2 smoke; isolated favourites/restart;
+current physical pointer/wheel/hold and separate IME; normal app/Settings return;
+then repeated everyday use/coverage. Three background source/artifact lanes are
+active; only Root coordinates TV work. The initial resumed campaign used G2;
+the later explicit C2 release above governs new manual work. Current retained
+baseline is d221/UI3ce/ffec below; never reuse old f5 delivery/restore carriers.
+Optional schema2 diagnostics and cache maintenance cannot block daily-use gates
+or inherit old artifact/cache/native authority. New leases/scopes remain required.
+
+The current no-install retained G2 smoke is recorded in
+`docs/retained-current-g2-smoke.md`: original operator/supervisor0, ordinary
+Home/Apps/Home/naturalBack, five actual SDK keys/eight drafts/thirteen captures.
+Current3ce32/34, prefs, cache48, sampledCore5+19 and oldruntime140/92immutable/
+eventprefix+131B pass operator preservation; mapped session/stage and original
+lease/agent are closed. Independent saved-data audit and byte-identical Root
+replay pass (e8bb result;12,736 complete ledger refs/12,091 Root source-result
+bindings). The two generic-reader gaps are corrected in ecb; prior failures stay
+preserved. All48 preview PNG regions match eight BMPs in separate Root analysis;
+this grants no native all-pixel/physical/performance authority. Selected
+SDK rows312→314 are distinct from full mount counts; no cause/repair/restoration
+claim. Never rerun the closed source, queue, scope or handle51514. No new build,
+Root artwork, favourites write, physical input, Settings return or C2 test follows.
+
 The current retained pause checkpoint is recorded in
 `docs/retained-preview-pause-checkpoint.md`: BOTH TVs now retain normal0.61.0
 from functional d2215d5d8761fe385ae7ae3dd76ab173793c5bb8, UI SHA-256
@@ -50,20 +211,8 @@ actual current bundles and new state/leases; older f5/06cc/G2 and048/C2 records
 below are historical. The user requested pause after this deployment; preserve
 all source/artifact findings and await their resume before further goal work.
 
-The historical retained G2 installation is 0.61.0, with dashboard ELF
-SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
-from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
-`codex/native-context-diagnostics` (PR #2). `docs/g2-retained-preview061.md`
-records actual operator0, independently reviewed 16+8 source/body associations,
-24-card visual review, six Controls views, two empty LG keyboard cycles,
-125-second black idle/Up wake/distinct Back and joined GL28 cleanup. The intended
-marker-free 33-entry/31-file package and 24-entry ordinary cache intentionally
-remain. Preferences/state, sampled Core5+19 and old runtime/prefix are preserved;
-all three temporary runtime leaves/staging/captures/Root scopes and lease/agent
-are closed. Normal Root artwork stays off. Independent saved reviews plus Root
-642/556 binding readbacks pass; these are overlapping finite scopes, not every
-operation or all-pixel/physical/performance proof. Preserve the observed270→276
-selected read-only SDK rows without a full mount-table restoration/cause claim.
+Historical source167 trial notes (the current retained checkpoint above supersedes their baseline):
+
 The later `docs/g2-retained-preview061-owned-app-partial.md` records a verified
 owned-app handoff followed by a local duplicate-receipt failure, then two
 pre-removal cleanup refusals. All three exit-1 results remain. Separate fresh
@@ -88,10 +237,205 @@ only bounded read-only waiting, never input or return authority. Investigate
 native Settings lifetime in the isolated source worktree before a new proof;
 the installed061 package stays unchanged. Do not combine062 or change cache
 producer association as part of that source investigation.
-Future tests need a fresh actual061 full bundle/state/cache baseline and new
-lease. Never run old057/cache-absent restoration carriers or reuse closed scopes,
-nonces, Tickets or session97400. ScopeB actions/restart/favourites, current-build
-physical input/performance/reliability and cache version transition/refresh/
+The historical retained G2 installation is still version0.61.0, now from
+functional source `f5b4d7758e700e22b6f88183535cc0537d60a5e0`, dashboard ELF
+SHA-256 `46743fad9f205c320072a59f4173368a715aa829e2d323dfa3661f46743061ed`,
+normal IPK `1c4f536773f1bd59a9c50bff58a7a83ce6a909ca73a8240e44ca5a8e46ed4afd`
+and producer sidecar `05f2c892d03e3a9d966ebc185d35c1162a92611334394f3a6892f549341c6a81`.
+`docs/g2-retained-settings-lifecycle-061.md` records separate closed successful
+Settings-return/old-build restoration and fresh reentry/new-build retention.
+The latter actual operator0, strict no-handoff/naturalBack terminal, current
+source keys and joined GL12 pass independent saved review plus byte-identical
+Root replay/3738 rehashed bindings. Preserve its sole launch_points reader
+failure; exact fixed-key correction changed no native record or original template.
+The current33/31 bundle is verified; cache48/prefs216/Core5+19 and prior runtime
+140/92immutable/eventprefix with131B appended are preserved. Mapped temporary
+runtime/stage and lease/agent are closed.
+Normal Root artwork remains off. SDK suffix observations grant no global mount
+restoration/cause claim. No combined single-scope/fullproduct, physical, pixel or
+performance qualification follows. Every recorded A/B scope is closed: never
+restart it or transfer actor/Ticket/resource/lease authority through its data.
+Future backup/rollback MUST use this actual f5/1c4 complete bundle and fresh
+private state/cache48. The former06cc ELF/4f52 IPK are historical rollback inputs,
+not the current baseline; version0.61 alone is insufficient to distinguish them.
+
+The later compatible-cache candidate trials preserve retained f5. The first
+original operator1 and separate cleanup0 remain recorded in
+`docs/cache-consumer-g2-first-attempt.md`. The second original operator0 completed
+known negative recovery, exact f5/state/cache48/Core/runtime preservation and
+scoped cleanup with the original lease/agent closed. Independent saved review
+and byte-identical coordinator replay cover 15,673 bindings; component acceptance
+remains false, `window_closed` is refused and no navigation key ran. Repeated
+host-manifest identity is source-mediated, with no independent saved first stamp.
+`docs/cache-consumer-g2-second-attempt.md` also withdraws the apparent missing
+textures from a full-frame viewer impression: the saved raw frames differ only
+in 385 clock pixels. No renderer fix, physical-panel or performance claim follows.
+All trial scopes are closed; future work needs a fresh actual f5 baseline and
+lease. Timely readable frame crops may aid review but never relax input gates.
+
+`docs/cache-consumer-g2-navigation-progress.md` records the later closed v6/v7
+operators0 and exact f5/state/cache48/Core/runtime preservation and cleanup.
+Independent saved review and byte-identical Root replay cover16,840/20,203
+bindings respectively. V7 has four actual keys and captured Home/Apps/Home;
+both source terminals are known-negative `window_hidden`, with no managed close
+or natural Home Back. Worker association/join/GL/cache counters are bounded
+partial observations; both full component grades stay false. All scopes are
+closed. The later v8 trial in `docs/cache-consumer-g2-native.md` exited0 with
+five guarded SDK keys, Home/Apps/Home/distinct natural Back, exact accepted
+producer use and joined/balanced GL12. Independent saved review/six adverse
+groups and byte-identical Root replay across17,425 bindings pass. Exact retained
+f5/state/cache48/sampled Core/runtime and scoped cleanup/original lease/agent
+closure pass. Preserve the first local saved-reader adapter refusal. This
+positive route collected outputs once after rollback; no repeat-path claim or
+independent final dispatch timestamp follows. No black frame or wake was needed;
+native wake remains unqualified. No retained promotion, current3ce/observer,
+per-key pixel, physical/performance or future scope authority follows. New work
+requires a fresh actual f5 complete baseline/new lease. All earlier scopes are
+closed. Ordinary input still refuses black; any typed Up requires separately
+reviewed own-black authority and unchanged context/hash/cache/lease/5s gates.
+
+The later closed current3ce ordinary trial in `docs/current-ordinary-g2-native.md`
+qualifies the actual d221 source/3ce ELF and marker-free ffec package separately.
+Original operator0, five SDK keys/HomeAppsHome/distinct natural Back, current72
+contract with actual early ready/shell epochs and fresh terminal raw preferences,
+accepted f5 cache association/live updates and joined GL12 pass. Independent
+saved review/six adverse groups and byte-identical Root replay across17,721
+bindings pass. Preserve the disabled reader scaffold and exact grouped-read
+adapter failure; no native retry followed either. Complete f5/stateFD/cache48/
+sampled Core/runtime and known cleanup/original lease/agent preservation pass.
+One normal output collection occurred after rollback; no repeat-path/final
+dispatch timestamp/global mount restoration claim follows. Twelve captures
+were associated and removed. Retained G2 remains actual f5/1c4, Root artwork off;
+no observer marker, wake, physical/performance/per-key pixels or promotion was
+qualified. This scope is closed; new work requires fresh actual f5 state/new
+lease and separately reviewed instrumented admission.
+
+The first instrumented N3 scope is closed in
+`docs/passive-performance-observer-g2-first-attempt.md`: original operator0 and
+exact f5/stateFD/rawprefs/cache48/sampled Core/runtime/scoped cleanup/original
+lease-agent preservation pass. Component remains false: source marker exit at
+240.021s, four SDK keys105/108/28/412, no final exit Back,12 captures. Independent
+saved audit/six adverse groups and byte-identical Root replay across17,770
+bindings pass. Preserve the disabled scaffold and literal-ENOENT reader adapter
+failure; dead actors were never rebound and no native retry followed. Two live
+snapshot epochs were accepted, two replacements stayed pending; explicit final
+joined epoch and terminal-state reread are absent. Two collections precede/follow
+rollback; source-memory first manifest stamp/final dispatch time are not
+independently serialized. Partial389-frame/four-key app metrics are schema and
+cumulative-data checked, not fullN/I, per-phase percentile, physical/GPU/panel,
+improvement or promotion proof. The72ms draw outlier has no established cause.
+Retained f5/1c4 and Root-off remain; no global mount restoration/cause claim.
+Do not rerun42369 or its dates/nonce/lease. Next source work batches redundant
+read-only probes without weakening wholeSHA/5s/actor/context/cache/lease/HOLD
+gates or extending marker240. The local-wait v1 transient lease-loss gap is
+non-admissible; no revised carrier or native scope is approved by this result.
+Draft PR7 preserves the separate private same-Cache-after-real-join source
+prerequisite. Its37 host tests/strict Clippy are not ARM/package/runtime/native
+qualification; no maintenance/deletion/eviction/Root action or product caller is
+enabled. Keep that branch and compiled d221 performance inputs separate.
+
+The second instrumented N4 scope in
+`docs/passive-performance-observer-g2-second-attempt.md` is closed: original
+operator0, exact f5/stateFD/rawprefs/cache48/sampled Core/runtime preservation
+and known scoped cleanup/original lease-agent closeout pass. Independent saved
+review/four adverse groups and byte-identical Root replay cover17,971 bindings
+and4,085 raw operations. Componentfalse: one Left, five drafts/seven captures,
+last frame black; marker240.009s/idle1/wake0, no key after black or final Back.
+Root review delay consumed the live window; preserve that coordination failure
+and claim no N3/N4 batching speed comparison. Twenty actual fixed map packets
+match; one accepted live epoch and no final-joined or terminal-state reread.
+Partial261draw/onekey metrics include202.263ms draw maximum with no established
+cause. Normal Root remains off; retained f5 and all closed-scope barriers remain.
+Never rerun90322 or reuse its dates/nonce/lease. Host-only await-helperV1 has a
+preserved BMP postprepare identity gap and is inadmissible; reviewed V2 adds
+exact full-body/identity pre/post binding. It chooses/sends no input, grants no
+native authority and changes no native timers/gates. A future namespace-only
+carrier requires new admission/fresh actual state/new lease; current compiled
+d221 inputs and separate PR7 source remain unchanged.
+
+The later N5 navigation scope in `docs/passive-performance-observer-g2-native.md`
+is closed0 with componenttrue: five SDK keys/HomeAppsHome/distinct naturalBack
+at88.527s, six drafts/eleven captures; changed wholeSHA draft7 refused before a
+fresh8 review. Three live plus one externally closed finaljoined epoch/current
+and actual terminal-state reread pass; two collections1pre1post. Independent
+saved review/four adverse groups and byte-identical Root replay across16,543
+bindings/3,700rawops pass;27fixed map packets match. Six saved helper reviews/
+36PNG RGB associations pass, but no waiter process/status/timing receipts or
+matched orchestration speedup is inferred. Exact retained f5/stateFD/rawprefs/
+cache48/sampled Core/runtime and known scoped cleanup/originallease-agent pass.
+GL12 is joined/balanced with no recorded errors. Partial266draw/fivekey metrics
+include119.598ms draw max without cause;90fullraw7 status samples are not peak/
+total/GPU/leak/performance-budget proof. NoI/physical/FPS/improvement/promotion
+follows. All N5 authority is closed: never rerun86480 or reuse dates/nonce/lease.
+Normal Root remains off; new work needs fresh actual f5 state and a new scope.
+Keep separate draw-phase source worktree and I recipe/artifacts out of d221.
+
+The separate I1 scope in `docs/passive-performance-observer-g2-idle-wake.md`
+is closed0/componenttrue: initial own nonblack/sourceHome, original host125s
+wait matched459 real complete owner reads, reviewed black2/freshblack3 Up103,
+sourceawake/reviewed visibleHome4/fresh5 distinctBack412, naturalBack160.257s,
+idle1/wake1. Two drafts/five captures,3live+1externally closed finaljoined epochs,
+actual terminal-state/FD/rawprefs/current+ready/shell and two1pre1post collections
+pass. Independent saved audit/four adverse groups and byte-identical Root replay
+cover17,645bindings/4,006rawops; two saved reviews/12PNG RGB associations pass.
+No waiter process/status/timing, betweenpoll continuity, clocktransfer, idlecause,
+physical/realremote/GPU/panel/FPS/improvement or combinedN+I claim follows.
+Exact retained f5/state/cache48/sampled Core/runtime and known scoped cleanup/
+originallease-agent pass; joined balancedGL8 has no recorded errors. Normal Root
+off; no promotion or observer retention. Never rerun88202 or reuse its original
+scope/dates/nonce/lease/frames. Next tests need fresh actual f5 baseline/new lease.
+Current physical input, isolated favourites+restart, normal actions/return and
+retained delivery/reliability stay open. Optional schema2 draw-phase source is
+separate and has no existing artifact/cache/native authority.
+
+The earlier retained G2 installation was also0.61.0, with dashboard ELF
+SHA-256 `06cc22eca155b8c8e6b734069f1bb6db7b287b618785a16547c35b2f770134f8`
+from functional source `167b4e4d33fc4f7b4aea885ef5eb6f9e20e19e3c` on
+`codex/native-context-diagnostics` (PR #2). `docs/g2-retained-preview061.md`
+records actual operator0, independently reviewed 16+8 source/body associations,
+24-card visual review, six Controls views, two empty LG keyboard cycles,
+125-second black idle/Up wake/distinct Back and joined GL28 cleanup. The intended
+marker-free 33-entry/31-file package and 24-entry ordinary cache intentionally
+remain. Preferences/state, sampled Core5+19 and old runtime/prefix are preserved;
+all three temporary runtime leaves/staging/captures/Root scopes and lease/agent
+are closed. Normal Root artwork stays off. Independent saved reviews plus Root
+642/556 binding readbacks pass; these are overlapping finite scopes, not every
+operation or all-pixel/physical/performance proof. Preserve the observed270→276
+read-only SDK suffix without a mount restoration/cause claim.
+The later `docs/ordinary-settings-validation-progress.md` records successful
+additive 16+8 preparation for functional f5b4d775, preserving the original24 and
+restoring exact old061. The current cache has48 entries across two producer
+generations for the same supplied24-key catalogue. Its normal candidate attempt
+stopped before LG Settings on the original5s input guard and remains exit1.
+Separate fresh cleanup exited0, restored the above old061 ELF, removed the mapped
+runtime leaf/stage2 and preserved all48 full bodies/identities, preferences/state,
+sampledCore and oldruntime prefix. Lease/agent closed. Coordinator direct saved
+comparisons, finite independent cleanup review and byte-identical Root replay
+of its658 selected bindings pass. This is not every-operation replay. No SDKclose
+was sent because the original actor was already freshly confirmed absent.
+The first subsequent Settings-first scope remains exit1/HOLD at the review/cleanup
+reserve guard within its original900s scope after a partial route. Fresh cleanup0
+restored old061/cache48/state/Core/runtime and closed its lease/agent; independent
+saved review and Root replay cover1473 selected bindings. Keep this distinct from
+the older five-second input-guard failure above.
+The measured second Settings-first scope now exited0: one sameactor LG Picture
+overlay/Back/own return, usable Controls/Home/Apps/Home/Back, strict ordinary
+terminal and joined GL12 cleanup. It ALWAYS restored exact old061, preserved
+cache48/prefs216/Core5+19/oldruntime140/92immutable/eventprefix+131B and removed
+mapped temporary runtime/stage before lease/agent closure. Independent finite
+saved review and byte-identical Root replay cover5509 rehashed bindings. Preserve
+both saved-reader layout failures; source-derived fixes changed no native record.
+Its new2400s/45m scope kept the original Settings and5s dispatch bounds; no old
+scope was extended. SDK suffix observations grant no global restoration/cause
+claim. The later fresh reentry/delivery above now retains f5; its known terminal
+and own baseline are separate from this restored-old061 scope. No physical,
+performance, allpixel or fullproduct qualification follows from either result.
+
+Future tests need a fresh actualf5 full bundle/state/cache48 baseline and new
+lease. Never run old06cc/old057/cache-absent restoration carriers or reuse closed
+Settings/reentry scopes, nonces, Tickets or session97400. Broader app actions,
+restart/favourites, current-build physical input/performance/reliability and
+cache version transition/refresh/
 eviction/stale-writer recovery remain open. Keep the separate062 source/artifacts
 separate until deliberately integrated. Older paragraphs below describe historical
 milestones and their then-current baselines, not the present installed state.

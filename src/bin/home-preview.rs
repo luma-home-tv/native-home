@@ -67,6 +67,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     };
     let interactive = args.iter().any(|arg| arg == "--session")
         || assets.join("interactive-session.json").exists();
+    let preview_observer = native_home::preview_performance::load(
+        &assets,
+        device && unsafe { libc::geteuid() } >= 1000,
+        interactive,
+        plx_base::paths::app_id(),
+        args.iter().skip(1).any(|arg| arg.starts_with("--")),
+    )?;
     // Exclusive recipe branches before any ordinary main worker, persistence,
     // scripted capture or dispatcher is constructed.
     if let Some(marker) = native_home::artwork_closed_negative_proof::read_marker(&assets)? {
@@ -561,7 +568,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     if recipe_requested && !observer_requested {
         return Err("Keyboard recipe requires the explicit interactive observer".into());
     }
-    let mut performance = performance_proof.then(native_home::performance::Monitor::default);
+    let mut performance = (performance_proof || preview_observer.is_some())
+        .then(native_home::performance::Monitor::default);
     if interactive
         && [
             "text-input-proof.json",
@@ -799,6 +807,24 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
     let mut committed_preferences = None;
+    // Optional navigation persistence belongs to ordinary interactive sessions,
+    // not capture/performance/keyboard observation recipes.
+    let home_focus_enabled = interactive
+        && !session_capture
+        && !performance_proof
+        && !observer_requested
+        && preview_observer.is_none();
+    let (loaded_home_focus, mut home_focus_error) = if home_focus_enabled {
+        match persistence.as_ref().map(Persistence::loaded_home_focus) {
+            Some(Ok(focus)) => (focus, None),
+            Some(Err(error)) => (None, Some(error)),
+            None => (None, None),
+        }
+    } else {
+        (None, None)
+    };
+    let mut committed_home_focus = loaded_home_focus.clone();
+    let mut home_focus_write_attempts = 0_u64;
     let initial_preferences = if icon_presentation_marker.is_some() {
         if loaded_preferences.is_some() || storage_error.is_some() {
             return Err("Icon presentation requires fresh isolated preferences".into());
@@ -813,6 +839,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         loaded_preferences.clone().unwrap_or_default()
     };
     let mut shell = Shell::new(snapshot, initial_preferences);
+    let home_focus_restored = loaded_home_focus
+        .as_deref()
+        .is_some_and(|id| shell.restore_home_focus(id));
     let mut preference_write_attempts = 0_u64;
     if preview_artwork_marker.is_none() {
         queue_preferences(
@@ -831,6 +860,28 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         shell.enable_current_icon_cache();
     }
     shell.load_icons(&assets);
+    let passive_profile = if preview_observer.is_some() {
+        Some(
+            native_home::preview_performance::NormalProfile {
+                live_worker: live_worker.is_some(),
+                action_worker: action_worker.is_some(),
+                pointer_worker: pointer_worker.is_some(),
+                description_worker: description_worker.is_some(),
+                app_launches: app_launches_enabled,
+                home_launches: home_launches_enabled,
+                ordinary_cache: ordinary_current_cache_selected,
+            }
+            .validate()?,
+        )
+    } else {
+        None
+    };
+    let mut passive_writer = if preview_observer.is_some() {
+        Some(native_home::preview_performance::Writer::start(&output)?)
+    } else {
+        None
+    };
+
     let preview_artwork_preflight = if preview_artwork_marker.is_some() {
         Some(native_home::preview_artwork_admission::preflight(
             &mut shell, &window, &output,
@@ -1637,6 +1688,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .then(native_home::session_cache_observation::Ledger::default);
     let mut last_settings_observation = Duration::ZERO;
     let mut settings_returns = 0_u32;
+    let mut sdl_focus_lost = false;
     let mut capture_settings_return = false;
 
     let mut loop_counters = observation::LoopCounters::default();
@@ -1773,6 +1825,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         plx_machine::idle::wake();
         reason = "timeout";
         while !session.expired(start.elapsed()) && !shell.should_exit() {
+            if settings_handoff.must_close(live_origin.elapsed()) {
+                // Consume old expiry before input or queued worker replies can mutate it.
+                reason = "settings_handoff_unusable";
+                break;
+            }
+            if preview_observer.is_some()
+                && start.elapsed()
+                    >= Duration::from_secs(native_home::preview_performance::LIMIT_SECONDS)
+            {
+                reason = "preview_passive_performance_limit";
+                break;
+            }
             if performance_proof && start.elapsed() >= Duration::from_secs(240) {
                 reason = "performance_proof_limit";
                 break;
@@ -1921,22 +1985,24 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         7 | 8 => {
                             decision = observation::Decision::Accepted;
+                            sdl_focus_lost = true;
                             shell.cancel_press();
                             hidden_at.get_or_insert(current);
                             shell.set_artwork_pause(PauseReason::ForegroundLost, true);
                         }
                         9 => {
                             decision = observation::Decision::Accepted;
-                            if hidden_at.is_some() && settings_handoff.pending() {
-                                settings_returns = settings_returns.saturating_add(1);
-                                capture_settings_return = true;
-                                settings_handoff.focus_returned();
-                                shell.storage_notice("Returned from LG Settings");
+                            if !settings_focus_hint(
+                                &mut settings_handoff,
+                                &mut sdl_focus_lost,
+                                live_origin.elapsed(),
+                                &mut settings_returns,
+                            ) {
+                                let observed_departure = hidden_at.is_some();
+                                hidden_at = None;
+                                deferred_external.focus_returned(observed_departure);
+                                shell.set_artwork_pause(PauseReason::ForegroundLost, false);
                             }
-                            let observed_departure = hidden_at.is_some();
-                            hidden_at = None;
-                            deferred_external.focus_returned(observed_departure);
-                            shell.set_artwork_pause(PauseReason::ForegroundLost, false);
                         }
                         2 if hidden_at.is_none() || (e.key == 6 && !settings_handoff.pending()) => {
                             decision = observation::Decision::Accepted;
@@ -2070,15 +2136,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 &mut storage_error,
                 &mut preference_write_attempts,
             );
+            if home_focus_enabled {
+                queue_home_focus(
+                    &mut shell,
+                    &mut persistence,
+                    &mut home_focus_error,
+                    &mut home_focus_write_attempts,
+                );
+            }
             if let Some(writer) = &mut persistence {
                 accept_replies(
                     writer.poll(),
                     &mut committed_preferences,
                     &mut storage_error,
                 );
+                accept_focus_replies(
+                    writer.poll_home_focus(),
+                    &mut committed_home_focus,
+                    &mut home_focus_error,
+                );
             }
             if storage_error.is_some() {
                 shell.storage_notice("Favourites could not be saved • previous data kept");
+            } else if home_focus_error.is_some() {
+                shell.storage_notice("Home focus could not be saved • favourites unchanged");
             }
             if let Some(worker) = &action_worker {
                 for reply in worker.poll() {
@@ -2106,11 +2187,34 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                     action_receipts.push(reply);
                 }
                 for observation in worker.poll_windows() {
-                    settings_handoff.window(
-                        observation.generation,
-                        live_origin.elapsed(),
-                        observation.covering_own_card.unwrap_or(false),
-                    );
+                    let now = live_origin.elapsed();
+                    let observed_at = observation.observed_at.checked_duration_since(live_origin);
+                    let returned = observed_at.is_some_and(|observed_at| {
+                        settings_handoff.window(
+                            observation.generation,
+                            observed_at,
+                            now,
+                            observation
+                                .state
+                                .unwrap_or(native_home::session::SettingsWindowState::Unavailable),
+                        )
+                    });
+                    if apply_settings_scene(
+                        &settings_handoff,
+                        &mut hidden_at,
+                        returned,
+                        Instant::now(),
+                    ) {
+                        shell.cancel_press();
+                        shell.set_artwork_pause(PauseReason::ForegroundLost, true);
+                    }
+                    if returned {
+                        // Usable scene return is distinct from the SDL focus counter.
+                        deferred_external.focus_returned(true);
+                        shell.set_artwork_pause(PauseReason::ForegroundLost, false);
+                        capture_settings_return = true;
+                        shell.storage_notice("Returned from LG Settings");
+                    }
                 }
                 if let Some(generation) = settings_handoff.observation_generation() {
                     if live_origin
@@ -2125,6 +2229,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 if action_receipts.len() > 32 {
                     action_receipts.drain(..action_receipts.len() - 32);
                 }
+            }
+            if settings_handoff.must_close(live_origin.elapsed()) {
+                // No SDL hide is required to consume the original opening/cover
+                // bound. Stop before dispatch so a late reply cannot revive a new intent.
+                reason = "settings_handoff_unusable";
+                break;
             }
             external_action_attempts += dispatch_requests(
                 &mut shell,
@@ -2271,17 +2381,30 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                 start.elapsed().saturating_sub(last_performance_snapshot) >= Duration::from_secs(1)
             }) {
                 last_performance_snapshot = start.elapsed();
-                let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
-                let path = output.join("performance-current.json");
-                let temporary = output.join("performance-current-next.json");
-                let file = std::fs::OpenOptions::new()
-                    .create_new(true)
-                    .write(true)
-                    .mode(0o600)
-                    .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
-                    .open(&temporary)?;
-                serde_json::to_writer(file, &sample)?;
-                std::fs::rename(temporary, path)?;
+                if let Some(writer) = &mut passive_writer {
+                    let focus = shell.focused_item();
+                    writer.submit(native_home::preview_performance::snapshot(
+                        start.elapsed().as_secs_f64(),
+                        &format!("{:?}", shell.page()),
+                        focus.as_deref(),
+                        &format!("{:?}", shell.control_category()),
+                        hidden_at.is_some(),
+                        idle_blanked,
+                        monitor.report(),
+                    ));
+                } else {
+                    let sample = serde_json::json!({"elapsed_seconds":start.elapsed().as_secs_f64(),"page":format!("{:?}",shell.page()),"focus":shell.focused_item(),"category":shell.control_category(),"idle":idle_blanked,"metrics":monitor.report()});
+                    let path = output.join("performance-current.json");
+                    let temporary = output.join("performance-current-next.json");
+                    let file = std::fs::OpenOptions::new()
+                        .create_new(true)
+                        .write(true)
+                        .mode(0o600)
+                        .custom_flags(libc::O_NOFOLLOW | libc::O_CLOEXEC)
+                        .open(&temporary)?;
+                    serde_json::to_writer(file, &sample)?;
+                    std::fs::rename(temporary, path)?;
+                }
             }
             record_keyboard_observer(
                 &mut keyboard_observer,
@@ -2323,6 +2446,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         reason = session_exit_reason(shell.should_exit(), reason);
     }
+    // A close can end an input batch before its ordinary per-frame persistence pump.
+    // Drain the last deliberate Home selection through the same worker before joining it.
+    if home_focus_enabled {
+        queue_home_focus(
+            &mut shell,
+            &mut persistence,
+            &mut home_focus_error,
+            &mut home_focus_write_attempts,
+        );
+    }
     if shell.page() == Page::Applications && shell.drawer_state().editing {
         shell.back();
     }
@@ -2346,10 +2479,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(target_arch = "arm")]
     clock_worker.finish();
     if let Some(writer) = persistence {
+        let outcomes = writer.finish_all();
         accept_replies(
-            writer.finish(),
+            outcomes.preferences,
             &mut committed_preferences,
             &mut storage_error,
+        );
+        accept_focus_replies(
+            outcomes.home_focus,
+            &mut committed_home_focus,
+            &mut home_focus_error,
         );
     }
     let native_api_probe = match native_probe {
@@ -2404,6 +2543,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             exit,
         )?;
     }
+    let passive_writer_report =
+        passive_writer.map(native_home::preview_performance::Writer::finish);
     let packaged_icon_shutdown = shell.finish_packaged_icons();
     if let Some(ledger) = &mut session_cache_observations {
         // Join can outlast catalogue freshness. Recheck its original live-clock
@@ -2445,6 +2586,21 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "storage_error":storage_error,"native_read_probe_registered":native_api_probe.as_ref().and_then(|v|v.get("registered")),"storage_class":if device{"developer media"}else{"host instance"},"hold_probe_identity":probe_identity,"hold_probe_changed":probe_changed,
         "performance_validated":false,"scripted_navigation":{"enabled":!interactive && icon_presentation_marker.is_none() && !startup_capability_proof && broker_startup_marker.is_none() && broker_negative_marker.is_none() && installed_artwork_marker.is_none()
         && preview_artwork_marker.is_none() && artwork_guard_marker.is_none(),"focus":navigation,"page_after_ok":navigation_page,"passed":navigation_page.as_deref()==Some("Inputs"),"requests_not_executed":scripted_requests},"elapsed_seconds":start.elapsed().as_secs_f64()});
+    report["settings_handoff"] = settings_handoff.diagnostics();
+    report["home_focus"] = serde_json::json!({
+        "enabled": home_focus_enabled,
+        "loaded": loaded_home_focus,
+        "restored_initially": home_focus_restored,
+        "restored_from_live": shell.home_focus_restored_from_live(),
+        "startup_restore_pending": shell.home_focus_restore_pending(),
+        "bookmark": shell.home_focus_bookmark(),
+        "queue_attempts": home_focus_write_attempts,
+        "readback_confirmed": committed_home_focus.is_some()
+            && committed_home_focus.as_deref() == shell.home_focus_bookmark()
+            && home_focus_error.is_none(),
+        "error": home_focus_error,
+        "restores_actions": false,
+    });
     report["broker_startup_proof"] = serde_json::json!(broker_startup_receipt);
     report["packaged_icon_shutdown"] = serde_json::json!(packaged_icon_shutdown);
     report["ordinary_current_cache_selected"] = serde_json::json!(ordinary_current_cache_selected);
@@ -2491,6 +2647,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         || pointer_actions.iter().any(|r| r.attempted))
     .into();
     report["swap_interval_request_accepted"] = window.swap_interval_request_accepted.into();
+    if let Some(writer) = passive_writer_report {
+        report["preview_passive_performance"] = serde_json::json!({
+            "schema":1,"profile":"preview-passive-observer","marker":preview_observer,
+            "actual_normal_profile":passive_profile,"writer":writer,
+            "capture_marker_selected":false,"normal_Root_artwork":false,
+            "source_or_pixels_or_GPU_completion_qualified":false,
+        });
+    }
     report["performance"] = performance
         .as_ref()
         .map(|m| m.report())
@@ -2689,6 +2853,33 @@ fn queue_preferences(
         }
     }
 }
+fn queue_home_focus(
+    shell: &mut Shell,
+    writer: &mut Option<Persistence>,
+    error: &mut Option<String>,
+    attempts: &mut u64,
+) {
+    if let Some(id) = shell.take_home_focus_changed() {
+        if let Some(writer) = writer {
+            *attempts = attempts.saturating_add(1);
+            if let Err(failure) = writer.queue_home_focus(&id) {
+                *error = Some(failure);
+            }
+        }
+    }
+}
+fn accept_focus_replies(
+    replies: Vec<Result<String, String>>,
+    committed: &mut Option<String>,
+    error: &mut Option<String>,
+) {
+    for reply in replies {
+        match reply {
+            Ok(id) => *committed = Some(id),
+            Err(failure) => *error = Some(failure),
+        }
+    }
+}
 fn accept_replies(
     replies: Vec<Result<Preferences, String>>,
     committed: &mut Option<Preferences>,
@@ -2862,6 +3053,44 @@ fn run_closed_negative_mode(
     Err("Closed-negative mode requires native Proof".into())
 }
 
+/// A current accepted lifecycle scene can suspend our card even without SDL hide.
+/// Only the typed handoff state is used; no diagnostic JSON becomes authority.
+fn apply_settings_scene(
+    handoff: &native_home::session::SettingsHandoff,
+    hidden_at: &mut Option<Instant>,
+    returned: bool,
+    now: Instant,
+) -> bool {
+    if returned {
+        *hidden_at = None;
+        return false;
+    }
+    if !handoff.scene_suspended() {
+        return false;
+    }
+    hidden_at.get_or_insert(now);
+    true
+}
+
+/// Return true when SDL focus is only a pending Settings hint. The caller must
+/// retain its hidden state until a fresh, typed cover-to-own observation.
+fn settings_focus_hint(
+    handoff: &mut native_home::session::SettingsHandoff,
+    sdl_focus_lost: &mut bool,
+    now: Duration,
+    sdl_returns: &mut u32,
+) -> bool {
+    let was_hidden = std::mem::take(sdl_focus_lost);
+    if !handoff.pending() {
+        return false;
+    }
+    if was_hidden {
+        *sdl_returns = sdl_returns.saturating_add(1);
+    }
+    handoff.focus_returned(now);
+    true
+}
+
 fn poll_live(
     worker: &Option<native_home::live::Worker>,
     shell: &mut Shell,
@@ -2901,6 +3130,11 @@ fn dispatch_requests(
     handoff: &mut native_home::session::SettingsHandoff,
     now: Duration,
 ) -> u64 {
+    // Defensive boundary shared with the main-loop break: once a lifetime is
+    // unusable, even a late old worker reply cannot release another request.
+    if handoff.must_close(now) {
+        return 0;
+    }
     let worker = workers.action;
     let (actions, queued_anchor) = shell.take_transition_requests();
     if !shell.artwork_transition_enabled() {
@@ -4527,6 +4761,91 @@ mod artwork_transition_dispatch_tests {
         assert!(!handoff.pending());
     }
     #[test]
+    fn unusable_settings_without_sdl_hide_cannot_dispatch_another_request_after_late_reply() {
+        let _serial = plx_base::testlock::serial();
+        use native_home::session::SettingsWindowState as State;
+        for state in [
+            State::OwnSoleCard,
+            State::Unavailable,
+            State::SettingsCover,
+            State::Foreign,
+        ] {
+            let mut shell = shell();
+            request(&mut shell);
+            let mut deferred = DeferredExternal::default();
+            let mut unexecuted = Vec::new();
+            let mut h = native_home::session::SettingsHandoff::default();
+            h.queued(Duration::ZERO);
+            h.reply(Duration::from_millis(100), true);
+            let generation = h.observation_generation().unwrap();
+            h.window(
+                generation,
+                Duration::from_millis(200),
+                Duration::from_millis(200),
+                state,
+            );
+            let now = Duration::from_millis(match state {
+                State::SettingsCover => 2_201,
+                State::Foreign => 201,
+                _ => 20_001,
+            });
+            for _ in 0..2 {
+                assert_eq!(
+                    dispatch_requests(
+                        &mut shell,
+                        &mut deferred,
+                        DispatchWorkers {
+                            action: None,
+                            pointer: None
+                        },
+                        None,
+                        &mut unexecuted,
+                        &mut h,
+                        now
+                    ),
+                    0
+                );
+                assert!(unexecuted.is_empty());
+                assert!(!h.pending());
+                assert_eq!(h.diagnostics()["scene_returns"], 0);
+                h.reply(now, true); // stale joined reply cannot revive this lifetime
+            }
+        }
+    }
+    #[test]
+    fn late_false_or_true_reply_cannot_clear_expiry_and_release_actual_dispatch() {
+        let _serial = plx_base::testlock::serial();
+        for verified in [false, true] {
+            let mut shell = shell();
+            request(&mut shell);
+            let mut deferred = DeferredExternal::default();
+            let mut unexecuted = Vec::new();
+            let mut h = native_home::session::SettingsHandoff::default();
+            h.queued(Duration::ZERO);
+            let now = Duration::from_millis(20_001);
+            h.reply(now, verified); // no pre-called expiry
+            assert_eq!(
+                dispatch_requests(
+                    &mut shell,
+                    &mut deferred,
+                    DispatchWorkers {
+                        action: None,
+                        pointer: None
+                    },
+                    None,
+                    &mut unexecuted,
+                    &mut h,
+                    now
+                ),
+                0
+            );
+            assert!(unexecuted.is_empty());
+            assert!(!h.pending());
+            assert!(h.must_close(now));
+            assert_eq!(h.diagnostics()["scene_returns"], 0);
+        }
+    }
+    #[test]
     fn ready_but_missing_action_worker_consumes_once_without_attempt_or_handoff_timer() {
         let _serial = plx_base::testlock::serial();
         let mut shell = shell();
@@ -4574,6 +4893,186 @@ mod artwork_transition_dispatch_tests {
 
 #[cfg(test)]
 mod window_exit_tests {
+    #[test]
+    fn pending_settings_focus_is_hint_before_and_after_worker_reply() {
+        use native_home::session::{SettingsHandoff, SettingsWindowState};
+        use std::time::Duration;
+        let mut h = SettingsHandoff::default();
+        let mut count = 0;
+        let mut sdl_lost = true;
+        assert!(!super::settings_focus_hint(
+            &mut h,
+            &mut sdl_lost,
+            Duration::ZERO,
+            &mut count
+        ));
+        assert!(!sdl_lost);
+        h.queued(Duration::ZERO);
+        sdl_lost = true;
+        assert!(super::settings_focus_hint(
+            &mut h,
+            &mut sdl_lost,
+            Duration::from_millis(50),
+            &mut count
+        ));
+        assert!(h.pending());
+        assert_eq!(count, 1);
+        assert!(!sdl_lost);
+        h.reply(Duration::from_secs(1), true);
+        assert!(super::settings_focus_hint(
+            &mut h,
+            &mut sdl_lost,
+            Duration::from_millis(1_100),
+            &mut count
+        ));
+        assert!(h.pending());
+        assert_eq!(count, 1);
+        let generation = h.observation_generation().unwrap();
+        assert!(!h.window(
+            generation,
+            Duration::from_millis(1_200),
+            Duration::from_millis(1_300),
+            SettingsWindowState::OpeningSpinner
+        ));
+        assert!(h.pending());
+        assert_eq!(h.diagnostics()["scene_returns"], 0);
+        assert!(!h.window(
+            generation,
+            Duration::from_millis(1_400),
+            Duration::from_millis(1_500),
+            SettingsWindowState::SettingsCover
+        ));
+        assert!(h.window(
+            generation,
+            Duration::from_millis(1_600),
+            Duration::from_millis(1_700),
+            SettingsWindowState::OwnSoleCard
+        ));
+        assert!(!h.pending());
+        assert_eq!(count, 1);
+        assert_eq!(h.diagnostics()["scene_returns"], 1);
+    }
+
+    #[test]
+    fn accepted_scene_without_sdl_hide_suspends_real_draw_input_gate_until_usable_return() {
+        use native_home::session::{SettingsHandoff, SettingsWindowState as State};
+        use std::time::{Duration, Instant};
+        for state in [State::SettingsCover, State::OpeningSpinner] {
+            let mut h = SettingsHandoff::default();
+            h.queued(Duration::ZERO);
+            h.reply(Duration::from_millis(100), true);
+            let generation = h.observation_generation().unwrap();
+            let mut hidden = None;
+            let mut loss = false;
+            let mut count = 0;
+            let returned = h.window(
+                generation,
+                Duration::from_millis(200),
+                Duration::from_millis(200),
+                state,
+            );
+            assert!(!returned);
+            assert!(super::apply_settings_scene(
+                &h,
+                &mut hidden,
+                returned,
+                Instant::now()
+            ));
+            assert!(
+                hidden.is_some(),
+                "actual Main draw/visible-input gate is closed"
+            );
+            assert!(super::settings_focus_hint(
+                &mut h,
+                &mut loss,
+                Duration::from_millis(300),
+                &mut count
+            ));
+            assert!(super::apply_settings_scene(
+                &h,
+                &mut hidden,
+                false,
+                Instant::now()
+            ));
+            assert_eq!(count, 0);
+            for (observed_generation, sample) in
+                [(generation.wrapping_sub(1), 400), (generation, 100)]
+            {
+                let returned = h.window(
+                    observed_generation,
+                    Duration::from_millis(sample),
+                    Duration::from_millis(400),
+                    State::OwnSoleCard,
+                );
+                assert!(!returned);
+                assert!(super::apply_settings_scene(
+                    &h,
+                    &mut hidden,
+                    returned,
+                    Instant::now()
+                ));
+                assert!(hidden.is_some());
+            }
+            if state == State::OpeningSpinner {
+                let returned = h.window(
+                    generation,
+                    Duration::from_millis(500),
+                    Duration::from_millis(500),
+                    State::OwnSoleCard,
+                );
+                assert!(!returned);
+                assert!(super::apply_settings_scene(
+                    &h,
+                    &mut hidden,
+                    returned,
+                    Instant::now()
+                ));
+                h.window(
+                    generation,
+                    Duration::from_millis(600),
+                    Duration::from_millis(600),
+                    State::SettingsCover,
+                );
+            }
+            let returned = h.window(
+                generation,
+                Duration::from_millis(700),
+                Duration::from_millis(700),
+                State::OwnSoleCard,
+            );
+            assert!(returned);
+            assert!(!super::apply_settings_scene(
+                &h,
+                &mut hidden,
+                returned,
+                Instant::now()
+            ));
+            assert!(hidden.is_none());
+            assert_eq!(h.diagnostics()["scene_returns"], 1);
+            assert_eq!(count, 0);
+        }
+    }
+    #[test]
+    fn no_sdl_hide_does_not_leave_a_verified_opening_pending_forever() {
+        use native_home::session::SettingsHandoff;
+        use std::time::Duration;
+        let mut h = SettingsHandoff::default();
+        h.queued(Duration::ZERO);
+        h.reply(Duration::from_secs(1), true);
+        let mut loss = false;
+        let mut count = 0;
+        assert!(super::settings_focus_hint(
+            &mut h,
+            &mut loss,
+            Duration::from_secs(2),
+            &mut count
+        ));
+        assert_eq!(count, 0);
+        assert!(h.must_close(Duration::from_millis(20_001)));
+        assert!(!h.pending());
+        assert!(h.observation_generation().is_none());
+        assert_eq!(h.diagnostics()["scene_returns"], 0);
+    }
     #[test]
     fn window_close_keeps_its_terminal_reason_when_shell_exit_is_latched() {
         assert_eq!(
@@ -4684,5 +5183,59 @@ mod session_cache_capture_tests {
             bounded_cache_frame_json(&too_large).unwrap_err().kind(),
             std::io::ErrorKind::InvalidData
         );
+    }
+}
+
+#[cfg(test)]
+mod home_focus_main_tests {
+    use super::*;
+    #[test]
+    fn actual_queue_finish_and_reopen_restore_only_latest_deliberate_home_focus() {
+        let _serial = plx_base::testlock::serial();
+        let path =
+            std::env::temp_dir().join(format!("native-home-main-focus-{}", std::process::id()));
+        let store = native_home::preferences::Store::open(&path).unwrap();
+        let prefs = Preferences {
+            initialized: true,
+            favourites: ["com.example.a".into(), "com.example.b".into()].into(),
+            favourite_order: Vec::new(),
+        };
+        store.save(&prefs).unwrap();
+        let before = std::fs::read(path.join("preferences.json")).unwrap();
+        let fixture = || {
+            serde_json::from_value::<Snapshot>(serde_json::json!({"captured_at":"synthetic","applications":[{"id":"com.example.a","title":"A","type":"native"},{"id":"com.example.b","title":"B","type":"native"}],"launch_ids":["com.example.a","com.example.b"],"inputs":[],"context":{"input":"","dynamic_range":"","picture_mode":""},"settings":{}})).unwrap()
+        };
+        let (writer, loaded) = Persistence::start(&path).unwrap();
+        let mut writer = Some(writer);
+        let mut shell = Shell::new(fixture(), loaded.unwrap());
+        let mut error = None;
+        let mut attempts = 0;
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        assert_eq!(attempts, 0);
+        assert!(!path.join("home-focus.json").exists());
+        shell.direction(Dir::Right);
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        shell.direction(Dir::Left);
+        // Emulate a normal close before the next per-frame queue. The final drain
+        // must retain this newer selection rather than just the earlier queued one.
+        shell.request_exit();
+        queue_home_focus(&mut shell, &mut writer, &mut error, &mut attempts);
+        let result = writer.unwrap().finish_all();
+        let mut committed = None;
+        accept_focus_replies(result.home_focus, &mut committed, &mut error);
+        assert_eq!(committed.as_deref(), Some("com.example.a"));
+        assert!(error.is_none());
+        assert!(result.preferences.is_empty());
+        assert_eq!(attempts, 2);
+        assert_eq!(
+            std::fs::read(path.join("preferences.json")).unwrap(),
+            before
+        );
+        let mut restarted = Shell::new(fixture(), store.load().unwrap().unwrap());
+        assert!(restarted.restore_home_focus(&store.load_home_focus().unwrap().unwrap()));
+        assert_eq!(restarted.focused_item().as_deref(), Some("com.example.a"));
+        assert!(restarted.take_home_focus_changed().is_none());
+        assert!(restarted.take_requests().is_empty());
+        std::fs::remove_dir_all(path).unwrap();
     }
 }

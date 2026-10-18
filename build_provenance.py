@@ -8,8 +8,8 @@ import subprocess
 import tempfile
 
 ROOT_FILES = ('Cargo.toml', 'Cargo.lock', 'build.rs', 'sdl-events.c', 'build-client.py',
-              'package-preview.py', 'prepare-framework.py', 'dependency-lock.json',
-              'build_provenance.py', 'tools/verify-framework.py')
+              'package-preview.py', 'icon_acquisition.py', 'tools/public-icon-reader/protocol.py', 'prepare-framework.py', 'dependency-lock.json',
+              'build_provenance.py', 'cache_consumer_packaging.py', 'cache_consumer_contract.py', 'preview_performance_packaging.py', 'tools/verify-framework.py')
 TREES = ('src', 'assets/luma-home', 'resources/fonts')
 BINARY_NAMES = {'home-preview', 'control-preview', 'launch-target', 'artwork-broker-proof', 'artwork-broker-startup-proof', 'artwork-broker'}
 RECEIPT_LIMIT = 4 * 1024 * 1024
@@ -94,7 +94,7 @@ def _binary(binary, target):
     return {'name': binary.name, **_hash(raw)}
 
 
-def record_build_receipt(root, binary, target, before, after):
+def record_build_receipt(root, binary, target, before, after, *, build_selection=None):
     _require(before == after and after == snapshot(root), 'Build inputs/framework changed during build')
     identity = _binary(binary, target)
     git = subprocess.run(['git', '--no-optional-locks', '-C', str(Path(root).resolve()),
@@ -103,6 +103,10 @@ def record_build_receipt(root, binary, target, before, after):
              'git_revision': git.stdout.decode().strip() if git.returncode == 0 else None,
              'toolchain': after['toolchain'],
              'scope': 'Actual binary hash and matching compile inputs/framework; not TV validation.'}
+    if target == 'arm':
+        from cache_consumer_contract import native_descriptor
+        value['consumer_build_contract'] = native_descriptor(
+            _read(Path(root) / 'Cargo.toml'), build_selection)
     destination = Path(binary).with_name(Path(binary).name + '.build.json')
     _require(not destination.is_symlink(), 'Linked receipt destination')
     fd, temporary = tempfile.mkstemp(prefix='.build-receipt-', dir=destination.parent)
@@ -126,6 +130,11 @@ def validate_build_receipt(root, binary, receipt):
     _require(type(value) is dict and value.get('schema') == 1 and value.get('target') == 'arm',
              'ARM build receipt required')
     _require(value.get('binary') == _binary(binary, 'arm'), 'Binary bytes/name differ from build receipt')
+    from cache_consumer_contract import native_descriptor
+    descriptor = value.get('consumer_build_contract')
+    _require(type(descriptor) is dict and descriptor == native_descriptor(
+        _read(Path(root) / 'Cargo.toml'), descriptor.get('selection')),
+        'Actual current native Cargo build selection receipt required')
     current = snapshot(root)
     _require(value.get('snapshot') == current and value.get('toolchain') == current['toolchain'],
              'Current source/dependency inputs differ from build receipt')

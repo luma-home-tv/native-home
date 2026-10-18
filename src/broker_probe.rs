@@ -263,14 +263,136 @@ pub(crate) fn read_marker() -> Result<Marker, String> {
     )))
 }
 
-#[cfg(target_arch = "arm")]
-pub(crate) fn read_context(
-    bus: &plx_platform::webos::ls2::Registration,
-    deadline: std::time::Instant,
-) -> Value {
+// These diagnostics describe SDK-delivered UTF-8 text, not original wire bytes.
+// They never participate in context or permission admission.
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct ContextTrace {
+    pub(crate) operations: Vec<ContextCallTrace>,
+    pub(crate) trace_truncated: bool,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct ContextCallTrace {
+    operation: &'static str,
+    requested_budget_ns: u64,
+    elapsed_ns: u64,
+    #[serde(flatten)]
+    result: ContextCallOutcome,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+enum ContextCallOutcome {
+    Returned {
+        projection: ContextProjection,
+        sdk_text_bytes: usize,
+    },
+    Timeout,
+    Setup {
+        stage: String,
+        code: Option<i32>,
+        detail: String,
+    },
+    DeadlineNotCalled,
+}
+#[cfg(any(target_arch = "arm", test))]
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum ContextProjection {
+    Json,
+    ParseError,
+    Oversize,
+}
+#[cfg(any(target_arch = "arm", test))]
+enum ContextCallFailure {
+    Timeout,
+    Setup {
+        stage: String,
+        code: Option<i32>,
+        detail: String,
+    },
+}
+#[cfg(any(target_arch = "arm", test))]
+trait ContextBackend {
+    fn now(&self) -> std::time::Instant;
+    fn call(
+        &mut self,
+        uri: &str,
+        payload: &str,
+        budget: std::time::Duration,
+    ) -> Result<String, ContextCallFailure>;
+}
+#[cfg(any(target_arch = "arm", test))]
+fn diagnostic_text(text: &str, cap: usize) -> (String, bool) {
+    let mut end = text.len().min(cap);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    (text[..end].to_owned(), text.len() > cap)
+}
+#[cfg(any(target_arch = "arm", test))]
+fn project_context_reply(
+    reply: Result<String, ContextCallFailure>,
+) -> (Value, ContextCallOutcome, bool) {
     use serde_json::json;
-    use std::time::{Duration, Instant};
+    match reply {
+        Ok(raw) => {
+            let sdk_text_bytes = raw.len();
+            let (value, projection) = if sdk_text_bytes > 65536 {
+                (json!({"oversize":true}), ContextProjection::Oversize)
+            } else {
+                match serde_json::from_str(&raw) {
+                    Ok(value) => (value, ContextProjection::Json),
+                    Err(_) => (json!({"parse_error":true}), ContextProjection::ParseError),
+                }
+            };
+            (
+                value,
+                ContextCallOutcome::Returned {
+                    projection,
+                    sdk_text_bytes,
+                },
+                false,
+            )
+        }
+        Err(ContextCallFailure::Timeout) => (
+            json!({"unavailable":true}),
+            ContextCallOutcome::Timeout,
+            false,
+        ),
+        Err(ContextCallFailure::Setup {
+            stage,
+            code,
+            detail,
+        }) => {
+            let (stage, stage_cut) = diagnostic_text(&stage, 64);
+            let (detail, detail_cut) = diagnostic_text(&detail, 256);
+            (
+                json!({"unavailable":true}),
+                ContextCallOutcome::Setup {
+                    stage,
+                    code,
+                    detail,
+                },
+                stage_cut || detail_cut,
+            )
+        }
+    }
+}
+#[cfg(any(target_arch = "arm", test))]
+fn read_context_with(
+    backend: &mut impl ContextBackend,
+    deadline: std::time::Instant,
+    observed: bool,
+) -> (Value, ContextTrace) {
+    use serde_json::json;
+    use std::time::Duration;
     let mut result = serde_json::Map::new();
+    let mut trace = ContextTrace {
+        operations: Vec::with_capacity(if observed { 3 } else { 0 }),
+        trace_truncated: false,
+    };
     for (key, uri, payload) in [
         (
             "system_info",
@@ -288,25 +410,74 @@ pub(crate) fn read_context(
             json!({}),
         ),
     ] {
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        let value = if remaining.is_zero() {
-            json!({"deadline":true})
+        let began = backend.now();
+        let remaining = deadline.saturating_duration_since(began);
+        let budget = remaining.min(Duration::from_millis(500));
+        let (value, outcome, truncated) = if remaining.is_zero() {
+            (
+                json!({"deadline":true}),
+                ContextCallOutcome::DeadlineNotCalled,
+                false,
+            )
         } else {
-            match bus.call(
-                uri,
-                &payload.to_string(),
-                remaining.min(Duration::from_millis(500)),
-            ) {
-                Ok(raw) if raw.len() <= 65536 => {
-                    serde_json::from_str(&raw).unwrap_or_else(|_| json!({"parse_error":true}))
-                }
-                Ok(_) => json!({"oversize":true}),
-                Err(_) => json!({"unavailable":true}),
-            }
+            project_context_reply(backend.call(uri, &payload.to_string(), budget))
         };
+        if observed {
+            let elapsed = backend.now().saturating_duration_since(began).as_nanos();
+            trace.trace_truncated |= truncated || elapsed > u64::MAX as u128;
+            trace.operations.push(ContextCallTrace {
+                operation: key,
+                requested_budget_ns: budget.as_nanos() as u64,
+                elapsed_ns: elapsed.min(u64::MAX as u128) as u64,
+                result: outcome,
+            });
+        }
         result.insert(key.into(), value);
     }
-    Value::Object(result)
+    (Value::Object(result), trace)
+}
+#[cfg(target_arch = "arm")]
+struct NativeContext<'a>(&'a plx_platform::webos::ls2::Registration);
+#[cfg(target_arch = "arm")]
+impl ContextBackend for NativeContext<'_> {
+    fn now(&self) -> std::time::Instant {
+        std::time::Instant::now()
+    }
+    fn call(
+        &mut self,
+        uri: &str,
+        payload: &str,
+        budget: std::time::Duration,
+    ) -> Result<String, ContextCallFailure> {
+        self.0
+            .call(uri, payload, budget)
+            .map_err(|error| match error {
+                plx_platform::webos::ls2::Fail::Timeout => ContextCallFailure::Timeout,
+                plx_platform::webos::ls2::Fail::Setup {
+                    stage,
+                    code,
+                    detail,
+                } => ContextCallFailure::Setup {
+                    stage: stage.into(),
+                    code,
+                    detail,
+                },
+            })
+    }
+}
+#[cfg(target_arch = "arm")]
+pub(crate) fn read_context(
+    bus: &plx_platform::webos::ls2::Registration,
+    deadline: std::time::Instant,
+) -> Value {
+    read_context_with(&mut NativeContext(bus), deadline, false).0
+}
+#[cfg(target_arch = "arm")]
+pub(crate) fn read_context_observed(
+    bus: &plx_platform::webos::ls2::Registration,
+    deadline: std::time::Instant,
+) -> (Value, ContextTrace) {
+    read_context_with(&mut NativeContext(bus), deadline, true)
 }
 
 /// Called only from the marker-gated isolated native collector. This neither
@@ -689,5 +860,191 @@ mod tests {
         );
         assert!(hash_reader(&mut std::io::Cursor::new(Vec::<u8>::new())).is_err());
         assert!(hash_reader(&mut std::io::repeat(1).take(8 * 1024 * 1024 + 1)).is_err());
+    }
+}
+
+#[cfg(test)]
+mod context_diagnostic_tests {
+    use super::*;
+    use serde_json::json;
+    use std::collections::VecDeque;
+    use std::time::{Duration, Instant};
+
+    struct FakeContext {
+        origin: Instant,
+        elapsed: Duration,
+        replies: VecDeque<(Result<String, ContextCallFailure>, Duration)>,
+        calls: Vec<(String, String, Duration)>,
+    }
+    impl FakeContext {
+        fn new(replies: Vec<(Result<String, ContextCallFailure>, Duration)>) -> Self {
+            Self {
+                origin: Instant::now(),
+                elapsed: Duration::ZERO,
+                replies: replies.into(),
+                calls: Vec::new(),
+            }
+        }
+    }
+    impl ContextBackend for FakeContext {
+        fn now(&self) -> Instant {
+            self.origin + self.elapsed
+        }
+        fn call(
+            &mut self,
+            uri: &str,
+            payload: &str,
+            budget: Duration,
+        ) -> Result<String, ContextCallFailure> {
+            self.calls.push((uri.into(), payload.into(), budget));
+            let (reply, cost) = self.replies.pop_front().expect("Unexpected extra call");
+            self.elapsed += cost;
+            reply
+        }
+    }
+    #[test]
+    fn same_fixed_calls_order_payloads_and_remaining_budget_with_or_without_trace() {
+        for observed in [false, true] {
+            let mut fake = FakeContext::new(vec![
+                (
+                    Ok("{\"returnValue\":true}".into()),
+                    Duration::from_millis(200),
+                ),
+                (
+                    Ok("{\"unavailable\":true}".into()),
+                    Duration::from_millis(200),
+                ),
+                (Ok("[]".into()), Duration::from_millis(10)),
+            ]);
+            let deadline = fake.origin + Duration::from_millis(600);
+            let (value, trace) = read_context_with(&mut fake, deadline, observed);
+            assert_eq!(
+                value,
+                json!({"system_info":{"returnValue":true},
+                "foreground":{"unavailable":true},"windows":[]})
+            );
+            assert_eq!(
+                fake.calls,
+                vec![
+                    (
+                        "luna://com.webos.service.tv.systemproperty/getSystemInfo".into(),
+                        "{\"keys\":[\"modelName\",\"firmwareVersion\",\"sdkVersion\"]}".into(),
+                        Duration::from_millis(500)
+                    ),
+                    (
+                        "luna://com.webos.applicationManager/getForegroundAppInfo".into(),
+                        "{}".into(),
+                        Duration::from_millis(400)
+                    ),
+                    (
+                        "luna://com.webos.surfacemanager/getForegroundWindowInfo".into(),
+                        "{}".into(),
+                        Duration::from_millis(200)
+                    ),
+                ]
+            );
+            assert_eq!(trace.operations.len(), if observed { 3 } else { 0 });
+            if observed {
+                let trace = serde_json::to_value(trace).unwrap();
+                assert_eq!(trace["operations"][1]["operation"], "foreground");
+                assert_eq!(trace["operations"][1]["outcome"], "returned");
+                assert_eq!(trace["operations"][1]["projection"], "json");
+                assert_eq!(
+                    trace["operations"][1]["requested_budget_ns"],
+                    400_000_000u64
+                );
+                assert_eq!(trace["operations"][1]["elapsed_ns"], 200_000_000u64);
+            }
+        }
+    }
+    #[test]
+    fn timeout_setup_and_returned_sentinel_have_same_projection_but_distinct_trace() {
+        let mut fake = FakeContext::new(vec![
+            (Ok("{\"unavailable\":true}".into()), Duration::ZERO),
+            (Err(ContextCallFailure::Timeout), Duration::from_millis(500)),
+            (
+                Err(ContextCallFailure::Setup {
+                    stage: "LSCallOneReply".into(),
+                    code: Some(-7),
+                    detail: "SDK detail".into(),
+                }),
+                Duration::ZERO,
+            ),
+        ]);
+        let deadline = fake.origin + Duration::from_secs(8);
+        let (value, trace) = read_context_with(&mut fake, deadline, true);
+        for key in ["system_info", "foreground", "windows"] {
+            assert_eq!(value[key], json!({"unavailable":true}));
+        }
+        let trace = serde_json::to_value(trace).unwrap();
+        assert_eq!(trace["operations"][0]["outcome"], "returned");
+        assert_eq!(trace["operations"][1]["outcome"], "timeout");
+        assert_eq!(trace["operations"][2]["outcome"], "setup");
+        assert_eq!(trace["operations"][2]["stage"], "LSCallOneReply");
+        assert_eq!(trace["operations"][2]["code"], -7);
+        assert_eq!(trace["operations"][2]["detail"], "SDK detail");
+        assert_eq!(trace["trace_truncated"], false);
+    }
+    #[test]
+    fn reply_projection_limits_and_parsing_remain_exact() {
+        let oversized = " ".repeat(65537);
+        let mut fake = FakeContext::new(vec![
+            (Ok("[".into()), Duration::ZERO),
+            (Ok(oversized), Duration::ZERO),
+            (Ok(format!("{}null", " ".repeat(65532))), Duration::ZERO),
+        ]);
+        let deadline = fake.origin + Duration::from_secs(8);
+        let (value, trace) = read_context_with(&mut fake, deadline, true);
+        assert_eq!(
+            value,
+            json!({"system_info":{"parse_error":true},
+            "foreground":{"oversize":true},"windows":null})
+        );
+        let trace = serde_json::to_value(trace).unwrap();
+        assert_eq!(trace["operations"][0]["projection"], "parse_error");
+        assert_eq!(trace["operations"][1]["projection"], "oversize");
+        assert_eq!(trace["operations"][1]["sdk_text_bytes"], 65537);
+        assert_eq!(trace["operations"][2]["projection"], "json");
+        assert_eq!(trace["operations"][2]["sdk_text_bytes"], 65536);
+    }
+    #[test]
+    fn deadline_does_not_call_or_retry_and_records_skipped_operations() {
+        let mut fake = FakeContext::new(vec![(
+            Err(ContextCallFailure::Timeout),
+            Duration::from_millis(500),
+        )]);
+        let deadline = fake.origin + Duration::from_millis(500);
+        let (value, trace) = read_context_with(&mut fake, deadline, true);
+        assert_eq!(fake.calls.len(), 1);
+        assert_eq!(
+            value,
+            json!({"system_info":{"unavailable":true},
+            "foreground":{"deadline":true},"windows":{"deadline":true}})
+        );
+        let trace = serde_json::to_value(trace).unwrap();
+        for i in [1, 2] {
+            assert_eq!(trace["operations"][i]["outcome"], "deadline_not_called");
+            assert_eq!(trace["operations"][i]["requested_budget_ns"], 0);
+        }
+    }
+    #[test]
+    fn error_detail_limits_are_utf8_safe_bytes_with_explicit_truncation() {
+        let (value, outcome, truncated) = project_context_reply(Err(ContextCallFailure::Setup {
+            stage: format!("{}€tail", "s".repeat(63)),
+            code: None,
+            detail: format!("{}€tail", "d".repeat(255)),
+        }));
+        assert_eq!(value, json!({"unavailable":true}));
+        assert!(truncated);
+        let result = serde_json::to_value(outcome).unwrap();
+        assert_eq!(result["stage"].as_str().unwrap().len(), 63);
+        assert_eq!(result["detail"].as_str().unwrap().len(), 255);
+        assert!(result["code"].is_null());
+        let (_, _, truncated) = project_context_reply(Err(ContextCallFailure::Setup {
+            stage: "é".repeat(32),
+            code: None,
+            detail: "é".repeat(128),
+        }));
+        assert!(!truncated);
     }
 }

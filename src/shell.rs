@@ -306,7 +306,7 @@ impl ScreenArg for Page {
     fn title(&self) -> Option<&str> {
         Some(match self {
             Self::Home => "Home",
-            Self::Applications => "Applications",
+            Self::Applications => "Apps",
             Self::Inputs => "Inputs",
             Self::Controls => "Controls",
             Self::Picture => "Picture",
@@ -455,23 +455,25 @@ impl CardSource<HomeHost> for Cards {
                     ),
                 );
             }
-        } else if !c.has_icon() && !c.loading_icon {
-            Label::new(
-                c.initials.as_ptr(),
-                theme::size::DISPLAY,
-                theme::TEXT_PRIMARY,
-            )
-            .bold()
-            .h(HAlign::Center)
-            .draw(p, tile.rect);
-        }
-        if c.loading_icon && !c.has_icon() && tile.focused {
-            p.rring(
-                tile.rect,
-                theme::CARD_RING_RAD,
-                theme::CARD_SHEEN_W,
-                theme::TEXT_SECONDARY,
-            );
+        } else if !c.has_icon() {
+            if c.loading_icon {
+                Label::new(
+                    c"Loading…".as_ptr(),
+                    theme::size::CAPTION,
+                    theme::TEXT_SECONDARY,
+                )
+                .h(HAlign::Center)
+                .draw(p, tile.rect);
+            } else {
+                Label::new(
+                    c.initials.as_ptr(),
+                    theme::size::DISPLAY,
+                    theme::TEXT_PRIMARY,
+                )
+                .bold()
+                .h(HAlign::Center)
+                .draw(p, tile.rect);
+            }
         }
         if input_key(&c.id).is_none() && !tile.focused {
             let text = cstr(&plx_gfx::text::elide(
@@ -1088,6 +1090,10 @@ pub struct Shell {
     pending: Vec<Action>,
     exit: bool,
     preferences_changed: bool,
+    home_focus: Option<String>,
+    home_focus_changed: bool,
+    pending_home_focus_restore: Option<String>,
+    home_focus_restored_from_live: bool,
     live_state: Option<Freshness>,
     live_now: u32,
     live_updates: u32,
@@ -1101,6 +1107,7 @@ pub struct Shell {
     control_caption_page: Option<Page>,
     control_caption_context: Option<Context>,
     control_context_current: bool,
+    control_description_current: bool,
     control_breadcrumb: CString,
     menu: Option<AppMenu>,
     clock: crate::clock::View,
@@ -1201,6 +1208,10 @@ impl Shell {
             pending: Vec::new(),
             exit: false,
             preferences_changed: seeded,
+            home_focus: None,
+            home_focus_changed: false,
+            pending_home_focus_restore: None,
+            home_focus_restored_from_live: false,
             live_state: None,
             live_now: 0,
             live_updates: 0,
@@ -1214,6 +1225,7 @@ impl Shell {
             control_caption_page: None,
             control_caption_context: None,
             control_context_current: false,
+            control_description_current: false,
             control_breadcrumb: cstr(""),
             menu: None,
             clock: crate::clock::View::default(),
@@ -1294,6 +1306,9 @@ impl Shell {
         }
     }
     fn rebuild(&mut self, page: Page) {
+        if page != self.surface.page {
+            self.pending_home_focus_restore = None;
+        }
         let page = if page == Page::RangeEditor && self.range.is_none() {
             Page::Controls
         } else {
@@ -1307,17 +1322,17 @@ impl Shell {
         plx_machine::idle::invalidate();
         if page != Page::Applications {
             self.drawer.finish_editing();
-            self.menu = None;
         }
         if page != Page::PointerSpeed {
             self.pointer_expected = None;
         }
         if self.menu.as_ref().is_some_and(|menu| {
-            !self
-                .catalogue
-                .applications
-                .iter()
-                .any(|app| app.id == menu.id)
+            page != self.surface.page
+                || !self
+                    .catalogue
+                    .applications
+                    .iter()
+                    .any(|app| app.id == menu.id)
         }) {
             self.menu = None;
         }
@@ -1352,13 +1367,13 @@ impl Shell {
                     if page == Page::Applications {
                         "OK to open • hold OK for app options"
                     } else {
-                        "OK to open • hold OK to add or remove a favourite"
+                        "OK to open • hold OK for app options • Back to exit"
                     }
                 } else {
                     if page == Page::Applications {
                         "Hold OK for app options • launches disabled in this preview"
                     } else {
-                        "Hold OK to add or remove a favourite • launches disabled in this preview"
+                        "Hold OK for app options • launches disabled in this preview • Back to exit"
                     }
                 }
             }
@@ -1367,6 +1382,12 @@ impl Shell {
             Page::RangeEditor => "Left/Right adjust • Down choose Apply • Back cancel",
             Page::PointerSpeed if self.pointer_pending => "Applying pointer speed…",
             Page::PointerSpeed => "OK apply selection • Back cancel",
+            Page::Accessibility | Page::Controls
+                if self.surface.control_page == Some(Page::Accessibility)
+                    && self.description_value().is_some() =>
+            {
+                "Audio-description level can be adjusted here • more controls in LG Settings"
+            }
             Page::General if self.pointer_enabled => {
                 "Pointer speed can be adjusted here • more controls in LG Settings"
             }
@@ -1438,12 +1459,15 @@ impl Shell {
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
                 self.surface.table.set(
-                    controls_form_with_numeric(
-                        settings,
-                        &self.snapshot.context,
+                    crate::control_tasks::with_task_guides(
+                        controls_form_with_numeric(
+                            settings,
+                            &self.snapshot.context,
+                            SettingsSection::from_page(detail),
+                            self.pointer_value().is_some() && !self.pointer_pending,
+                            self.description_value(),
+                        ),
                         SettingsSection::from_page(detail),
-                        self.pointer_value().is_some() && !self.pointer_pending,
-                        self.description_value(),
                     ),
                     None,
                 );
@@ -1719,6 +1743,17 @@ impl Shell {
         self.catalogue
             .refresh(&self.snapshot.applications, &self.snapshot.launch_ids);
         self.refresh_shown_data(&before);
+        // A packaged snapshot can predate an installed/pinned favourite. Resolve
+        // startup focus once against the first fresh real catalogue, never a
+        // simulated/failed/stale update or a later reinstall after absence.
+        if !update.simulated
+            && matches!(update.catalogue, live::Reading::Value(_))
+            && Freshness::current(Some(update.observed_ms), now)
+        {
+            if let Some(id) = self.pending_home_focus_restore.take() {
+                self.home_focus_restored_from_live = self.restore_home_favourite_or_default(&id);
+            }
+        }
         self.validate_pointer_picker();
         self.refresh_control_breadcrumb();
         // Refresh validity/status chrome even when values themselves are unchanged.
@@ -1760,8 +1795,11 @@ impl Shell {
             .live_state
             .as_ref()
             .is_some_and(|f| Freshness::current(f.picture, self.live_now));
+        let description_current =
+            page == Some(Page::Accessibility) && self.description_value().is_some();
         if self.control_caption_page == page
             && self.control_context_current == current
+            && self.control_description_current == description_current
             && self.control_caption_context.as_ref() == Some(&self.snapshot.context)
         {
             return;
@@ -1783,12 +1821,16 @@ impl Shell {
             Some(Page::General) if self.pointer_enabled => {
                 cstr("Pointer speed can be adjusted here")
             }
+            Some(Page::Accessibility) if description_current => {
+                cstr("Audio-description level can be adjusted here")
+            }
             Some(Page::Accessibility) => cstr("Accessibility readings • LG-managed controls"),
             Some(_) => cstr("General readings • LG-managed controls"),
             None => cstr(""),
         };
         self.control_caption_page = page;
         self.control_context_current = current;
+        self.control_description_current = description_current;
         self.control_caption_context = Some(self.snapshot.context.clone());
     }
     fn refresh_shown_data(&mut self, before: &Snapshot) {
@@ -2097,6 +2139,26 @@ impl Shell {
         if !Freshness::current(stamp, self.live_now) {
             return "Reading unavailable • last state kept".into();
         }
+        if let Some(section) = match shown {
+            Page::General => Some("general"),
+            Page::Accessibility => Some("accessibility"),
+            _ => None,
+        } {
+            let rows = self.snapshot.settings.get(section);
+            let current_row =
+                |row: &Setting| row.available && row.still_current(&self.snapshot.context);
+            if !rows.is_some_and(|rows| rows.iter().any(current_row)) {
+                return "Reading unavailable • last state kept".into();
+            }
+            if rows.is_some_and(|rows| rows.iter().any(|row| !current_row(row))) {
+                return if fresh.simulated {
+                    "Simulated update • some readings unavailable"
+                } else {
+                    "Live TV state • some readings unavailable"
+                }
+                .into();
+            }
+        }
         let label = if fresh.simulated {
             "Simulated update"
         } else {
@@ -2369,6 +2431,7 @@ impl Shell {
     pub fn finish_packaged_icons(&mut self) -> Option<serde_json::Value> {
         let mut controller = self.packaged_icons.take()?;
         let before = controller.stats();
+        let cache_association = controller.cache_association_observation().cloned();
         let done = controller.finish();
         self.textures.clear();
         for card in &mut self.surface.cards.items {
@@ -2384,6 +2447,8 @@ impl Shell {
             "cache_readiness_is_index_not_images":true,
             "cache_uploads":before.cache_uploads,"packaged_uploads":before.packaged_uploads,
             "cache_adoptions":before.cache_adoptions,
+            "cache_consumer_association_observation":cache_association,
+            "cache_consumer_association_is_not_image_coverage":true,
             "gl":self.packaged_gl.receipt()}))
     }
     /// Diagnostic readiness only. Ordinary navigation never waits for artwork.
@@ -2754,6 +2819,7 @@ impl Shell {
         }
     }
     pub fn direction(&mut self, dir: Dir) {
+        self.pending_home_focus_restore = None;
         if self.drawer.system_keyboard() {
             self.input.cancel_press();
             return;
@@ -2885,6 +2951,7 @@ impl Shell {
             .engine
             .move_dir(owner, &self.surface, &links, dir, &cx);
         self.moved(outcome);
+        self.remember_home_focus();
     }
     pub fn cancel_press(&mut self) {
         self.input.cancel_press();
@@ -2893,6 +2960,9 @@ impl Shell {
         self.input.note_alive(self.now);
     }
     pub fn press(&mut self, down: bool, from: PressFrom) {
+        if down {
+            self.pending_home_focus_restore = None;
+        }
         if self.drawer.system_keyboard() {
             self.input.cancel_press();
             return;
@@ -2926,6 +2996,7 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        self.pending_home_focus_restore = None;
         if self.artwork_ever_enabled {
             self.pending
                 .retain(|a| crate::actions::Request::from_action(a.clone()).is_none());
@@ -3022,6 +3093,7 @@ impl Shell {
             return;
         }
         if click {
+            self.pending_home_focus_restore = None;
             // A pointer release supersedes any keyboard gesture, even when
             // focus stays on the same card or the pointer misses every stop.
             self.input.cancel_press();
@@ -3048,6 +3120,11 @@ impl Shell {
                 // change or menu can remove that target before another event is polled.
                 return;
             };
+            if self.input.engine.current(owner) != Some(key) {
+                // A valid hover focus change is user intent, but not a durable
+                // bookmark selection. Never let a delayed startup restore steal it.
+                self.pending_home_focus_restore = None;
+            }
             let outcome = self.input.engine.set(owner, key, Some(group), By::Pointer);
             self.moved(outcome);
         }
@@ -3061,6 +3138,7 @@ impl Shell {
         if self.exit {
             return;
         }
+        self.pending_home_focus_restore = None;
         if self.surface.page == Page::RangeEditor {
             if key.entry != entry(Page::RangeEditor) {
                 return;
@@ -3219,7 +3297,12 @@ impl Shell {
                         }
                     }
                     Some(plx_ui::form::Activation::Action(a)) => {
-                        self.status = cstr("View only — use LG Settings for changes");
+                        self.status = cstr(match &a {
+                            Action::OpenLgSettings | Action::OpenLgSettingsSection(_) => {
+                                "Opening LG Settings…"
+                            }
+                            _ => "View only — use LG Settings for changes",
+                        });
                         self.queue_external_action(a);
                     }
                     None => {}
@@ -3239,7 +3322,10 @@ impl Shell {
         };
         let id = card.id.clone();
         let input = input_key(&id).is_some();
-        if hold && !input && self.surface.page == Page::Applications {
+        if !input && self.surface.page == Page::Home {
+            self.remember_home_focus();
+        }
+        if hold && !input && matches!(self.surface.page, Page::Home | Page::Applications) {
             let index = self
                 .surface
                 .cards
@@ -3252,12 +3338,8 @@ impl Shell {
                 origin: key.elem,
                 index,
             });
-            self.rebuild(Page::Applications);
-            self.focus_menu_action(MenuAction::ToggleFavourite);
-        } else if hold && !input && self.surface.page == Page::Home {
-            self.prefs.toggle_favourite(&id);
-            self.preferences_changed = true;
             self.rebuild(self.surface.page);
+            self.focus_menu_action(MenuAction::ToggleFavourite);
         } else {
             if !self.request_is_current(input) {
                 self.status = cstr("Reading unavailable • refresh before opening this item");
@@ -3319,7 +3401,7 @@ impl Shell {
         let Some(menu) = self.menu.take() else {
             return;
         };
-        self.rebuild(Page::Applications);
+        self.rebuild(self.surface.page);
         let key = self
             .surface
             .cards
@@ -3335,11 +3417,14 @@ impl Shell {
             .map(|c| c.key);
         if let Some(key) = key {
             self.focus_special(key, GroupId(1));
+        } else if self.surface.page == Page::Home {
+            self.focus_home_link(0);
         } else {
             self.focus_drawer_control(1);
         }
     }
     fn menu_action(&mut self, action: MenuAction) {
+        let page = self.surface.page;
         let Some(id) = self.menu.as_ref().map(|menu| menu.id.clone()) else {
             return;
         };
@@ -3374,7 +3459,14 @@ impl Shell {
                 self.preferences_changed = true;
             }
         }
-        self.rebuild(Page::Applications);
+        if page == Page::Home
+            && action == MenuAction::ToggleFavourite
+            && !self.prefs.favourites.contains(&id)
+        {
+            self.close_app_menu();
+            return;
+        }
+        self.rebuild(page);
         self.focus_menu_action(action);
     }
     pub fn focus_menu_action(&mut self, action: MenuAction) -> bool {
@@ -3386,6 +3478,64 @@ impl Shell {
     }
     pub fn menu_application(&self) -> Option<&str> {
         self.menu.as_ref().map(|m| m.id.as_str())
+    }
+    /// Restore UI focus only. Automatic reconciliation and missing-ID fallback never save it.
+    pub fn restore_home_focus(&mut self, id: &str) -> bool {
+        if self.surface.page != Page::Home || self.menu.is_some() || !crate::model::valid_app_id(id)
+        {
+            return false;
+        }
+        self.home_focus = Some(id.to_owned());
+        self.pending_home_focus_restore = Some(id.to_owned());
+        self.restore_home_favourite_or_default(id)
+    }
+    fn restore_home_favourite_or_default(&mut self, id: &str) -> bool {
+        if self.surface.page != Page::Home || self.menu.is_some() {
+            return false;
+        }
+        if self.prefs.favourites.contains(id) && self.focus_application(id) {
+            true
+        } else {
+            if let Some(first) = self.surface.cards.items.first().map(|card| card.id.clone()) {
+                self.focus_application(&first);
+            } else {
+                self.focus_home_link(0);
+            }
+            false
+        }
+    }
+    fn remember_home_focus(&mut self) {
+        if self.surface.page != Page::Home || self.menu.is_some() {
+            return;
+        }
+        let Some(id) = self
+            .focused_item()
+            .filter(|id| self.prefs.favourites.contains(id))
+        else {
+            return;
+        };
+        if self.home_focus.as_ref() != Some(&id) {
+            self.home_focus = Some(id);
+            self.home_focus_changed = true;
+        }
+    }
+    /// Only explicit Home direction/wheel movement or card activation reaches this queue.
+    /// Pointer hover, programmatic focus, rebuild and fallback do not dirty the bookmark.
+    pub fn take_home_focus_changed(&mut self) -> Option<String> {
+        if std::mem::take(&mut self.home_focus_changed) {
+            self.home_focus.clone()
+        } else {
+            None
+        }
+    }
+    pub fn home_focus_bookmark(&self) -> Option<&str> {
+        self.home_focus.as_deref()
+    }
+    pub fn home_focus_restore_pending(&self) -> bool {
+        self.pending_home_focus_restore.is_some()
+    }
+    pub fn home_focus_restored_from_live(&self) -> bool {
+        self.home_focus_restored_from_live
     }
     /// Process queued input at this frame's controller time. Deferred gestures are
     /// advanced only after the batch, so queued cancellation can win the frame.
@@ -4743,6 +4893,7 @@ impl Shell {
         }
     }
     pub fn request_exit(&mut self) {
+        self.pending_home_focus_restore = None;
         self.exit = true;
         self.cancel_press();
         self.set_artwork_pause(PauseReason::ForegroundLost, true);

@@ -3,6 +3,7 @@
 No compiler, SDK executable, service, Root process, network or TV is used.
 The ar substitute only wraps the packager's actual tar bytes in a real archive.
 """
+from cache_consumer_contract import native_selection
 import hashlib
 import importlib.util
 import io
@@ -59,7 +60,7 @@ class BrokerNegativePackageTests(unittest.TestCase):
         self.helper_receipt = self.helper.with_name(self.helper.name + '.build.json')
         snapshot = PROVENANCE.snapshot(self.f.root)
         PROVENANCE.record_build_receipt(self.f.root, self.helper, 'arm', snapshot,
-                                       PROVENANCE.snapshot(self.f.root))
+                                       PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.f.record()
         self.pins = {
             'schema': 1, 'profile': 'proof', 'rendezvous_nonce': 'a' * 32,
@@ -188,7 +189,7 @@ class BrokerNegativePackageTests(unittest.TestCase):
         control.write_bytes(self.f.binary.read_bytes())
         snapshot = PROVENANCE.snapshot(self.f.root)
         PROVENANCE.record_build_receipt(self.f.root, control, 'arm', snapshot,
-                                       PROVENANCE.snapshot(self.f.root))
+                                       PROVENANCE.snapshot(self.f.root), build_selection=native_selection((self.f.root / 'Cargo.toml').read_bytes()))
         self.refused(self.environment() | {'NATIVE_HOME_ARM_BINARY': str(control)},
                      'Test identity is for the dashboard only')
 
