@@ -54,8 +54,16 @@ after. Immutable source copies also match the compiled revision.
 | Dashboard ELF | `4dda97a0dcbee385f807d0f5d883fc3264bd9382073a089b227834fd04fadf19` |
 | Build receipt | `45d5b01b14dfa61725391291cb7d3e93f9e544bcc3d0ac293922e9d4a9cab00e` |
 
-Separate local artifact/ABI review is pending. No package was built and no ARM
-target executable ran. Native storage, focus appearance, physical input, performance and recovery
+Separate peer artifact/ABI review and a byte-identical coordinator replay now
+pass. The replay denied network access throughout its process tree and rehashed
+all 366 manifest bindings before and after. Fifteen adverse guard groups pass;
+the dashboard's 11 required libraries and 223 complete import tuples exactly
+match the retained UI role. This does not qualify transitive target loading.
+The artifact reviewer authored the Home-menu dependency, with bookmark source
+review and ARM compilation performed separately.
+
+No package was built and no ARM target executable ran. Native storage, focus
+appearance, physical input, performance and recovery
 after eviction remain unqualified. Captured/observer sessions exclude bookmark
 writes, so existing Proof results cannot qualify this feature. A new enabled
 ordinary isolated test needs its own sidecar-aware baseline, matching artifacts,

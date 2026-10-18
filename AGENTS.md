@@ -145,7 +145,9 @@ missing/ineligible IDs choose first current eligible favourite or Viewallapps.
 Keep ordinary500ms/Settings lifetimes and all action/Root gates unchanged.
 Author829library+16UI/Clippy, independent31library+1main composition and Root180
 binding rehash pass. Actual ARM UI4dda/receipt45d5 matches143 inputs and immutable
-copies; local artifact/ABI review is separate/pending. Preserve both original
+copies; separate local artifact/ABI review and Root byte-identical replay pass366
+bindings with process-tree network denied,15 guards and exact retainedUI3ce
+11NEEDED/223 complete imports. This is not transitive/native authority. Preserve both original
 243/82 counterexamples and blocked scopes/old82 ARM, not later promotion. Old
 live-worktree manifest paths deliberately drifted; use immutable saved copies
 and Git for historical evidence. No TV/package/new native permission follows.

@@ -79,8 +79,9 @@ Passing the daily-use tests does not fill the following implementation gaps:
    lifetime or automatic relaunch is planned for this slice. Abrupt eviction can
    lose the latest unsaved selection.
    [Draft PR11](home-focus-bookmark-candidate.md) now implements this slice at
-   source65868df: source/host review and a matching ARM build pass. Local ABI
-   review and a new enabled ordinary native scope remain separate. Both initial
+   source65868df: source/host review, matching ARM build and local direct-ABI
+   review/coordinator replay pass. A new enabled ordinary native scope remains
+   open. Both initial
    catalogue/fallback prototype failures are preserved; no TV received them.
 2. **Input switching on both targets.** Ordinary C2 input changes currently fail
    closed. They need a dedicated operation-specific selection/readback and exact
