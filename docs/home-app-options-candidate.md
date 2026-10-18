@@ -51,3 +51,11 @@ The shared menu's appearance over Home, physical hold/release, and persistence
 on the current TV build still need native qualification. Build success and
 host focus tests do not establish those results or performance. This candidate
 does not change the retained dashboard or the existing disposable Proof artifact.
+
+A separate synthetic desktop visual attempt built a private capture harness,
+but produced no frames before its original 60-second limit. Its owned process
+was reaped and the synthetic private preferences remained unchanged. The harness
+changed only its scripted scenario and preserved this candidate's Shell and
+renderer. That attempt supplies no visual result or native failure diagnosis;
+the blocking call remains unknown. No TV was contacted or dependency installed
+to work around it.
