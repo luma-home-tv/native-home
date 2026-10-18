@@ -452,7 +452,8 @@ if main == 'home-preview' and not preferences_migration_proof:
     acquisition_receipt_sha256 = None
     acquisition_path = os.environ.get('NATIVE_HOME_ICON_ACQUISITION')
     acquisition_pin = os.environ.get('NATIVE_HOME_ICON_ACQUISITION_SHA256')
-    if acquisition_path is not None or acquisition_pin is not None or (assets / 'icon-acquisition.json').exists():
+    from icon_acquisition import acquisition_receipt_present
+    if acquisition_path is not None or acquisition_pin is not None or acquisition_receipt_present(assets):
         from icon_acquisition import package_assets
         if acquisition_path is None or acquisition_pin is None:
             raise ValueError('Acquisition assets require explicit receipt path and SHA256')

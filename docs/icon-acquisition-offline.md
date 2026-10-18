@@ -97,7 +97,11 @@ NATIVE_HOME_ICON_ACQUISITION_SHA256=<exact receipt SHA-256>
 
 `NATIVE_HOME_SNAPSHOT_ASSETS` is that same private assets directory. A present
 acquisition receipt requires the explicit pair; omission does not fall through
-to the old local-assets path. The pure `package_assets` validator binds the
+to the old local-assets path. Receipt presence is lexical `lstat`: only literal
+`ENOENT` permits legacy assets. Dangling/live symlinks, directories and unknown
+stat errors cannot select that fallback. Deliberately deleting the receipt does
+leave legacy external assets by design, with no acquisition hash/provenance;
+the fixed-catalogue beta must still explicitly supply both pins. The pure `package_assets` validator binds the
 pinned receipt, exact snapshot ID/leaf map, complete body hashes/lengths and
 private held files. The packager stages the already-validated bytes rather than
 reopening input icon paths, and its external package receipt records

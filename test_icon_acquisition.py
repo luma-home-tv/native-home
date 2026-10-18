@@ -1,11 +1,13 @@
 """Synthetic/real-file offline integration checks, with process/network denied."""
 import ast
 import copy
+import errno
 import importlib.util
 import json
 import os
 from pathlib import Path
 import socket
+import shutil
 import subprocess
 import tempfile
 import types
@@ -67,6 +69,20 @@ def fixture(root):
                                    completion=write(root, 'completion.json', m.encoded(completion)))])
     write(root, 'manifest.json', m.encoded(manifest))
     return raw, manifest, completion
+
+
+def actual_package_code():
+    tree=ast.parse(Path('package-preview.py').read_text())
+    outer=next(n for n in tree.body if isinstance(n,ast.If)and ast.unparse(n.test)=="main == 'home-preview' and (not preferences_migration_proof)")
+    names={'assets','acquired_assets','acquisition_receipt_sha256','acquisition_path','acquisition_pin','snapshot_bytes','snapshot'}
+    nodes=[]
+    for n in outer.body:
+        if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets):nodes.append(n)
+        elif isinstance(n,ast.ImportFrom)and n.module=='icon_acquisition':nodes.append(n)
+        elif isinstance(n,ast.If)and (ast.unparse(n.test).startswith('acquisition_path is not None')or ast.unparse(n.test)=='acquired_assets is not None'):nodes.append(n)
+        elif isinstance(n,ast.Expr)and ast.unparse(n).startswith("(stage / 'snapshot.json')."):nodes.append(n)
+    code=compile(ast.Module(body=nodes,type_ignores=[]),'actual package input+stage AST','exec')
+    return code
 
 
 class OfflineIcons(unittest.TestCase):
@@ -287,15 +303,7 @@ class OfflineIcons(unittest.TestCase):
 
     def test_actual_packager_asset_branch_uses_pinned_bytes_and_refuses_missing_pin(self):
         _,receipt,pin=self.publish()
-        tree=ast.parse(Path('package-preview.py').read_text())
-        outer=next(n for n in tree.body if isinstance(n,ast.If)and ast.unparse(n.test)=="main == 'home-preview' and (not preferences_migration_proof)")
-        names={'assets','acquired_assets','acquisition_receipt_sha256','acquisition_path','acquisition_pin','snapshot_bytes','snapshot'}
-        nodes=[]
-        for n in outer.body:
-            if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets):nodes.append(n)
-            elif isinstance(n,ast.If)and (ast.unparse(n.test).startswith('acquisition_path is not None')or ast.unparse(n.test)=='acquired_assets is not None'):nodes.append(n)
-            elif isinstance(n,ast.Expr)and ast.unparse(n).startswith("(stage / 'snapshot.json')."):nodes.append(n)
-        code=compile(ast.Module(body=nodes,type_ignores=[]),'actual package input+stage AST','exec')
+        code=actual_package_code()
         for present in (True,False):
             stage=self.root/('actual-stage'if present else 'refused-stage');stage.mkdir()
             environment={'NATIVE_HOME_SNAPSHOT_ASSETS':str(self.output),'NATIVE_HOME_ICON_ACQUISITION':str(receipt)}
@@ -311,6 +319,79 @@ class OfflineIcons(unittest.TestCase):
                 files=sorted(str(f.relative_to(stage))for f in stage.rglob('*')if f.is_file())
                 self.assertEqual(files,sorted(['snapshot.json','icons/'+m.digest(PNG)+'.png']))
             else:self.assertEqual(list(stage.iterdir()),[])
+
+    def test_actual_packager_presence_gate_all_present_and_unknown_states_refuse(self):
+        _,receipt,pin=self.publish()
+        original=receipt.read_bytes()
+        code=actual_package_code()
+        variants=('dangling','live-link','directory','regular','EACCES','EIO')
+        for variant in variants:
+            if receipt.is_symlink()or receipt.is_file():receipt.unlink()
+            elif receipt.is_dir():receipt.rmdir()
+            if variant=='dangling':receipt.symlink_to(self.output/'missing.json')
+            elif variant=='live-link':
+                write(self.root,'real-receipt.json',original);receipt.symlink_to(self.root/'real-receipt.json')
+            elif variant=='directory':receipt.mkdir(mode=0o700)
+            else:write(self.output,'icon-acquisition.json',original)
+            stage=self.root/('presence-'+variant);stage.mkdir()
+            ns={'Path':Path,'os':os,'json':json,'shutil':shutil,'stage':stage}
+            env={'NATIVE_HOME_SNAPSHOT_ASSETS':str(self.output)}
+            if variant in ('EACCES','EIO'):
+                error=PermissionError(errno.EACCES,'synthetic denied')if variant=='EACCES'else OSError(errno.EIO,'synthetic IO')
+                with patch.dict(os.environ,env,clear=True),patch.object(m.os,'lstat',side_effect=error):
+                    self.bad(exec,code,ns)
+            else:
+                with patch.dict(os.environ,env,clear=True):self.bad(exec,code,ns)
+            self.assertEqual(list(stage.iterdir()),[],variant)
+        # Explicit pins retain nofollow refusal for a dangling receipt.
+        receipt.unlink();receipt.symlink_to(self.output/'missing.json')
+        stage=self.root/'explicit-linked';stage.mkdir()
+        env={'NATIVE_HOME_SNAPSHOT_ASSETS':str(self.output),'NATIVE_HOME_ICON_ACQUISITION':str(receipt),
+             'NATIVE_HOME_ICON_ACQUISITION_SHA256':pin}
+        with patch.dict(os.environ,env,clear=True):
+            self.bad(exec,code,{'Path':Path,'os':os,'json':json,'shutil':shutil,'stage':stage})
+        self.assertEqual(list(stage.iterdir()),[])
+
+    def test_actual_packager_only_literal_ENOENT_allows_legacy_without_provenance(self):
+        _,receipt,_=self.publish();receipt.unlink()
+        stage=self.root/'literal-missing';stage.mkdir()
+        ns={'Path':Path,'os':os,'json':json,'shutil':shutil,'stage':stage}
+        with patch.dict(os.environ,{'NATIVE_HOME_SNAPSHOT_ASSETS':str(self.output)},clear=True):
+            exec(actual_package_code(),ns)
+        self.assertIsNone(ns['acquisition_receipt_sha256'])
+        self.assertIsNone(ns['acquired_assets'])
+        self.assertEqual(next((stage/'icons').iterdir()).read_bytes(),PNG)
+        with patch.object(m.os,'lstat',side_effect=FileNotFoundError(errno.ENOENT,'missing')):
+            self.assertFalse(m.acquisition_receipt_present(self.output))
+        with patch.object(m.os,'lstat',side_effect=FileNotFoundError(errno.EIO,'unknown')):
+            self.bad(m.acquisition_receipt_present,self.output)
+
+    def test_actual_cli_link_directory_or_unknown_manifest_never_publishes_icons(self):
+        spec=importlib.util.spec_from_file_location('collector-refusal',Path(__file__).with_name('collect-snapshot.py'))
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
+        responses=[self.raw['replies']['apps'],self.raw['replies']['launch_points'],{'devices':[]},{'settings':{}},{'volumeStatus':{}}]
+        for variant in ('dangling','directory','unknown'):
+            manifest=self.input/('invalid-'+variant+'.json')
+            if variant=='dangling':manifest.symlink_to(self.input/'missing.json')
+            elif variant=='directory':manifest.mkdir(mode=0o700)
+            else:write(self.input,manifest.name,b'{}')
+            out=self.root/('cli-'+variant)
+            argv=['collector','--host','synthetic','--identity',str(self.root/'unused-key'),'--known-hosts',str(self.root/'unused-hosts'),
+                  '--out',str(out),'--own-id',OWN,'--icon-acquisition',str(manifest)]
+            seen=[]
+            def run(args,**kwargs):
+                seen.append(args[-1]);return types.SimpleNamespace(stdout=json.dumps(responses[len(seen)-1]).encode())
+            original=m.PrivateDirectory.read
+            def unknown(directory,name,cap=m.MAX_JSON):
+                if name==manifest.name:raise OSError(errno.EIO,'unknown manifest read')
+                return original(directory,name,cap)
+            with patch('sys.argv',argv),patch.object(c.subprocess,'run',side_effect=run):
+                if variant=='unknown':
+                    with patch.object(m.PrivateDirectory,'read',new=unknown):self.bad(c.main)
+                else:self.bad(c.main)
+            self.assertTrue(all(command.startswith('luna-send ')for command in seen))
+            self.assertFalse((out/'snapshot.json').exists());self.assertFalse((out/'icons').exists())
+            self.assertFalse((out/'icon-acquisition.json').exists())
 
     def test_packager_calls_validator_and_never_reopens_acquired_body_by_path(self):
         tree=ast.parse(Path('package-preview.py').read_text())

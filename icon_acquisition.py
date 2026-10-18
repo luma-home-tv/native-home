@@ -3,6 +3,7 @@
 No transport, process, native reader invocation, cache producer or normal Root path.
 The external coordinator owns qualification, actual PID closure and device cleanup.
 """
+import errno
 import hashlib
 import importlib.util
 import json
@@ -321,6 +322,22 @@ def publish(output, snapshot, assets, record):
         root.write('snapshot.json', encoded(snapshot))
         root.write('icon-acquisition.json', encoded(record))
         os.fsync(root.fd)
+
+
+def acquisition_receipt_present(assets):
+    """Only a literal ENOENT permits legacy local assets; never follow the leaf.
+
+    This is a presence gate, not acquisition provenance. Removing a receipt still
+    leaves legacy external assets; explicit beta receipt pins remain mandatory.
+    Every other error propagates without granting fallback authority.
+    """
+    try:
+        os.lstat(Path(assets) / 'icon-acquisition.json')
+    except OSError as error:
+        if error.errno == errno.ENOENT:
+            return False
+        raise
+    return True
 
 
 def package_assets(assets, receipt_path, expected_sha256):
