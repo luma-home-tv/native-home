@@ -2590,7 +2590,9 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     report["home_focus"] = serde_json::json!({
         "enabled": home_focus_enabled,
         "loaded": loaded_home_focus,
-        "restored": home_focus_restored,
+        "restored_initially": home_focus_restored,
+        "restored_from_live": shell.home_focus_restored_from_live(),
+        "startup_restore_pending": shell.home_focus_restore_pending(),
         "bookmark": shell.home_focus_bookmark(),
         "queue_attempts": home_focus_write_attempts,
         "readback_confirmed": committed_home_focus.is_some()

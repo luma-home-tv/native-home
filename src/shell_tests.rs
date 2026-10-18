@@ -2896,3 +2896,166 @@ fn home_focus_bookmark_hold_release_and_menu_do_not_duplicate_or_save_menu_ids()
     assert!(!s.take_preferences_changed());
     assert!(s.take_requests().is_empty());
 }
+
+fn late_home_focus_shell() -> Shell {
+    let mut packaged = fixture();
+    packaged
+        .applications
+        .retain(|a| a.id != "com.example.app09");
+    packaged.launch_ids.remove("com.example.app09");
+    let prefs = Preferences {
+        initialized: true,
+        favourites: [
+            "com.example.app00".into(),
+            "com.example.app01".into(),
+            "com.example.app09".into(),
+        ]
+        .into(),
+        favourite_order: Vec::new(),
+    };
+    let mut s = Shell::new(packaged, prefs);
+    assert!(!s.restore_home_focus("com.example.app09"));
+    assert!(s.home_focus_restore_pending());
+    s
+}
+#[test]
+fn home_focus_first_fresh_real_catalogue_restores_post_packaging_favourite_once() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = late_home_focus_shell();
+    let mut update = live_update(100);
+    update.simulated = false;
+    s.apply_live(&update, 100);
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app09"));
+    assert!(s.home_focus_restored_from_live());
+    assert!(!s.home_focus_restore_pending());
+    assert!(s.take_home_focus_changed().is_none());
+    assert!(!s.take_preferences_changed());
+    assert!(s.take_requests().is_empty());
+    s.focus_application("com.example.app00");
+    s.apply_live(&update, 100);
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app00"));
+}
+#[test]
+fn home_focus_nonqualifying_catalogues_do_not_consume_pending_restore() {
+    let _serial = plx_base::testlock::serial();
+    for variant in 0..4 {
+        let mut s = late_home_focus_shell();
+        let mut update = live_update(100);
+        update.simulated = false;
+        let now = match variant {
+            0 => {
+                update.simulated = true;
+                100
+            }
+            1 => 15_101,
+            2 => {
+                update.catalogue = crate::live::Reading::Failed("unavailable".into());
+                100
+            }
+            _ => {
+                update.observed_ms = 101;
+                100
+            }
+        };
+        s.apply_live(&update, now);
+        assert!(s.home_focus_restore_pending());
+        assert!(!s.home_focus_restored_from_live());
+        let mut fresh = live_update(20_000);
+        fresh.simulated = false;
+        s.apply_live(&fresh, 20_000);
+        assert_eq!(s.focused_item().as_deref(), Some("com.example.app09"));
+        assert!(!s.home_focus_restore_pending());
+        assert!(s.take_home_focus_changed().is_none());
+    }
+}
+#[test]
+fn home_focus_first_fresh_absence_consumes_restore_and_later_install_cannot_steal_focus() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = late_home_focus_shell();
+    let mut absent = live_update(100);
+    absent.simulated = false;
+    if let crate::live::Reading::Value(c) = &mut absent.catalogue {
+        c.apps.retain(|a| a.id != "com.example.app09");
+        c.launch_ids.remove("com.example.app09");
+    }
+    s.apply_live(&absent, 100);
+    assert!(!s.home_focus_restore_pending());
+    assert!(!s.home_focus_restored_from_live());
+    let mut present = live_update(200);
+    present.simulated = false;
+    s.apply_live(&present, 200);
+    assert_eq!(s.focused_item().as_deref(), Some("com.example.app00"));
+    assert!(s.take_home_focus_changed().is_none());
+}
+#[test]
+fn home_focus_explicit_input_page_change_and_close_cancel_delayed_restore() {
+    let _serial = plx_base::testlock::serial();
+    for variant in 0..6 {
+        let mut s = late_home_focus_shell();
+        match variant {
+            0 => s.direction(Dir::Right),
+            1 => {
+                s.press(true, PressFrom::Key);
+                s.cancel_press();
+            }
+            2 => s.back(),
+            3 => {
+                s.open(Page::Applications);
+                s.back();
+            }
+            4 => s.pointer(5.0, 5.0, true),
+            _ => s.request_exit(),
+        }
+        assert!(!s.home_focus_restore_pending());
+        let mut update = live_update(100);
+        update.simulated = false;
+        s.apply_live(&update, 100);
+        assert_ne!(s.focused_item().as_deref(), Some("com.example.app09"));
+        assert!(!s.home_focus_restored_from_live());
+    }
+}
+#[test]
+fn home_focus_valid_hover_change_cancels_restore_without_saving_but_same_hover_does_not() {
+    let _serial = plx_base::testlock::serial();
+    for changed in [false, true] {
+        let mut s = late_home_focus_shell();
+        let target = if changed {
+            "com.example.app01"
+        } else {
+            "com.example.app00"
+        };
+        let card = s
+            .surface
+            .cards
+            .items
+            .iter()
+            .find(|c| c.id == target)
+            .unwrap();
+        let key = FocusKey {
+            entry: entry(Page::Home),
+            elem: card.key,
+        };
+        let rect = Rect::new(700.0, 400.0, 200.0, 180.0);
+        s.input.hit.fill(vec![Stop {
+            key,
+            rect,
+            rest_rect: rect,
+            clip: CONTENT,
+            hover: Hover::Focus,
+            activate: Activate::Press,
+        }]);
+        s.input.hit.swap();
+        s.pointer(rect.cx(), rect.cy(), false);
+        assert_eq!(s.home_focus_restore_pending(), !changed);
+        assert!(s.take_home_focus_changed().is_none());
+        let mut update = live_update(100);
+        update.simulated = false;
+        s.apply_live(&update, 100);
+        assert_eq!(
+            s.focused_item().as_deref(),
+            Some(if changed { target } else { "com.example.app09" })
+        );
+        assert!(s.take_home_focus_changed().is_none());
+        assert!(s.take_requests().is_empty());
+    }
+}

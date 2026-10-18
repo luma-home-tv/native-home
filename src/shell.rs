@@ -1092,6 +1092,8 @@ pub struct Shell {
     preferences_changed: bool,
     home_focus: Option<String>,
     home_focus_changed: bool,
+    pending_home_focus_restore: Option<String>,
+    home_focus_restored_from_live: bool,
     live_state: Option<Freshness>,
     live_now: u32,
     live_updates: u32,
@@ -1208,6 +1210,8 @@ impl Shell {
             preferences_changed: seeded,
             home_focus: None,
             home_focus_changed: false,
+            pending_home_focus_restore: None,
+            home_focus_restored_from_live: false,
             live_state: None,
             live_now: 0,
             live_updates: 0,
@@ -1302,6 +1306,9 @@ impl Shell {
         }
     }
     fn rebuild(&mut self, page: Page) {
+        if page != self.surface.page {
+            self.pending_home_focus_restore = None;
+        }
         let page = if page == Page::RangeEditor && self.range.is_none() {
             Page::Controls
         } else {
@@ -1733,6 +1740,19 @@ impl Shell {
         self.catalogue
             .refresh(&self.snapshot.applications, &self.snapshot.launch_ids);
         self.refresh_shown_data(&before);
+        // A packaged snapshot can predate an installed/pinned favourite. Resolve
+        // startup focus once against the first fresh real catalogue, never a
+        // simulated/failed/stale update or a later reinstall after absence.
+        if !update.simulated
+            && matches!(update.catalogue, live::Reading::Value(_))
+            && Freshness::current(Some(update.observed_ms), now)
+        {
+            if let Some(id) = self.pending_home_focus_restore.take() {
+                self.home_focus_restored_from_live = self.surface.page == Page::Home
+                    && self.prefs.favourites.contains(&id)
+                    && self.focus_application(&id);
+            }
+        }
         self.validate_pointer_picker();
         self.refresh_control_breadcrumb();
         // Refresh validity/status chrome even when values themselves are unchanged.
@@ -2798,6 +2818,7 @@ impl Shell {
         }
     }
     pub fn direction(&mut self, dir: Dir) {
+        self.pending_home_focus_restore = None;
         if self.drawer.system_keyboard() {
             self.input.cancel_press();
             return;
@@ -2938,6 +2959,9 @@ impl Shell {
         self.input.note_alive(self.now);
     }
     pub fn press(&mut self, down: bool, from: PressFrom) {
+        if down {
+            self.pending_home_focus_restore = None;
+        }
         if self.drawer.system_keyboard() {
             self.input.cancel_press();
             return;
@@ -2971,6 +2995,7 @@ impl Shell {
         }
     }
     pub fn back(&mut self) {
+        self.pending_home_focus_restore = None;
         if self.artwork_ever_enabled {
             self.pending
                 .retain(|a| crate::actions::Request::from_action(a.clone()).is_none());
@@ -3067,6 +3092,7 @@ impl Shell {
             return;
         }
         if click {
+            self.pending_home_focus_restore = None;
             // A pointer release supersedes any keyboard gesture, even when
             // focus stays on the same card or the pointer misses every stop.
             self.input.cancel_press();
@@ -3093,6 +3119,11 @@ impl Shell {
                 // change or menu can remove that target before another event is polled.
                 return;
             };
+            if self.input.engine.current(owner) != Some(key) {
+                // A valid hover focus change is user intent, but not a durable
+                // bookmark selection. Never let a delayed startup restore steal it.
+                self.pending_home_focus_restore = None;
+            }
             let outcome = self.input.engine.set(owner, key, Some(group), By::Pointer);
             self.moved(outcome);
         }
@@ -3106,6 +3137,7 @@ impl Shell {
         if self.exit {
             return;
         }
+        self.pending_home_focus_restore = None;
         if self.surface.page == Page::RangeEditor {
             if key.entry != entry(Page::RangeEditor) {
                 return;
@@ -3453,6 +3485,7 @@ impl Shell {
             return false;
         }
         self.home_focus = Some(id.to_owned());
+        self.pending_home_focus_restore = Some(id.to_owned());
         if self.prefs.favourites.contains(id) && self.focus_application(id) {
             true
         } else {
@@ -3488,6 +3521,12 @@ impl Shell {
     }
     pub fn home_focus_bookmark(&self) -> Option<&str> {
         self.home_focus.as_deref()
+    }
+    pub fn home_focus_restore_pending(&self) -> bool {
+        self.pending_home_focus_restore.is_some()
+    }
+    pub fn home_focus_restored_from_live(&self) -> bool {
+        self.home_focus_restored_from_live
     }
     /// Process queued input at this frame's controller time. Deferred gestures are
     /// advanced only after the batch, so queued cancellation can win the frame.
@@ -4845,6 +4884,7 @@ impl Shell {
         }
     }
     pub fn request_exit(&mut self) {
+        self.pending_home_focus_restore = None;
         self.exit = true;
         self.cancel_press();
         self.set_artwork_pause(PauseReason::ForegroundLost, true);
