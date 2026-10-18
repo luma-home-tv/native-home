@@ -84,14 +84,20 @@ Hold both future native admissions until corrected versions are independently
 reviewed. This is a synthetic actual-method counterexample, not native input or
 device harm. Preserve earlier finite reviews and the new failure separately.
 
-PR#9 (`codex/public-icon-reader`, sourcee7017b3) is a standalone Root-admin
+PR#9 (`codex/public-icon-reader`, functional092a304, published docs d78f3f6)
+is a standalone Root-admin
 public-app icon primitive only. Strict/sanitised host tests, independent source
-review, six extra host groups/Root replay and actual ARM ELF853f build pass;
+review, six extra host groups/Root replay and actual ARM ELFa8ec build pass;
 `docs/public-icon-reader-foundation.md` states the finite limits. It is not a
 service, setuid/ordinary-app fallback, collector or cache writer. No TV was
 contacted. Never enable the unchanged legacy shell pathname copier as a fallback.
 The next one-icon headless proof needs its own fresh lease/baseline/private stage,
 exact executable/request/child/namespace evidence and complete known removal.
+Reader96c reports its own PID in one bounded stderr write before path I/O;
+failed/short writes cannot enter the path walk. Default SIGPIPE may terminate
+before an error return. PID/wrapper records grant no Root or cleanup authority
+alone; unknown/missing identity stays HOLD. Keep old e701/1872/853f evidence
+historical and use the new source/ELF for any future PID-based proof.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;

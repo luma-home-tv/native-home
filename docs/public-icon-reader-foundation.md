@@ -1,7 +1,7 @@
 # Public icon reader foundation
 
-[Draft PR9](https://github.com/luma-home-tv/native-home/pull/9), source
-`e7017b36ca93af2699a53222237e5ead70329daa`, adds a standalone file-reading
+[Draft PR9](https://github.com/luma-home-tv/native-home/pull/9), functional source
+`092a3047e18add8a303e7130a8d3e7e043f0753d`, adds a standalone file-reading
 primitive. It does not change the dashboard, framework, snapshot collector or
 either retained installation.
 
@@ -15,22 +15,34 @@ permitted; private directories/files, links and special permission bits refuse.
 Its three roots and path/body limits are fixed. The companion Python module
 checks complete response framing and the explicit requested key.
 
-Strict host C11 and ASan/UBSan each pass seven test groups. Independent source
+Strict host C11 and ASan/UBSan each pass eight test groups. Independent source
 review and six additional host test groups pass, followed by a fresh coordinator
 replay. Additional cases exercise transient directory/file modes, directory
 replacement, hard links, quoted filenames, malformed packets and blocked
 output with an inherited blocked alarm mask. The blocked-output process exits
-124 with a partial frame, which remains unsuccessful.
+124 with a partial frame, which remains unsuccessful. The PID follow-up checks
+the actual child PID, failed/short/interrupted lifecycle writes and default
+SIGPIPE. The signal distinction is corrected in the published README: a closed
+pipe can terminate the process rather than return the ordinary error status.
+
+One bounded stderr write reports the actual reader PID after Root checks and
+before path I/O. A failed or short write never enters the path walk. The PID
+line alone provides neither Root authority nor closure: a future controller
+must bind the call, exact executable, actual terminal result and literal PID
+absence. A wrapper PID cannot substitute for reader identity. No live raw7 or
+namespace observation follows from the host test.
 
 The actual SDK build uses ARMv7 soft-float, PIE and 64-bit file offsets. Its
-13,604-byte ELF has SHA-256
-`853f083fcc0c61df5d34e80195bd7ac7bd87bfaccf0c9c9271002c69e840cef0`,
+17,832-byte ELF has SHA-256
+`a8ec073d2c401d18924fbbc02a19e788c4e090f444a36b304f7ade8a5bf2f44f`,
 interpreter `/lib/ld-linux.so.3`, one direct dependency (`libc.so.6`) and no
 RPATH. The frozen C source is
-`1872697ed74b5bf3435fff7cf84de15831eea3baa5031ffb99ab958167844dc4`;
-68 compiler/header inputs and the 46 host evidence bindings match before and
+`96c28e30bce3b17e9b7f3b2641b56090a5338d0414df1ae652c5ab41eb68371d`;
+68 compiler/header inputs and the 44 host evidence bindings match before and
 after the build. This is local compilation and ELF inspection, not independent
 recompilation, transitive loading or target execution proof.
+The earlier `e7017b3`/`1872697e` source and `853f083f` ELF remain preserved as
+historical evidence. Future PID-based qualification uses the new artifact.
 
 The reader checks signatures rather than decoding images. Its sampled metadata
 checks do not prove continuous or post-output immutability, catalogue/version
