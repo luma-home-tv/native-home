@@ -90,7 +90,11 @@ under explicit table/row/target/match/root bounds; original counterexamples
 refuse. These new sources supersede the old admission hold only at source level:
 no dates/lease/native authority follows. Normal selected drift still permits
 only guarded own closure and retains HOLD; no cleanup/release authority is
-inferred. The separate final-only coordinator closeout remains unreviewed.
+inferred. The corrected final-only coordinator closeout now passes separate
+source review only. It permits coordination release after an original normal
+workflow has already closed every owned resource, never selected/midphase
+adoption or resource/mount repair. No matching original normal run or native
+companion execution exists.
 
 PR#9 (`codex/public-icon-reader`, functional092a304, published docs d78f3f6)
 is a standalone Root-admin
