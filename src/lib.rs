@@ -33,6 +33,7 @@ pub mod control_reads;
 pub mod control_capability;
 
 pub mod control_row_presentation;
+pub mod control_tasks;
 
 pub mod pointer_speed;
 

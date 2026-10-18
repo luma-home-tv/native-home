@@ -2561,3 +2561,82 @@ fn home_back_blocks_a_later_pointer_activation_in_the_same_input_batch() {
         "Back from Home is terminal; a later queued click must not launch an application"
     );
 }
+
+#[test]
+fn named_lg_task_links_queue_only_the_existing_general_or_sound_overview() {
+    let _serial = plx_base::testlock::serial();
+    for (page, keys, route) in [
+        (
+            Page::General,
+            vec![1700, 1701, 1702, 1703],
+            SettingsSection::General,
+        ),
+        (Page::Sound, vec![1706], SettingsSection::Sound),
+    ] {
+        for key in keys {
+            let mut s = Shell::new(fixture(), Preferences::default());
+            s.take_preferences_changed();
+            s.open(page);
+            s.focus_special(TABLE_BASE + key, GroupId(1));
+            tap(&mut s);
+            assert_eq!(
+                s.take_requests(),
+                vec![Action::OpenLgSettingsSection(route)]
+            );
+            assert!(!s.take_preferences_changed());
+            assert!(!s.should_exit());
+            assert_eq!(s.page(), page);
+        }
+    }
+}
+#[test]
+fn named_app_and_memory_guides_are_focusable_read_only_and_back_keeps_category_hierarchy() {
+    let _serial = plx_base::testlock::serial();
+    for key in [1704, 1705] {
+        let mut s = Shell::new(fixture(), Preferences::default());
+        s.take_preferences_changed();
+        s.open(Page::General);
+        s.focus_special(TABLE_BASE + key, GroupId(1));
+        assert_eq!(focus(&s), TABLE_BASE + key);
+        tap(&mut s);
+        assert!(s.take_requests().is_empty());
+        assert!(!s.take_preferences_changed());
+        s.back();
+        assert_eq!(s.control_category(), Some(Page::General));
+        assert_eq!(s.focused_item().as_deref(), Some("category-General"));
+        s.back();
+        assert_eq!(s.page(), Page::Home);
+        assert!(!s.should_exit());
+    }
+}
+#[test]
+fn named_task_focus_survives_new_native_readout_and_never_becomes_an_editor() {
+    let _serial = plx_base::testlock::serial();
+    let mut s = Shell::new(fixture(), Preferences::default());
+    s.take_preferences_changed();
+    s.open(Page::General);
+    s.focus_special(TABLE_BASE + 1702, GroupId(1));
+    let before = s.snapshot.clone();
+    s.snapshot
+        .settings
+        .entry("general".into())
+        .or_default()
+        .push(Setting {
+            id: "fixture.reading".into(),
+            focus_key: 1599,
+            label: "Fixture reading".into(),
+            value: "On".into(),
+            context: s.snapshot.context.clone(),
+            protected: true,
+            available: true,
+            constraint: None,
+        });
+    s.refresh_shown_data(&before);
+    assert_eq!(focus(&s), TABLE_BASE + 1702);
+    tap(&mut s);
+    assert_eq!(
+        s.take_requests(),
+        vec![Action::OpenLgSettingsSection(SettingsSection::General)]
+    );
+    assert!(!s.take_preferences_changed());
+}
