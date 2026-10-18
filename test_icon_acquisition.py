@@ -70,6 +70,19 @@ def fixture(root):
 
 
 class OfflineIcons(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.denials = [patch.object(subprocess, 'Popen', side_effect=AssertionError('No child')),
+                       patch.object(socket, 'socket', side_effect=AssertionError('No network')),
+                       patch.object(socket, 'create_connection', side_effect=AssertionError('No network'))]
+        for denial in cls.denials:
+            denial.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        for denial in reversed(cls.denials):
+            denial.stop()
+
     def setUp(self):
         # Resolve macOS's /var alias only for synthetic fixture placement.
         self.temp = tempfile.TemporaryDirectory()
@@ -313,5 +326,4 @@ def stat_is_file(s):
 
 
 if __name__=='__main__':
-    with patch.object(subprocess,'Popen',side_effect=AssertionError('No child')),patch.object(socket,'socket',side_effect=AssertionError('No network')),patch.object(socket,'create_connection',side_effect=AssertionError('No network')):
-        unittest.main(verbosity=2)
+    unittest.main(verbosity=2)
