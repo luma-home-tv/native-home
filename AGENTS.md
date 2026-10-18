@@ -31,6 +31,18 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+The combined undeployed Home beta at functional
+`adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f` has
+matching146-input host/ARM and separate artifact/direct-ABI evidence, documented
+in `docs/home-beta-integration.md`. ELF6b752f23e71ba73d503f903002e99ca7078cda69cb0c577ef1dd131d726996f7
+adds no direct libraries/imports against the actual retained3ce UI. Root's
+byte-identical replay checked398 bindings; this is not native/retained promotion.
+The ordinary isolated bookmark test must enable persistence and account for both
+favourite and home-focus files; old capture/observer profiles exclude those focus
+writes and cannot qualify it. The collector now defaults to metadata only and
+explicit offline acquisition/receipt ingestion grants no native closure or Root
+authority. Preserve normal Root-off and actual retained3ce installations/state.
+
 The user's latest direction makes C2 the current manual-test target, superseding
 the earlier resumed campaign's C2 exclusion. Current human availability belongs
 in private coordination records. Do not blindly retarget a G2 carrier or transfer

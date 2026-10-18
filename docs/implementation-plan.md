@@ -22,6 +22,12 @@ not current physical input, combined full-product or C2 runtime qualification.
 
 ## Current delivery sequence
 
+The [combined Home beta candidate](home-beta-integration.md) now brings the
+reviewed Home menu, focus restoration, Controls guides and offline icon tooling
+into one 146-input tree. Its actual host checks, ARM build and separate local
+artifact/direct-ABI review with coordinator replay pass. It is not deployed.
+C2 is the current native-test target; human checks need fresh availability.
+
 Current source work also addresses a concrete Home interaction gap: the
 [shared app-options candidate](home-app-options-candidate.md) replaces Home's
 immediate long-press unpin with the Apps drawer's explicit options menu. Source
@@ -102,7 +108,9 @@ existing overview links and two read-only guides. Source/host review passes;
 the combined Home/menu/focus/task tree passes 836 library and 16 UI host tests
 and strict Clippy. These guides do not add native setters, direct task links,
 storage capacity or actual TV destination/return qualification. The separate
-offline icon-tool candidate remains under independent review before integration.
+offline icon-tool candidate now passes independent source review and is included
+in the matching combined ARM build. This is local source/artifact evidence; the
+reader and actual icon-supply path still need separate native qualification.
 
 Source agents can design and test these changes in parallel. The coordinator
 alone owns hardware tests and retained updates; new candidates must remain
@@ -180,9 +188,10 @@ The separate [public icon reader foundation](public-icon-reader-foundation.md)
 now has a frozen source commit and draft PR9, strict/sanitised host checks,
 independent source/host review, coordinator replay and an actual ARM build.
 This replaces the unsafe pathname-reopen approach only as a candidate primitive;
-the legacy collector is unchanged and must not be used as a fallback. Next
-qualify one known packaged-icon read in a separate headless device scope before
-building a broader collector. No normal Root artwork, cache writes or TV
+the combined candidate removes the legacy automatic shell file reads and makes
+collection metadata-only by default, with explicit offline body/receipt ingestion.
+Next qualify one known packaged-icon read in a separate headless device scope
+before connecting a broader native collector. No normal Root artwork, cache writes or TV
 deployment follows from the local milestone.
 
 The current delivery target is a responsive native Home dashboard for both
