@@ -1311,17 +1311,17 @@ impl Shell {
         plx_machine::idle::invalidate();
         if page != Page::Applications {
             self.drawer.finish_editing();
-            self.menu = None;
         }
         if page != Page::PointerSpeed {
             self.pointer_expected = None;
         }
         if self.menu.as_ref().is_some_and(|menu| {
-            !self
-                .catalogue
-                .applications
-                .iter()
-                .any(|app| app.id == menu.id)
+            page != self.surface.page
+                || !self
+                    .catalogue
+                    .applications
+                    .iter()
+                    .any(|app| app.id == menu.id)
         }) {
             self.menu = None;
         }
@@ -1356,13 +1356,13 @@ impl Shell {
                     if page == Page::Applications {
                         "OK to open • hold OK for app options"
                     } else {
-                        "OK to open • hold OK to add or remove a favourite • Back to exit"
+                        "OK to open • hold OK for app options • Back to exit"
                     }
                 } else {
                     if page == Page::Applications {
                         "Hold OK for app options • launches disabled in this preview"
                     } else {
-                        "Hold OK to add or remove a favourite • launches disabled in this preview • Back to exit"
+                        "Hold OK for app options • launches disabled in this preview • Back to exit"
                     }
                 }
             }
@@ -3284,7 +3284,7 @@ impl Shell {
         };
         let id = card.id.clone();
         let input = input_key(&id).is_some();
-        if hold && !input && self.surface.page == Page::Applications {
+        if hold && !input && matches!(self.surface.page, Page::Home | Page::Applications) {
             let index = self
                 .surface
                 .cards
@@ -3297,12 +3297,8 @@ impl Shell {
                 origin: key.elem,
                 index,
             });
-            self.rebuild(Page::Applications);
-            self.focus_menu_action(MenuAction::ToggleFavourite);
-        } else if hold && !input && self.surface.page == Page::Home {
-            self.prefs.toggle_favourite(&id);
-            self.preferences_changed = true;
             self.rebuild(self.surface.page);
+            self.focus_menu_action(MenuAction::ToggleFavourite);
         } else {
             if !self.request_is_current(input) {
                 self.status = cstr("Reading unavailable • refresh before opening this item");
@@ -3364,7 +3360,7 @@ impl Shell {
         let Some(menu) = self.menu.take() else {
             return;
         };
-        self.rebuild(Page::Applications);
+        self.rebuild(self.surface.page);
         let key = self
             .surface
             .cards
@@ -3380,11 +3376,14 @@ impl Shell {
             .map(|c| c.key);
         if let Some(key) = key {
             self.focus_special(key, GroupId(1));
+        } else if self.surface.page == Page::Home {
+            self.focus_home_link(0);
         } else {
             self.focus_drawer_control(1);
         }
     }
     fn menu_action(&mut self, action: MenuAction) {
+        let page = self.surface.page;
         let Some(id) = self.menu.as_ref().map(|menu| menu.id.clone()) else {
             return;
         };
@@ -3419,7 +3418,14 @@ impl Shell {
                 self.preferences_changed = true;
             }
         }
-        self.rebuild(Page::Applications);
+        if page == Page::Home
+            && action == MenuAction::ToggleFavourite
+            && !self.prefs.favourites.contains(&id)
+        {
+            self.close_app_menu();
+            return;
+        }
+        self.rebuild(page);
         self.focus_menu_action(action);
     }
     pub fn focus_menu_action(&mut self, action: MenuAction) -> bool {
