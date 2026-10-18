@@ -22,16 +22,22 @@ not current physical input, combined full-product or C2 runtime qualification.
 
 ## Current delivery sequence
 
-The [combined Home beta candidate](home-beta-integration.md) now brings the
-reviewed Home menu, focus restoration, Controls guides and offline icon tooling
-into one 146-input tree. Its actual host checks, ARM build and separate local
-artifact/direct-ABI review with coordinator replay pass. It is not deployed.
-C2 is the current native-test target; human checks need fresh availability.
+Development main now intentionally integrates the Home menu, focus bookmark,
+Controls labels/guides, offline icon acquisition, cache planner/real-join ownership,
+protected time readouts and optional schema2 draw diagnostics as development 0.62.0.
+Historical separate-branch holds below are superseded at source level. The
+[ADFA 146-input beta](home-beta-integration.md) keeps its own matching host/ARM,
+package and direct-ABI evidence; those receipts do not qualify this expanded
+source graph. Both retained TVs remain d221/UI3ce normal 0.61.0.
 
-Current source work also addresses a concrete Home interaction gap: the
-[shared app-options candidate](home-app-options-candidate.md) replaces Home's
-immediate long-press unpin with the Apps drawer's explicit options menu. Source
-review, targeted host checks and an actual ARM build pass; it remains undeployed.
+The 18 October isolated ordinary 6b Proof reached native Home and a logo-bearing
+capture and initialized a private 95-byte preference file. The source terminal
+reported window_hidden after about 179.5 seconds before any planned human steps.
+All original test operators remain exit 1. A fresh cleanup-only scope exited 0
+with full owned removal, retained/Core/full-mount preservation and new
+lease/agent closeout; independent raw saved-data review passes. This finite
+initialization/render observation does not pass favourites/restart, physical
+input, performance or integrated 0.62 native qualification.
 
 The first separate headless icon-reader attempt
 [stopped at initial SSH connectivity](public-icon-reader-first-connectivity-attempt.md)
@@ -47,23 +53,32 @@ restarted. Continue source work while the TV is unreachable.
 | 4. Normal daily handoffs | Current ordinary Preview opens an owned test app and returns, and completes one LG Settings return without changing a setting | Separate normal-capability scope; Proof launch suppression cannot prove this. No viewing-account writes. |
 | 5. Usable beta and remaining coverage | Repeated ordinary entry/exit and honest Controls/Inputs coverage; identify artwork refresh/fallback behavior for changed apps | Coordinator integrates only qualified changes. Unverified controls stay read-only or LG-managed. Full native control parity and broad reliability remain unfinished. |
 
-Gate1 is complete in its bounded G2 scope. The critical path now starts with
-the fresh C2 preservation baseline, then gates2–4 on the current executable.
-The existing Proof artifact has passed independent archive, profile and build-provenance review,
-including five adverse checks and a coordinator input replay. This is local
-artifact evidence; native execution and the two-session workflow remain open. It uses a synthetic Preview-only seed and a separate owning identity.
-A fresh eligible unseeded catalogue ID can avoid an extra Target install for the
-Pin-only operation; an owned Target requires its own artifact and cleanup proof.
-No app/account action is needed for a local favourite write.
+Gate1 remains complete only in its bounded G2 scope. The closed-trial cleanup
+review, combined host/source checks and matching dashboard/helper ARM builds now
+pass; the [combined source record](home-beta-integration.md) binds those results.
+Next inspect matching packages and their independent ABI/contracts, then run the
+ordinary isolated favourites/restart campaign. Preflight the selected device's
+complete capture-client reply before launching so a controller mismatch does
+not consume the human window. Human steps must begin promptly once the actual
+frame is ready. Complete gates2–4 before a backed-up retained update and repeated
+everyday use. Each new scope needs fresh device/state/scene/lease checks.
 
-Parallel source work fixes and reviews optional bounded draw diagnostics. It
-stays off the TVs and cannot delay the daily-use gates. The earlier partial
-observer attempts and their coordination/timing limits remain preserved. Cache
-maintenance [planning](https://github.com/luma-home-tv/native-home/pull/6) and
-[same-cache worker ownership](https://github.com/luma-home-tv/native-home/pull/7)
-are source foundations, with no mutation caller or native maintenance proof.
-Automatic retirement/eviction and new diagnostic schema integration are later
-work, not prerequisites for the first fixed-catalogue beta.
+The ordinary ADFA Proof package has independent archive/profile/provenance
+review, eight adverse checks and coordinator replay. It uses a synthetic stored
+favourite, not a Preview-only seed. That ID can remain stored while ineligible
+for the live Home shelf; native grading must distinguish the stored set from
+visible eligible favourites. Explicit Preview/target pins and both preference
+and Home-focus files still need the full two-session test. A fresh eligible
+unseeded ID can avoid an extra Target install; no app/account action is needed
+for a local favourite write.
+
+Optional draw diagnostics and cache planning/real-join ownership are now source
+foundations in main. They stay off retained TVs and cannot delay daily-use gates.
+The earlier failed observer scopes and saturation/cardinality findings remain
+preserved. There is no cache-maintenance mutation caller, automatic eviction or
+stale-slot recovery. Schema2 is explicitly versioned and needs matching new
+artifact/contract/native qualification; no historical observer or cache authority
+transfers through the merge.
 
 ## Remaining product work
 
@@ -77,18 +92,15 @@ Passing the daily-use tests does not fill the following implementation gaps:
    already exists; it needs current ordinary native proof rather than another
    implementation. The shared Home options candidate addresses a separate
    interaction inconsistency.
-   The first continuity slice will remember only the last deliberate Home
-   favourite in a separate bounded app-owned sidecar. This keeps the existing
-   favourites record readable by older builds, which reject unknown fields.
-   Hover, automatic reconciliation, actions, menus and search text are excluded.
+   Main now implements the last deliberate Home favourite in a separate bounded
+   app-owned sidecar, keeping the existing favourites schema readable by older
+   builds. Hover, automatic reconciliation and restore do not queue a bookmark.
    Reentry remains an explicit fresh launch through LG; no longer background
-   lifetime or automatic relaunch is planned for this slice. Abrupt eviction can
-   lose the latest unsaved selection.
-   [Draft PR11](home-focus-bookmark-candidate.md) now implements this slice at
-   source65868df: source/host review, matching ARM build and local direct-ABI
-   review/coordinator replay pass. A new enabled ordinary native scope remains
-   open. Both initial
-   catalogue/fallback prototype failures are preserved; no TV received them.
+   lifetime or automatic relaunch is introduced. Abrupt eviction can lose an
+   unsaved selection. The [bookmark source wave](home-focus-bookmark-candidate.md)
+   has its own host/ARM/local-ABI evidence; actual two-file commit and fresh-process
+   focus restoration remain unqualified by the 18 October partial session. Preserve
+   both initial catalogue/fallback failures and their old artifact boundaries.
 2. **Input switching on both targets.** Ordinary C2 input changes currently fail
    closed. They need a dedicated operation-specific selection/readback and exact
    original-source restoration before enablement. G2 results, a Proof identity
@@ -99,9 +111,10 @@ Passing the daily-use tests does not fill the following implementation gaps:
    external-device/CEC/Bluetooth and tuner/channel tasks need honest LG-managed
    destinations or individually qualified native controls. Existing category
    overviews do not establish direct task destinations or comprehensive parity.
-   Separately, implement a current-catalogue icon acquisition/refresh flow after
-   qualifying the new reader. A one-icon CLI and fallback initials do not supply
-   that flow. Keep normal Root artwork off until the complete path is qualified.
+   The pure offline acquisition/receipt path is now implemented. Its native
+   coordinator and current-catalogue acquisition/refresh still need qualification
+   with real public-icon bodies; a one-icon CLI does not supply broad coverage.
+   Keep normal Root artwork off until the complete path is qualified.
 
 The [named task-guide candidate](controls-task-guides-candidate.md) now adds five
 existing overview links and two read-only guides. Source/host review passes;

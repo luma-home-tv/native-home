@@ -1,8 +1,17 @@
-# Combined Home beta candidate
+# Home beta and integrated development
 
-Functional source `adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f` combines the
-reviewed Home options, focus bookmark, Controls labels/task guides and offline
-icon-acquisition tooling. Neither retained TV installation has received it.
+Development main now integrates the Home beta, cache planning and actual-join
+ownership, protected time readouts and optional schema2 draw diagnostics as
+0.62.0 development source. The historical separate-branch holds are superseded
+by this deliberate integration. Matching combined host/source, compiler/package
+and native qualification remain separate; earlier ADFA receipts cannot be
+relabelled for the expanded source graph. Neither retained installation has
+been promoted: both remain d221/UI3ce normal 0.61.0, with normal Root artwork off.
+
+The earlier functional source `adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f`
+combines Home options, focus bookmark, Controls labels/task guides and offline
+icon tooling. The 146-input evidence below belongs specifically to that wave.
+Its ordinary Proof ran only as an isolated identity, never as a retained update.
 
 ## Intended behaviour
 
@@ -24,7 +33,33 @@ their existing schema; focus uses a separate bounded `home-focus.json` sidecar
 on the existing persistence worker. Home/boot handling remains under LG control.
 Ordinary departure still ends Luma; reentry is an explicit launch through LG.
 
-## Local evidence
+## Consolidated source validation
+
+Functional source `78b46e1a9c755f326abcac355db4660b0c544210` contains all
+reviewed topic heads and 152 selected inputs. Fresh combined checks pass
+882 library tests, 16 UI tests and strict all-target Clippy. Python checks ran
+126 cases: 124 passed and two existing private ARM-fixture cases were skipped.
+The standalone dependency graph contains only the declared framework crates;
+excluded application/Plex crates remain absent. Source and framework snapshots
+are unchanged across the checks.
+
+The first combined run preserved a new render-test fixture failure: restoration
+was still awaiting its first fresh real catalogue. The test now supplies that
+catalogue before comparing normal and observed drawing, full ordered hit maps,
+Home menu, restored focus and Guide form state. Production behavior was unchanged.
+
+Matching dashboard and artwork-helper ARM builds pass with compiler receipts
+bound to these same 152 inputs. Source, framework and five compiler/tool
+fingerprints remain unchanged before and after. These binaries have not been
+executed on a TV or promoted to either retained installation; new package,
+independent ABI and native qualification remain separate.
+
+| Consolidated artifact | SHA-256 |
+| --- | --- |
+| Dashboard ELF | `8b4289ea8940750ddd4a5b5c2fc476908ed5449edd78b50d499831cd33668f88` |
+| Artwork helper ELF | `36595db9826a0a7139ac7a385fb0473b29895812a708a9466e4ff58183c2443b` |
+
+## Local evidence for the ADFA 146-input wave
 
 The combined tree passes 836 library tests, 16 UI tests and strict all-target
 Clippy. Python icon/contract checks ran 36 cases: 35 passed and one existing
@@ -72,8 +107,9 @@ The package SHA-256 is
 Independent archive/profile review, eight adverse checks and a byte-identical
 coordinator replay pass, with all 378 review bindings unchanged. This
 profile selects ordinary persistence, without capture/observer/performance,
-Root, cache-producer or helper roles. Actual private-store access, state readback
-and focus appearance still require native execution. The synthetic favourite
+Root, cache-producer or helper roles. The partial native initialization below
+supplies only its stated scope; both-file commit/readback and restart focus remain
+open. The synthetic favourite
 may remain stored while disappearing from Home after a real catalogue arrives;
 the native recipe must distinguish stored IDs from eligible visible favourites.
 
@@ -82,13 +118,24 @@ receipt-presence bug that could treat a dangling receipt link as legacy assets.
 Their corrected cases pass. The combined merge preserved both sets of Shell
 tests; the first failed local merge-resolution assertion remains recorded.
 
-## Next native sequence
+## Closed isolated trial and next sequence
 
-The matching two-session C2 workflow now passes source/offline review: 87 author
-checks, nine focused review groups and a separate coordinator replay. All 968
-review bindings remain unchanged before and after replay. The workflow is still
-unadmitted: no actual test dates, device lease, baseline or human readiness are
-supplied by these results.
+On 18 October an isolated ordinary 6b Proof reached native Home, captured a frame
+with the logo and initialized its own private 95-byte preference file. Its
+terminal reported window_hidden after about 179.5 seconds. No planned human
+favourite/menu/Guide/restart steps completed; every original test operator stays
+exit 1. A fresh cleanup-only scope exited 0 after complete own Proof/state/runtime/
+stage removal, exact retained/Core/full-mount preservation and new lease/agent
+closeout. Independent raw saved-data review passes in its finite cleanup scope.
+Keep cleanup success
+separate from the failed feature workflows; this is not physical-input,
+favourites/restart, performance or integrated 0.62 native qualification.
+
+The earlier matching two-session C2 runner passed source/offline review with
+87 author checks, nine focused review groups and a separate coordinator replay
+of 968 bindings. Later scene handling allowed only Home CARD plus an optional
+exact known LG screensaver. Those source results and the closed native scopes
+do not grant future dates, lease, baseline or human-readiness authority.
 
 Review preserved three earlier runner defects: a launch-copy hash cycle,
 incomplete startup-failure validation, and a malformed final report being treated
@@ -99,8 +146,9 @@ component test. These checks do not establish native storage or cleanup success.
 
 The coordinator also checked the relocated source and helper bootstrap with an
 invalid test window and a mocked contact gate. No TV command, actual admission
-record or operational output directory was created. Current native installation,
-permissions, both-file persistence, physical input and visual focus remain open.
+record or operational output directory was created by that bootstrap check.
+The later private initialization observation does not qualify retained storage,
+both-file persistence, physical input or visual restart focus.
 
 1. Use a fresh C2 availability/context/lease and complete actual retained-state
    baseline. Establish the isolated app's actual native state access without
@@ -116,8 +164,9 @@ permissions, both-file persistence, physical input and visual focus remain open.
 4. When the user is present, check physical pointer/wheel/hold and one LG
    keyboard. Then qualify ordinary app/Settings handoffs in their own scope.
 
-No new native execution, rendering, icon decoding, physical input, performance
-or retained promotion follows from the local results above. Packaged icons are
+The closed partial native observation does not broaden the local artifact
+results into full rendering, icon decoding, physical input, performance or
+retained promotion. Packaged icons are
 static ID/path fallbacks; live acquisition, refresh/version handling and broad
 artwork coverage remain unfinished. Normal Root artwork stays off. C2 input
 switching, storage-capacity semantics and comprehensive native control parity

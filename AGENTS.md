@@ -31,6 +31,42 @@ from 00:00 to 06:00 Europe/London or when the user explicitly releases it. This
 supersedes earlier availability windows; fresh device leases and baseline checks
 still apply, and no G2 evidence establishes C2 behavior.
 
+## Current integrated development and retained status
+
+Development main intentionally consolidates the Home/menu/bookmark beta,
+Controls labels and task guides, safe offline icon acquisition, cache planning
+and same-cache handoff after actual worker join, protected time-preference
+readouts, and optional schema2 draw diagnostics in development 0.62.0. This
+supersedes historical instructions below to keep 062/cache/draw branches separate
+or hold individual candidate HEADs. Preserve their original commits, failed
+checks, receipts and closed scopes; integration does not rewrite those records.
+Fresh combined host/source-graph checks and matching compiler/package evidence
+are distinct from the earlier 146-input ADFA artifacts.
+
+BOTH retained installations remain normal 0.61.0, functional d2215d5d8761fe385ae7ae3dd76ab173793c5bb8,
+UI SHA-256 `3cefc9152fa0b0e051920763496274f211f24914085c83eed01d36b27812ecb3`,
+package SHA-256 `ffec94f0b1633ce182a344999d9c69bfb42213cbfee48a9cf17b6543b36acb98`.
+No integrated 0.62 retained promotion has occurred. Preserve actual installed
+bundle/state/cache baselines; normal Root artwork stays off. Cache maintenance
+has no mutation caller, and optional diagnostics grant no native performance or
+accepted-cache authority.
+
+The 18 October isolated ordinary 6b Proof reached native Home with a logo-bearing
+captured frame and created its own private 95-byte initial preferences. Its
+terminal reported window_hidden after about 179.5 seconds; no planned human
+favourite/menu/restart steps completed. All original test operators remain exit 1.
+A fresh cleanup-only scope exited 0 after complete owned Proof/state/runtime/stage
+removal and verified retained/Core/full-mount preservation plus new lease/agent
+closeout. Independent raw saved-data review passes in its finite cleanup scope.
+This cleanup does not
+turn the failed workflows into a functional pass. Current favourites/restart,
+physical input, performance and the integrated 0.62 native release remain open.
+
+Only the coordinator owns future TV scopes, with fresh availability, baseline,
+lease and cleanup reserve. Git backups and closed scopes are historical recovery
+and evidence records, never permission to replay an old process or test window.
+The detailed branch records below describe their original source/artifact waves.
+
 The combined undeployed Home beta at functional
 `adfa2ac53df1c6e76b38d9d36fa0973e2e2a9f9f` has
 matching146-input host/ARM and separate artifact/direct-ABI evidence, documented
@@ -64,7 +100,7 @@ current3ce executable with fresh inputs, never Root chmod/chown, boot/jail edits
 an old048 marker or an unreviewed relaxation of the private-state gate.
 `docs/c2-current-permission-observation.md` records this boundary.
 
-The later corrected C2 read-only profile exited0 with exact observed opaque
+The later corrected C2 read-only profile exited 0 with exact observed opaque
 state preservation, complete32 body reads, sampled Core5+19/source-map agreement
 and known lease/agent closure. Its rejected source predecessor's two-tree
 ownership-classification counterexamples remain preserved. Four measured paths
@@ -216,7 +252,7 @@ Historical source167 trial notes (the current retained checkpoint above supersed
 The later `docs/g2-retained-preview061-owned-app-partial.md` records a verified
 owned-app handoff followed by a local duplicate-receipt failure, then two
 pre-removal cleanup refusals. All three exit-1 results remain. Separate fresh
-cleanup exited0 after exact old-owner retirement/new lease and removed the
+cleanup exited 0 after exact old-owner retirement/new lease and removed the
 Target and known temporary outputs, preserving061/cache24/state/Core/runtime
 prefix. Full mount rows1516→1518 and selected SDK rows276→278 remain distinct;
 no manual mount/permission repair or global restoration occurred. No LG Settings
@@ -227,7 +263,7 @@ The Settings-only trial in
 intermediate own-CARD/known-spinner pair before any LG Back. Native terminal
 records verified LG launch, SDL counter1 and `window_hidden`, not usable return.
 Read-only observation found Home/PID+UID absence. Separate NOINPUT cleanup
-exited0 within the original900s cutoff, closed the original lease/agent and
+exited 0 within the original900s cutoff, closed the original lease/agent and
 preserved061/cache24/prefs216/Core5+19/runtime prefix. Full mount rows1518→1520
 and selected SDK278→280 remain distinct. Independent saved reviews/Root522+143
 binding readbacks and602intent negative-route scan pass in finite scopes.
@@ -280,7 +316,7 @@ bindings respectively. V7 has four actual keys and captured Home/Apps/Home;
 both source terminals are known-negative `window_hidden`, with no managed close
 or natural Home Back. Worker association/join/GL/cache counters are bounded
 partial observations; both full component grades stay false. All scopes are
-closed. The later v8 trial in `docs/cache-consumer-g2-native.md` exited0 with
+closed. The later v8 trial in `docs/cache-consumer-g2-native.md` exited 0 with
 five guarded SDK keys, Home/Apps/Home/distinct natural Back, exact accepted
 producer use and joined/balanced GL12. Independent saved review/six adverse
 groups and byte-identical Root replay across17,425 bindings pass. Exact retained
@@ -407,7 +443,7 @@ additive 16+8 preparation for functional f5b4d775, preserving the original24 and
 restoring exact old061. The current cache has48 entries across two producer
 generations for the same supplied24-key catalogue. Its normal candidate attempt
 stopped before LG Settings on the original5s input guard and remains exit1.
-Separate fresh cleanup exited0, restored the above old061 ELF, removed the mapped
+Separate fresh cleanup exited 0, restored the above old061 ELF, removed the mapped
 runtime leaf/stage2 and preserved all48 full bodies/identities, preferences/state,
 sampledCore and oldruntime prefix. Lease/agent closed. Coordinator direct saved
 comparisons, finite independent cleanup review and byte-identical Root replay
@@ -418,7 +454,7 @@ reserve guard within its original900s scope after a partial route. Fresh cleanup
 restored old061/cache48/state/Core/runtime and closed its lease/agent; independent
 saved review and Root replay cover1473 selected bindings. Keep this distinct from
 the older five-second input-guard failure above.
-The measured second Settings-first scope now exited0: one sameactor LG Picture
+The measured second Settings-first scope now exited 0: one sameactor LG Picture
 overlay/Back/own return, usable Controls/Home/Apps/Home/Back, strict ordinary
 terminal and joined GL12 cleanup. It ALWAYS restored exact old061, preserved
 cache48/prefs216/Core5+19/oldruntime140/92immutable/eventprefix+131B and removed
@@ -569,7 +605,7 @@ this catalogue and dated prerequisite window cannot grant later freshness.
 `docs/ordinary-artwork-cache-058-first-attempt.md` preserves the first native
 trial's exit1 after a known completed diagnostic install. It stopped before
 explicit app launch or Root staging because the installer rejected a known PTY
-close diagnostic. A separate restore-only continuation exited0 under the same
+close diagnostic. A separate restore-only continuation exited 0 under the same
 original lease and conservative original deadline, restoring exact057 and
 preserving fresh private preferences, complete measured Host runtime and sampled
 Core5+19. Only original journal-bound staging was removed; lease and agent cleanup
@@ -585,7 +621,7 @@ or connection close alone. Normal Root artwork remains off; C2 was not contacted
 six positive transfers/96 Core children and ordinary Home/Apps cache associations,
 with four cache plus seven packaged uploads and matched GL cleanup. The original
 operator still exited1 at exact mount-row equality after verified057 rollback.
-An independently reviewed cleanup-only continuation exited0 within the same
+An independently reviewed cleanup-only continuation exited 0 within the same
 original lease/deadline, removed positively mapped runtime/cache/staging, preserved
 full057/preferences/state/sampledCore, all 92 immutable old runtime files and the
 original event-log prefix with 262 appended bytes. Lease and agent cleanup pass.

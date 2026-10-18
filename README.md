@@ -20,13 +20,25 @@ Installation and saved-state preservation are separate from runtime qualificatio
 the [current G2 smoke](docs/retained-current-g2-smoke.md) does not qualify C2.
 Fresh device, ownership and state baselines are required before another test.
 
-[Draft PR14](https://github.com/luma-home-tv/native-home/pull/14) combines explicit
-Home app options, focus across launches, LG-managed task guides and offline icon
-tooling. Its matching host checks, ARM build and isolated package review pass;
-it has not been deployed. See the [combined candidate](docs/home-beta-integration.md)
-and [delivery plan](docs/implementation-plan.md) for remaining native checks.
-The full dashboard goal remains incomplete. Retained installations and favourites
-must be preserved; normal Root artwork stays off.
+Development main now combines Home app options, focus across launches,
+LG-managed task guides, safe offline icon tooling, cache-maintenance foundations,
+protected time readouts and optional draw diagnostics as development 0.62.0.
+The earlier ADFA beta's matching ARM/package evidence does not qualify this
+expanded source tree. Neither retained installation has been promoted to 0.62.
+The consolidated 152-input tree passes 898 Rust tests, strict Clippy and 124
+Python checks, with two private-fixture skips. Matching dashboard/helper ARM
+builds pass; package and native qualification remain separate.
+
+On 18 October an isolated ordinary beta Proof reached native Home, captured a
+logo-bearing frame and initialized its own private 95-byte preferences. No
+planned human steps completed; its terminal reported window_hidden after about
+179.5 seconds. Original test operators remain exit 1. A fresh cleanup-only scope
+exited 0 with complete own removal and retained/Core/full-mount preservation;
+independent saved-data review passes in its finite cleanup scope.
+Favourites/restart, current physical
+input and performance remain open. See the [combined source record](docs/home-beta-integration.md)
+and [delivery plan](docs/implementation-plan.md). Preserve retained installations
+and favourites; normal Root artwork stays off.
 
 The component records below retain their historical versions and scopes. Their
 earlier installation and rollback statements do not supersede this checkpoint.
