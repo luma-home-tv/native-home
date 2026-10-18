@@ -67,9 +67,10 @@ tests; the first failed local merge-resolution assertion remains recorded.
 ## Next native sequence
 
 1. Use a fresh C2 availability/context/lease and complete actual retained-state
-   baseline. Qualify the separate one-icon reader primitive and ordinary native
-   state access without permission repair. Historical G2 results do not qualify
-   either C2 operation.
+   baseline. Establish the isolated app's actual native state access without
+   permission repair. The separate one-icon reader can be qualified independently;
+   it does not block testing a fixed-catalogue UI. Historical G2 results do not
+   qualify either C2 operation.
 2. Inspect a matching isolated ordinary interactive Proof package. Capture,
    observer and performance profiles exclude bookmark writes and cannot qualify
    this feature. The new test must account for both favourite and focus files.
