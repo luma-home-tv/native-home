@@ -97,6 +97,13 @@ Passing the daily-use tests does not fill the following implementation gaps:
    qualifying the new reader. A one-icon CLI and fallback initials do not supply
    that flow. Keep normal Root artwork off until the complete path is qualified.
 
+The [named task-guide candidate](controls-task-guides-candidate.md) now adds five
+existing overview links and two read-only guides. Source/host review passes;
+the combined Home/menu/focus/task tree passes 836 library and 16 UI host tests
+and strict Clippy. These guides do not add native setters, direct task links,
+storage capacity or actual TV destination/return qualification. The separate
+offline icon-tool candidate remains under independent review before integration.
+
 Source agents can design and test these changes in parallel. The coordinator
 alone owns hardware tests and retained updates; new candidates must remain
 separate from the frozen executable used by the current test workflow.
