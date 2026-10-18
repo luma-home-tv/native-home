@@ -3369,6 +3369,10 @@ fn observed_and_noop_renderer_have_identical_painter_and_hit_state_trace() {
                 }
                 Scene::RestoredBookmark => {
                     assert!(shell.restore_home_focus("com.example.app03"));
+                    let mut fresh = live_update(100);
+                    fresh.simulated = false;
+                    shell.apply_live(&fresh, 100);
+                    assert!(shell.home_focus_restored_from_live());
                     assert_eq!(shell.page(), Page::Home);
                     assert_eq!(shell.focused_item().as_deref(), Some("com.example.app03"));
                     assert!(!shell.home_focus_restore_pending());
