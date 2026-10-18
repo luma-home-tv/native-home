@@ -39,8 +39,12 @@ interpreter `/lib/ld-linux.so.3`, one direct dependency (`libc.so.6`) and no
 RPATH. The frozen C source is
 `96c28e30bce3b17e9b7f3b2641b56090a5338d0414df1ae652c5ab41eb68371d`;
 68 compiler/header inputs and the 44 host evidence bindings match before and
-after the build. This is local compilation and ELF inspection, not independent
-recompilation, transitive loading or target execution proof.
+after the build. A separate independent compilation now reproduces the ELF
+byte-for-byte. Its raw ELF parser and SDK wide-symbol output agree on all37
+complete import tuples; nine adverse guard groups pass. The coordinator's
+offline gate replay also passes with207 referenced files unchanged. The SDK
+declares33 strong and4 optional weak imports available. This is SDK availability,
+not fresh target-library association, transitive loading or execution proof.
 The earlier `e7017b3`/`1872697e` source and `853f083f` ELF remain preserved as
 historical evidence. Future PID-based qualification uses the new artifact.
 

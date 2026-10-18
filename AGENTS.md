@@ -106,6 +106,11 @@ failed/short writes cannot enter the path walk. Default SIGPIPE may terminate
 before an error return. PID/wrapper records grant no Root or cleanup authority
 alone; unknown/missing identity stays HOLD. Keep old e701/1872/853f evidence
 historical and use the new source/ELF for any future PID-based proof.
+The independent ARM audit now reproduces a8ec byte-for-byte, checks all37 import
+tuples against raw ELF/SDKwide and passes nine adverse groups; Root offlinegate
+replay/207file rehash pass. SDK33strong+4optional declarations do not qualify
+actual targetlibc/loader identity, native permissions or execution. The headless
+controller must qualify fresh target association before dispatch.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
