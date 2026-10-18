@@ -112,6 +112,23 @@ replay/207file rehash pass. SDK33strong+4optional declarations do not qualify
 actual targetlibc/loader identity, native permissions or execution. The headless
 controller must qualify fresh target association before dispatch.
 
+The first headless attempt is closed with original operator1/HOLD at initial SSH
+connectivity, before device-lease acquisition, staging, baseline collection or
+reader execution. Local agent closeout passed; no device lease existed. Preserve
+the original CRLF error and first LF-only closeout-reader failure. No native or
+device-preservation result follows. Never restart its closed scope/supervisor;
+future work needs fresh reachability, dates/output/lease and actual baseline.
+See `docs/public-icon-reader-first-connectivity-attempt.md`.
+
+PR#10 (`codex/home-favourite-menu`, functional736ba42) adds Home long-press
+options through the existing shared Apps menu, with explicit Unpin and stable-ID
+Back/Close. Source/host review passes81 Shell tests; the author75 tests/strict
+Clippy and actual ARM UI4b31 build pass against143 inputs. It is based on PR#8,
+not integrated with current retained3ce or the existing Proof package. Native
+menu appearance, physical input and persistence remain open. Keep the source
+HEAD stable while its local ABI gate is reviewed. See
+`docs/home-app-options-candidate.md`.
+
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
 current physical pointer/wheel/hold and separate IME; normal app/Settings return;

@@ -22,6 +22,17 @@ not current physical input, combined full-product or C2 runtime qualification.
 
 ## Current delivery sequence
 
+Current source work also addresses a concrete Home interaction gap: the
+[shared app-options candidate](home-app-options-candidate.md) replaces Home's
+immediate long-press unpin with the Apps drawer's explicit options menu. Source
+review, targeted host checks and an actual ARM build pass; it remains undeployed.
+
+The first separate headless icon-reader attempt
+[stopped at initial SSH connectivity](public-icon-reader-first-connectivity-attempt.md)
+before acquiring a device lease or executing anything on the TV. Preserve its
+exit 1/HOLD. No native reader result follows and the closed scope must not be
+restarted. Continue source work while the TV is unreachable.
+
 | Gate | Concrete result required | Work owner and boundary |
 | --- | --- | --- |
 | 1. Current retained G2 smoke | Fresh actual3ce full bundle/state/cache/runtime baseline; normal entry, Home/Apps/Home and natural exit; preserved saved favourites and known closeout | Coordinator only, new lease and bounded reviewed scope. No old f5 rollback carrier. |
@@ -111,7 +122,10 @@ pass17 alias/limit groups each with343/436 original bindings unchanged.
 These are source/host results. Only the new versions may be considered for a
 fresh native scope; neither is dated or admitted. Normal selected-drift closure
 remains distinct from cleanup/lease release, and the final-only coordination
-companion still needs separate review. No TV test follows automatically.
+companion now passes its separate source review. It can close coordination only
+after an original normal workflow has already closed all owned resources; it
+cannot repair mounts or adopt a selected/midphase failure. No matching original
+normal run or native companion execution exists. No TV test follows automatically.
 
 The separate [public icon reader foundation](public-icon-reader-foundation.md)
 now has a frozen source commit and draft PR9, strict/sanitised host checks,
