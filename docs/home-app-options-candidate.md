@@ -36,6 +36,17 @@ The build used fresh outputs and produced no package or target execution.
 The initial compilation failure from a discarded extra model field and the
 review's corrected held-button expectation remain in the private evidence.
 
+The author subsequently checked source/compiler receipts and direct ABI against
+the exact retained dashboard role. A separate coordinator source review and
+byte-identical gate replay pass, with all 371 manifest bindings unchanged before
+and after and network access denied throughout the replay process tree.
+The 11 required libraries and 223 complete imported symbol/version/type/binding
+tuples match the retained dashboard exactly. Fourteen author adverse checks pass.
+This is direct local compatibility evidence; it does not establish the target's
+transitive loading, permissions, rendering or physical behavior. The gate remains
+honestly labelled author-run, with the coordinator's review/replay recorded
+separately.
+
 The shared menu's appearance over Home, physical hold/release, and persistence
 on the current TV build still need native qualification. Build success and
 host focus tests do not establish those results or performance. This candidate

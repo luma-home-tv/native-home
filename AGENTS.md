@@ -127,10 +127,14 @@ See `docs/public-icon-reader-first-connectivity-attempt.md`.
 PR#10 (`codex/home-favourite-menu`, functional736ba42) adds Home long-press
 options through the existing shared Apps menu, with explicit Unpin and stable-ID
 Back/Close. Source/host review passes81 Shell tests; the author75 tests/strict
-Clippy and actual ARM UI4b31 build pass against143 inputs. It is based on PR#8,
+Clippy and actual ARM UI4b31 build pass against143 inputs. The additional author
+local artifact/direct-ABI gate plus separate Root source review/byte-identical
+replay pass371 bindings, with11NEEDED/223 complete imported tuples exact retained
+UI3ce and no network in the replay process tree. This is not transitive/native
+qualification. It is based on PR#8,
 not integrated with current retained3ce or the existing Proof package. Native
-menu appearance, physical input and persistence remain open. Keep the source
-HEAD stable while its local ABI gate is reviewed. See
+menu appearance, physical input and persistence remain open. Preserve the source
+and build identities; the separate Home-bookmark branch must not alter them. See
 `docs/home-app-options-candidate.md`.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
