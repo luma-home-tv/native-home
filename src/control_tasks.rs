@@ -52,7 +52,7 @@ const GENERAL: [Task; 6] = [
     Task {
         id: "task-memory",
         key: 1705,
-        title: "Storage & memory",
+        title: "Memory Optimiser",
         detail: "Use LG Settings > Support > Memory Optimiser",
         open_overview: false,
     },
