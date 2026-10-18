@@ -26,6 +26,8 @@ pub mod identity;
 
 pub mod clock;
 
+pub mod draw_diagnostics;
+pub mod draw_snapshot;
 pub mod performance;
 
 pub mod control_reads;

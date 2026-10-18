@@ -3739,9 +3739,19 @@ impl Shell {
         })
     }
     pub fn draw(&mut self) {
+        self.draw_with(&mut crate::draw_diagnostics::Noop);
+    }
+    /// Explicit observer-only caller. Both variants use this single renderer;
+    /// The ordinary entry instantiates Noop, which reads no clock or collector.
+    pub fn draw_observed<P: crate::draw_diagnostics::Probe>(&mut self, probe: &mut P) {
+        self.draw_with(probe);
+    }
+    fn draw_with<P: crate::draw_diagnostics::Probe>(&mut self, probe: &mut P) {
+        use crate::draw_diagnostics::Phase;
         let p = Painter::root();
         let ground = theme::SURFACE_OLED;
         plx_gfx::gfx::frame_clear(ground[0], ground[1], ground[2]);
+        probe.cut(Phase::Clear);
         Label::new(
             c"Luma Home".as_ptr(),
             theme::size::DISPLAY,
@@ -3892,6 +3902,7 @@ impl Shell {
             theme::TEXT_SECONDARY,
         )
         .draw(p, Rect::new(120.0, 840.0, 280.0, 40.0));
+        probe.cut(Phase::Chrome);
         let cx = self.context(&LegacyMeasure);
         let mut f = DrawFrame::<HomeHost>::new(&cx, p);
         if self.surface.table_mode {
@@ -4378,6 +4389,7 @@ impl Shell {
                 }
             }
         }
+        probe.cut(Phase::Content);
         let mut stops = f.into_stops();
         if self.surface.menu.is_some() {
             stops.retain(|stop| (MENU_BASE..MENU_BASE + 5).contains(&stop.key.elem));
@@ -4400,6 +4412,7 @@ impl Shell {
         };
         Label::new(status.as_ptr(), theme::size::CAPTION, theme::TEXT_TERTIARY)
             .draw(p, Rect::new(96.0, 985.0, 1728.0, 44.0));
+        probe.cut(Phase::Finalize);
     }
     pub fn last_application_id(&self) -> Option<&str> {
         if self.surface.page == Page::Applications {

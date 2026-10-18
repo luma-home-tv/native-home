@@ -41,7 +41,7 @@ impl Temp {
             "artwork-cache-producer.json",
         ] {
             let raw = if n == NAME {
-                r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#
+                r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#
             } else {
                 "{}"
             };
@@ -86,11 +86,11 @@ fn marker_off_creates_no_metric_files_and_strict_selected_modes_refuse() {
 fn marker_closed_schema_bounds_and_symlinks_fail_closed() {
     for raw in [
         r#"{}"#,
-        r#"{"schema":1,"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":241,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":10}"#,
+        r#"{"schema":2,"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
+        r#"{"schema":2,"lifetime_seconds":241,"snapshot_interval_ms":1000}"#,
+        r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":10}"#,
         r#"{"schema":true,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#,
-        r#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000,"Proof":true}"#,
+        r#"{"schema":2,"lifetime_seconds":240,"snapshot_interval_ms":1000,"Proof":true}"#,
     ] {
         assert!(Marker::parse(raw.as_bytes()).is_err());
     }
@@ -517,4 +517,210 @@ fn actual_worker_refuses_named_temp_symlink_after_write_without_following() {
     assert_eq!(r.published, 0);
     assert_eq!(std::fs::read(&victim).unwrap(), b"external target");
     assert!(t.0.join("performance-current-next.json").is_symlink());
+}
+
+#[test]
+fn old_marker_refuses_and_typed_diagnostics_encode_on_existing_worker() {
+    assert!(
+        Marker::parse(br#"{"schema":1,"lifetime_seconds":240,"snapshot_interval_ms":1000}"#)
+            .is_err()
+    );
+    let t = Temp::new();
+    let caller = std::thread::current().id();
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let capture = observed.clone();
+    let hook: PublishHook = Box::new(move |stage, _| {
+        if stage == PublishStage::AfterWrite {
+            *capture.lock().unwrap() = Some(std::thread::current().id());
+        }
+    });
+    let mut w = Writer::start_inner(&t.0, Some(hook)).unwrap();
+    w.submit_observed(
+        crate::draw_snapshot::base(
+            0.,
+            crate::draw_diagnostics::Page::Home,
+            false,
+            false,
+            crate::performance::Monitor::default().report(),
+        ),
+        crate::draw_diagnostics::Summary::default(),
+    );
+    let report = w.finish();
+    assert!(report.error.is_none());
+    assert!(report.worker_joined);
+    assert_eq!(report.draw_diagnostic_snapshots, 1);
+    assert_ne!(observed.lock().unwrap().unwrap(), caller);
+    let raw = std::fs::read(t.0.join("performance-current.json")).unwrap();
+    assert!(crate::draw_snapshot::parse(&raw).is_ok());
+}
+
+#[test]
+fn typed_queue_is_nonblocking_and_disconnection_and_bad_envelope_stay_explicit() {
+    let (tx, rx) = mpsc::sync_channel(1);
+    let mut w = Writer {
+        tx: Some(tx),
+        worker: None,
+        dropped: 0,
+    };
+    let base = || {
+        crate::draw_snapshot::base(
+            0.,
+            crate::draw_diagnostics::Page::Home,
+            false,
+            false,
+            crate::performance::Monitor::default().report(),
+        )
+    };
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    assert_eq!(w.dropped, 1);
+    drop(rx);
+    w.submit_observed(base(), crate::draw_diagnostics::Summary::default());
+    assert_eq!(w.dropped, 2);
+    let t = Temp::new();
+    let mut worker = Writer::start(&t.0).unwrap();
+    let mut bad = base();
+    bad["private_field"] = json!("x".repeat(CAP));
+    worker.submit_observed(bad, crate::draw_diagnostics::Summary::default());
+    let report = worker.finish();
+    assert!(report.worker_joined && report.error.is_some());
+    assert_eq!(report.published, 0);
+    assert_eq!(std::fs::read_dir(&t.0).unwrap().count(), 0);
+}
+
+fn observed_fixture(count: u64) -> (Value, crate::draw_diagnostics::Summary) {
+    use crate::draw_diagnostics::{Clock, Collector, Page, Phase, Probe, Timed};
+    struct ClockStep(u64);
+    impl Clock for ClockStep {
+        fn micros(&mut self) -> u64 {
+            self.0 += 1;
+            self.0
+        }
+    }
+    let mut collector = Collector::default();
+    let mut monitor = crate::performance::Monitor::default();
+    for i in 0..count {
+        let mut probe = Timed::new(ClockStep(0));
+        for phase in [Phase::Clear, Phase::Chrome, Phase::Content, Phase::Finalize] {
+            probe.cut(phase);
+        }
+        let draw = Duration::from_micros(20000 + i * 10000);
+        let at = Duration::from_millis(30 * i);
+        collector.record(
+            Some(collector.context(Page::Home)),
+            probe.finish(),
+            draw,
+            Duration::ZERO,
+            at,
+        );
+        monitor.presented(at, draw, Duration::ZERO);
+    }
+    (
+        crate::draw_snapshot::base(1., Page::Home, false, false, monitor.report()),
+        collector.summary(),
+    )
+}
+#[test]
+fn final_dropped_summary_never_qualifies_saturated_or_unpublished_tail() {
+    use std::sync::{Arc, Mutex};
+    for saturated in [false, true] {
+        let (mut old_base, mut old) = observed_fixture(1);
+        let (mut new_base, mut final_summary) = observed_fixture(2);
+        if saturated {
+            // Review-only numeric boundary, not a 240-second reachability
+            // claim. Actual Collector overflow controls are in its own tests.
+            for (base, summary) in [
+                (&mut old_base, &mut old),
+                (&mut new_base, &mut final_summary),
+            ] {
+                summary.frames_seen = u64::MAX;
+                for row in summary.top.iter_mut().flatten() {
+                    row.frame_sequence = u64::MAX;
+                    row.context.as_mut().unwrap().first_draw = false;
+                }
+                base["metrics"]["frames"] = json!(u64::MAX);
+                for key in ["draw_submission", "swap_call"] {
+                    base["metrics"][key]["samples"] = json!(u64::MAX);
+                    base["metrics"][key]["mean_ms"] = json!(
+                        if key == "draw_submission" {
+                            if summary.slow_seen == 1 {
+                                20.
+                            } else {
+                                50.
+                            }
+                        } else {
+                            0.
+                        } / u64::MAX as f64
+                    );
+                    for q in ["p50_upper_ms", "p95_upper_ms", "p99_upper_ms"] {
+                        base["metrics"][key][q] = json!(1);
+                    }
+                }
+            }
+            final_summary.saturated = true;
+        }
+        assert!(old.valid() && final_summary.valid());
+        assert_ne!(old, final_summary);
+        let t = Temp::new();
+        let (entered_tx, entered_rx) = mpsc::channel();
+        let (release_tx, release_rx) = mpsc::channel();
+        let release = Arc::new(Mutex::new(Some(release_rx)));
+        let mut writer = Writer::start_inner(
+            &t.0,
+            Some(Box::new(move |stage, _| {
+                if stage == PublishStage::AfterWrite {
+                    if let Some(rx) = release.lock().unwrap().take() {
+                        entered_tx.send(()).unwrap();
+                        rx.recv_timeout(Duration::from_secs(3)).unwrap();
+                    }
+                }
+            })),
+        )
+        .unwrap();
+        writer.submit_observed(old_base.clone(), old);
+        entered_rx.recv_timeout(Duration::from_secs(2)).unwrap();
+        writer.submit_observed(old_base, old);
+        writer.submit_observed(new_base, final_summary);
+        assert_eq!(writer.dropped, 1);
+        release_tx.send(()).unwrap();
+        let report = writer.finish();
+        assert!(report.worker_joined && !report.worker_panicked && report.error.is_none());
+        assert_eq!(report.draw_diagnostic_snapshots, 2);
+        let raw = std::fs::read(t.0.join("performance-current.json")).unwrap();
+        let saved = crate::draw_snapshot::parse(&raw).unwrap();
+        assert_eq!(saved.diagnostics(), &old);
+        assert_eq!(
+            report.draw_diagnostic_frames_published == final_summary.frames_seen,
+            saturated
+        );
+        assert!(!report.draw_diagnostics_complete(&final_summary));
+        assert!(report.draw_diagnostics_complete(&old));
+    }
+}
+#[test]
+fn genuine_final_publication_qualifies_only_unsaturated_healthy_collector() {
+    let (base, summary) = observed_fixture(2);
+    let t = Temp::new();
+    let mut writer = Writer::start(&t.0).unwrap();
+    writer.submit_observed(base, summary);
+    let mut report = writer.finish();
+    assert!(report.draw_diagnostics_complete(&summary));
+    let saved =
+        crate::draw_snapshot::parse(&std::fs::read(t.0.join("performance-current.json")).unwrap())
+            .unwrap();
+    assert_eq!(saved.diagnostics(), &summary);
+    let mut saturated = summary;
+    saturated.saturated = true;
+    assert!(!report.draw_diagnostics_complete(&saturated));
+    report.worker_joined = false;
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.worker_joined = true;
+    report.worker_panicked = true;
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.worker_panicked = false;
+    report.error = Some("Observed publication failure".into());
+    assert!(!report.draw_diagnostics_complete(&summary));
+    report.error = None;
+    report.draw_diagnostic_snapshots = 0;
+    assert!(!report.draw_diagnostics_complete(&summary));
 }

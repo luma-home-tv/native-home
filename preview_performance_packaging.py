@@ -16,4 +16,4 @@ def select(environ, *, main, target, app_id, test_identity, interactive):
       or not environ.get('NATIVE_HOME_CACHE_PRODUCER_BROKER')
       or any(k.startswith('NATIVE_HOME_') and k not in allowed for k in environ)):
         raise ValueError('Passive performance requires only ordinary interactive ARM Preview and normal cache provenance')
-    return {'schema':1,'lifetime_seconds':240,'snapshot_interval_ms':1000}
+    return {'schema':2,'lifetime_seconds':240,'snapshot_interval_ms':1000}

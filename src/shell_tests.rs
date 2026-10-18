@@ -147,11 +147,12 @@ fn home_hold_keeps_home_and_opens_shared_options_without_release_confirmation() 
     assert_eq!(focus(&s), MENU_BASE + MenuAction::ToggleFavourite.key());
     s.direction(Dir::Left);
     assert_eq!(focus(&s), MENU_BASE + MenuAction::ToggleFavourite.key());
-    assert!(s
-        .surface
-        .keys()
-        .iter()
-        .all(|key| (MENU_BASE..MENU_BASE + 5).contains(key)));
+    assert!(
+        s.surface
+            .keys()
+            .iter()
+            .all(|key| (MENU_BASE..MENU_BASE + 5).contains(key))
+    );
 }
 #[test]
 fn home_confirmed_unpin_closes_options_once_and_restores_adjacent_or_apps_link() {
@@ -327,11 +328,13 @@ fn explicitly_empty_favourites_stay_empty_after_restart() {
     assert_eq!(focus(&s), 500);
     let roundtrip: Preferences =
         serde_json::from_str(&serde_json::to_string(&prefs).unwrap()).unwrap();
-    assert!(Shell::new(fixture(), roundtrip)
-        .surface
-        .cards
-        .items
-        .is_empty());
+    assert!(
+        Shell::new(fixture(), roundtrip)
+            .surface
+            .cards
+            .items
+            .is_empty()
+    );
 }
 #[test]
 fn inputs_are_typed_separately_from_application_launches() {
@@ -383,8 +386,8 @@ fn empty_or_unregistered_catalogue_keeps_navigation_available() {
 }
 
 #[test]
-fn app_picker_restores_registered_identity_from_a_remembered_rail_without_accepting_arbitrary_targets(
-) {
+fn app_picker_restores_registered_identity_from_a_remembered_rail_without_accepting_arbitrary_targets()
+ {
     let _serial = plx_base::testlock::serial();
     let mut s = Shell::new(fixture(), Preferences::default());
     s.open(Page::Applications);
@@ -594,9 +597,11 @@ fn sound_and_network_failures_withdraw_rows_and_staleness_rebuilds_the_visible_f
     update.observed_ms = 15200;
     update.network = crate::live::Reading::Failed("Denied".into());
     shell.apply_live(&update, 15200);
-    assert!(shell.snapshot.settings["network"]
-        .iter()
-        .all(|row| !row.available));
+    assert!(
+        shell.snapshot.settings["network"]
+            .iter()
+            .all(|row| !row.available)
+    );
 }
 
 #[test]
@@ -653,11 +658,12 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
         assert_eq!(row["disabled"], true);
         assert_eq!(row["fully_visible"], true);
         assert_eq!(control_rows(&s)[index].value.as_deref(), Some(expected));
-        assert!(s
-            .surface
-            .table
-            .activate(s.surface.table.index_of(&id.to_owned()).unwrap())
-            .is_none());
+        assert!(
+            s.surface
+                .table
+                .activate(s.surface.table.index_of(&id.to_owned()).unwrap())
+                .is_none()
+        );
         tap(&mut s);
         assert!(s.take_requests().is_empty());
         assert_eq!(s.page(), Page::Sound);
@@ -680,9 +686,11 @@ fn optional_sound_rows_remain_read_only_and_legible_across_independent_failures(
     s.apply_live(&update, now + 1);
     assert_eq!(s.input.engine.current(owner), focus_before);
     assert_eq!(control_rows(&s)[1].value.as_deref(), Some("12"));
-    assert!(control_rows(&s)[5..8]
-        .iter()
-        .all(|r| r.value.as_deref() == Some("Unavailable")));
+    assert!(
+        control_rows(&s)[5..8]
+            .iter()
+            .all(|r| r.value.as_deref() == Some("Unavailable"))
+    );
     assert!(s.reading_label().contains("some readings unavailable"));
     assert!(s.focus_lg_settings());
     tap(&mut s);
@@ -725,12 +733,16 @@ fn sound_status_is_unavailable_when_fresh_optional_envelopes_contain_no_readings
             fresh.controls.get(&crate::control_reads::Section::Sound),
             Some(&200)
         );
-        assert!(shell.snapshot.settings["sound"]
-            .iter()
-            .all(|row| !row.available));
-        assert!(control_rows(&shell)
-            .iter()
-            .all(|row| row.value.as_deref() == Some("Unavailable")));
+        assert!(
+            shell.snapshot.settings["sound"]
+                .iter()
+                .all(|row| !row.available)
+        );
+        assert!(
+            control_rows(&shell)
+                .iter()
+                .all(|row| row.value.as_deref() == Some("Unavailable"))
+        );
         assert_eq!(
             shell.reading_label(),
             "Reading unavailable • last state kept"
@@ -1579,8 +1591,10 @@ fn pointer_data() -> serde_json::Value {
         .unwrap()
     {
         if d["key"] == "pointerSpeed" {
-            d["values"]["arrayExt"] = serde_json::json!(crate::pointer_speed::Speed::ALL
-                .map(|s| serde_json::json!({"value":s.wire(),"visible":true,"active":true})));
+            d["values"]["arrayExt"] = serde_json::json!(
+                crate::pointer_speed::Speed::ALL
+                    .map(|s| serde_json::json!({"value":s.wire(),"visible":true,"active":true}))
+            );
         }
     }
     raw
@@ -2040,21 +2054,25 @@ fn accessibility_help_tracks_the_actual_editor_without_changing_its_admission() 
         shell.open(page);
         let preferences = shell.preferences().clone();
         assert!(shell.status.to_str().unwrap().contains("View only"));
-        assert!(shell
-            .control_breadcrumb
-            .to_str()
-            .unwrap()
-            .contains("LG-managed"));
+        assert!(
+            shell
+                .control_breadcrumb
+                .to_str()
+                .unwrap()
+                .contains("LG-managed")
+        );
         shell.description_sample(
             Some(crate::description_level::Level::new(10).unwrap()),
             100,
             100,
         );
-        assert!(shell
-            .status
-            .to_str()
-            .unwrap()
-            .contains("Audio-description level can be adjusted"));
+        assert!(
+            shell
+                .status
+                .to_str()
+                .unwrap()
+                .contains("Audio-description level can be adjusted")
+        );
         assert_eq!(
             shell.control_breadcrumb.to_str().unwrap(),
             "Audio-description level can be adjusted here"
@@ -2072,11 +2090,13 @@ fn accessibility_help_tracks_the_actual_editor_without_changing_its_admission() 
         );
         shell.age_description(8_101);
         assert!(shell.status.to_str().unwrap().contains("View only"));
-        assert!(shell
-            .control_breadcrumb
-            .to_str()
-            .unwrap()
-            .contains("LG-managed"));
+        assert!(
+            shell
+                .control_breadcrumb
+                .to_str()
+                .unwrap()
+                .contains("LG-managed")
+        );
         let row = shell
             .surface
             .table
@@ -2126,12 +2146,16 @@ fn general_reading_header_distinguishes_partial_failed_and_expired_groups() {
             100,
         );
         shell.open(Page::General);
-        assert!(shell.snapshot.settings["general"]
-            .iter()
-            .any(|row| row.available));
-        assert!(shell.snapshot.settings["general"]
-            .iter()
-            .any(|row| !row.available));
+        assert!(
+            shell.snapshot.settings["general"]
+                .iter()
+                .any(|row| row.available)
+        );
+        assert!(
+            shell.snapshot.settings["general"]
+                .iter()
+                .any(|row| !row.available)
+        );
         assert_eq!(
             shell.reading_label(),
             if simulated {
@@ -2152,9 +2176,11 @@ fn general_reading_header_distinguishes_partial_failed_and_expired_groups() {
             &crate::live::parse(&raw, "com.example.self", 15_200, simulated),
             15_200,
         );
-        assert!(shell.snapshot.settings["general"]
-            .iter()
-            .all(|row| !row.available));
+        assert!(
+            shell.snapshot.settings["general"]
+                .iter()
+                .all(|row| !row.available)
+        );
         assert_eq!(
             shell.reading_label(),
             "Reading unavailable • last state kept"
@@ -2173,9 +2199,11 @@ fn accessibility_reading_header_withdraws_failed_optional_caption_and_legacy_gro
             100,
         );
         shell.open(Page::Accessibility);
-        assert!(shell.snapshot.settings["accessibility"]
-            .iter()
-            .any(|row| row.available));
+        assert!(
+            shell.snapshot.settings["accessibility"]
+                .iter()
+                .any(|row| row.available)
+        );
         assert!(
             !shell.snapshot.settings["accessibility"]
                 .last()
@@ -2188,9 +2216,11 @@ fn accessibility_reading_header_withdraws_failed_optional_caption_and_legacy_gro
             &crate::live::parse(&raw, "com.example.self", 200, simulated),
             200,
         );
-        assert!(shell.snapshot.settings["accessibility"]
-            .iter()
-            .all(|row| !row.available));
+        assert!(
+            shell.snapshot.settings["accessibility"]
+                .iter()
+                .all(|row| !row.available)
+        );
         assert_eq!(
             shell.reading_label(),
             "Reading unavailable • last state kept"
@@ -3270,4 +3300,188 @@ fn named_task_focus_survives_new_native_readout_and_never_becomes_an_editor() {
         vec![Action::OpenLgSettingsSection(SettingsSection::General)]
     );
     assert!(!s.take_preferences_changed());
+}
+
+#[test]
+fn observed_and_noop_renderer_have_identical_painter_and_hit_state_trace() {
+    use crate::draw_diagnostics::{Clock, Phase, Probe, Timed};
+    use std::{cell::Cell, rc::Rc};
+    let _serial = plx_base::testlock::serial();
+    struct FakeClock(Rc<Cell<u64>>);
+    impl Clock for FakeClock {
+        fn micros(&mut self) -> u64 {
+            let n = self.0.get();
+            self.0.set(n + 1);
+            n
+        }
+    }
+    struct Trace<P> {
+        inner: P,
+        cuts: Vec<Phase>,
+    }
+    impl<P: Probe> Probe for Trace<P> {
+        fn cut(&mut self, p: Phase) {
+            self.cuts.push(p);
+            self.inner.cut(p);
+        }
+    }
+    #[derive(Clone, Copy, Debug)]
+    enum Scene {
+        Page(Page),
+        HomeMenu,
+        RestoredBookmark,
+        GuideForm,
+    }
+    for scene in [
+        Scene::Page(Page::Home),
+        Scene::Page(Page::Applications),
+        Scene::Page(Page::Inputs),
+        Scene::Page(Page::Controls),
+        Scene::HomeMenu,
+        Scene::RestoredBookmark,
+        Scene::GuideForm,
+    ] {
+        let mut normal = Shell::new(fixture(), Preferences::default());
+        let mut observed = Shell::new(fixture(), Preferences::default());
+        for shell in [&mut normal, &mut observed] {
+            // Discard only the constructor's expected initial seed notification.
+            shell.take_preferences_changed();
+            match scene {
+                Scene::Page(page) => shell.rebuild(page),
+                Scene::HomeMenu => {
+                    assert!(shell.focus_application("com.example.app03"));
+                    shell.press(true, PressFrom::Key);
+                    for ms in (0..=800).step_by(16) {
+                        shell.tick(ms, 0.016);
+                        shell.repeat();
+                    }
+                    shell.press(false, PressFrom::Key);
+                    for ms in (816..1200).step_by(16) {
+                        shell.tick(ms, 0.016);
+                    }
+                    assert_eq!(shell.page(), Page::Home);
+                    assert_eq!(shell.menu_application(), Some("com.example.app03"));
+                    // The deliberate hold records the card once; rendering must not.
+                    assert_eq!(
+                        shell.take_home_focus_changed().as_deref(),
+                        Some("com.example.app03")
+                    );
+                }
+                Scene::RestoredBookmark => {
+                    assert!(shell.restore_home_focus("com.example.app03"));
+                    assert_eq!(shell.page(), Page::Home);
+                    assert_eq!(shell.focused_item().as_deref(), Some("com.example.app03"));
+                    assert!(!shell.home_focus_restore_pending());
+                }
+                Scene::GuideForm => {
+                    shell.open(Page::General);
+                    shell.focus_special(TABLE_BASE + 1704, GroupId(1));
+                    tap(shell);
+                    assert_eq!(shell.control_category(), Some(Page::General));
+                    assert_eq!(focus(shell), TABLE_BASE + 1704);
+                }
+            }
+            if !matches!(scene, Scene::HomeMenu) {
+                settle(shell, 100);
+            }
+            assert!(
+                !shell.take_preferences_changed(),
+                "setup changed favourites: {scene:?}"
+            );
+            assert!(shell.take_home_focus_changed().is_none());
+            assert!(shell.take_requests().is_empty());
+        }
+        let preferences = normal.preferences().clone();
+        let focused = normal.focused_item();
+        let menu = normal.menu_application().map(str::to_owned);
+        let before = normal.presentation_probe();
+        assert_eq!(before, observed.presentation_probe());
+        let plain = plx_ui::draw_census::capture(|| {
+            plx_gfx::gfx::without_frame_clear(|| {
+                plx_ui::screen::record_stops_while_recording(|| {
+                    plx_ui::record_walk(|| normal.draw())
+                })
+            })
+        });
+        let reads = Rc::new(Cell::new(0));
+        let mut probe = Trace {
+            inner: Timed::new(FakeClock(reads.clone())),
+            cuts: Vec::new(),
+        };
+        let seen = plx_ui::draw_census::capture(|| {
+            plx_gfx::gfx::without_frame_clear(|| {
+                plx_ui::screen::record_stops_while_recording(|| {
+                    plx_ui::record_walk(|| observed.draw_observed(&mut probe))
+                })
+            })
+        });
+        assert_eq!(plain, seen);
+        assert!(!plain.is_empty());
+        assert_eq!(normal.presentation_probe(), observed.presentation_probe());
+        let hit_state = |shell: &Shell| {
+            shell
+                .input
+                .hit
+                .front()
+                .iter()
+                .map(|stop| {
+                    let rect = stop.rect;
+                    let rest = stop.rest_rect;
+                    let clip = stop.clip;
+                    (
+                        stop.key,
+                        [
+                            rect.x, rect.y, rect.w, rect.h, rest.x, rest.y, rest.w, rest.h, clip.x,
+                            clip.y, clip.w, clip.h,
+                        ]
+                        .map(f32::to_bits),
+                        stop.hover,
+                        stop.activate,
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let normal_hits = hit_state(&normal);
+        assert!(
+            !normal_hits.is_empty(),
+            "recording omitted hit stops: {scene:?}"
+        );
+        assert_eq!(
+            normal_hits,
+            hit_state(&observed),
+            "draw changed ordered hit stops: {scene:?}"
+        );
+        assert_eq!(
+            probe.cuts,
+            [Phase::Clear, Phase::Chrome, Phase::Content, Phase::Finalize]
+        );
+        assert_eq!(reads.get(), 5);
+        let _ = probe.inner.finish();
+        for shell in [&mut normal, &mut observed] {
+            assert_eq!(
+                shell.preferences(),
+                &preferences,
+                "draw changed favourites: {scene:?}"
+            );
+            assert_eq!(
+                shell.focused_item(),
+                focused,
+                "draw changed focus: {scene:?}"
+            );
+            assert_eq!(shell.menu_application(), menu.as_deref());
+            assert!(
+                !shell.take_preferences_changed(),
+                "draw queued favourites: {scene:?}"
+            );
+            assert!(
+                shell.take_home_focus_changed().is_none(),
+                "draw queued bookmark: {scene:?}"
+            );
+            assert!(
+                shell.take_requests().is_empty(),
+                "draw queued action: {scene:?}"
+            );
+            assert!(!shell.should_exit());
+        }
+    }
 }
