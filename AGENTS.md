@@ -83,6 +83,14 @@ full C2 Proof: an invalid early app-path fragment can hide a later valid alias.
 Hold both future native admissions until corrected versions are independently
 reviewed. This is a synthetic actual-method counterexample, not native input or
 device harm. Preserve earlier finite reviews and the new failure separately.
+Corrected normal-v3 source74095515 and Proof-v2 sourcef91dc2fd now pass
+independent focused source review (21/19 groups) plus Root17+17 alias/limit
+replays with343/436 bindings unchanged. All qualified occurrences are enumerated
+under explicit table/row/target/match/root bounds; original counterexamples
+refuse. These new sources supersede the old admission hold only at source level:
+no dates/lease/native authority follows. Normal selected drift still permits
+only guarded own closure and retains HOLD; no cleanup/release authority is
+inferred. The separate final-only coordinator closeout remains unreviewed.
 
 PR#9 (`codex/public-icon-reader`, functional092a304, published docs d78f3f6)
 is a standalone Root-admin

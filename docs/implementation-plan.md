@@ -101,6 +101,18 @@ review. The counterexample is synthetic source evidence; no native dispatch or
 device effect was demonstrated. Preserve the earlier finite reviews and failed
 counterexample rather than treating their passing fixtures as broad proof.
 
+Corrected normal v3 (`74095515`) and disposable Proof v2 (`f91dc2fd`) now pass
+independent source review. They enumerate every boundary-qualified app-path
+occurrence, retain raw row order/duplicates and refuse overflow rather than
+truncate: table1MiB, row8192B, target4096B,4096 occurrences and64 roots. The
+previous actual-method counterexamples now refuse. Author suites pass49/48
+groups, independent focused checks pass21/19, and two fresh coordinator replays
+pass17 alias/limit groups each with343/436 original bindings unchanged.
+These are source/host results. Only the new versions may be considered for a
+fresh native scope; neither is dated or admitted. Normal selected-drift closure
+remains distinct from cleanup/lease release, and the final-only coordination
+companion still needs separate review. No TV test follows automatically.
+
 The separate [public icon reader foundation](public-icon-reader-foundation.md)
 now has a frozen source commit and draft PR9, strict/sanitised host checks,
 independent source/host review, coordinator replay and an actual ARM build.
