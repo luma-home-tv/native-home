@@ -74,8 +74,24 @@ A separate [Controls label candidate](https://github.com/luma-home-tv/native-hom
 now fixes editor-readiness help, LG-opening status and partial General/Accessibility
 headers. Its69 Shell tests, strict host Clippy, pinned-framework check and
 independent source review pass. It also records the current source inventory
-and remaining control-centre gaps. No ARM package, TV deployment or new setter
-is included; it does not change the retained test executable.
+and remaining control-centre gaps. The actual ARM UI build now passes at
+functional source `1f75701f7f8760ad839ae626f2b1119b5dabebe6`, producing ELF
+`8f06c1a689667e7168066740a8ab70c3b2ad83081558aa9d311f2f3f6d5f419a`.
+Independent local review and byte-identical coordinator replay bind all143
+selected source inputs and find no new direct dependencies or imports against
+the retained UI (11 libraries,223 complete symbol/version/type/binding tuples).
+This is direct ABI evidence, not transitive loading or native rendering proof.
+No ARM package, TV deployment or new setter is included; it does not change the
+retained test executable.
+
+The complete C2 disposable favourites carrier has passed independent source
+review, including terminal-known mode refusal and separately guarded inert
+removal. Native admission and physical favourites/restart remain open. The
+separate no-install normal C2 smoke is still under review: its first proposal
+inherited a G2-only SDK mount exception and must be corrected before admission.
+Normal startup can initialize state before observation if its native view
+allows it; this must not be described as an inert read-only permission probe.
+Neither workflow authorizes permission repair.
 
 The current delivery target is a responsive native Home dashboard for both
 authorised G2 and C2 TVs on webOS24. C2 is the current physical-test target.

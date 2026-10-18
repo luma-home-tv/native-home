@@ -69,7 +69,15 @@ PR#8 (`codex/controls-label-clarity`, functional1f75701) is a separate undeploye
 Controls label/source-inventory candidate. Its69 Shell tests, strict host Clippy,
 unchanged pinned framework and independent source review pass. It adds no setter
 or permission and does not change either retained3ce executable or the current
-Proof artifact. ARM/native visual qualification remains separate.
+Proof artifact. Actual ARM UI build8f06 at1f75701 now passes, with independent
+143-input/source/compiler-receipt and direct ABI review plus byte-identical Root
+replay (11NEEDED/223 full import tuples, none new against retained3ce). No package,
+target execution, transitive loader or native visual qualification follows.
+The complete C2 disposable Proof carrier passes independent source review but
+has no native admission. The first separate no-install C2 normal proposal retains
+a G2-only mount exception and is blocked pending a new corrected source review.
+Normal startup may initialize state before its native view is observed; do not
+call it an inert read-only permissions selector or infer repair authority.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;
