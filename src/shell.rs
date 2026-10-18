@@ -1459,12 +1459,15 @@ impl Shell {
                     .map(Vec::as_slice)
                     .unwrap_or(&[]);
                 self.surface.table.set(
-                    controls_form_with_numeric(
-                        settings,
-                        &self.snapshot.context,
+                    crate::control_tasks::with_task_guides(
+                        controls_form_with_numeric(
+                            settings,
+                            &self.snapshot.context,
+                            SettingsSection::from_page(detail),
+                            self.pointer_value().is_some() && !self.pointer_pending,
+                            self.description_value(),
+                        ),
                         SettingsSection::from_page(detail),
-                        self.pointer_value().is_some() && !self.pointer_pending,
-                        self.description_value(),
                     ),
                     None,
                 );
