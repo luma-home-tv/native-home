@@ -30,6 +30,7 @@ pub struct ReaderContract {
     cargo_semantics_sha256: String,
     native_build_selection_sha256: String,
     record_parser_sha256: String,
+    maintenance_planner_sha256: String,
     file_reader_sha256: String,
     decoder_policy_sha256: String,
     cargo_lock_sha256: String,
@@ -54,6 +55,7 @@ impl ReaderContract {
             cargo_semantics_sha256: env!("LUMA_CACHE_CARGO_SEMANTICS_SHA256").into(),
             native_build_selection_sha256: env!("LUMA_CACHE_NATIVE_BUILD_SELECTION_SHA256").into(),
             record_parser_sha256: hex(include_bytes!("durable_icon_cache.rs")),
+            maintenance_planner_sha256: hex(include_bytes!("durable_icon_cache_maintenance.rs")),
             file_reader_sha256: hex(include_bytes!("packaged_icon_reader.rs")),
             decoder_policy_sha256: hex(include_bytes!("icon_decode.rs")),
             cargo_lock_sha256: hex(include_bytes!("../Cargo.lock")),
@@ -190,6 +192,16 @@ fn parse(raw: &[u8], actual_ui: &str) -> io::Result<ReadExpectation> {
         Some(raw),
         record.reader_contract,
     ))
+}
+
+/// Pure inspection for ordinary retention planning only. This exposes no
+/// ReadExpectation, publisher, Root/session/Ticket or filesystem authority.
+#[cfg(any(target_arch = "arm", test))]
+pub(crate) fn inspect_for_maintenance(raw: &[u8], actual_ui: &str) -> io::Result<ProducerVersion> {
+    if raw.is_empty() || raw.len() as u64 > LIMIT {
+        return Err(invalid("Bounded maintenance selector bytes"));
+    }
+    parse(raw, actual_ui).map(|expected| expected.into_parts().0)
 }
 
 #[cfg(any(target_arch = "arm", test))]

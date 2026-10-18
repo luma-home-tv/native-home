@@ -1055,3 +1055,286 @@ fn deferred_evicted_and_withdrawn_cache_entries_have_no_origin_receipt() {
     h.icons.update_sources(None).unwrap();
     assert!(h.icons.current_cached_source(second_id).is_none()); // Before any GL cleanup/poll.
 }
+
+// The worker-local loader deliberately contains Rc: only its small exit payload,
+// never the loader/controller/GL backend, crosses the join boundary.
+struct HandoffLoader {
+    inner: CacheLoader,
+    hold: Arc<AtomicBool>,
+    held: SyncSender<()>,
+    release: Receiver<()>,
+    takes: Arc<AtomicU64>,
+    panic_after_decode: bool,
+    owner: thread::ThreadId,
+    events: Arc<Mutex<Vec<&'static str>>>,
+    _worker_local: Rc<()>,
+}
+impl HandoffLoader {
+    fn after_decode(&self) {
+        if self.hold.swap(false, Ordering::AcqRel) {
+            self.held.send(()).unwrap();
+            self.release.recv_timeout(WAIT).unwrap();
+            assert!(
+                !self.panic_after_decode,
+                "Controlled held-cache worker panic"
+            );
+        }
+    }
+}
+impl Loader for HandoffLoader {
+    fn adopt(&mut self) -> io::Result<Adoption> {
+        self.inner.adopt()
+    }
+    fn decode(&mut self, path: &RelativeIconPath) -> io::Result<DecodedIcon> {
+        let image = self.inner.decode(path)?;
+        self.after_decode();
+        Ok(image)
+    }
+    fn decode_cached(
+        &mut self,
+        snapshot: &Snapshot,
+        demand: disk::Demand,
+    ) -> io::Result<CachedIcon> {
+        let image = self.inner.decode_cached(snapshot, demand)?;
+        self.after_decode();
+        Ok(image)
+    }
+    fn take_cache(&mut self) -> Option<disk::Cache> {
+        self.takes.fetch_add(1, Ordering::Relaxed);
+        self.inner.take_cache()
+    }
+}
+impl Drop for HandoffLoader {
+    fn drop(&mut self) {
+        assert_eq!(self.owner, thread::current().id());
+        self.events
+            .lock()
+            .unwrap()
+            .push(if self.inner.cache.is_some() {
+                "loader_drop_with_cache"
+            } else {
+                "loader_drop_without_cache"
+            });
+    }
+}
+struct HandoffHarness {
+    icons: PackagedIcons<Backend>,
+    snapshot: Arc<Snapshot>,
+    held: Receiver<()>,
+    release: SyncSender<()>,
+    takes: Arc<AtomicU64>,
+    events: Arc<Mutex<Vec<&'static str>>>,
+    gl: Rc<RefCell<GlState>>,
+}
+impl HandoffHarness {
+    fn new(files: &Files, hold_decode: bool, panic_after_decode: bool) -> Self {
+        let (snapshot_tx, snapshot_rx) = mpsc::sync_channel(1);
+        let (held_tx, held) = mpsc::sync_channel(1);
+        let (release, release_rx) = mpsc::sync_channel(1);
+        let takes = Arc::new(AtomicU64::new(0));
+        let worker_takes = takes.clone();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let worker_events = events.clone();
+        let gl = Rc::new(RefCell::new(GlState::default()));
+        let backend = Backend {
+            state: gl.clone(),
+            owner: thread::current().id(),
+            events: events.clone(),
+        };
+        let parent = files.parent.clone();
+        let assets = files.assets.clone();
+        let mut icons = PackagedIcons::start_using(
+            Bindings::new(),
+            backend,
+            (MAX_TEXTURES, MAX_TEXTURE_BYTES),
+            move || {
+                let cache =
+                    disk::Cache::open_test_directory(File::open(parent)?, disk::Config::default())?;
+                snapshot_tx.send(Arc::new(cache.snapshot()?)).unwrap();
+                Ok(HandoffLoader {
+                    inner: CacheLoader {
+                        cache: Some(cache),
+                        packaged: PackagedIconReader::from_directory(File::open(assets)?)?,
+                        producer: Some(producer()),
+                        association: None,
+                    },
+                    hold: Arc::new(AtomicBool::new(hold_decode)),
+                    held: held_tx,
+                    release: release_rx,
+                    takes: worker_takes,
+                    panic_after_decode,
+                    owner: thread::current().id(),
+                    events: worker_events,
+                    _worker_local: Rc::new(()),
+                })
+            },
+        )
+        .unwrap();
+        icons.cache = Some(CacheMode {
+            expected: ExpectedPolicy::Supplied(producer()),
+            producer: None,
+            sources: BTreeMap::new(),
+            snapshot: None,
+            selected: BTreeMap::new(),
+            failed: BTreeSet::new(),
+            request: 0,
+            adopting: None,
+            refresh: false,
+        });
+        Self {
+            icons,
+            snapshot: snapshot_rx.recv_timeout(WAIT).unwrap(),
+            held,
+            release,
+            takes,
+            events,
+            gl,
+        }
+    }
+    fn await_held_decode(&mut self, map: &SourceMap) {
+        self.icons.update_sources(Some(map)).unwrap();
+        let end = Instant::now() + WAIT;
+        loop {
+            self.icons.frame(&[ID], true);
+            if self.held.try_recv().is_ok() {
+                return;
+            }
+            assert!(Instant::now() < end, "Real decode did not reach the hold");
+            thread::yield_now();
+        }
+    }
+}
+#[test]
+fn cache_handoff_requires_real_join_after_adopt_and_blocked_decode() {
+    let mut files = Files::new();
+    let map = sources("1", "icon.png", IconKind::Icon);
+    files.publish(source(&map), 70);
+    let mut h = HandoffHarness::new(&files, true, false);
+    h.await_held_decode(&map);
+    assert!(h.icons.stats().cache_adoptions > 0);
+    let generation = h
+        .icons
+        .cache
+        .as_ref()
+        .unwrap()
+        .snapshot
+        .as_ref()
+        .unwrap()
+        .generation();
+    assert!(generation.current());
+    let abandoned = h.icons.pending.as_ref().unwrap().abandoned.clone();
+    let epoch = h.icons.epoch;
+    let pending_join = h.icons.begin_shutdown(true).unwrap();
+    assert!(!generation.current());
+    assert!(abandoned.load(Ordering::Acquire));
+    assert_ne!(h.icons.epoch, epoch);
+    assert!(h.icons.closed && h.icons.pending.is_none() && h.icons.ready.is_none());
+    assert!(!h.icons.finish().worker_joined); // Stop/drain is never a join receipt.
+    assert_eq!(h.takes.load(Ordering::Relaxed), 0);
+    assert!(h.icons.begin_shutdown(true).is_none());
+    let (joined_tx, joined_rx) = mpsc::sync_channel(1);
+    let supervisor = thread::spawn(move || {
+        let _ = joined_tx.send(pending_join.join());
+    });
+    assert!(joined_rx.recv_timeout(Duration::from_millis(20)).is_err());
+    h.release.send(()).unwrap();
+    let outcome = joined_rx.recv_timeout(WAIT).unwrap();
+    supervisor.join().unwrap();
+    assert!(!outcome.panicked);
+    let returned = outcome
+        .cache
+        .expect("Original cache after actual join")
+        .cache;
+    assert_eq!(h.takes.load(Ordering::Relaxed), 1);
+    assert!(returned.shares_snapshot_root_for_test(&h.snapshot));
+    let reopened = disk::Cache::open_test_directory(
+        File::open(&files.parent).unwrap(),
+        disk::Config::default(),
+    )
+    .unwrap();
+    assert!(!reopened.shares_snapshot_root_for_test(&h.snapshot));
+    assert!(h.gl.borrow().pixels.is_empty()); // Late real pixels were not admitted.
+    assert_eq!(*h.events.lock().unwrap(), ["loader_drop_without_cache"]);
+}
+#[test]
+fn default_finish_drops_original_cache_on_worker_without_handoff() {
+    let files = Files::new();
+    let mut h = HandoffHarness::new(&files, false, false);
+    let done = h.icons.finish();
+    assert!(done.worker_joined && !done.worker_panicked);
+    assert_eq!(h.takes.load(Ordering::Relaxed), 0);
+    assert_eq!(*h.events.lock().unwrap(), ["loader_drop_with_cache"]);
+    assert!(h.icons.begin_shutdown(true).is_none());
+}
+#[test]
+fn panicked_real_cache_worker_join_never_returns_cache_ownership() {
+    let mut files = Files::new();
+    let map = sources("1", "icon.png", IconKind::Icon);
+    files.publish(source(&map), 70);
+    let mut h = HandoffHarness::new(&files, true, true);
+    h.await_held_decode(&map);
+    let pending = h.icons.begin_shutdown(true).unwrap();
+    h.release.send(()).unwrap();
+    let outcome = pending.join();
+    assert!(outcome.panicked && outcome.cache.is_none());
+    assert_eq!(h.takes.load(Ordering::Relaxed), 0);
+    assert_eq!(*h.events.lock().unwrap(), ["loader_drop_with_cache"]);
+    assert!(h.gl.borrow().pixels.is_empty());
+}
+#[test]
+fn failed_loader_or_package_only_worker_has_no_joined_cache() {
+    let files = Files::new();
+    for factory_fails in [false, true] {
+        let assets = files.assets.clone();
+        let gl = Rc::new(RefCell::new(GlState::default()));
+        let mut icons = PackagedIcons::start_using(
+            Bindings::new(),
+            Backend {
+                state: gl,
+                owner: thread::current().id(),
+                events: Arc::new(Mutex::new(Vec::new())),
+            },
+            (MAX_TEXTURES, MAX_TEXTURE_BYTES),
+            move || {
+                if factory_fails {
+                    Err(io::Error::other("Controlled cache factory failure"))
+                } else {
+                    PackagedIconReader::from_directory(File::open(assets)?)
+                }
+            },
+        )
+        .unwrap();
+        let outcome = icons.begin_shutdown(true).unwrap().join();
+        assert!(!outcome.panicked && outcome.cache.is_none());
+        assert!(icons.begin_shutdown(true).is_none());
+    }
+}
+#[test]
+fn cache_handoff_deletes_owned_gl_on_controller_before_supervisor_join() {
+    let mut files = Files::new();
+    let map = sources("1", "icon.png", IconKind::Icon);
+    files.publish(source(&map), 70);
+    let mut h = HandoffHarness::new(&files, false, false);
+    h.icons.update_sources(Some(&map)).unwrap();
+    let end = Instant::now() + WAIT;
+    while h.icons.texture(ID).is_none() {
+        h.icons.frame(&[ID], true);
+        assert!(Instant::now() < end);
+        thread::yield_now();
+    }
+    assert_eq!(h.gl.borrow().live.len(), 1);
+    let pending = h.icons.begin_shutdown(true).unwrap();
+    assert!(h.gl.borrow().live.is_empty());
+    assert_eq!(&h.events.lock().unwrap()[..2], ["upload", "delete"]);
+    let outcome = thread::spawn(move || pending.join()).join().unwrap();
+    assert!(!outcome.panicked);
+    assert!(outcome
+        .cache
+        .unwrap()
+        .cache
+        .shares_snapshot_root_for_test(&h.snapshot));
+    assert_eq!(
+        *h.events.lock().unwrap(),
+        ["upload", "delete", "loader_drop_without_cache"]
+    );
+}
