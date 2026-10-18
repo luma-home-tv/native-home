@@ -57,10 +57,19 @@ state preservation, complete32 body reads, sampled Core5+19/source-map agreement
 and known lease/agent closure. Its rejected source predecessor's two-tree
 ownership-classification counterexamples remain preserved. Four measured paths
 were absent, but the jailed runtime alias was not measured; no future absence,
-native private-store or namespace authority transfers. Saved-data review is
-pending. The screensaver/other-app context was ineligible for an app test; no
+native private-store or namespace authority transfers. Independent saved-data
+audit and byte-identical Root replay pass with1,339 bound inputs and1,327
+original files unchanged; preserve the initial saved-reader constant-adapter
+failure. No separate final bundle rehash or full mount-table comparison occurred.
+The screensaver/other-app context was ineligible for an app test; no
 launch/input/package/permission change followed. Continue the separate C2 Proof
 adaptation with fresh baseline/scene/lease and its own strict private-state gates.
+
+PR#8 (`codex/controls-label-clarity`, functional1f75701) is a separate undeployed
+Controls label/source-inventory candidate. Its69 Shell tests, strict host Clippy,
+unchanged pinned framework and independent source review pass. It adds no setter
+or permission and does not change either retained3ce executable or the current
+Proof artifact. ARM/native visual qualification remains separate.
 
 The user has now resumed this goal. `docs/implementation-plan.md` gives the
 current delivery order: retained-current G2 smoke; isolated favourites/restart;

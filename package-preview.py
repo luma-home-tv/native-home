@@ -447,7 +447,18 @@ if preferences_migration_proof:
     marker_path.write_text(json.dumps(preferences_migration_marker, separators=(',', ':')) + '\n')
     marker_path.chmod(0o644)
 if main == 'home-preview' and not preferences_migration_proof:
-    assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).resolve()
+    assets = Path(os.environ['NATIVE_HOME_SNAPSHOT_ASSETS']).absolute()
+    acquired_assets = None
+    acquisition_receipt_sha256 = None
+    acquisition_path = os.environ.get('NATIVE_HOME_ICON_ACQUISITION')
+    acquisition_pin = os.environ.get('NATIVE_HOME_ICON_ACQUISITION_SHA256')
+    from icon_acquisition import acquisition_receipt_present
+    if acquisition_path is not None or acquisition_pin is not None or acquisition_receipt_present(assets):
+        from icon_acquisition import package_assets
+        if acquisition_path is None or acquisition_pin is None:
+            raise ValueError('Acquisition assets require explicit receipt path and SHA256')
+        acquired_assets = package_assets(assets, acquisition_path, acquisition_pin)
+        acquisition_receipt_sha256 = acquired_assets[2]
     if broker_startup_marker is not None:
         marker_path=stage/'broker-startup-proof.json'
         marker_path.write_text(json.dumps(broker_startup_marker,separators=(',',':'))+'\n')
@@ -504,10 +515,11 @@ if main == 'home-preview' and not preferences_migration_proof:
         (stage / 'management-proof.json').write_text('{}\n')
     if os.environ.get('NATIVE_HOME_DRAWER_PROBE') == '1':
         (stage / 'drawer-proof.json').write_text('{}\n')
-    snapshot = json.loads((assets / 'snapshot.json').read_text())
+    snapshot_bytes = acquired_assets[0] if acquired_assets is not None else (assets / 'snapshot.json').read_bytes()
+    snapshot = json.loads(snapshot_bytes)
     if closed_negative_artwork_proof and (type(snapshot) is not dict or snapshot.get('applications') != []):
         raise ValueError('Closed-negative artwork requires an empty packaged catalogue; its fixed Target source must be live')
-    shutil.copy2(assets / 'snapshot.json', stage / 'snapshot.json')
+    (stage / 'snapshot.json').write_bytes(snapshot_bytes)
     (stage / 'snapshot.json').chmod(0o644)
     if os.environ.get('NATIVE_HOME_LAUNCH_PROOF') == '1':
         (stage / 'launch-proof.json').write_text(json.dumps({'kind':'Application','id':'com.ash.nativehome.targetproof'})+'\n')
@@ -564,18 +576,22 @@ if main == 'home-preview' and not preferences_migration_proof:
         marker_path.chmod(0o644)
     if sound_read_proof:
         (stage / 'sound-read-proof.json').write_text('{}\n')
-    for app in snapshot['applications']:
-        icon_path = app.get('icon')
-        if not icon_path: continue
-        relative = Path(icon_path)
-        if relative.is_absolute() or len(relative.parts) != 2 or relative.parts[0] != 'icons' or '..' in relative.parts:
-            raise ValueError('Unexpected icon path')
-        source = assets / relative
-        if source.is_symlink() or source.stat().st_size > 1024 * 1024:
-            raise ValueError('Unsafe icon asset')
-        (stage / 'icons').mkdir(exist_ok=True)
-        shutil.copy2(source, stage / relative)
-        (stage / relative).chmod(0o644)
+    if acquired_assets is not None:
+        from icon_acquisition import stage_package_icons
+        stage_package_icons(stage, acquired_assets[1])
+    else:
+        for app in snapshot['applications']:
+            icon_path = app.get('icon')
+            if not icon_path: continue
+            relative = Path(icon_path)
+            if relative.is_absolute() or len(relative.parts) != 2 or relative.parts[0] != 'icons' or '..' in relative.parts:
+                raise ValueError('Unexpected icon path')
+            source = assets / relative
+            if source.is_symlink() or source.stat().st_size > 1024 * 1024:
+                raise ValueError('Unsafe icon asset')
+            (stage / 'icons').mkdir(exist_ok=True)
+            shutil.copy2(source, stage / relative)
+            (stage / relative).chmod(0o644)
 
 if preferences_migration_proof and {p.name for p in stage.iterdir() if p.is_file() and not p.is_symlink()} != {
         'appinfo.json', 'home-preview', 'icon.png', 'preferences-migration-proof.json'}:
@@ -633,6 +649,7 @@ subprocess.run([str(ar), 'rc', str(ipk), 'debian-binary', 'control.tar.gz', 'dat
 members = subprocess.check_output([str(ar), 't', str(ipk)], text=True).splitlines()
 if members != ['debian-binary', 'control.tar.gz', 'data.tar.gz']: raise RuntimeError('Invalid IPK members')
 receipt = {'app_id': app_id, 'ipk': str(ipk), 'sha256': hashlib.sha256(ipk.read_bytes()).hexdigest(),
+           **({'icon_acquisition_receipt_sha256': acquisition_receipt_sha256} if main == 'home-preview' and not preferences_migration_proof and acquisition_receipt_sha256 is not None else {}),
            'build_receipt_sha256': build_receipt_sha256,
            'build_source_revision': build_receipt['git_revision'],
            'framework': build_receipt['snapshot']['framework'],
