@@ -11,6 +11,26 @@ The earlier combined prototype is preserved in
 [native-home-prototype-history](https://github.com/luma-home-tv/native-home-prototype-history)
 as an attributed PlxNative fork. It is historical reference; development continues here.
 
+## Current delivery status
+
+Both authorised TVs last received normal 0.61.0 from functional source
+`d2215d5d8761fe385ae7ae3dd76ab173793c5bb8`, recorded in the
+[retained deployment checkpoint](docs/retained-preview-pause-checkpoint.md).
+Installation and saved-state preservation are separate from runtime qualification;
+the [current G2 smoke](docs/retained-current-g2-smoke.md) does not qualify C2.
+Fresh device, ownership and state baselines are required before another test.
+
+[Draft PR14](https://github.com/luma-home-tv/native-home/pull/14) combines explicit
+Home app options, focus across launches, LG-managed task guides and offline icon
+tooling. Its matching host checks, ARM build and isolated package review pass;
+it has not been deployed. See the [combined candidate](docs/home-beta-integration.md)
+and [delivery plan](docs/implementation-plan.md) for remaining native checks.
+The full dashboard goal remains incomplete. Retained installations and favourites
+must be preserved; normal Root artwork stays off.
+
+The component records below retain their historical versions and scopes. Their
+earlier installation and rollback statements do not supersede this checkpoint.
+
 ## PlxNative framework dependency
 
 Luma Home builds on the research and engineering of
@@ -75,7 +95,7 @@ application files, but those files are neither tracked here nor application
 dependencies. A future upstream framework release could remove this checkout
 and build-script coupling.
 
-Current retained normal deliveries are [G2 0.61](docs/g2-retained-preview061.md)
+Earlier retained normal deliveries were [G2 0.61](docs/g2-retained-preview061.md)
 and [C2 0.48](docs/c2-retained-preview-048.md), each with its own resources,
 saved preferences and native-session device evidence. The C2 trial omitted
 Search/IME. Normal Root artwork remains off. The separate
@@ -318,10 +338,10 @@ card. This is app-local idle behaviour, not a replacement for LG's OLED protecti
 Normal packages make no household screenshots; session capture requires a
 separate, explicit development proof flag. Host interactive mode uses `--session`.
 The [interactive preview guide](docs/interactive-preview.md) describes navigation,
-package modes and removal. The OLED55G26LA G2 retains the
+package modes and removal. The historical OLED55G26LA G2
 [Settings-lifecycle 0.61.0 delivery](docs/g2-retained-settings-lifecycle-061.md)
-from source f5, with the new executable and producer association. Its ordinary
-cache now holds two 24-entry producer generations for the same supplied catalogue.
+used source f5, with its executable and producer association. Its ordinary
+cache then held two 24-entry producer generations for the same supplied catalogue.
 The earlier source167 diagnostic-branch executable passed
 the 24-card/six-category tour, two empty LG keyboard cycles, black idle/wake and
 natural exit, with original preferences and sampled Core preserved in the
@@ -331,9 +351,9 @@ verifies one same-process LG Picture return and usable post-return navigation,
 followed by old-build restoration. A separate fresh Home/Apps/Home/Back scope then
 retained the matching new build, with independently replayed state preservation
 and temporary cleanup. Earlier failed scopes and saved-reader corrections remain
-recorded. Future rollback uses the current f5 bundle/IPK and private state/cache48;
-the former executable is historical. Physical input, performance and the wider
-dashboard goal remain open.
+recorded. That campaign used the f5 bundle/IPK and private state/cache48.
+Future rollback must use a fresh actual retained baseline. Physical input,
+performance and the wider dashboard goal remain open.
 The [compatible ordinary artwork reader](docs/cache-consumer-compatibility.md)
 has passed source checks, matching ARM builds and independent local package/ABI
 review. Native selector and preservation acceptance remain pending; this source
@@ -344,8 +364,8 @@ direct SDK ABI checks. Both private packages pass their complete archive/payload
 comparison, with the diagnostic marker as their only payload difference. Native
 measurement remains pending; earlier isolated-profile numbers do not establish
 its performance.
-The OLED65C26LD C2's last qualified retained delivery is
-[0.48.0](docs/c2-retained-preview-048.md):
+The OLED65C26LD C2's historical
+[0.48.0 delivery](docs/c2-retained-preview-048.md) verified
 two fresh Home/Apps/Back sessions, natural idle-black/wake, its own unchanged
 packaged resources and original preference bytes. Its ordinary-owner metadata
 roundtrip and separate restoration were qualified first. That retained-delivery trial
