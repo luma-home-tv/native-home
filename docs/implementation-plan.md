@@ -93,6 +93,14 @@ Normal startup can initialize state before observation if its native view
 allows it; this must not be described as an inert read-only permission probe.
 Neither workflow authorizes permission repair.
 
+Later independent review of the normal v2 source found a repeated-path-fragment
+edge: looking only at the first canonical app-path occurrence can miss a later
+valid same-app mount alias. The full disposable C2 Proof shares that algorithm.
+Both future native admissions are held pending corrected source and fresh
+review. The counterexample is synthetic source evidence; no native dispatch or
+device effect was demonstrated. Preserve the earlier finite reviews and failed
+counterexample rather than treating their passing fixtures as broad proof.
+
 The separate [public icon reader foundation](public-icon-reader-foundation.md)
 now has a frozen source commit and draft PR9, strict/sanitised host checks,
 independent source/host review, coordinator replay and an actual ARM build.

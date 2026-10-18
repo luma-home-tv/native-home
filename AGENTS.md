@@ -78,6 +78,11 @@ has no native admission. The first separate no-install C2 normal proposal retain
 a G2-only mount exception and is blocked pending a new corrected source review.
 Normal startup may initialize state before its native view is observed; do not
 call it an inert read-only permissions selector or infer repair authority.
+Later normal-v2 review found a first-occurrence mount parser edge shared by the
+full C2 Proof: an invalid early app-path fragment can hide a later valid alias.
+Hold both future native admissions until corrected versions are independently
+reviewed. This is a synthetic actual-method counterexample, not native input or
+device harm. Preserve earlier finite reviews and the new failure separately.
 
 PR#9 (`codex/public-icon-reader`, sourcee7017b3) is a standalone Root-admin
 public-app icon primitive only. Strict/sanitised host tests, independent source
